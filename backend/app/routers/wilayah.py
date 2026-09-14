@@ -6,7 +6,7 @@ from app.core.dependencies import require_roles
 from app.models.user import WilayahAdministratif, WilayahLevel, UserRole, User
 from app.schemas.wilayah import WilayahCreate, WilayahResponse, WilayahBrief
 
-router = APIRouter(prefix="/wilayah", tags=["Wilayah Administratif (Fitur 1)"])
+router = APIRouter(prefix="/wilayah", tags=["Wilayah Administratif"])
 
 @router.get("", response_model=List[WilayahResponse])
 def get_wilayah_list(
@@ -15,7 +15,7 @@ def get_wilayah_list(
     db: Session = Depends(get_db)
 ):
     """
-    Fitur 1 PRD: Menampilkan data wilayah berjenjang beserta poligon batas wilayah (GeoJSON)
+    Menampilkan data wilayah berjenjang beserta poligon batas wilayah (GeoJSON)
     untuk kebutuhan layer peta interaktif.
     """
     query = db.query(WilayahAdministratif)

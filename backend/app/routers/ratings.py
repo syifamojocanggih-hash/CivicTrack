@@ -9,7 +9,7 @@ from app.models.project import Proyek, ProyekStatus
 from app.models.report import RatingKepuasan
 from app.schemas.rating import RatingCreate, RatingResponse, RatingSummaryResponse
 
-router = APIRouter(tags=["Rating Kepuasan Masyarakat (Fitur 10)"])
+router = APIRouter(tags=["Rating Kepuasan Masyarakat"])
 
 @router.post("/proyek/{id}/rating", response_model=RatingResponse, status_code=status.HTTP_201_CREATED)
 def submit_project_rating(
@@ -19,8 +19,8 @@ def submit_project_rating(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Fitur 10 PRD: Memberikan penilaian bintang (1-5) dan ulasan publik.
-    Validasi penting: Penilaian HANYA dapat diberikan untuk proyek yang berstatus 'Selesai'.
+    Memberikan penilaian bintang (1-5) dan ulasan publik.
+    Validasi: Penilaian HANYA dapat diberikan untuk proyek yang berstatus 'Selesai'.
     Satu warga hanya dapat memberikan satu kali penilaian untuk tiap proyek.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()

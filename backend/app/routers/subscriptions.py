@@ -8,7 +8,7 @@ from app.models.project import Proyek
 from app.models.notification import SubscriptionNotifikasi, Notifikasi
 from app.schemas.notification import NotifikasiResponse, SubscriptionStatusResponse
 
-router = APIRouter(tags=["Notifikasi & Langganan (Fitur 6)"])
+router = APIRouter(tags=["Notifikasi & Langganan"])
 
 @router.post("/proyek/{id}/subscribe", response_model=SubscriptionStatusResponse)
 def subscribe_project(
@@ -17,7 +17,7 @@ def subscribe_project(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Fitur 6 PRD: Warga berlangganan notifikasi otomatis untuk proyek tertentu
+    Warga berlangganan notifikasi otomatis untuk proyek tertentu
     agar menerima pemberitahuan setiap ada pembaruan data atau progres.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()

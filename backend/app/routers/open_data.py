@@ -4,7 +4,7 @@ from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.models.project import Proyek
 
-router = APIRouter(prefix="/open-data", tags=["Open Data API (Fitur 9)"])
+router = APIRouter(prefix="/open-data", tags=["Open Data API"])
 
 @router.get("/proyek")
 def get_open_data_projects(
@@ -12,7 +12,7 @@ def get_open_data_projects(
     db: Session = Depends(get_db)
 ) -> Any:
     """
-    Fitur 9 PRD: Endpoint Open Data API Terbuka.
+    Endpoint Open Data API Terbuka.
     Menyediakan akses dataset proyek pembangunan daerah secara bebas bagi publik,
     jurnalis investigasi, LSM, dan peneliti akademisi tanpa kewajiban login.
     Mendukung format standar JSON dan GeoJSON FeatureCollection.

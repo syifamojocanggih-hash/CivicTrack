@@ -11,7 +11,7 @@ from app.models.user import User, UserRole
 from app.models.project import Proyek, TahapanProgres, DokumentasiProyek, MediaType
 from app.schemas.project import DokumentasiResponse
 
-router = APIRouter(prefix="/proyek", tags=["Dokumentasi Proyek (Fitur 4)"])
+router = APIRouter(prefix="/proyek", tags=["Dokumentasi Proyek"])
 
 @router.post("/{id}/dokumentasi", response_model=DokumentasiResponse, status_code=status.HTTP_201_CREATED)
 def upload_project_media(
@@ -22,9 +22,8 @@ def upload_project_media(
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
     """
-    Fitur 4 PRD: Pengunggahan foto dan video perkembangan fisik proyek secara kronologis
+    Pengunggahan foto dan video perkembangan fisik proyek secara kronologis
     pada setiap tahapan linimasa.
-    Validasi format dan ukuran file sesuai PRD Bagian 10.1.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
     if not proyek:

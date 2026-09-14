@@ -14,7 +14,7 @@ from app.schemas.project import (
 )
 from app.services.notification_service import notify_project_subscribers
 
-router = APIRouter(prefix="/proyek", tags=["Proyek Pembangunan (Fitur 2, 3, 7)"])
+router = APIRouter(prefix="/proyek", tags=["Proyek Pembangunan"])
 
 @router.get("", response_model=PaginatedProyekResponse)
 def get_projects(
@@ -29,7 +29,7 @@ def get_projects(
     db: Session = Depends(get_db)
 ):
     """
-    Fitur 7 PRD: Pencarian dan Filter Proyek Berjenjang.
+    Pencarian dan Filter Proyek Berjenjang.
     Menyaring data proyek berdasarkan lokasi wilayah, kategori, status, anggaran, dan kata kunci.
     """
     query = db.query(Proyek)
@@ -110,7 +110,7 @@ def get_projects(
 @router.get("/{id}", response_model=ProyekResponse)
 def get_project_detail(id: int, db: Session = Depends(get_db)):
     """
-    Fitur 2 PRD: Mengambil detail lengkap proyek beserta linimasa tahapan (timeline)
+    Mengambil detail lengkap proyek beserta linimasa tahapan (timeline)
     dan galeri dokumentasi foto/video secara kronologis.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
@@ -134,7 +134,7 @@ def create_project(
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
     """
-    Fitur 3 PRD: Dashboard Pemerintah - Tambah Proyek Baru oleh Admin Dinas / Pimpinan.
+    Dashboard Pemerintah - Tambah Proyek Baru oleh Admin Dinas / Pimpinan.
     Memvalidasi koordinat spasial, wilayah terdaftar, dan dinas penanggung jawab.
     """
     # Verifikasi wilayah
@@ -195,7 +195,7 @@ def update_project(
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
-    """Fitur 3 PRD: Sunting data proyek oleh admin dinas / pimpinan."""
+    """Sunting data proyek oleh admin dinas / pimpinan."""
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
     if not proyek:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyek tidak ditemukan.")
@@ -245,9 +245,9 @@ def add_project_stage(
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
     """
-    Fitur 2 PRD: Tambah Riwayat Tahapan Linimasa (Timeline) & Perbarui Progres Proyek.
-    Sesuai PRD 10.1: Progres tidak boleh turun tanpa catatan/keterangan.
-    Memicu notifikasi otomatis ke semua warga yang subscribe (Fitur 6).
+    Tambah Riwayat Tahapan Linimasa (Timeline) & Perbarui Progres Proyek.
+    Progres tidak boleh turun tanpa catatan/keterangan.
+    Memicu notifikasi otomatis ke semua warga yang subscribe.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
     if not proyek:
@@ -283,7 +283,7 @@ def add_project_stage(
     db.commit()
     db.refresh(tahap)
 
-    # Pemicu notifikasi otomatis (Fitur 6 PRD)
+    # Pemicu notifikasi otomatis
     pesan_notif = f"Pembaruan Proyek: Tahap '{req.nama_tahap}' dicatat. Progres '{proyek.nama_proyek}' mencapai {req.progres_persen}%."
     notify_project_subscribers(db, proyek, pesan_notif)
 

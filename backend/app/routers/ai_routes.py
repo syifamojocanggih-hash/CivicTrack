@@ -10,7 +10,7 @@ from app.models.ai_route import RekomendasiRute, PrioritasRute
 from app.schemas.route import RekomendasiRuteResponse, GenerateRuteRequest
 from app.services.gemini_service import generate_ai_alternative_routes
 
-router = APIRouter(prefix="/proyek", tags=["Rekomendasi Rute AI (Fitur 11)"])
+router = APIRouter(prefix="/proyek", tags=["Rekomendasi Rute AI"])
 
 @router.post("/{id}/generate-rute", response_model=List[RekomendasiRuteResponse])
 def generate_alternative_routes(
@@ -20,7 +20,7 @@ def generate_alternative_routes(
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
     """
-    Fitur 11 PRD: Menghasilkan rekomendasi rute alternatif penutupan jalan menggunakan Google Gemini API.
+    Menghasilkan rekomendasi rute alternatif penutupan jalan menggunakan Google Gemini API.
     Menyajikan rute terstruktur dalam 3 tingkat skala prioritas:
     - 'utama': Jalur pengalihan jalan besar untuk seluruh kendaraan
     - 'kedua': Jalur lingkar sekunder pengurai kepadatan

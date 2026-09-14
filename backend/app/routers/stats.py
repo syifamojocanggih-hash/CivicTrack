@@ -10,12 +10,12 @@ from app.models.report import LaporanMasyarakat, LaporanStatus
 from app.models.evaluation import EvaluasiPembangunan, EvaluasiStatus
 from app.schemas.stats import DashboardStatsResponse, StatusCount, WilayahStat
 
-router = APIRouter(prefix="/stats", tags=["Statistik & Agregat (Fitur 8)"])
+router = APIRouter(prefix="/stats", tags=["Statistik & Agregat"])
 
 @router.get("/dashboard", response_model=DashboardStatsResponse)
 def get_dashboard_statistics(db: Session = Depends(get_db)):
     """
-    Fitur 8 PRD: Menyajikan ringkasan metrik statistik agregat untuk dashboard publik
+    Menyajikan ringkasan metrik statistik agregat untuk dashboard publik
     dan pimpinan instansi (total proyek per status, serapan anggaran, rekap per wilayah & kategori).
     """
     total_proyek = db.query(Proyek).count()

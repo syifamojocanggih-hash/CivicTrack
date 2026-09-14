@@ -17,7 +17,7 @@ from app.schemas.evaluation import (
 from app.schemas.auth import UserBrief
 from app.services.gemini_service import analyze_evaluation_with_ai
 
-router = APIRouter(tags=["Evaluasi Pasca-Proyek (Fitur 12)"])
+router = APIRouter(tags=["Evaluasi Pasca-Proyek"])
 
 @router.post("/proyek/{id}/evaluasi", response_model=EvaluasiResponse, status_code=status.HTTP_201_CREATED)
 def submit_post_project_evaluation(
@@ -27,7 +27,7 @@ def submit_post_project_evaluation(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Fitur 12 PRD: Mekanisme pengajuan laporan atas proyek berstatus 'Selesai' yang terindikasi
+    Mekanisme pengajuan laporan atas proyek berstatus 'Selesai' yang terindikasi
     cacat/tidak sesuai spesifikasi.
     Dilengkapi analisis otomatis Gemini AI untuk skor urgensi (1-5) dan ringkasan teknis.
     Mencatat entri awal ke log audit trail.
@@ -150,7 +150,7 @@ def verify_evaluation(
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
     """
-    Fitur 12 PRD: Verifikasi dan tindak lanjut laporan evaluasi oleh admin dinas/pimpinan.
+    Verifikasi dan tindak lanjut laporan evaluasi oleh admin dinas/pimpinan.
     Mencatat jejak audit trail lengkap ke tabel evaluasi_status_log.
     """
     evaluasi = db.query(EvaluasiPembangunan).filter(EvaluasiPembangunan.id == eval_id).first()

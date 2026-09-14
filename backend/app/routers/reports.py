@@ -9,7 +9,7 @@ from app.models.project import Proyek
 from app.models.report import LaporanMasyarakat, LaporanStatus
 from app.schemas.report import LaporanCreate, LaporanTanggapi, LaporanResponse
 
-router = APIRouter(tags=["Laporan Masyarakat (Fitur 5)"])
+router = APIRouter(tags=["Laporan Masyarakat"])
 
 @router.post("/proyek/{id}/laporan", response_model=LaporanResponse, status_code=status.HTTP_201_CREATED)
 def submit_report(
@@ -19,14 +19,14 @@ def submit_report(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Fitur 5 PRD: Formulir interaktif bagi warga untuk mengirim keluhan/masukan proyek.
-    Memvalidasi panjang teks dan menyaring kata-kata tidak pantas sesuai PRD 10.2.
+    Formulir interaktif bagi warga untuk mengirim keluhan/masukan proyek.
+    Memvalidasi panjang teks dan menyaring kata-kata tidak pantas secara otomatis.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
     if not proyek:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyek tidak ditemukan.")
 
-    # Sensor / filter kata kasar sesuai PRD 10.2
+    # Sensor / filter kata kasar
     cleaned_content = sanitize_profanity(req.isi_laporan.strip())
 
     laporan = LaporanMasyarakat(
@@ -56,7 +56,7 @@ def reply_report(
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
     """
-    Fitur 5 PRD: Admin dinas menanggapi secara resmi aduan warga
+    Admin dinas menanggapi secara resmi aduan warga
     dan memperbarui status tindak lanjut ('baru', 'diproses', 'ditanggapi', 'ditolak').
     """
     laporan = db.query(LaporanMasyarakat).filter(LaporanMasyarakat.id == report_id).first()
