@@ -8,7 +8,7 @@ from app.models.project import Proyek
 from app.models.notification import SubscriptionNotifikasi, Notifikasi
 from app.schemas.notification import NotifikasiResponse, SubscriptionStatusResponse
 
-router = APIRouter(tags=["Notifikasi & Langganan"])
+router = APIRouter(tags=["Notifikasi & Ikuti Proyek"])
 
 @router.post("/proyek/{id}/subscribe", response_model=SubscriptionStatusResponse)
 def subscribe_project(
@@ -17,8 +17,8 @@ def subscribe_project(
     current_user: User = Depends(get_current_user)
 ):
     """
-    Warga berlangganan notifikasi otomatis untuk proyek tertentu
-    agar menerima pemberitahuan setiap ada pembaruan data atau progres.
+    Warga mengikuti (subscribe) notifikasi otomatis untuk proyek tertentu
+    agar menerima pemberitahuan setiap ada pembaruan data atau progres linimasa.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
     if not proyek:
@@ -42,7 +42,7 @@ def unsubscribe_project(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Berhenti berlangganan pembaruan suatu proyek."""
+    """Berhenti mengikuti (unsubscribe) pembaruan suatu proyek."""
     sub = db.query(SubscriptionNotifikasi).filter(
         SubscriptionNotifikasi.user_id == current_user.id,
         SubscriptionNotifikasi.proyek_id == id
@@ -60,7 +60,7 @@ def check_subscription_status(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Mengecek apakah pengguna saat ini berlangganan proyek ini."""
+    """Mengecek apakah pengguna saat ini sedang mengikuti proyek ini."""
     sub = db.query(SubscriptionNotifikasi).filter(
         SubscriptionNotifikasi.user_id == current_user.id,
         SubscriptionNotifikasi.proyek_id == id
