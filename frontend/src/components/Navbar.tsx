@@ -9,6 +9,8 @@ interface NavbarProps {
   activeNav: string;
   setActiveNav: (nav: string) => void;
   onFilterCategory?: (cat: string | null) => void;
+  currentView?: 'landing' | 'dashboard';
+  onNavigateView?: (view: 'landing' | 'dashboard') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -17,15 +19,27 @@ export const Navbar: React.FC<NavbarProps> = ({
   onLogout,
   activeNav,
   setActiveNav,
+  currentView = 'landing',
+  onNavigateView,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const handleNavClick = (nav: string, href: string) => {
     setActiveNav(nav);
     setIsMobileMenuOpen(false);
-    const element = document.querySelector(href);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
+    if (currentView === 'dashboard' && onNavigateView) {
+      onNavigateView('landing');
+      setTimeout(() => {
+        const element = document.querySelector(href);
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' });
+        }
+      }, 100);
+    } else {
+      const element = document.querySelector(href);
+      if (element) {
+        element.scrollIntoView({ behavior: 'smooth' });
+      }
     }
   };
 
@@ -52,7 +66,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick('peta', '#hero')}
             className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'peta' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+              activeNav === 'peta' && currentView === 'landing' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
             }`}
           >
             Peta Proyek
@@ -60,7 +74,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick('daftar', '#recent-projects')}
             className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'daftar' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+              activeNav === 'daftar' && currentView === 'landing' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
             }`}
           >
             Daftar Proyek
@@ -68,7 +82,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick('statistik', '#stats')}
             className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'statistik' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+              activeNav === 'statistik' && currentView === 'landing' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
             }`}
           >
             Statistik
@@ -76,7 +90,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick('fitur', '#features')}
             className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'fitur' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+              activeNav === 'fitur' && currentView === 'landing' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
             }`}
           >
             Fitur &amp; API
@@ -84,7 +98,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           <button
             onClick={() => handleNavClick('tentang', '#how-it-works')}
             className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'tentang' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+              activeNav === 'tentang' && currentView === 'landing' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
             }`}
           >
             Tentang
@@ -94,11 +108,22 @@ export const Navbar: React.FC<NavbarProps> = ({
         {/* Right action buttons / User status */}
         <div className="hidden sm:flex items-center gap-2.5">
           {currentUser ? (
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 bg-[#EBF4FB] border border-[#c5def2] px-3 py-1 rounded-full text-xs font-medium text-[#184C78]">
-                <Shield className="w-3.5 h-3.5 text-[#2980B9]" />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => onNavigateView && onNavigateView(currentView === 'dashboard' ? 'landing' : 'dashboard')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  currentView === 'dashboard'
+                    ? 'bg-[#184C78] text-white shadow-xs'
+                    : 'bg-[#EBF4FB] text-[#184C78] border border-[#c5def2] hover:bg-[#184C78] hover:text-white'
+                }`}
+              >
+                <Shield className="w-3.5 h-3.5" />
+                <span>{currentView === 'dashboard' ? 'Buka Peta Publik' : 'Buka Dashboard'}</span>
+              </button>
+
+              <div className="flex items-center gap-2 bg-[#F5F7FA] border border-[#DCE0E6] px-3 py-1 rounded-full text-xs font-medium text-[#184C78]">
                 <span className="font-semibold">{currentUser.nama}</span>
-                <span className="text-[11px] opacity-75 capitalize">({currentUser.role.replace('_', ' ')})</span>
+                <span className="text-[10px] text-[#6C757D] capitalize">({currentUser.role.replace('_', ' ')})</span>
               </div>
               <button
                 onClick={onLogout}

@@ -12,6 +12,7 @@ import { AuthModal } from './components/AuthModal';
 import { ProjectDetailModal } from './components/ProjectDetailModal';
 import { AIRouteModal } from './components/AIRouteModal';
 import { OpenDataModal } from './components/OpenDataModal';
+import { DashboardMain } from './components/dashboard/DashboardMain';
 
 import {
   STATS_DATA,
@@ -29,6 +30,7 @@ export function App() {
   const [selectedCategory, setSelectedCategory] = useState<ProyekKategori | null>(null);
   const [activeNav, setActiveNav] = useState<string>('peta');
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [currentView, setCurrentView] = useState<'landing' | 'dashboard'>('landing');
 
   // Modal States
   const [authModalState, setAuthModalState] = useState<{ isOpen: boolean; mode: 'login' | 'register' }>({
@@ -99,8 +101,41 @@ export function App() {
     setAuthModalState({ isOpen: true, mode });
   };
 
+  const handleLoginSuccess = (user: UserProfile) => {
+    setCurrentUser(user);
+    setCurrentView('dashboard');
+  };
+
   const handleLogout = () => {
     setCurrentUser(null);
+    setCurrentView('landing');
+  };
+
+  const handleSwitchRole = (newRole: 'warga' | 'admin_dinas' | 'pimpinan_instansi' | 'media_peneliti') => {
+    if (!currentUser) return;
+    let newName = currentUser.nama;
+    let newEmail = currentUser.email;
+
+    if (newRole === 'admin_dinas') {
+      newName = 'Ir. Hendro Wijaya';
+      newEmail = 'admin.pu@bojonegoro.go.id';
+    } else if (newRole === 'pimpinan_instansi') {
+      newName = 'Drs. H. M. Fauzi, M.Si';
+      newEmail = 'pimpinan.pu@bojonegoro.go.id';
+    } else if (newRole === 'media_peneliti') {
+      newName = 'Dr. Rahmat Hidayat';
+      newEmail = 'rahmat.peneliti@unair.ac.id';
+    } else {
+      newName = 'Budi Santoso';
+      newEmail = 'budi.santoso@gmail.com';
+    }
+
+    setCurrentUser({
+      ...currentUser,
+      nama: newName,
+      email: newEmail,
+      role: newRole,
+    });
   };
 
   const handleOpenFeature = (featureId: string) => {
@@ -131,71 +166,89 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-['Inter'] text-[#212529]">
-      {/* ── NAVBAR ── */}
-      <Navbar
-        currentUser={currentUser}
-        onOpenAuth={handleOpenAuth}
-        onLogout={handleLogout}
-        activeNav={activeNav}
-        setActiveNav={setActiveNav}
-      />
+      {/* ── CONDITIONAL RENDERING: DASHBOARD VS LANDING PAGE ── */}
+      {currentView === 'dashboard' && currentUser ? (
+        <DashboardMain
+          currentUser={currentUser}
+          projects={projects}
+          onBackToLanding={() => setCurrentView('landing')}
+          onLogout={handleLogout}
+          onSwitchRole={handleSwitchRole}
+          onOpenProjectDetail={(proj) => setSelectedProject(proj)}
+          onOpenAIRoute={(name) => setAIRouteModal({ isOpen: true, projectName: name })}
+          onOpenOpenDataModal={() => setIsOpenDataModalOpen(true)}
+        />
+      ) : (
+        <>
+          {/* ── NAVBAR ── */}
+          <Navbar
+            currentUser={currentUser}
+            onOpenAuth={handleOpenAuth}
+            onLogout={handleLogout}
+            activeNav={activeNav}
+            setActiveNav={setActiveNav}
+            currentView={currentView}
+            onNavigateView={(view) => setCurrentView(view)}
+          />
 
-      {/* ── HERO ── */}
-      <HeroSection
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
-        onSearchSubmit={handleSearchSubmit}
-        onSelectChip={handleSelectChip}
-        onSelectProject={(proj) => setSelectedProject(proj)}
-        projects={projects}
-      />
+          {/* ── HERO ── */}
+          <HeroSection
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            onSearchSubmit={handleSearchSubmit}
+            onSelectChip={handleSelectChip}
+            onSelectProject={(proj) => setSelectedProject(proj)}
+            projects={projects}
+          />
 
-      {/* ── STAT STRIP ── */}
-      <StatStrip stats={STATS_DATA} />
+          {/* ── STAT STRIP ── */}
+          <StatStrip stats={STATS_DATA} />
 
-      {/* ── FEATURES ── */}
-      <FeaturesSection
-        features={FEATURES_DATA}
-        onOpenFeature={handleOpenFeature}
-      />
+          {/* ── FEATURES ── */}
+          <FeaturesSection
+            features={FEATURES_DATA}
+            onOpenFeature={handleOpenFeature}
+          />
 
-      {/* ── HOW IT WORKS ── */}
-      <HowItWorksSection steps={HOW_IT_WORKS_DATA} />
+          {/* ── HOW IT WORKS ── */}
+          <HowItWorksSection steps={HOW_IT_WORKS_DATA} />
 
-      {/* ── CATEGORIES ── */}
-      <CategoriesSection
-        categories={CATEGORIES_DATA}
-        selectedCategory={selectedCategory}
-        onSelectCategory={(cat) => setSelectedCategory(cat)}
-      />
+          {/* ── CATEGORIES ── */}
+          <CategoriesSection
+            categories={CATEGORIES_DATA}
+            selectedCategory={selectedCategory}
+            onSelectCategory={(cat) => setSelectedCategory(cat)}
+          />
 
-      {/* ── RECENT PROJECTS ── */}
-      <RecentProjectsSection
-        projects={filteredProjects}
-        onSelectProject={(proj) => setSelectedProject(proj)}
-        selectedCategory={selectedCategory}
-        onClearFilters={handleClearFilters}
-        searchQuery={searchQuery}
-      />
+          {/* ── RECENT PROJECTS ── */}
+          <RecentProjectsSection
+            projects={filteredProjects}
+            onSelectProject={(proj) => setSelectedProject(proj)}
+            selectedCategory={selectedCategory}
+            onClearFilters={handleClearFilters}
+            searchQuery={searchQuery}
+          />
 
-      {/* ── CTA SECTION ── */}
-      <CTASection
-        onRegisterClick={() => handleOpenAuth('register')}
-        onOpenMapClick={() => {
-          const hero = document.querySelector('#hero');
-          hero?.scrollIntoView({ behavior: 'smooth' });
-        }}
-      />
+          {/* ── CTA SECTION ── */}
+          <CTASection
+            onRegisterClick={() => handleOpenAuth('register')}
+            onOpenMapClick={() => {
+              const hero = document.querySelector('#hero');
+              hero?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          />
 
-      {/* ── FOOTER ── */}
-      <Footer onOpenOpenData={() => setIsOpenDataModalOpen(true)} />
+          {/* ── FOOTER ── */}
+          <Footer onOpenOpenData={() => setIsOpenDataModalOpen(true)} />
+        </>
+      )}
 
-      {/* ── MODALS ── */}
+      {/* ── GLOBAL MODALS ── */}
       <AuthModal
         isOpen={authModalState.isOpen}
         initialMode={authModalState.mode}
         onClose={() => setAuthModalState({ isOpen: false, mode: 'login' })}
-        onLoginSuccess={(user) => setCurrentUser(user)}
+        onLoginSuccess={handleLoginSuccess}
       />
 
       <ProjectDetailModal
@@ -223,3 +276,4 @@ export function App() {
 }
 
 export default App;
+
