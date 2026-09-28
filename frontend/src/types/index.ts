@@ -52,11 +52,13 @@ export interface CategoryItem {
   description: string;
 }
 
+export type UserRole = 'warga' | 'pemerintah' | 'admin_dinas' | 'pimpinan_instansi' | 'media_peneliti';
+
 export interface UserProfile {
   id: number;
   nama: string;
   email: string;
-  role: 'warga' | 'admin_dinas' | 'pimpinan_instansi' | 'media_peneliti';
+  role: UserRole;
   dinas_id?: number;
   nama_dinas?: string;
   nip?: string;

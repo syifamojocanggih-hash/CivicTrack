@@ -21,7 +21,7 @@ import {
   FEATURES_DATA,
   HOW_IT_WORKS_DATA,
 } from './data/mockData';
-import type { ProyekItem, ProyekKategori, UserProfile } from './types';
+import type { ProyekItem, ProyekKategori, UserProfile, UserRole } from './types';
 
 export function App() {
   // State
@@ -111,14 +111,14 @@ export function App() {
     setCurrentView('landing');
   };
 
-  const handleSwitchRole = (newRole: 'warga' | 'admin_dinas' | 'pimpinan_instansi' | 'media_peneliti') => {
+  const handleSwitchRole = (newRole: UserRole) => {
     if (!currentUser) return;
     let newName = currentUser.nama;
     let newEmail = currentUser.email;
 
-    if (newRole === 'admin_dinas') {
-      newName = 'Ir. Hendro Wijaya';
-      newEmail = 'admin.pu@bojonegoro.go.id';
+    if (newRole === 'pemerintah' || newRole === 'admin_dinas') {
+      newName = 'Ir. Hendro Wijaya (Dinas PU & Tim Eksekutif)';
+      newEmail = 'aparatur.pemerintah@bojonegoro.go.id';
     } else if (newRole === 'pimpinan_instansi') {
       newName = 'Drs. H. M. Fauzi, M.Si';
       newEmail = 'pimpinan.pu@bojonegoro.go.id';

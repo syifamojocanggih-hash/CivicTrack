@@ -1,17 +1,16 @@
 import React from 'react';
 import { DashboardHeader } from './DashboardHeader';
 import { WargaDashboard } from './WargaDashboard';
-import { AdminDinasDashboard } from './AdminDinasDashboard';
-import { PimpinanDashboard } from './PimpinanDashboard';
+import { PemerintahDashboard } from './PemerintahDashboard';
 import { PenelitiDashboard } from './PenelitiDashboard';
-import type { UserProfile, ProyekItem } from '../../types';
+import type { UserProfile, ProyekItem, UserRole } from '../../types';
 
 interface DashboardMainProps {
   currentUser: UserProfile;
   projects: ProyekItem[];
   onBackToLanding: () => void;
   onLogout: () => void;
-  onSwitchRole: (role: 'warga' | 'admin_dinas' | 'pimpinan_instansi' | 'media_peneliti') => void;
+  onSwitchRole: (role: UserRole) => void;
   onOpenProjectDetail: (project: ProyekItem) => void;
   onOpenAIRoute: (projectName: string) => void;
   onOpenOpenDataModal: () => void;
@@ -49,16 +48,8 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
           />
         )}
 
-        {currentUser.role === 'admin_dinas' && (
-          <AdminDinasDashboard
-            currentUser={currentUser}
-            projects={projects}
-            onOpenProjectDetail={onOpenProjectDetail}
-          />
-        )}
-
-        {currentUser.role === 'pimpinan_instansi' && (
-          <PimpinanDashboard
+        {(currentUser.role === 'pemerintah' || currentUser.role === 'admin_dinas' || currentUser.role === 'pimpinan_instansi') && (
+          <PemerintahDashboard
             currentUser={currentUser}
             projects={projects}
             onOpenProjectDetail={onOpenProjectDetail}

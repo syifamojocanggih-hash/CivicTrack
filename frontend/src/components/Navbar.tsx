@@ -61,47 +61,55 @@ export const Navbar: React.FC<NavbarProps> = ({
           <span className="tracking-tight">CivicTrack</span>
         </a>
 
-        {/* Desktop Navigation Links */}
-        <div className="hidden md:flex items-center gap-1 flex-1">
+        {/* Desktop Navigation Links (Ordered exactly top-to-bottom as in landing page) */}
+        <div className="hidden lg:flex items-center gap-1 flex-1">
           <button
             onClick={() => handleNavClick('peta', '#hero')}
-            className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'peta' && currentView === 'landing' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+            className={`px-2.5 py-1.5 text-[13px] font-medium rounded-lg transition-colors cursor-pointer ${
+              activeNav === 'peta' && currentView === 'landing' ? 'text-[#184C78] font-bold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
             }`}
           >
             Peta Proyek
           </button>
           <button
-            onClick={() => handleNavClick('daftar', '#recent-projects')}
-            className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'daftar' && currentView === 'landing' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
-            }`}
-          >
-            Daftar Proyek
-          </button>
-          <button
             onClick={() => handleNavClick('statistik', '#stats')}
-            className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'statistik' && currentView === 'landing' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+            className={`px-2.5 py-1.5 text-[13px] font-medium rounded-lg transition-colors cursor-pointer ${
+              activeNav === 'statistik' && currentView === 'landing' ? 'text-[#184C78] font-bold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
             }`}
           >
             Statistik
           </button>
           <button
             onClick={() => handleNavClick('fitur', '#features')}
-            className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'fitur' && currentView === 'landing' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+            className={`px-2.5 py-1.5 text-[13px] font-medium rounded-lg transition-colors cursor-pointer ${
+              activeNav === 'fitur' && currentView === 'landing' ? 'text-[#184C78] font-bold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
             }`}
           >
-            Fitur &amp; API
+            Fitur Unggulan
           </button>
           <button
-            onClick={() => handleNavClick('tentang', '#how-it-works')}
-            className={`px-3 py-1.5 text-[14px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'tentang' && currentView === 'landing' ? 'text-[#184C78] font-semibold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+            onClick={() => handleNavClick('alur', '#how-it-works')}
+            className={`px-2.5 py-1.5 text-[13px] font-medium rounded-lg transition-colors cursor-pointer ${
+              activeNav === 'alur' && currentView === 'landing' ? 'text-[#184C78] font-bold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
             }`}
           >
-            Tentang
+            Alur Kerja
+          </button>
+          <button
+            onClick={() => handleNavClick('kategori', '#categories')}
+            className={`px-2.5 py-1.5 text-[13px] font-medium rounded-lg transition-colors cursor-pointer ${
+              activeNav === 'kategori' && currentView === 'landing' ? 'text-[#184C78] font-bold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+            }`}
+          >
+            Kategori
+          </button>
+          <button
+            onClick={() => handleNavClick('daftar', '#recent-projects')}
+            className={`px-2.5 py-1.5 text-[13px] font-medium rounded-lg transition-colors cursor-pointer ${
+              activeNav === 'daftar' && currentView === 'landing' ? 'text-[#184C78] font-bold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
+            }`}
+          >
+            Daftar Proyek
           </button>
         </div>
 
@@ -128,7 +136,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               <button
                 onClick={onLogout}
                 title="Keluar"
-                className="btn-ghost !h-8 !px-2.5 text-[#6C757D] hover:text-red-600 hover:border-red-200"
+                className="btn-ghost !h-8 !px-2.5 text-[#6C757D] hover:text-red-600 hover:border-red-200 cursor-pointer"
               >
                 <LogOut className="w-4 h-4" />
               </button>
@@ -137,13 +145,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             <>
               <button
                 onClick={() => onOpenAuth('login')}
-                className="btn-ghost"
+                className="btn-ghost cursor-pointer"
               >
                 Masuk
               </button>
               <button
                 onClick={() => onOpenAuth('register')}
-                className="btn-primary shadow-sm"
+                className="btn-primary shadow-sm cursor-pointer"
               >
                 Daftar Akun
               </button>
@@ -152,10 +160,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
 
         {/* Mobile menu hamburger toggle */}
-        <div className="md:hidden flex items-center gap-2">
+        <div className="lg:hidden flex items-center gap-2">
           <button
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="p-2 text-[#184C78] rounded-lg hover:bg-slate-100"
+            className="p-2 text-[#184C78] rounded-lg hover:bg-slate-100 cursor-pointer"
             aria-label="Toggle menu"
           >
             {isMobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -163,32 +171,56 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Mobile dropdown menu */}
+      {/* Mobile dropdown menu (Ordered exactly top-to-bottom as in landing page) */}
       {isMobileMenuOpen && (
-        <div className="absolute top-14 left-0 right-0 bg-white border-b border-[#DCE0E6] shadow-lg p-4 flex flex-col gap-2 md:hidden">
+        <div className="absolute top-14 left-0 right-0 bg-white border-b border-[#DCE0E6] shadow-lg p-4 flex flex-col gap-1.5 lg:hidden animate-fade-in">
           <button
             onClick={() => handleNavClick('peta', '#hero')}
-            className="text-left px-3 py-2 text-sm font-medium text-[#212529] hover:bg-[#F5F7FA] rounded-md"
+            className={`text-left px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeNav === 'peta' ? 'text-[#184C78] font-bold bg-[#EBF4FB]' : 'text-[#212529] hover:bg-[#F5F7FA]'
+            }`}
           >
-            Peta Proyek
-          </button>
-          <button
-            onClick={() => handleNavClick('daftar', '#recent-projects')}
-            className="text-left px-3 py-2 text-sm font-medium text-[#212529] hover:bg-[#F5F7FA] rounded-md"
-          >
-            Daftar Proyek
+            🗺️ Peta Proyek
           </button>
           <button
             onClick={() => handleNavClick('statistik', '#stats')}
-            className="text-left px-3 py-2 text-sm font-medium text-[#212529] hover:bg-[#F5F7FA] rounded-md"
+            className={`text-left px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeNav === 'statistik' ? 'text-[#184C78] font-bold bg-[#EBF4FB]' : 'text-[#212529] hover:bg-[#F5F7FA]'
+            }`}
           >
-            Statistik
+            📊 Statistik
           </button>
           <button
             onClick={() => handleNavClick('fitur', '#features')}
-            className="text-left px-3 py-2 text-sm font-medium text-[#212529] hover:bg-[#F5F7FA] rounded-md"
+            className={`text-left px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeNav === 'fitur' ? 'text-[#184C78] font-bold bg-[#EBF4FB]' : 'text-[#212529] hover:bg-[#F5F7FA]'
+            }`}
           >
-            Fitur &amp; API
+            ✨ Fitur Unggulan
+          </button>
+          <button
+            onClick={() => handleNavClick('alur', '#how-it-works')}
+            className={`text-left px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeNav === 'alur' ? 'text-[#184C78] font-bold bg-[#EBF4FB]' : 'text-[#212529] hover:bg-[#F5F7FA]'
+            }`}
+          >
+            🧭 Alur Kerja
+          </button>
+          <button
+            onClick={() => handleNavClick('kategori', '#categories')}
+            className={`text-left px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeNav === 'kategori' ? 'text-[#184C78] font-bold bg-[#EBF4FB]' : 'text-[#212529] hover:bg-[#F5F7FA]'
+            }`}
+          >
+            🏷️ Kategori
+          </button>
+          <button
+            onClick={() => handleNavClick('daftar', '#recent-projects')}
+            className={`text-left px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+              activeNav === 'daftar' ? 'text-[#184C78] font-bold bg-[#EBF4FB]' : 'text-[#212529] hover:bg-[#F5F7FA]'
+            }`}
+          >
+            📋 Daftar Proyek
           </button>
           <div className="pt-2 border-t border-[#DCE0E6] flex gap-2">
             {currentUser ? (

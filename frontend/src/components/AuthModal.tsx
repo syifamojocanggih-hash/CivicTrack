@@ -19,7 +19,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
-  const [role, setRole] = useState<'warga' | 'admin_dinas' | 'pimpinan_instansi' | 'media_peneliti'>('warga');
+  const [role, setRole] = useState<UserProfile['role']>('warga');
 
   if (!isOpen) return null;
 
@@ -36,15 +36,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     onClose();
   };
 
-  const handleQuickLogin = (demoRole: 'admin' | 'pimpinan' | 'warga' | 'peneliti') => {
+  const handleQuickLogin = (demoRole: 'pemerintah' | 'admin' | 'pimpinan' | 'warga' | 'peneliti') => {
     let demoUser: UserProfile;
     switch (demoRole) {
+      case 'pemerintah':
       case 'admin':
         demoUser = {
           id: 1,
           nama: 'Ir. Hendro Wijaya',
-          email: 'admin.pu@bojonegoro.go.id',
-          role: 'admin_dinas',
+          email: 'aparatur.pu@bojonegoro.go.id',
+          role: 'pemerintah',
           dinas_id: 1,
         };
         break;
@@ -53,7 +54,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           id: 2,
           nama: 'Drs. H. M. Fauzi, M.Si',
           email: 'pimpinan.pu@bojonegoro.go.id',
-          role: 'pimpinan_instansi',
+          role: 'pemerintah',
         };
         break;
       case 'peneliti':
@@ -183,17 +184,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 onChange={(e) => setRole(e.target.value as any)}
                 className="w-full px-3 py-2 text-sm border border-[#DCE0E6] rounded-lg focus:border-[#2980B9] outline-none bg-white text-[#212529]"
               >
-                <option value="warga">Warga Masyarakat</option>
-                <option value="media_peneliti">Media / Akademisi / Peneliti</option>
-                <option value="admin_dinas">Admin Dinas (Instansi Teknis)</option>
-                <option value="pimpinan_instansi">Pimpinan Instansi (Monitoring)</option>
+                <option value="warga">Warga Masyarakat (Partisipasi &amp; Pengaduan)</option>
+                <option value="pemerintah">Aparatur Pemerintah (Operasional Dinas &amp; Eksekutif)</option>
+                <option value="media_peneliti">Media / Akademisi / LSM (Open Data)</option>
               </select>
             </div>
           )}
 
           <button
             type="submit"
-            className="w-full py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-bold rounded-lg text-sm transition-colors shadow-sm mt-2"
+            className="w-full py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-bold rounded-lg text-sm transition-colors shadow-sm mt-2 cursor-pointer"
           >
             {mode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}
           </button>
@@ -202,32 +202,29 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         {/* Quick Demo Login Preset (Helpful for quick testing) */}
         <div className="px-6 pb-6 pt-1 border-t border-[#DCE0E6] bg-[#F5F7FA]">
           <div className="text-[11px] font-bold text-[#6C757D] uppercase tracking-wider mb-2.5">
-            ⚡ Quick Demo Login (Siap Pakai dari Backend Seed):
+            ⚡ Quick Demo Login (3 Role Utama):
           </div>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               onClick={() => handleQuickLogin('warga')}
-              className="px-2.5 py-1.5 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors"
+              className="px-2.5 py-2 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors cursor-pointer"
             >
-              👤 Warga (Budi)
+              👤 Warga
+              <div className="text-[10px] text-[#6C757D] font-normal">Budi Santoso</div>
             </button>
             <button
-              onClick={() => handleQuickLogin('admin')}
-              className="px-2.5 py-1.5 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors"
+              onClick={() => handleQuickLogin('pemerintah')}
+              className="px-2.5 py-2 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors cursor-pointer"
             >
-              🏛️ Admin PU Dinas
-            </button>
-            <button
-              onClick={() => handleQuickLogin('pimpinan')}
-              className="px-2.5 py-1.5 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors"
-            >
-              ⭐ Pimpinan Instansi
+              🏛️ Pemerintah
+              <div className="text-[10px] text-[#6C757D] font-normal">Dinas &amp; Pimpinan</div>
             </button>
             <button
               onClick={() => handleQuickLogin('peneliti')}
-              className="px-2.5 py-1.5 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors"
+              className="px-2.5 py-2 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors cursor-pointer"
             >
-              🔬 Media / Peneliti
+              🔬 Peneliti/LSM
+              <div className="text-[10px] text-[#6C757D] font-normal">Dr. Rahmat</div>
             </button>
           </div>
         </div>

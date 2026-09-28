@@ -1,28 +1,38 @@
 import React, { useState } from 'react';
-import { Search, MapPin } from 'lucide-react';
+import { MapPin, Navigation, Eye } from 'lucide-react';
 import type { ProyekItem } from '../types';
 
 interface HeroSectionProps {
-  searchQuery: string;
-  setSearchQuery: (q: string) => void;
-  onSearchSubmit: (q: string) => void;
-  onSelectChip: (chip: string) => void;
+  searchQuery?: string;
+  setSearchQuery?: (q: string) => void;
+  onSearchSubmit?: (q: string) => void;
+  onSelectChip?: (chip: string) => void;
   onSelectProject: (project: ProyekItem) => void;
   projects: ProyekItem[];
 }
 
 export const HeroSection: React.FC<HeroSectionProps> = ({
-  searchQuery,
-  setSearchQuery,
-  onSearchSubmit,
-  onSelectChip,
   onSelectProject,
   projects,
 }) => {
   const [mapFilter, setMapFilter] = useState<'all' | 'jalan' | 'taman'>('all');
   const [selectedPinIndex, setSelectedPinIndex] = useState<number>(0);
 
-  const chips = ['Jalan Rusak', 'Drainase', 'Taman Kota', 'Jembatan', 'Fasilitas Umum'];
+  const handleCekDisekitar = () => {
+    // Switch pin & scroll to the interactive map visual
+    setSelectedPinIndex((prev) => (prev + 1) % mapProjects.length);
+    const mapVisual = document.querySelector('.hero-visual');
+    if (mapVisual) {
+      mapVisual.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+  };
+
+  const handlePantauProyek = () => {
+    const recentElem = document.querySelector('#recent-projects');
+    if (recentElem) {
+      recentElem.scrollIntoView({ behavior: 'smooth' });
+    }
+  };
 
   // Data for interactive map points
   const mapProjects = [
@@ -133,41 +143,40 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             CivicTrack membuka akses informasi progres, anggaran, dan dokumentasi seluruh proyek infrastruktur daerah — dari jalan hingga taman — dalam satu peta yang bisa dijangkau siapa saja.
           </p>
 
-          {/* Search Bar */}
-          <form 
-            onSubmit={(e) => { e.preventDefault(); onSearchSubmit(searchQuery); }}
-            className="flex bg-white border-[1.5px] border-[#DCE0E6] rounded-[10px] overflow-hidden shadow-[0_2px_8px_rgba(24,76,120,0.09),0_8px_24px_rgba(24,76,120,0.07)] max-w-[460px] focus-within:border-[#2980B9] focus-within:ring-2 focus-within:ring-[#EBF4FB] transition-all"
-          >
-            <div className="w-12 flex items-center justify-center text-[#6C757D] shrink-0">
-              <Search className="w-4 h-4" />
-            </div>
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari proyek, lokasi, atau ID proyek…"
-              className="flex-1 border-none outline-none font-['Inter'] text-sm text-[#212529] py-3.5 bg-transparent placeholder-[#adb5bd]"
-            />
+          {/* ── 2 ACTION BUTTONS: CEK DI SEKITAR & PANTAU PROYEK ── */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 max-w-[480px]">
             <button
-              type="submit"
-              className="px-5 bg-[#184C78] hover:bg-[#0f3252] text-white font-semibold text-[13px] transition-colors whitespace-nowrap cursor-pointer"
+              type="button"
+              onClick={handleCekDisekitar}
+              className="flex-1 px-6 py-3.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-bold text-sm rounded-xl shadow-md hover:shadow-lg flex items-center justify-center gap-2.5 transition-all hover:scale-102 cursor-pointer group"
             >
-              Cari Proyek
+              <Navigation className="w-4 h-4 text-cyan-300 transition-transform group-hover:rotate-45" />
+              <span>Cek di Sekitar</span>
             </button>
-          </form>
 
-          {/* Popular Chips */}
-          <div className="flex gap-2 flex-wrap items-center mt-4">
-            <span className="text-xs text-[#6C757D] py-1">Populer:</span>
-            {chips.map((chip) => (
-              <button
-                key={chip}
-                onClick={() => onSelectChip(chip)}
-                className="chip"
-              >
-                {chip}
-              </button>
-            ))}
+            <button
+              type="button"
+              onClick={handlePantauProyek}
+              className="flex-1 px-6 py-3.5 bg-[#EBF4FB] hover:bg-[#d8eaf7] text-[#184C78] border border-[#c5def2] font-bold text-sm rounded-xl shadow-xs flex items-center justify-center gap-2.5 transition-all hover:scale-102 cursor-pointer group"
+            >
+              <Eye className="w-4 h-4 text-[#184C78] transition-transform group-hover:scale-110" />
+              <span>Pantau Proyek</span>
+            </button>
+          </div>
+
+          {/* Quick highlight feature badges */}
+          <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-[#DCE0E6]/70 text-xs text-[#6C757D]">
+            <div className="inline-flex items-center gap-1.5 font-medium">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>5 Titik Konstruksi Aktif</span>
+            </div>
+            <span className="text-[#DCE0E6]">•</span>
+            <div className="inline-flex items-center gap-1.5 font-medium">
+              <MapPin className="w-3.5 h-3.5 text-[#184C78]" />
+              <span>Radius GPS Terdekat</span>
+            </div>
+            <span className="text-[#DCE0E6]">•</span>
+            <span className="font-semibold text-[#184C78]">APBD Terbuka</span>
           </div>
         </div>
 

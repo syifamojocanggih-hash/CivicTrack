@@ -7,16 +7,15 @@ import {
   ChevronDown,
   User,
   Building2,
-  Award,
   BookOpen,
 } from 'lucide-react';
-import type { UserProfile } from '../../types';
+import type { UserProfile, UserRole } from '../../types';
 
 interface DashboardHeaderProps {
   currentUser: UserProfile;
   onBackToLanding: () => void;
   onLogout: () => void;
-  onSwitchRole: (role: 'warga' | 'admin_dinas' | 'pimpinan_instansi' | 'media_peneliti') => void;
+  onSwitchRole: (role: UserRole) => void;
   unreadCount?: number;
 }
 
@@ -32,19 +31,14 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
   const getRoleBadge = (role: string) => {
     switch (role) {
+      case 'pemerintah':
       case 'admin_dinas':
-        return {
-          label: 'Admin Dinas PUPR',
-          icon: <Building2 className="w-3.5 h-3.5" />,
-          bg: 'bg-[#EBF4FB] text-[#184C78] border-[#c5def2]',
-          tag: 'Instansi Teknis Pelaksana',
-        };
       case 'pimpinan_instansi':
         return {
-          label: 'Pimpinan Instansi (Eksekutif)',
-          icon: <Award className="w-3.5 h-3.5 text-[#E67E22]" />,
-          bg: 'bg-[#FEF3E7] text-[#9A4C08] border-[#FBD8B3]',
-          tag: 'Monitoring & Pengambil Kebijakan',
+          label: 'Aparatur Pemerintah Daerah',
+          icon: <Building2 className="w-3.5 h-3.5 text-[#184C78]" />,
+          bg: 'bg-[#EBF4FB] text-[#184C78] border-[#c5def2]',
+          tag: 'Operasional Dinas & Monitoring Eksekutif',
         };
       case 'media_peneliti':
         return {
@@ -142,37 +136,22 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
 
                     <button
                       onClick={() => {
-                        onSwitchRole('admin_dinas');
+                        onSwitchRole('pemerintah');
                         setShowRoleMenu(false);
                       }}
                       className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left rounded-lg transition-colors ${
-                        currentUser.role === 'admin_dinas'
+                        currentUser.role === 'pemerintah' || currentUser.role === 'admin_dinas' || currentUser.role === 'pimpinan_instansi'
                           ? 'bg-[#EBF4FB] text-[#184C78] font-bold'
                           : 'text-[#212529] hover:bg-[#F5F7FA]'
                       }`}
                     >
                       <Building2 className="w-4 h-4 text-[#184C78]" />
                       <div>
-                        <div className="font-semibold">Admin Dinas PUPR</div>
-                        <div className="text-[10px] text-[#6C757D]">Kelola proyek, linimasa & respon</div>
-                      </div>
-                    </button>
-
-                    <button
-                      onClick={() => {
-                        onSwitchRole('pimpinan_instansi');
-                        setShowRoleMenu(false);
-                      }}
-                      className={`w-full flex items-center gap-2.5 px-3 py-2 text-xs text-left rounded-lg transition-colors ${
-                        currentUser.role === 'pimpinan_instansi'
-                          ? 'bg-[#FEF3E7] text-[#9A4C08] font-bold'
-                          : 'text-[#212529] hover:bg-[#F5F7FA]'
-                      }`}
-                    >
-                      <Award className="w-4 h-4 text-[#E67E22]" />
-                      <div>
-                        <div className="font-semibold">Pimpinan Instansi</div>
-                        <div className="text-[10px] text-[#6C757D]">KPI eksekutif, EWS & lintas dinas</div>
+                        <div className="font-semibold flex items-center gap-1.5">
+                          <span>Aparatur Pemerintah</span>
+                          <span className="text-[9px] bg-[#184C78]/10 text-[#184C78] px-1.5 py-0.2 rounded font-bold">Dinas &amp; Pimpinan</span>
+                        </div>
+                        <div className="text-[10px] text-[#6C757D]">Mode operasional &amp; pengawasan eksekutif</div>
                       </div>
                     </button>
 
