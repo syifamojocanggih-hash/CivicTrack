@@ -12,12 +12,14 @@ from app.services.gemini_service import generate_ai_alternative_routes
 
 router = APIRouter(prefix="/proyek", tags=["Rekomendasi Rute AI"])
 
+from app.core.dependencies import get_optional_current_user
+
 @router.post("/{id}/generate-rute", response_model=List[RekomendasiRuteResponse])
 def generate_alternative_routes(
     id: int,
     req: GenerateRuteRequest = GenerateRuteRequest(),
     db: Session = Depends(get_db),
-    current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
+    current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """
     Menghasilkan rekomendasi rute alternatif penutupan jalan menggunakan Google Gemini API.
