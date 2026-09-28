@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, User, Shield } from 'lucide-react';
+import { X, Lock, Mail, User, Shield, AlertCircle, Loader2 } from 'lucide-react';
 import type { UserProfile } from '../types';
+import { apiService } from '../services/api';
 
 interface AuthModalProps {
   isOpen: boolean;
@@ -22,63 +23,103 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const [password, setPassword] = useState('');
   const [name, setName] = useState('');
   const [role, setRole] = useState<UserProfile['role']>('warga');
+  const [isLoading, setIsLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // Simulate login / register with realistic user
-    const loggedUser: UserProfile = {
-      id: Math.floor(Math.random() * 1000) + 1,
-      nama: name || (email.split('@')[0] || 'Pengguna'),
-      email: email || 'user@civictrack.id',
-      role: role,
-    };
-    onLoginSuccess(loggedUser);
-    onClose();
+    setIsLoading(true);
+    setErrorMsg(null);
+    try {
+      if (mode === 'login') {
+        const res = await apiService.login(email, password);
+        onLoginSuccess(res.user);
+        onClose();
+      } else {
+        const res = await apiService.register(name, email, password, role);
+        onLoginSuccess(res.user);
+        onClose();
+      }
+    } catch (err: any) {
+      console.warn('Backend login warning, falling back to local session:', err.message);
+      // If server returned specific invalid credentials
+      if (err.message && (err.message.includes('tidak valid') || err.message.includes('terdaftar'))) {
+        setErrorMsg(err.message);
+      } else {
+        // Fallback for seamless demo
+        const loggedUser: UserProfile = {
+          id: Math.floor(Math.random() * 1000) + 1,
+          nama: name || (email.split('@')[0] || 'Pengguna'),
+          email: email || 'user@civictrack.id',
+          role: role,
+        };
+        onLoginSuccess(loggedUser);
+        onClose();
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const handleQuickLogin = (demoRole: 'pemerintah' | 'admin' | 'pimpinan' | 'warga' | 'peneliti') => {
-    let demoUser: UserProfile;
-    switch (demoRole) {
-      case 'pemerintah':
-      case 'admin':
-        demoUser = {
-          id: 1,
-          nama: 'Ir. Hendro Wijaya',
-          email: 'aparatur.pu@bojonegoro.go.id',
-          role: 'pemerintah',
-          dinas_id: 1,
-        };
-        break;
-      case 'pimpinan':
-        demoUser = {
-          id: 2,
-          nama: 'Drs. H. M. Fauzi, M.Si',
-          email: 'pimpinan.pu@bojonegoro.go.id',
-          role: 'pemerintah',
-        };
-        break;
-      case 'peneliti':
-        demoUser = {
-          id: 4,
-          nama: 'Dr. Rahmat Hidayat',
-          email: 'rahmat.peneliti@unair.ac.id',
-          role: 'media_peneliti',
-        };
-        break;
-      case 'warga':
-      default:
-        demoUser = {
-          id: 3,
-          nama: 'Budi Santoso',
-          email: 'budi.santoso@gmail.com',
-          role: 'warga',
-        };
-        break;
+  const handleQuickLogin = async (demoRole: 'pemerintah' | 'admin' | 'pimpinan' | 'warga' | 'peneliti') => {
+    setIsLoading(true);
+    setErrorMsg(null);
+    let targetEmail = 'budi.santoso@gmail.com';
+    if (demoRole === 'pemerintah' || demoRole === 'admin') targetEmail = 'admin.pu@bojonegoro.go.id';
+    if (demoRole === 'pimpinan') targetEmail = 'pimpinan.pu@bojonegoro.go.id';
+    if (demoRole === 'peneliti') targetEmail = 'rahmat.peneliti@unair.ac.id';
+
+    try {
+      const res = await apiService.login(targetEmail, 'password123');
+      onLoginSuccess(res.user);
+      onClose();
+    } catch (err) {
+      console.warn('Quick login fallback:', err);
+      let demoUser: UserProfile;
+      switch (demoRole) {
+        case 'pemerintah':
+        case 'admin':
+          demoUser = {
+            id: 1,
+            nama: 'Ir. Hendro Wijaya',
+            email: 'admin.pu@bojonegoro.go.id',
+            role: 'pemerintah',
+            dinas_id: 1,
+          };
+          break;
+        case 'pimpinan':
+          demoUser = {
+            id: 2,
+            nama: 'Drs. H. M. Fauzi, M.Si',
+            email: 'pimpinan.pu@bojonegoro.go.id',
+            role: 'pemerintah',
+          };
+          break;
+        case 'peneliti':
+          demoUser = {
+            id: 4,
+            nama: 'Dr. Rahmat Hidayat',
+            email: 'rahmat.peneliti@unair.ac.id',
+            role: 'media_peneliti',
+          };
+          break;
+        case 'warga':
+        default:
+          demoUser = {
+            id: 3,
+            nama: 'Budi Santoso',
+            email: 'budi.santoso@gmail.com',
+            role: 'warga',
+          };
+          break;
+      }
+      onLoginSuccess(demoUser);
+      onClose();
+    } finally {
+      setIsLoading(false);
     }
-    onLoginSuccess(demoUser);
-    onClose();
   };
 
   return (
@@ -201,11 +242,20 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
           )}
 
+          {errorMsg && (
+            <div className="p-2.5 rounded-lg bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
+              <span>{errorMsg}</span>
+            </div>
+          )}
+
           <button
             type="submit"
-            className="w-full py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-bold rounded-lg text-sm transition-colors shadow-sm mt-2 cursor-pointer"
+            disabled={isLoading}
+            className="w-full py-2.5 bg-[#184C78] hover:bg-[#0f3252] disabled:opacity-70 text-white font-bold rounded-lg text-sm transition-colors shadow-sm mt-2 cursor-pointer flex items-center justify-center gap-2"
           >
-            {mode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}
+            {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
+            <span>{mode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}</span>
           </button>
         </form>
 

@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { StatStrip } from './components/StatStrip';
@@ -15,6 +15,7 @@ import { OpenDataModal } from './components/OpenDataModal';
 import { DashboardMain } from './components/dashboard/DashboardMain';
 import { NearbyMapModal } from './components/NearbyMapModal';
 import { PublicMapExplorer } from './components/PublicMapExplorer';
+import { apiService } from './services/api';
 
 import {
   STATS_DATA,
@@ -23,11 +24,12 @@ import {
   FEATURES_DATA,
   HOW_IT_WORKS_DATA,
 } from './data/mockData';
-import type { ProyekItem, ProyekKategori, UserProfile, UserRole } from './types';
+import type { ProyekItem, ProyekKategori, UserProfile, UserRole, StatSummary } from './types';
 
 export function App() {
   // State
-  const [projects] = useState<ProyekItem[]>(INITIAL_PROJECTS);
+  const [projects, setProjects] = useState<ProyekItem[]>(INITIAL_PROJECTS);
+  const [stats, setStats] = useState<StatSummary>(STATS_DATA);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<ProyekKategori | null>(null);
   const [activeNav, setActiveNav] = useState<string>('peta');
@@ -35,6 +37,23 @@ export function App() {
   const [currentView, setCurrentView] = useState<'landing' | 'dashboard' | 'map-explorer'>('landing');
   const [authNotice, setAuthNotice] = useState<string>('');
   const [postLoginRedirect, setPostLoginRedirect] = useState<'dashboard' | 'map-explorer' | null>(null);
+
+  // Sync projects and stats from backend on mount
+  useEffect(() => {
+    // 1. Fetch live projects from backend
+    apiService.getProjects().then((res) => {
+      if (res.isFromBackend && res.projects.length > 0) {
+        const existingIds = new Set(res.projects.map((p) => p.id));
+        const merged = [...res.projects, ...INITIAL_PROJECTS.filter((p) => !existingIds.has(p.id))];
+        setProjects(merged);
+      }
+    });
+
+    // 2. Fetch live stats from backend
+    apiService.getStats().then((resStats) => {
+      setStats(resStats);
+    });
+  }, []);
 
   // Modal States
   const [authModalState, setAuthModalState] = useState<{ isOpen: boolean; mode: 'login' | 'register' }>({
@@ -236,7 +255,7 @@ export function App() {
           />
 
           {/* ── STAT STRIP ── */}
-          <StatStrip stats={STATS_DATA} />
+          <StatStrip stats={stats} />
 
           {/* ── FEATURES ── */}
           <FeaturesSection

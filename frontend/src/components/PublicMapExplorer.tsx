@@ -1,4 +1,6 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
 import {
   Search,
   Filter,
@@ -20,10 +22,14 @@ import {
   ArrowRight,
   User,
   ShieldCheck,
-  Bookmark
+  Bookmark,
+  RefreshCw,
+  Radio,
+  Clock
 } from 'lucide-react';
 import type { ProyekItem, ProyekKategori, UserProfile } from '../types';
 import centennialParkImg from '../assets/centennial_park.jpg';
+import { apiService } from '../services/api';
 
 interface PublicMapExplorerProps {
   currentUser: UserProfile | null;
@@ -35,6 +41,48 @@ interface PublicMapExplorerProps {
   onOpenAuth: (mode?: 'login' | 'register') => void;
 }
 
+// Calculate Haversine distance in kilometers
+function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
+  const R = 6371; // Earth radius in km
+  const dLat = (lat2 - lat1) * (Math.PI / 180);
+  const dLon = (lon2 - lon1) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * (Math.PI / 180)) * Math.cos(lat2 * (Math.PI / 180)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return Number((R * c).toFixed(1));
+}
+
+// SVG marker helpers for custom Leaflet DivIcons
+function getCategoryIconSvg(category: string): string {
+  switch (category) {
+    case 'taman':
+      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v12"/><path d="M12 2a5 5 0 0 0-5 5c0 2 1.5 3.5 3 4.5V14h4v-2.5c1.5-1 3-2.5 3-4.5a5 5 0 0 0-5-5Z"/></svg>`;
+    case 'drainase':
+      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a6 6 0 1 0 7.8 0L12 3z"/></svg>`;
+    case 'fasilitas':
+      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>`;
+    case 'jalan':
+    default:
+      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m14 12-4-4"/><path d="m14 16-4-4"/><path d="M4 22 14.5 4a2 2 0 0 1 3 0L20 7"/></svg>`;
+  }
+}
+
+function getCategoryColor(category: string): { bg: string; border: string; label: string } {
+  switch (category) {
+    case 'taman':
+      return { bg: '#10B981', border: '#059669', label: 'Taman & RTH' };
+    case 'drainase':
+      return { bg: '#0284C7', border: '#0369A1', label: 'Drainase Air' };
+    case 'fasilitas':
+      return { bg: '#8B5CF6', border: '#7C3AED', label: 'Fasilitas' };
+    case 'jalan':
+    default:
+      return { bg: '#F59E0B', border: '#D97706', label: 'Pekerjaan Jalan' };
+  }
+}
+
 export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   currentUser,
   projects,
@@ -44,50 +92,108 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   onOpenAIRoute,
   onOpenAuth,
 }) => {
-  // Filter states
+  // Filter & Search states
   const [selectedCategory, setSelectedCategory] = useState<ProyekKategori | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<number>(1);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(true);
-  
-  // Mobile bottom sheet state: 'collapsed' | 'half' | 'full'
+
+  // Mobile Bottom Sheet state
   const [mobileSheetState, setMobileSheetState] = useState<'collapsed' | 'expanded'>('collapsed');
   const [mobileActiveTab, setMobileActiveTab] = useState<'explore' | 'my-projects' | 'search' | 'profile'>('explore');
-  
-  // Map zoom and view state
-  const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [mapCenter, setMapCenter] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
+
+  // Real-time GPS & Geolocation state (Default to Pusat Kota Lamongan)
+  const [userLocation, setUserLocation] = useState<{
+    lat: number;
+    lng: number;
+    accuracy?: number;
+    isLiveGps: boolean;
+    address: string;
+  }>({
+    lat: -7.1197,
+    lng: 112.4150,
+    isLiveGps: false,
+    address: 'Alun-Alun Lamongan, Jl. Lamongrejo',
+  });
+
+  // Real-time telemetry state
+  const [lastSyncTime, setLastSyncTime] = useState<string>('Baru saja');
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [liveTelemetryTick, setLiveTelemetryTick] = useState<number>(0);
   const [activeLayer, setActiveLayer] = useState<'standard' | 'satellite'>('standard');
+  const [liveProjects, setLiveProjects] = useState<ProyekItem[]>(projects);
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
 
-  // User simulated GPS location
-  const userLocation = {
-    name: 'Jl. Soekarno Hatta No. 45, Lowokwaru',
-    shortName: '4162 Oakwood Ave / Suhat',
-    x: 270,
-    y: 180,
-  };
+  // Sync projects from backend on mount and center on Lamongan
+  useEffect(() => {
+    apiService.getProjects().then((res) => {
+      if (res.isFromBackend && res.projects.length > 0) {
+        const existingIds = new Set(res.projects.map((p) => p.id));
+        const merged = [...res.projects, ...projects.filter((p) => !existingIds.has(p.id))];
+        setLiveProjects(merged);
+        setIsBackendConnected(true);
+        if (mapInstanceRef.current && res.projects[0]) {
+          mapInstanceRef.current.flyTo(
+            [Number(res.projects[0].latitude), Number(res.projects[0].longitude)],
+            14,
+            { duration: 1 }
+          );
+        }
+      }
+    });
+  }, [projects]);
 
-  // Coordinates and rich milestones for map pins
-  const explorerProjects = useMemo(() => {
-    return projects.map((p, idx) => {
-      // Coordinate offsets for realistic distribution
-      const coords = [
-        { x: 180, y: 110, icon: 'park', color: '#10B981', dist: '0.9 km' },
-        { x: 330, y: 145, icon: 'road', color: '#F59E0B', dist: '1.4 km' },
-        { x: 250, y: 260, icon: 'drain', color: '#3B82F6', dist: '2.1 km' },
-        { x: 130, y: 220, icon: 'road', color: '#EF4444', dist: '2.8 km' },
-        { x: 390, y: 235, icon: 'facility', color: '#8B5CF6', dist: '3.6 km' },
-        { x: 420, y: 90, icon: 'road', color: '#06B6D4', dist: '4.2 km' },
-      ];
-      const c = coords[idx] || { x: 200 + (idx * 40) % 200, y: 100 + (idx * 30) % 180, icon: 'road', color: '#F59E0B', dist: '1.5 km' };
+  // Leaflet refs
+  const mapContainerRef = useRef<HTMLDivElement | null>(null);
+  const mapInstanceRef = useRef<L.Map | null>(null);
+  const tileLayerRef = useRef<L.TileLayer | null>(null);
+  const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const userMarkerRef = useRef<L.Marker | null>(null);
 
+  // 1. Geolocation Watcher for Real-time GPS
+  useEffect(() => {
+    if ('geolocation' in navigator) {
+      const watchId = navigator.geolocation.watchPosition(
+        (pos) => {
+          setUserLocation({
+            lat: pos.coords.latitude,
+            lng: pos.coords.longitude,
+            accuracy: pos.coords.accuracy,
+            isLiveGps: true,
+            address: `GPS Aktif (${pos.coords.latitude.toFixed(4)}, ${pos.coords.longitude.toFixed(4)})`,
+          });
+        },
+        (err) => {
+          console.info('GPS fallback mode active:', err.message);
+        },
+        { enableHighAccuracy: true, timeout: 12000, maximumAge: 5000 }
+      );
+
+      return () => {
+        navigator.geolocation.clearWatch(watchId);
+      };
+    }
+  }, []);
+
+  // 2. Periodic Live Real-time Telemetry Simulator
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setLiveTelemetryTick((t) => t + 1);
+      const now = new Date();
+      setLastSyncTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`);
+    }, 12000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Projects with calculated real-time distances & enriched telemetry
+  const enrichedProjects = useMemo(() => {
+    return liveProjects.map((p) => {
+      const dist = calculateDistanceKm(userLocation.lat, userLocation.lng, p.latitude, p.longitude);
       return {
         ...p,
-        mapX: c.x,
-        mapY: c.y,
-        mapIcon: c.icon,
-        markerColor: c.color,
-        distanceStr: c.dist,
+        telemetryTick: liveTelemetryTick,
+        liveDistanceKm: dist,
+        distanceStr: `${dist} km`,
         milestones: [
           {
             title: 'Site Preparation & Land Clearing',
@@ -110,11 +216,11 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         ],
       };
     });
-  }, [projects]);
+  }, [liveProjects, userLocation.lat, userLocation.lng, liveTelemetryTick]);
 
-  // Filtered projects by category and search
+  // Filtered projects
   const filteredProjects = useMemo(() => {
-    return explorerProjects.filter((p) => {
+    return enrichedProjects.filter((p) => {
       if (selectedCategory !== 'all' && p.kategori !== selectedCategory) return false;
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
@@ -125,25 +231,256 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       }
       return true;
     });
-  }, [explorerProjects, selectedCategory, searchQuery]);
+  }, [enrichedProjects, selectedCategory, searchQuery]);
 
   // Selected project object
   const currentProject = useMemo(() => {
     return (
-      explorerProjects.find((p) => p.id === selectedProjectId) ||
-      explorerProjects[0]
+      enrichedProjects.find((p) => p.id === selectedProjectId) ||
+      enrichedProjects[0]
     );
-  }, [selectedProjectId, explorerProjects]);
+  }, [selectedProjectId, enrichedProjects]);
 
+  // 3. Initialize Leaflet Map (Using OSM HOT tiles to avoid watermark)
+  useEffect(() => {
+    if (!mapContainerRef.current || mapInstanceRef.current) return;
+
+    // Centered at Lamongan (Alun-Alun & Pusat Pemerintahan Kab. Lamongan)
+    const map = L.map(mapContainerRef.current, {
+      center: [-7.1195, 112.4154],
+      zoom: 14,
+      zoomControl: false, // We use custom UI controls matching the user's mockup
+    });
+
+    // OpenStreetMap HOT tiles (zero API key, zero watermark, clean & fast)
+    const standardTile = L.tileLayer(
+      'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+      {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+        subdomains: 'abc',
+      }
+    ).addTo(map);
+
+    tileLayerRef.current = standardTile;
+
+    // Layer group for project markers
+    const markersGroup = L.layerGroup().addTo(map);
+    markersLayerRef.current = markersGroup;
+
+    mapInstanceRef.current = map;
+
+    return () => {
+      map.remove();
+      mapInstanceRef.current = null;
+    };
+  }, []);
+
+  // 4. Update Tile Layer on toggle (Standard vs Satellite)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (tileLayerRef.current) {
+      map.removeLayer(tileLayerRef.current);
+    }
+
+    if (activeLayer === 'satellite') {
+      tileLayerRef.current = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: 'Esri &copy; Maxar, Earthstar Geographics',
+          maxZoom: 18,
+        }
+      ).addTo(map);
+    } else {
+      tileLayerRef.current = L.tileLayer(
+        'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+        {
+          attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19,
+          subdomains: 'abc',
+        }
+      ).addTo(map);
+    }
+  }, [activeLayer]);
+
+  // 5. Update User Live GPS Marker on Map
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    if (userMarkerRef.current) {
+      map.removeLayer(userMarkerRef.current);
+    }
+
+    const userHtml = `
+      <div class="relative flex items-center justify-center w-10 h-10 pointer-events-none">
+        <span class="absolute w-10 h-10 bg-blue-500/35 rounded-full animate-ping"></span>
+        <span class="absolute w-6 h-6 bg-blue-400/40 rounded-full animate-pulse"></span>
+        <span class="relative w-4 h-4 bg-[#2563EB] border-2 border-white rounded-full shadow-lg"></span>
+      </div>
+    `;
+
+    const userIcon = L.divIcon({
+      className: 'user-gps-div-icon',
+      html: userHtml,
+      iconSize: [40, 40],
+      iconAnchor: [20, 20],
+    });
+
+    const marker = L.marker([userLocation.lat, userLocation.lng], {
+      icon: userIcon,
+      zIndexOffset: 1000,
+    }).addTo(map);
+
+    marker.bindTooltip(
+      `<div class="text-xs font-bold text-[#184C78] flex items-center gap-1">
+        <span class="w-2 h-2 rounded-full bg-blue-600 animate-pulse"></span>
+        ${userLocation.isLiveGps ? 'Posisi GPS Anda (Live)' : 'Lokasi Anda (Simulasi)'}
+      </div>`,
+      { permanent: false, direction: 'top', offset: [0, -18] }
+    );
+
+    userMarkerRef.current = marker;
+  }, [userLocation]);
+
+  // 6. Update Project Markers on Leaflet when projects or selection change
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const markersGroup = markersLayerRef.current;
+    if (!map || !markersGroup) return;
+
+    markersGroup.clearLayers();
+
+    filteredProjects.forEach((proj) => {
+      const isSelected = proj.id === selectedProjectId;
+      const catConfig = getCategoryColor(proj.kategori);
+      const iconSvg = getCategoryIconSvg(proj.kategori);
+
+      const pulseRing = isSelected
+        ? `<span class="absolute -inset-2.5 rounded-full border-2 border-[#184C78] animate-ping opacity-75"></span>
+           <span class="absolute -inset-1 rounded-full border-2 border-[#184C78] opacity-90 shadow-sm"></span>`
+        : '';
+
+      const markerHtml = `
+        <div class="relative flex items-center justify-center transition-transform hover:scale-115 cursor-pointer">
+          ${pulseRing}
+          <div style="background-color: ${catConfig.bg}; border-color: #ffffff;" class="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-xl border-2 transition-all">
+            ${iconSvg}
+          </div>
+          <div class="absolute -bottom-1 -right-1 bg-white text-[#184C78] text-[9px] font-extrabold px-1 rounded-full shadow-xs border border-slate-200">
+            ${proj.progres_persen}%
+          </div>
+        </div>
+      `;
+
+      const customIcon = L.divIcon({
+        className: 'project-leaflet-marker',
+        html: markerHtml,
+        iconSize: [40, 40],
+        iconAnchor: [20, 20],
+        popupAnchor: [0, -22],
+      });
+
+      const marker = L.marker([proj.latitude, proj.longitude], {
+        icon: customIcon,
+      });
+
+      // Interactive popup
+      const popupContent = document.createElement('div');
+      popupContent.className = 'p-1 text-slate-800 font-sans';
+      popupContent.innerHTML = `
+        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">${catConfig.label}</div>
+        <div class="font-bold text-xs text-[#184C78] mb-1 line-clamp-2">${proj.nama_proyek}</div>
+        <div class="flex items-center justify-between text-[11px] text-slate-500 mb-1.5">
+          <span>Progres: <strong class="text-[#184C78]">${proj.progres_persen}%</strong></span>
+          <span>Jarak: <strong class="text-emerald-600">${proj.distanceStr}</strong></span>
+        </div>
+        <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2 overflow-hidden">
+          <div class="bg-[#184C78] h-full" style="width: ${proj.progres_persen}%"></div>
+        </div>
+        <button id="leaflet-btn-select-${proj.id}" class="w-full py-1 px-2 bg-[#184C78] text-white text-[11px] font-bold rounded-lg hover:bg-[#0f3252] transition-colors cursor-pointer text-center">
+          Pilih & Tampilkan Info
+        </button>
+      `;
+
+      marker.bindPopup(popupContent, { maxWidth: 220, closeButton: false });
+
+      marker.on('popupopen', () => {
+        const btn = document.getElementById(`leaflet-btn-select-${proj.id}`);
+        if (btn) {
+          btn.onclick = () => {
+            setSelectedProjectId(proj.id);
+            setIsDetailPanelOpen(true);
+            setMobileSheetState('expanded');
+          };
+        }
+      });
+
+      marker.on('click', () => {
+        setSelectedProjectId(proj.id);
+        setIsDetailPanelOpen(true);
+        setMobileSheetState('expanded');
+      });
+
+      markersGroup.addLayer(marker);
+    });
+  }, [filteredProjects, selectedProjectId]);
+
+  // Center to selected project when changed
   const handleSelectPin = (id: number) => {
     setSelectedProjectId(id);
     setIsDetailPanelOpen(true);
     setMobileSheetState('expanded');
+
+    const proj = enrichedProjects.find((p) => p.id === id);
+    if (proj && mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([proj.latitude, proj.longitude], 15, {
+        animate: true,
+        duration: 0.8,
+      });
+    }
   };
 
   const handleCenterUserLocation = () => {
-    setMapCenter({ x: 0, y: 0 });
-    setZoomLevel(1.1);
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([userLocation.lat, userLocation.lng], 16, {
+        animate: true,
+        duration: 1,
+      });
+    }
+  };
+
+  const handleZoomIn = () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.zoomIn();
+    }
+  };
+
+  const handleZoomOut = () => {
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.zoomOut();
+    }
+  };
+
+  const handleManualSync = async () => {
+    setIsSyncing(true);
+    try {
+      const res = await apiService.getProjects();
+      if (res.isFromBackend && res.projects.length > 0) {
+        const existingIds = new Set(res.projects.map((p) => p.id));
+        const merged = [...res.projects, ...projects.filter((p) => !existingIds.has(p.id))];
+        setLiveProjects(merged);
+        setIsBackendConnected(true);
+      }
+    } catch (err) {
+      console.warn('Sync error:', err);
+    } finally {
+      setIsSyncing(false);
+      const now = new Date();
+      setLastSyncTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`);
+    }
   };
 
   return (
@@ -160,7 +497,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             <ArrowLeft className="w-4 h-4" />
             <span className="hidden sm:inline">Beranda</span>
           </button>
-          
+
           <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
           <div className="flex items-center gap-2">
@@ -168,7 +505,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               <Compass className="w-4 h-4 text-cyan-300" />
             </div>
             <span className="font-['DM_Sans'] font-extrabold text-base text-[#184C78] tracking-tight hidden md:inline">
-              CivicTrack <span className="text-xs font-medium text-slate-500">| Public Map Explorer</span>
+              CivicTrack <span className="text-xs font-medium text-slate-500">| Peta Proyek Kab. Lamongan</span>
             </span>
           </div>
         </div>
@@ -181,7 +518,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari proyek, nama jalan, atau ID proyek..."
+              placeholder="Cari proyek di Lamongan, nama jalan, atau ID..."
               className="w-full pl-9.5 pr-4 py-2 text-xs sm:text-sm bg-slate-100/80 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-[#2980B9] rounded-xl outline-none transition-all shadow-inner"
             />
             {searchQuery && (
@@ -195,8 +532,24 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           </div>
         </div>
 
-        {/* Right: User / Notification / Dashboard Action */}
+        {/* Right: Live Sync Indicator, User & Dashboard */}
         <div className="flex items-center gap-2.5">
+          {/* Live Realtime Leaflet Badge */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>{isBackendConnected ? 'Backend Aktif (MySQL)' : 'Live Sync'} • {lastSyncTime}</span>
+            <button
+              onClick={handleManualSync}
+              className={`p-0.5 hover:text-emerald-950 transition-transform cursor-pointer ${isSyncing ? 'animate-spin' : ''}`}
+              title="Refresh Data dari Backend"
+            >
+              <RefreshCw className="w-3 h-3" />
+            </button>
+          </div>
+
           {currentUser ? (
             <div className="flex items-center gap-2">
               {onOpenDashboard && (
@@ -224,12 +577,12 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         </div>
       </header>
 
-      {/* ── MAIN CONTENT AREA: MAP + DETAIL DRAWER ── */}
+      {/* ── MAIN CONTENT AREA: LEAFLET MAP + DETAIL DRAWER ── */}
       <div className="flex-1 relative flex overflow-hidden">
-        {/* ── LEFT / FULL-SCREEN MAP CANVAS ── */}
+        {/* ── FULL-SCREEN REAL LEAFLET MAP ── */}
         <div className="flex-1 relative bg-[#EBF3E8] overflow-hidden flex flex-col">
-          {/* FLOATING TOP CONTROLS ON MAP (FILTER PILLS & MOBILE SEARCH) */}
-          <div className="absolute top-3 left-3 right-3 sm:left-4 sm:right-auto z-20 flex flex-col gap-2 pointer-events-none max-w-full">
+          {/* FLOATING TOP CONTROLS (FILTER PILLS & MOBILE SEARCH) */}
+          <div className="absolute top-3 left-3 right-3 sm:left-4 sm:right-auto z-[1000] flex flex-col gap-2 pointer-events-none max-w-full">
             {/* Mobile Search Bar (Only visible on small screen PWA) */}
             <div className="md:hidden pointer-events-auto bg-white/95 backdrop-blur-md rounded-2xl shadow-md border border-slate-200/80 p-2 flex items-center gap-2">
               <Search className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
@@ -252,15 +605,19 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             {/* Horizontal Filter Pills (Matches Image 1 & 2) */}
             <div className="pointer-events-auto flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none">
               {[
-                { id: 'all', label: 'All Projects', count: explorerProjects.length },
-                { id: 'jalan', label: 'Roadworks / Jalan', count: 3 },
+                { id: 'all', label: 'All Projects', count: enrichedProjects.length },
+                { id: 'jalan', label: 'Roadworks', count: 3 },
                 { id: 'taman', label: 'Parks & Rec', count: 1 },
-                { id: 'drainase', label: 'Drainage / Air', count: 1 },
+                { id: 'drainase', label: 'Water & Drainage', count: 1 },
                 { id: 'fasilitas', label: 'Fasilitas Umum', count: 1 },
               ].map((pill) => (
                 <button
                   key={pill.id}
-                  onClick={() => setSelectedCategory(pill.id as any)}
+                  onClick={() => {
+                    setSelectedCategory(pill.id as any);
+                    const matched = enrichedProjects.find((p) => pill.id === 'all' || p.kategori === pill.id);
+                    if (matched) handleSelectPin(matched.id);
+                  }}
                   className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
                     selectedCategory === pill.id
                       ? 'bg-[#184C78] text-white shadow-md'
@@ -271,34 +628,46 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 </button>
               ))}
             </div>
+
+            {/* Mobile Real-time GPS status banner */}
+            <div className="pointer-events-auto md:hidden flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-semibold text-slate-700 border border-slate-200 shadow-xs w-fit">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
+              <span>{isBackendConnected ? 'Backend MySQL Aktif' : 'Leaflet Live'}</span>
+              <span className="text-slate-400">•</span>
+              <span className="text-slate-500">{lastSyncTime}</span>
+            </div>
           </div>
 
           {/* FLOATING MAP ZOOM & LAYER CONTROLS (RIGHT CORNER) */}
-          <div className="absolute right-3.5 bottom-24 sm:bottom-6 z-20 flex flex-col gap-2">
+          <div className="absolute right-3.5 bottom-24 sm:bottom-6 z-[1000] flex flex-col gap-2">
             <button
               onClick={() => setActiveLayer(activeLayer === 'standard' ? 'satellite' : 'standard')}
-              className="w-10 h-10 bg-white/95 backdrop-blur-md hover:bg-white border border-slate-200/90 rounded-xl shadow-md flex items-center justify-center text-[#184C78] transition-transform active:scale-95 cursor-pointer"
-              title="Ganti Layer Peta"
+              className={`w-10 h-10 rounded-xl shadow-md flex items-center justify-center transition-transform active:scale-95 cursor-pointer border ${
+                activeLayer === 'satellite'
+                  ? 'bg-[#184C78] text-white border-[#184C78]'
+                  : 'bg-white/95 backdrop-blur-md hover:bg-white text-[#184C78] border-slate-200/90'
+              }`}
+              title="Ganti Layer Peta (Standard / Satelit)"
             >
               <Layers className="w-4 h-4" />
             </button>
             <button
               onClick={handleCenterUserLocation}
               className="w-10 h-10 bg-white/95 backdrop-blur-md hover:bg-white border border-slate-200/90 rounded-xl shadow-md flex items-center justify-center text-[#184C78] transition-transform active:scale-95 cursor-pointer"
-              title="Pusatkan ke Lokasi Saya"
+              title="Pusatkan ke Lokasi Saya (GPS)"
             >
               <Navigation className="w-4 h-4 text-[#2980B9]" />
             </button>
             <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl shadow-md flex flex-col overflow-hidden">
               <button
-                onClick={() => setZoomLevel((z) => Math.min(z + 0.15, 1.6))}
+                onClick={handleZoomIn}
                 className="w-10 h-9 flex items-center justify-center text-[#184C78] hover:bg-slate-100 transition-colors border-b border-slate-100 cursor-pointer"
                 title="Perbesar Peta"
               >
                 <Plus className="w-4 h-4" />
               </button>
               <button
-                onClick={() => setZoomLevel((z) => Math.max(z - 0.15, 0.8))}
+                onClick={handleZoomOut}
                 className="w-10 h-9 flex items-center justify-center text-[#184C78] hover:bg-slate-100 transition-colors cursor-pointer"
                 title="Perkecil Peta"
               >
@@ -307,195 +676,13 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             </div>
           </div>
 
-          {/* ── VECTOR INTERACTIVE MAP CANVAS ── */}
-          <div className="flex-1 w-full h-full relative overflow-hidden select-none cursor-grab active:cursor-grabbing">
-            <svg
-              className="w-full h-full transition-transform duration-300 ease-out"
-              style={{
-                transform: `scale(${zoomLevel}) translate(${mapCenter.x}px, ${mapCenter.y}px)`,
-                transformOrigin: 'center center',
-              }}
-              viewBox="0 0 700 500"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <defs>
-                {/* User Radar Pulse Gradient */}
-                <radialGradient id="userRadarGlow" cx="50%" cy="50%" r="50%">
-                  <stop offset="0%" stopColor="#2563EB" stopOpacity="0.4" />
-                  <stop offset="70%" stopColor="#2563EB" stopOpacity="0.1" />
-                  <stop offset="100%" stopColor="#2563EB" stopOpacity="0" />
-                </radialGradient>
-              </defs>
-
-              {/* Base terrain */}
-              <rect width="700" height="500" fill={activeLayer === 'satellite' ? '#2A3C2A' : '#E8F2E8'} />
-
-              {/* City Blocks (Buildings & Land zones) */}
-              <g opacity={activeLayer === 'satellite' ? '0.35' : '0.65'}>
-                {/* Horizontal & vertical blocks */}
-                <rect x="30" y="20" width="90" height="70" rx="4" fill="#C5DBC5" />
-                <rect x="140" y="20" width="110" height="70" rx="4" fill="#C5DBC5" />
-                <rect x="270" y="20" width="130" height="70" rx="4" fill="#C5DBC5" />
-                <rect x="420" y="20" width="110" height="70" rx="4" fill="#C5DBC5" />
-
-                <rect x="30" y="110" width="90" height="75" rx="4" fill="#C5DBC5" />
-                <rect x="140" y="110" width="110" height="75" rx="4" fill="#C5DBC5" />
-                <rect x="270" y="110" width="130" height="75" rx="4" fill="#C5DBC5" />
-                <rect x="420" y="110" width="110" height="75" rx="4" fill="#C5DBC5" />
-
-                <rect x="30" y="210" width="90" height="75" rx="4" fill="#C5DBC5" />
-                <rect x="140" y="210" width="110" height="75" rx="4" fill="#C5DBC5" />
-                <rect x="270" y="210" width="130" height="75" rx="4" fill="#C5DBC5" />
-                <rect x="420" y="210" width="110" height="75" rx="4" fill="#C5DBC5" />
-
-                <rect x="30" y="310" width="90" height="80" rx="4" fill="#C5DBC5" />
-                <rect x="140" y="310" width="110" height="80" rx="4" fill="#C5DBC5" />
-                <rect x="270" y="310" width="130" height="80" rx="4" fill="#C5DBC5" />
-                <rect x="420" y="310" width="110" height="80" rx="4" fill="#C5DBC5" />
-
-                <rect x="30" y="410" width="90" height="75" rx="4" fill="#C5DBC5" />
-                <rect x="140" y="410" width="110" height="75" rx="4" fill="#C5DBC5" />
-                <rect x="270" y="410" width="130" height="75" rx="4" fill="#C5DBC5" />
-                <rect x="420" y="410" width="110" height="75" rx="4" fill="#C5DBC5" />
-              </g>
-
-              {/* Central Green Park (Centennial Park area) */}
-              <ellipse cx="180" cy="110" rx="70" ry="50" fill="#69B877" opacity="0.75" />
-              <text x="180" y="105" textAnchor="middle" fill="#1C5E28" fontSize="10" fontWeight="bold" fontFamily="Inter">
-                Central Park
-              </text>
-              <text x="180" y="118" textAnchor="middle" fill="#2E7D32" fontSize="8" fontFamily="Inter">
-                (Centennial RTH)
-              </text>
-
-              {/* River / Water Body with Bridges */}
-              <path
-                d="M500 0 C470 120 530 220 480 340 C440 440 460 480 470 500 L560 500 C550 480 530 430 570 330 C610 230 560 120 580 0 Z"
-                fill="#94BFE0"
-                opacity="0.65"
-              />
-
-              {/* Bridges across river */}
-              <rect x="460" y="150" width="80" height="12" rx="2" fill="#FFFFFF" opacity="0.9" stroke="#94A3B8" strokeWidth="1" />
-              <text x="500" y="159" textAnchor="middle" fill="#64748B" fontSize="6.5" fontWeight="bold" fontFamily="Inter">Civic Bridge</text>
-
-              <rect x="440" y="270" width="85" height="12" rx="2" fill="#FFFFFF" opacity="0.9" stroke="#94A3B8" strokeWidth="1" />
-              <text x="480" y="279" textAnchor="middle" fill="#64748B" fontSize="6.5" fontWeight="bold" fontFamily="Inter">Civic Bridge 2</text>
-
-              {/* Primary Street Grid (White lines) */}
-              <g stroke="#FFFFFF" strokeLinecap="round" opacity="0.95">
-                <line x1="0" y1="95" x2="700" y2="95" strokeWidth="12" />
-                <line x1="0" y1="195" x2="700" y2="195" strokeWidth="12" />
-                <line x1="0" y1="295" x2="700" y2="295" strokeWidth="10" />
-                <line x1="0" y1="395" x2="700" y2="395" strokeWidth="9" />
-
-                <line x1="125" y1="0" x2="125" y2="500" strokeWidth="11" />
-                <line x1="255" y1="0" x2="255" y2="500" strokeWidth="11" />
-                <line x1="405" y1="0" x2="405" y2="500" strokeWidth="10" />
-                <line x1="620" y1="0" x2="620" y2="500" strokeWidth="10" />
-              </g>
-
-              {/* Street Names Typography (Matches Design Image 1) */}
-              <g fill="#94A3B8" fontSize="8" fontWeight="600" fontFamily="Inter">
-                <text x="50" y="91">5th St</text>
-                <text x="170" y="91">Main Ave</text>
-                <text x="310" y="91">Park Blvd</text>
-                <text x="50" y="191">Broadway Ave</text>
-                <text x="170" y="191">Main Ave</text>
-                <text x="300" y="191">Oakwood St</text>
-
-                {/* Vertical road labels */}
-                <text x="122" y="140" transform="rotate(-90 122,140)">Elm St</text>
-                <text x="252" y="240" transform="rotate(-90 252,240)">Oakwood Ave</text>
-                <text x="402" y="340" transform="rotate(-90 402,340)">Hospital Way</text>
-              </g>
-
-              {/* USER CURRENT GPS LOCATION PIN (Blue Radar Dot) */}
-              <g transform={`translate(${userLocation.x}, ${userLocation.y})`}>
-                <circle r="40" fill="url(#userRadarGlow)" className="animate-pulse" />
-                <circle r="18" fill="#2563EB" opacity="0.25" className="animate-ping" />
-                <circle r="9" fill="#2563EB" stroke="#FFFFFF" strokeWidth="2.5" />
-                <circle r="4" fill="#FFFFFF" />
-              </g>
-
-              {/* CONSTRUCTION PROJECT MARKER PINS (Interactive) */}
-              {filteredProjects.map((p) => {
-                const isSelected = p.id === currentProject?.id;
-
-                return (
-                  <g
-                    key={p.id}
-                    transform={`translate(${p.mapX}, ${p.mapY})`}
-                    onClick={() => handleSelectPin(p.id)}
-                    className="cursor-pointer transition-transform duration-200 hover:scale-125"
-                  >
-                    {/* Active Halo Effect */}
-                    {isSelected && (
-                      <circle r="22" fill={p.markerColor} opacity="0.3" className="animate-ping" />
-                    )}
-
-                    {/* Pin Outer circle */}
-                    <circle
-                      r={isSelected ? 16 : 13}
-                      fill={p.markerColor}
-                      stroke="#FFFFFF"
-                      strokeWidth={isSelected ? 3.5 : 2.5}
-                      filter="drop-shadow(0px 3px 6px rgba(0,0,0,0.3))"
-                    />
-
-                    {/* Pin Center Icon Badge */}
-                    {p.kategori === 'taman' ? (
-                      <circle r={isSelected ? 7 : 5.5} fill="#FFFFFF" opacity="0.9" />
-                    ) : p.kategori === 'drainase' ? (
-                      <circle r={isSelected ? 7 : 5.5} fill="#FFFFFF" opacity="0.9" />
-                    ) : (
-                      <circle r={isSelected ? 7 : 5.5} fill="#FFFFFF" opacity="0.9" />
-                    )}
-
-                    {/* Small category text / icon inside SVG pin */}
-                    <text
-                      x="0"
-                      y={isSelected ? 3.5 : 3}
-                      textAnchor="middle"
-                      fill={p.markerColor}
-                      fontSize={isSelected ? '9' : '8'}
-                      fontWeight="bold"
-                      fontFamily="Inter"
-                    >
-                      {p.kategori === 'taman' ? '🌳' : p.kategori === 'drainase' ? '💧' : '🚧'}
-                    </text>
-
-                    {/* Floating Title Label on hover/selected */}
-                    {isSelected && (
-                      <g transform="translate(0, -22)">
-                        <rect
-                          x="-50"
-                          y="-16"
-                          width="100"
-                          height="18"
-                          rx="9"
-                          fill="#184C78"
-                          stroke="#FFFFFF"
-                          strokeWidth="1"
-                        />
-                        <text
-                          x="0"
-                          y="-4"
-                          textAnchor="middle"
-                          fill="#FFFFFF"
-                          fontSize="9"
-                          fontWeight="bold"
-                          fontFamily="Inter"
-                        >
-                          {p.nama_proyek.length > 15 ? p.nama_proyek.slice(0, 15) + '…' : p.nama_proyek}
-                        </text>
-                      </g>
-                    )}
-                  </g>
-                );
-              })}
-            </svg>
-          </div>
+          {/* ── REAL LEAFLET CONTAINER ── */}
+          <div
+            ref={mapContainerRef}
+            id="leaflet-map-explorer"
+            className="w-full h-full z-0 outline-none"
+            style={{ minHeight: '100%' }}
+          />
         </div>
 
         {/* ── RIGHT DRAWER / PROJECT DETAIL PANEL (DESKTOP) ── */}
@@ -540,7 +727,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   <MapPin className="w-3.5 h-3.5 text-slate-400" />
                   <span>{currentProject.nama_wilayah || 'Kota Malang'}</span>
                   <span>•</span>
-                  <span className="text-[#2980B9] font-semibold">{currentProject.distanceStr} dari Anda</span>
+                  <span className="text-[#2980B9] font-bold">{currentProject.distanceStr} dari posisi Anda</span>
                 </div>
               </div>
 
@@ -551,8 +738,9 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   alt={currentProject.nama_proyek}
                   className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-0.5 rounded-md">
-                  Dokumentasi Lapangan Real-time
+                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+                  <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                  <span>Real-time Field Telemetry</span>
                 </div>
               </div>
 
@@ -597,8 +785,9 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                     style={{ width: `${currentProject.progres_persen}%` }}
                   />
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1">
-                  Tahap: <strong>{currentProject.tahap_terkini || 'Konstruksi fisik aktif'}</strong>
+                <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
+                  <span>Tahap: <strong>{currentProject.tahap_terkini || 'Konstruksi fisik aktif'}</strong></span>
+                  <span className="text-[10px] text-slate-400">Sync: {lastSyncTime}</span>
                 </div>
               </div>
 
@@ -693,7 +882,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       {/* ── MOBILE PWA BOTTOM SHEET (MATCHES IMAGE 2) ── */}
       <div
         className={`lg:hidden fixed left-0 right-0 z-30 bg-white/95 backdrop-blur-md rounded-t-3xl border-t border-slate-200 shadow-[0_-8px_24px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out flex flex-col ${
-          mobileSheetState === 'expanded' ? 'bottom-16 max-h-[70vh]' : 'bottom-16 max-h-32'
+          mobileSheetState === 'expanded' ? 'bottom-16 max-h-[70vh]' : 'bottom-16 max-h-36'
         }`}
       >
         {/* Drag handle pill */}
@@ -710,11 +899,18 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         <div className="px-4 pb-3">
           <div className="flex items-center justify-between mb-2">
             <div>
-              <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
-                Current Location:
-              </span>
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
+                  Current Location:
+                </span>
+                {userLocation.isLiveGps && (
+                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.2 rounded-full">
+                    GPS Realtime
+                  </span>
+                )}
+              </div>
               <h5 className="font-['DM_Sans'] text-xs font-bold text-[#184C78] truncate max-w-[240px]">
-                {userLocation.shortName}
+                {userLocation.address}
               </h5>
             </div>
             <button
@@ -731,14 +927,14 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           <div className="grid grid-cols-2 gap-2 mb-2">
             <button
               onClick={() => onOpenAIRoute(currentProject.nama_proyek)}
-              className="py-2 px-3 bg-[#184C78] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5"
+              className="py-2 px-3 bg-[#184C78] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
             >
               <Navigation className="w-3.5 h-3.5" />
               <span>Directions</span>
             </button>
             <button
               onClick={() => onOpenProjectDetail(currentProject)}
-              className="py-2 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5"
+              className="py-2 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
             >
               <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
               <span>Report Issue</span>
@@ -746,48 +942,62 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           </div>
 
           {/* Nearby Project Strip */}
-          <div className="flex items-center justify-between text-xs py-1 border-t border-slate-100">
+          <div
+            onClick={() => handleSelectPin(currentProject.id)}
+            className="flex items-center justify-between text-xs py-1 border-t border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+          >
             <span className="text-slate-500 truncate max-w-[200px]">
-              Nearby: <strong>{currentProject.nama_proyek}</strong>
+              Nearby: <strong className="text-[#184C78]">{currentProject.nama_proyek}</strong>
             </span>
-            <span className="text-[#2980B9] font-bold">{currentProject.distanceStr}</span>
+            <span className="text-[#2980B9] font-bold shrink-0">
+              Jarak {currentProject.distanceStr}
+            </span>
           </div>
         </div>
 
-        {/* Expanded Sheet Content (When Swiped/Clicked Up) */}
+        {/* Expanded Content (when dragged up on mobile) */}
         {mobileSheetState === 'expanded' && (
-          <div className="flex-1 overflow-y-auto px-4 pb-4 space-y-3 border-t border-slate-100 pt-3">
-            <img
-              src={centennialParkImg}
-              alt="Project"
-              className="w-full h-32 object-cover rounded-xl"
-            />
-            <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-[#184C78]">{currentProject.progres_persen}% Selesai</span>
-              <span className="text-slate-500">{currentProject.estimasi_selesai}</span>
+          <div className="px-4 pb-6 overflow-y-auto space-y-3 flex-1 border-t border-slate-100 pt-2">
+            <div className="flex items-center justify-between">
+              <span className="text-[11px] font-bold text-slate-700">Detail Pembangunan Terdekat</span>
+              <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                <span>Sync {lastSyncTime}</span>
+              </span>
             </div>
-            <div className="h-1.5 bg-slate-100 rounded-full overflow-hidden">
-              <div
-                className="h-full bg-[#184C78] rounded-full"
-                style={{ width: `${currentProject.progres_persen}%` }}
-              />
+
+            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
+              <div className="flex items-center justify-between mb-1.5">
+                <span className="text-xs font-bold text-[#184C78]">{currentProject.nama_proyek}</span>
+                <span className="text-xs font-bold text-emerald-600">{currentProject.progres_persen}%</span>
+              </div>
+              <p className="text-[11px] text-slate-600 mb-2 leading-relaxed">
+                {currentProject.deskripsi}
+              </p>
+              <div className="flex items-center justify-between text-[11px] text-slate-500">
+                <span>Anggaran: <strong>Rp {(currentProject.anggaran / 1000000000).toFixed(1)}M</strong></span>
+                <span>Target: <strong>{currentProject.estimasi_selesai}</strong></span>
+              </div>
             </div>
+
             <button
               onClick={() => onOpenProjectDetail(currentProject)}
-              className="w-full py-2 bg-slate-100 text-[#184C78] text-xs font-bold rounded-xl"
+              className="w-full py-2.5 bg-[#184C78] text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer"
             >
-              Lihat Selengkapnya &rarr;
+              <span>Buka Transparansi Proyek Ini</span>
+              <ArrowRight className="w-3.5 h-3.5" />
             </button>
           </div>
         )}
       </div>
 
-      {/* ── MOBILE PWA BOTTOM NAVIGATION BAR (MATCHES IMAGE 2: Explore, My Projects, Search, Profile) ── */}
-      <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-16 bg-white/95 backdrop-blur-md border-t border-slate-200 z-40 px-2 flex items-center justify-around shadow-lg">
+      {/* ── FIXED BOTTOM PWA NAVIGATION BAR (MATCHES IMAGE 2) ── */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 h-16 px-4 flex items-center justify-around shadow-lg">
+        {/* Tab 1: Explore (Active) */}
         <button
           onClick={() => {
             setMobileActiveTab('explore');
-            setMobileSheetState('collapsed');
+            handleCenterUserLocation();
           }}
           className={`flex flex-col items-center justify-center w-16 py-1 rounded-xl transition-all cursor-pointer ${
             mobileActiveTab === 'explore'
@@ -799,10 +1009,15 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           <span className="text-[10px] font-bold mt-0.5">Explore</span>
         </button>
 
+        {/* Tab 2: My Projects */}
         <button
           onClick={() => {
             setMobileActiveTab('my-projects');
-            if (onOpenDashboard) onOpenDashboard();
+            if (currentUser && onOpenDashboard) {
+              onOpenDashboard();
+            } else {
+              onOpenAuth('login');
+            }
           }}
           className={`flex flex-col items-center justify-center w-16 py-1 rounded-xl transition-all cursor-pointer ${
             mobileActiveTab === 'my-projects'
@@ -811,14 +1026,15 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           }`}
         >
           <Bookmark className="w-4 h-4" />
-          <span className="text-[10px] font-bold mt-0.5">My Projects</span>
+          <span className="text-[10px] font-bold mt-0.5">Projects</span>
         </button>
 
+        {/* Tab 3: Search */}
         <button
           onClick={() => {
             setMobileActiveTab('search');
-            const searchInput = document.querySelector('input');
-            searchInput?.focus();
+            const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
+            if (searchInput) searchInput.focus();
           }}
           className={`flex flex-col items-center justify-center w-16 py-1 rounded-xl transition-all cursor-pointer ${
             mobileActiveTab === 'search'
@@ -830,6 +1046,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           <span className="text-[10px] font-bold mt-0.5">Search</span>
         </button>
 
+        {/* Tab 4: Profile / Dashboard */}
         <button
           onClick={() => {
             setMobileActiveTab('profile');
