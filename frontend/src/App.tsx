@@ -13,6 +13,8 @@ import { ProjectDetailModal } from './components/ProjectDetailModal';
 import { AIRouteModal } from './components/AIRouteModal';
 import { OpenDataModal } from './components/OpenDataModal';
 import { DashboardMain } from './components/dashboard/DashboardMain';
+import { NearbyMapModal } from './components/NearbyMapModal';
+import { PublicMapExplorer } from './components/PublicMapExplorer';
 
 import {
   STATS_DATA,
@@ -30,7 +32,9 @@ export function App() {
   const [selectedCategory, setSelectedCategory] = useState<ProyekKategori | null>(null);
   const [activeNav, setActiveNav] = useState<string>('peta');
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [currentView, setCurrentView] = useState<'landing' | 'dashboard'>('landing');
+  const [currentView, setCurrentView] = useState<'landing' | 'dashboard' | 'map-explorer'>('landing');
+  const [authNotice, setAuthNotice] = useState<string>('');
+  const [postLoginRedirect, setPostLoginRedirect] = useState<'dashboard' | 'map-explorer' | null>(null);
 
   // Modal States
   const [authModalState, setAuthModalState] = useState<{ isOpen: boolean; mode: 'login' | 'register' }>({
@@ -38,6 +42,7 @@ export function App() {
     mode: 'login',
   });
   const [selectedProject, setSelectedProject] = useState<ProyekItem | null>(null);
+  const [isNearbyModalOpen, setIsNearbyModalOpen] = useState<boolean>(false);
   const [aiRouteModal, setAIRouteModal] = useState<{ isOpen: boolean; projectName: string }>({
     isOpen: false,
     projectName: '',
@@ -101,14 +106,32 @@ export function App() {
     setAuthModalState({ isOpen: true, mode });
   };
 
+  const handleCekDisekitarAction = () => {
+    if (!currentUser) {
+      setPostLoginRedirect('map-explorer');
+      setAuthNotice('Silakan masuk terlebih dahulu untuk membuka Peta Eksplorasi Proyek di sekitar Anda.');
+      handleOpenAuth('login');
+    } else {
+      setCurrentView('map-explorer');
+    }
+  };
+
   const handleLoginSuccess = (user: UserProfile) => {
     setCurrentUser(user);
-    setCurrentView('dashboard');
+    if (postLoginRedirect === 'map-explorer') {
+      setCurrentView('map-explorer');
+      setPostLoginRedirect(null);
+    } else {
+      setCurrentView('dashboard');
+    }
+    setAuthNotice('');
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     setCurrentView('landing');
+    setPostLoginRedirect(null);
+    setAuthNotice('');
   };
 
   const handleSwitchRole = (newRole: UserRole) => {
@@ -144,8 +167,7 @@ export function App() {
     } else if (featureId === 'open') {
       setIsOpenDataModalOpen(true);
     } else if (featureId === 'map') {
-      const hero = document.querySelector('#hero');
-      hero?.scrollIntoView({ behavior: 'smooth' });
+      handleCekDisekitarAction();
     } else if (featureId === 'report' || featureId === 'progress') {
       if (projects.length > 0) {
         setSelectedProject(projects[0]);
@@ -166,8 +188,18 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-['Inter'] text-[#212529]">
-      {/* ── CONDITIONAL RENDERING: DASHBOARD VS LANDING PAGE ── */}
-      {currentView === 'dashboard' && currentUser ? (
+      {/* ── CONDITIONAL RENDERING: MAP EXPLORER vs DASHBOARD vs LANDING PAGE ── */}
+      {currentView === 'map-explorer' ? (
+        <PublicMapExplorer
+          currentUser={currentUser}
+          projects={projects}
+          onBackToLanding={() => setCurrentView('landing')}
+          onOpenDashboard={() => setCurrentView('dashboard')}
+          onOpenProjectDetail={(proj) => setSelectedProject(proj)}
+          onOpenAIRoute={(name) => setAIRouteModal({ isOpen: true, projectName: name })}
+          onOpenAuth={(mode) => handleOpenAuth(mode)}
+        />
+      ) : currentView === 'dashboard' && currentUser ? (
         <DashboardMain
           currentUser={currentUser}
           projects={projects}
@@ -188,11 +220,13 @@ export function App() {
             activeNav={activeNav}
             setActiveNav={setActiveNav}
             currentView={currentView}
-            onNavigateView={(view) => setCurrentView(view)}
+            onNavigateView={(view) => setCurrentView(view as any)}
           />
 
           {/* ── HERO ── */}
           <HeroSection
+            onOpenNearbyMap={handleCekDisekitarAction}
+            onOpenAuth={(mode = 'login') => handleOpenAuth(mode)}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
             onSearchSubmit={handleSearchSubmit}
@@ -232,10 +266,7 @@ export function App() {
           {/* ── CTA SECTION ── */}
           <CTASection
             onRegisterClick={() => handleOpenAuth('register')}
-            onOpenMapClick={() => {
-              const hero = document.querySelector('#hero');
-              hero?.scrollIntoView({ behavior: 'smooth' });
-            }}
+            onOpenMapClick={() => setIsNearbyModalOpen(true)}
           />
 
           {/* ── FOOTER ── */}
@@ -244,11 +275,23 @@ export function App() {
       )}
 
       {/* ── GLOBAL MODALS ── */}
+      <NearbyMapModal
+        isOpen={isNearbyModalOpen}
+        onClose={() => setIsNearbyModalOpen(false)}
+        projects={projects}
+        onSelectProject={(proj) => setSelectedProject(proj)}
+        onOpenAIRoute={(name) => setAIRouteModal({ isOpen: true, projectName: name })}
+      />
+
       <AuthModal
         isOpen={authModalState.isOpen}
         initialMode={authModalState.mode}
-        onClose={() => setAuthModalState({ isOpen: false, mode: 'login' })}
+        onClose={() => {
+          setAuthModalState({ isOpen: false, mode: 'login' });
+          setAuthNotice('');
+        }}
         onLoginSuccess={handleLoginSuccess}
+        notice={authNotice}
       />
 
       <ProjectDetailModal

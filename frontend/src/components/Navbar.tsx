@@ -9,8 +9,8 @@ interface NavbarProps {
   activeNav: string;
   setActiveNav: (nav: string) => void;
   onFilterCategory?: (cat: string | null) => void;
-  currentView?: 'landing' | 'dashboard';
-  onNavigateView?: (view: 'landing' | 'dashboard') => void;
+  currentView?: 'landing' | 'dashboard' | 'map-explorer';
+  onNavigateView?: (view: 'landing' | 'dashboard' | 'map-explorer') => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -71,14 +71,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             Peta Proyek
           </button>
-          <button
-            onClick={() => handleNavClick('statistik', '#stats')}
-            className={`px-2.5 py-1.5 text-[13px] font-medium rounded-lg transition-colors cursor-pointer ${
-              activeNav === 'statistik' && currentView === 'landing' ? 'text-[#184C78] font-bold bg-[#F5F7FA]' : 'text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#212529]'
-            }`}
-          >
-            Statistik
-          </button>
+
           <button
             onClick={() => handleNavClick('fitur', '#features')}
             className={`px-2.5 py-1.5 text-[13px] font-medium rounded-lg transition-colors cursor-pointer ${
@@ -182,14 +175,7 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             🗺️ Peta Proyek
           </button>
-          <button
-            onClick={() => handleNavClick('statistik', '#stats')}
-            className={`text-left px-3 py-2 text-sm font-medium rounded-md transition-colors ${
-              activeNav === 'statistik' ? 'text-[#184C78] font-bold bg-[#EBF4FB]' : 'text-[#212529] hover:bg-[#F5F7FA]'
-            }`}
-          >
-            📊 Statistik
-          </button>
+
           <button
             onClick={() => handleNavClick('fitur', '#features')}
             className={`text-left px-3 py-2 text-sm font-medium rounded-md transition-colors ${

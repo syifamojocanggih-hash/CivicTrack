@@ -7,6 +7,7 @@ interface AuthModalProps {
   onClose: () => void;
   initialMode: 'login' | 'register';
   onLoginSuccess: (user: UserProfile) => void;
+  notice?: string;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -14,6 +15,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   initialMode,
   onLoginSuccess,
+  notice,
 }) => {
   const [mode, setMode] = useState<'login' | 'register'>(initialMode);
   const [email, setEmail] = useState('');
@@ -102,6 +104,14 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               : 'Daftarkan diri untuk memantau transparansi pembangunan daerah'}
           </p>
         </div>
+
+        {/* Optional Context Notice Banner */}
+        {notice && (
+          <div className="bg-[#EBF4FB] border-b border-[#c5def2] px-5 py-2.5 flex items-center gap-2 text-xs font-semibold text-[#184C78]">
+            <span className="w-2 h-2 rounded-full bg-[#2980B9] animate-ping" />
+            <span>{notice}</span>
+          </div>
+        )}
 
         {/* Tab Selector */}
         <div className="flex border-b border-[#DCE0E6] bg-[#F5F7FA]">
