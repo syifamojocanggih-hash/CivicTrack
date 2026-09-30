@@ -2,8 +2,6 @@ import React, { useState } from 'react';
 import {
   Building2,
   FolderKanban,
-  ListTodo,
-  Camera,
   MessageSquare,
   Wrench,
   Plus,
@@ -35,14 +33,18 @@ interface AdminDinasDashboardProps {
   currentUser: UserProfile;
   projects: ProyekItem[];
   onOpenProjectDetail: (project: ProyekItem) => void;
+  activeSection?: string;
+  onSelectSection?: (section: string) => void;
 }
 
 export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   currentUser,
   projects,
   onOpenProjectDetail,
+  activeSection,
+  onSelectSection,
 }) => {
-  const [activeTab, setActiveTab] = useState<'proyek' | 'linimasa' | 'dokumentasi' | 'aduan' | 'evaluasi'>('proyek');
+  const activeTab = (activeSection as any) || 'proyek';
 
   // Local state for projects management
   const [projectList, setProjectList] = useState<ProyekItem[]>(projects);
@@ -251,24 +253,24 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
   return (
     <div className="space-y-6 animate-hero-in">
-      {/* ── TOP DINAS BANNER ── */}
+      {/* ── TOP PENANGGUNG JAWAB PROYEK BANNER ── */}
       <div className="bg-gradient-to-r from-[#0f3252] via-[#184C78] to-[#1a6fa8] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide mb-3">
-              <Building2 className="w-4 h-4 text-cyan-300" />
-              <span>Panel Operasional Teknis Dinas PUPR</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/20 text-amber-200 border border-amber-400/30 rounded-full text-xs font-semibold tracking-wide mb-3">
+              <Building2 className="w-4 h-4 text-amber-300" />
+              <span>Portal Penanggung Jawab Proyek (Dinas Pelaksana &amp; Rekanan)</span>
             </div>
             <h1 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold tracking-tight">
               {currentUser.nama}
             </h1>
             <p className="text-white/80 text-xs sm:text-sm mt-1">
-              Pengawas Konstruksi &amp; Admin Teknis — Dinas Pekerjaan Umum dan Penataan Ruang (PUPR)
+              Pejabat Pembuat Komitmen (PPK) &amp; Tim Pelaksana Teknis — {currentUser.nama_dinas || 'Dinas Pekerjaan Umum & Tim Pelaksana'}
             </p>
             <div className="flex flex-wrap items-center gap-4 text-xs text-white/70 mt-3 font-mono">
-              <span>NIP: 19780412 200212 1 004</span>
+              <span>{currentUser.nip ? `NIP: ${currentUser.nip}` : 'ID Petugas: PJ-2024-001'}</span>
               <span>•</span>
-              <span>Hak Akses: CRUD Proyek, Linimasa &amp; Respon Warga</span>
+              <span>Hak Akses: Input Progres, Unggah Foto/Video, Validasi SPK &amp; Tanggapi Aduan</span>
             </div>
           </div>
 
@@ -285,7 +287,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
               className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white font-semibold text-xs rounded-xl backdrop-blur-md flex items-center justify-center gap-2 transition-all cursor-pointer"
             >
               <Upload className="w-4 h-4" />
-              <span>Upload Foto Lapangan</span>
+              <span>Upload Foto &amp; Video</span>
             </button>
           </div>
         </div>
@@ -362,73 +364,8 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         </div>
       </div>
 
-      {/* ── TABS NAVIGATION ── */}
-      <div className="flex border-b border-[#DCE0E6] bg-white rounded-xl px-2 pt-2 shadow-xs overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('proyek')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'proyek'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <FolderKanban className="w-4 h-4" />
-          <span>Daftar Proyek Dinas ({projectList.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('linimasa')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'linimasa'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <ListTodo className="w-4 h-4" />
-          <span>Tahapan Linimasa &amp; Bobot</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('dokumentasi')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'dokumentasi'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <Camera className="w-4 h-4" />
-          <span>Dokumentasi Lapangan ({dokumentasiList.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('aduan')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'aduan'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>Respon Aduan Warga ({aduanList.length})</span>
-          {aduanMenungguCount > 0 && (
-            <span className="w-2 h-2 rounded-full bg-[#E74C3C]" />
-          )}
-        </button>
-
-        <button
-          onClick={() => setActiveTab('evaluasi')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'evaluasi'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <Wrench className="w-4 h-4" />
-          <span>Verifikasi Cacat Pasca-Proyek ({evaluasiList.length})</span>
-        </button>
-      </div>
-
-      {/* ── TAB CONTENT 1: DAFTAR PROYEK DINAS ── */}
+      {/* ── ACTIVE SECTION VIEW (DRIVEN BY SIDEBAR) ── */}
+      {/* ── SECTION 1: DAFTAR PROYEK DINAS ── */}
       {activeTab === 'proyek' && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-[#DCE0E6]">
@@ -534,7 +471,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                             <button
                               onClick={() => {
                                 setSelectedProjectForTimeline(p.id);
-                                setActiveTab('linimasa');
+                                if (onSelectSection) onSelectSection('linimasa');
                               }}
                               className="px-2.5 py-1.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-semibold rounded-lg transition-colors cursor-pointer"
                               title="Kelola Linimasa"

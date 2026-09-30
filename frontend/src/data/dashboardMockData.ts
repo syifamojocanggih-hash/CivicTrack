@@ -379,3 +379,164 @@ export const MOCK_EXECUTIVE_ALERTS = [
     skor_urgensi: 1,
   },
 ];
+
+export const MOCK_AUDIT_TRAIL_LOGS: Record<number, Array<{
+  id: number;
+  evaluasi_id: number;
+  status_sebelumnya?: string;
+  status_baru: string;
+  diubah_oleh: string;
+  role_pengubah: string;
+  catatan: string;
+  waktu: string;
+}>> = {
+  201: [
+    {
+      id: 1,
+      evaluasi_id: 201,
+      status_baru: 'Laporan Dikirim Warga',
+      diubah_oleh: 'Budi Santoso (Warga)',
+      role_pengubah: 'Warga Masyarakat',
+      catatan: 'Mengirimkan foto bukti penutup manhole retak dan amblas di dekat zebra cross.',
+      waktu: '2024-03-21 14:20',
+    },
+    {
+      id: 2,
+      evaluasi_id: 201,
+      status_sebelumnya: 'Laporan Dikirim Warga',
+      status_baru: 'Analisis AI (Gemini)',
+      diubah_oleh: 'Google Gemini AI Engine',
+      role_pengubah: 'Sistem Otomatis',
+      catatan: 'Skor Urgensi AI: 4/5 (Tinggi). Terdeteksi potensi risiko kecelakaan lalu lintas pejalan kaki.',
+      waktu: '2024-03-21 14:21',
+    },
+    {
+      id: 3,
+      evaluasi_id: 201,
+      status_sebelumnya: 'Analisis AI (Gemini)',
+      status_baru: 'Terverifikasi Penanggung Jawab',
+      diubah_oleh: 'Ir. Hendro Wijaya (Dinas PUPR)',
+      role_pengubah: 'Penanggung Jawab Proyek',
+      catatan: 'Validasi lapangan mengonfirmasi kerusakan cast iron. SPK perbaikan darurat diterbitkan ke vendor.',
+      waktu: '2024-03-21 16:45',
+    },
+    {
+      id: 4,
+      evaluasi_id: 201,
+      status_sebelumnya: 'Terverifikasi Penanggung Jawab',
+      status_baru: 'Dalam Penanganan Lapangan',
+      diubah_oleh: 'Tim Reaksi Cepat Bina Marga',
+      role_pengubah: 'Penanggung Jawab Proyek',
+      catatan: 'Material plat baja heavy duty pengganti sedang dalam proses pemasangan dan perapihan cor bibir manhole.',
+      waktu: '2024-03-22 09:15',
+    },
+  ],
+  202: [
+    {
+      id: 1,
+      evaluasi_id: 202,
+      status_baru: 'Laporan Dikirim Warga',
+      diubah_oleh: 'Ahmad Fauzan (Warga)',
+      role_pengubah: 'Warga Masyarakat',
+      catatan: 'Lampu penerangan jalan solar cell di titik KM 5.2 mati saat malam hari.',
+      waktu: '2024-03-19 19:30',
+    },
+    {
+      id: 2,
+      evaluasi_id: 202,
+      status_sebelumnya: 'Laporan Dikirim Warga',
+      status_baru: 'Analisis AI (Gemini)',
+      diubah_oleh: 'Google Gemini AI Engine',
+      role_pengubah: 'Sistem Otomatis',
+      catatan: 'Skor Urgensi AI: 2/5 (Sedang). Masalah komponen elektrikal penerangan jalan umum.',
+      waktu: '2024-03-19 19:31',
+    },
+    {
+      id: 3,
+      evaluasi_id: 202,
+      status_sebelumnya: 'Analisis AI (Gemini)',
+      status_baru: 'Selesai Ditindaklanjuti',
+      diubah_oleh: 'Dinas Perhubungan & Tim PJU',
+      role_pengubah: 'Penanggung Jawab Proyek',
+      catatan: 'Penggantian modul baterai lithium cadangan telah selesai. PJU berfungsi normal kembali.',
+      waktu: '2024-03-20 11:00',
+    },
+  ],
+};
+
+export const MOCK_DYNAMIC_NOTIFICATIONS = [
+  {
+    id: 1,
+    proyek_id: 2,
+    nama_proyek: 'Pelebaran Jalan Soekarno Hatta',
+    judul: 'Tahap 3 Selesai Dikerjakan',
+    pesan: 'Pekerjaan pondasi agregat kelas A telah selesai. Pengaspalan AC-WC dimulai besok.',
+    kategori: 'progres' as const,
+    waktu: '10 Menit lalu',
+    dibaca: false,
+  },
+  {
+    id: 2,
+    proyek_id: 1,
+    nama_proyek: 'Renovasi Taman Centennial',
+    judul: 'Tanggapan Resmi Laporan Warga',
+    pesan: 'Dinas Lingkungan Hidup telah menanggapi masukan mengenai guiding block difabel.',
+    kategori: 'aduan' as const,
+    waktu: '1 Jam lalu',
+    dibaca: false,
+  },
+  {
+    id: 3,
+    proyek_id: 3,
+    nama_proyek: 'Normalisasi Drainase MT Haryono',
+    judul: 'Status Evaluasi Pasca-Proyek Diperbarui',
+    pesan: 'Laporan manhole saluran telah berstatus: Dalam Penanganan Lapangan oleh PUPR.',
+    kategori: 'evaluasi' as const,
+    waktu: '3 Jam lalu',
+    dibaca: true,
+  },
+  {
+    id: 4,
+    proyek_id: 4,
+    nama_proyek: 'Pembangunan Jembatan Dinoyo',
+    judul: 'Pembaruan Estimasi Jadwal',
+    pesan: 'Penyesuaian teknis pondasi abutmen telah disetujui, progres kembali berjalan.',
+    kategori: 'progres' as const,
+    waktu: '1 Hari lalu',
+    dibaca: true,
+  },
+];
+
+export const MOCK_PROJECT_VIDEOS = [
+  {
+    id: 1,
+    proyek_id: 1,
+    judul: 'Dokumentasi Udara Drone (Aerial View) Progres 90% Taman Centennial',
+    durasi: '01:45',
+    tanggal: '15 Maret 2024',
+    thumbnail: 'https://images.unsplash.com/photo-1519331379826-f10be5486c6f?w=800&auto=format&fit=crop&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-park-with-many-green-trees-and-a-fountain-4389-large.mp4',
+    deskripsi: 'Inspeksi lanskap taman, penataan kanopi pepohonan pelindung, dan pengujian air mancur sentral.',
+  },
+  {
+    id: 2,
+    proyek_id: 2,
+    judul: 'Proses Pengecoran dan Pemadatan Lapis Pondasi Atas Jalan Soekarno Hatta',
+    durasi: '02:15',
+    tanggal: '18 Maret 2024',
+    thumbnail: 'https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-heavy-machinery-paving-a-new-road-43206-large.mp4',
+    deskripsi: 'Pekerjaan tandem roller dan finisher aspal malam hari untuk meminimalkan gangguan arus kendaraan.',
+  },
+  {
+    id: 3,
+    proyek_id: 3,
+    judul: 'Uji Alir Debit Air & Struktur Box Culvert Drainase MT Haryono',
+    durasi: '01:10',
+    tanggal: '20 Maret 2024',
+    thumbnail: 'https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=800&auto=format&fit=crop&q=80',
+    videoUrl: 'https://assets.mixkit.co/videos/preview/mixkit-rain-falling-on-a-river-water-surface-34208-large.mp4',
+    deskripsi: 'Pengujian ketahanan dinding beton pracetak dan kapasitas limpasan aliran drainase.',
+  },
+];
+

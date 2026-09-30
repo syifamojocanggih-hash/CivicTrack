@@ -4,7 +4,6 @@ import {
   MessageSquarePlus,
   Star,
   AlertTriangle,
-  Navigation,
   CheckCircle2,
   Clock,
   Plus,
@@ -14,6 +13,8 @@ import {
   ExternalLink,
   ChevronRight,
   Check,
+  History,
+  FileText,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -28,6 +29,7 @@ import {
   MOCK_LAPORAN_WARGA,
   MOCK_EVALUASI_CACAT,
   MOCK_RATING_ULASAN,
+  MOCK_AUDIT_TRAIL_LOGS,
 } from '../../data/dashboardMockData';
 
 interface WargaDashboardProps {
@@ -35,6 +37,8 @@ interface WargaDashboardProps {
   projects: ProyekItem[];
   onOpenProjectDetail: (project: ProyekItem) => void;
   onOpenAIRoute: (projectName: string) => void;
+  activeSection?: string;
+  onSelectSection?: (section: string) => void;
 }
 
 export const WargaDashboard: React.FC<WargaDashboardProps> = ({
@@ -42,8 +46,11 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   projects,
   onOpenProjectDetail,
   onOpenAIRoute,
+  activeSection,
 }) => {
-  const [activeTab, setActiveTab] = useState<'langganan' | 'laporan' | 'rating' | 'evaluasi' | 'rute'>('langganan');
+  const [activeAuditTrailId, setActiveAuditTrailId] = useState<number | null>(null);
+
+  const activeTab = (activeSection as any) || 'langganan';
 
   // Subscribed state
   const [subscribedList, setSubscribedList] = useState<SubscribedProject[]>(MOCK_SUBSCRIBED_PROJECTS);
@@ -290,80 +297,26 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         </div>
       </div>
 
-      {/* ── TABS NAVIGATION ── */}
-      <div className="flex border-b border-[#DCE0E6] bg-white rounded-xl px-2 pt-2 shadow-xs overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('langganan')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'langganan'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <Bookmark className="w-4 h-4" />
-          <span>Proyek Diikuti ({subscribedList.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('laporan')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'laporan'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <MessageSquarePlus className="w-4 h-4" />
-          <span>Laporan &amp; Aduan Saya ({laporanList.length})</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('rating')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'rating'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <Star className="w-4 h-4" />
-          <span>Penilaian Kepuasan (Rating)</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('evaluasi')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'evaluasi'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <AlertTriangle className="w-4 h-4" />
-          <span>Evaluasi Cacat Pasca-Proyek</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('rute')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'rute'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <Navigation className="w-4 h-4" />
-          <span>Rute Alternatif AI</span>
-        </button>
-      </div>
-
-      {/* ── TAB CONTENT 1: PROYEK DI IKUTI ── */}
+      {/* ── ACTIVE SECTION VIEW (DRIVEN BY SIDEBAR) ── */}
+      {/* ── SECTION 1: PROYEK DI IKUTI ── */}
       {activeTab === 'langganan' && (
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
-                Proyek Pilihan yang Anda Ikuti
-              </h2>
-              <p className="text-xs text-[#6C757D]">
-                Anda menerima notifikasi otomatis setiap kali kontraktor/dinas memperbarui kemajuan proyek ini.
-              </p>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-[#EBF4FB] text-[#184C78] flex items-center justify-center shrink-0">
+                <Bookmark className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
+                  Proyek Pilihan yang Anda Ikuti
+                </h2>
+                <p className="text-xs text-[#6C757D]">
+                  Anda menerima notifikasi otomatis setiap kali pihak pelaksana memperbarui progres fisik atau linimasa proyek ini.
+                </p>
+              </div>
+            </div>
+            <div className="text-xs font-semibold px-3 py-1.5 bg-[#F5F7FA] text-[#184C78] rounded-xl border border-[#DCE0E6] shrink-0 self-start sm:self-auto">
+              Total {subscribedList.length} Proyek Aktif
             </div>
           </div>
 
@@ -812,6 +765,84 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                     <p className="text-[#0E6243] text-[11px] leading-relaxed">
                       {item.catatan_dinas}
                     </p>
+                  </div>
+                )}
+
+                {/* Audit Trail Timeline Button & View (evaluasi_status_log) */}
+                <div className="pt-2 border-t border-[#DCE0E6]/60 flex items-center justify-between">
+                  <button
+                    onClick={() => setActiveAuditTrailId(activeAuditTrailId === item.id ? null : item.id)}
+                    className="text-xs font-bold text-[#184C78] hover:text-[#0f3252] flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <History className="w-3.5 h-3.5 text-[#2980B9]" />
+                    <span>
+                      {activeAuditTrailId === item.id ? 'Tutup Linimasa Audit Trail' : 'Lihat Riwayat Perubahan Status (Audit Trail Log)'}
+                    </span>
+                  </button>
+                  <span className="text-[10px] text-[#6C757D] font-mono">
+                    ID Evaluasi: #{item.id}
+                  </span>
+                </div>
+
+                {/* Collapsible Audit Trail Log Table/Timeline */}
+                {activeAuditTrailId === item.id && (
+                  <div className="p-4 bg-[#F8FAFC] rounded-xl border border-[#DCE0E6] space-y-3 animate-fade-in text-xs">
+                    <div className="font-bold text-[#184C78] flex items-center gap-2 border-b border-[#DCE0E6] pb-2">
+                      <FileText className="w-4 h-4 text-[#184C78]" />
+                      <span>Jejak Audit Status Evaluasi Pembangunan (Transparansi Publik)</span>
+                    </div>
+
+                    <div className="relative pl-6 border-l-2 border-[#2980B9] ml-2 space-y-4 pt-1">
+                      {(MOCK_AUDIT_TRAIL_LOGS[item.id] || [
+                        {
+                          id: 1,
+                          evaluasi_id: item.id,
+                          status_baru: 'Laporan Dikirim Warga',
+                          diubah_oleh: item.nama_pelapor,
+                          role_pengubah: 'Warga Masyarakat',
+                          catatan: item.deskripsi,
+                          waktu: item.tanggal_lapor,
+                        },
+                        {
+                          id: 2,
+                          evaluasi_id: item.id,
+                          status_sebelumnya: 'Laporan Dikirim Warga',
+                          status_baru: 'Analisis AI (Gemini)',
+                          diubah_oleh: 'CivicTrack Gemini AI',
+                          role_pengubah: 'Sistem Otomatis',
+                          catatan: `Skor Urgensi AI: ${item.skor_urgensi_ai}/5. ${item.analisis_ai}`,
+                          waktu: item.tanggal_lapor,
+                        },
+                        {
+                          id: 3,
+                          evaluasi_id: item.id,
+                          status_sebelumnya: 'Analisis AI (Gemini)',
+                          status_baru: item.status_verifikasi.replace('_', ' '),
+                          diubah_oleh: 'Penanggung Jawab Proyek (Dinas)',
+                          role_pengubah: 'Penanggung Jawab Proyek',
+                          catatan: item.catatan_dinas || 'Verifikasi dokumen dan konfirmasi tim teknis lapangan.',
+                          waktu: item.tanggal_tindakan || item.tanggal_lapor,
+                        },
+                      ]).map((log, lIdx) => (
+                        <div key={lIdx} className="relative">
+                          <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[#184C78] border-2 border-white ring-2 ring-[#2980B9]/30 flex items-center justify-center">
+                            <span className="w-1.5 h-1.5 bg-white rounded-full" />
+                          </div>
+                          <div>
+                            <div className="flex items-center justify-between">
+                              <strong className="text-[#184C78] font-bold text-xs">{log.status_baru}</strong>
+                              <span className="text-[10px] text-[#6C757D] font-mono">{log.waktu}</span>
+                            </div>
+                            <div className="text-[11px] text-[#2980B9] font-medium">
+                              Oleh: {log.diubah_oleh} ({log.role_pengubah})
+                            </div>
+                            <p className="text-[11px] text-slate-600 mt-0.5 bg-white p-2 rounded-lg border border-slate-200">
+                              {log.catatan}
+                            </p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>

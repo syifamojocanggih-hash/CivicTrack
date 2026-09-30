@@ -245,28 +245,72 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: DOKUMENTASI FOTO */}
+          {/* TAB 2: DOKUMENTASI FOTO & VIDEO */}
           {activeTab === 'gallery' && (
             <div className="space-y-4">
-              <h4 className="font-['DM_Sans'] text-sm font-bold text-[#184C78]">Foto Dokumentasi Lapangan:</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-['DM_Sans'] text-sm font-bold text-[#184C78]">Dokumentasi Fisik Lapangan:</h4>
+                <span className="text-[11px] text-[#6C757D] font-medium">Foto Berkas &amp; Rekaman Video Drone</span>
+              </div>
+
+              {/* Grid of Photos and Videos */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-slate-100 rounded-xl overflow-hidden border border-[#DCE0E6]">
-                  <div className="h-40 bg-gradient-to-br from-slate-700 to-slate-900 flex items-center justify-center text-white/80 p-4 text-center">
-                    <span className="text-xs font-medium">📸 Foto Fisik Pengerjaan Awal (30%)</span>
+                {/* Item 1: Video Drone / CCTV Progress */}
+                <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-700 text-white shadow-sm flex flex-col">
+                  <div className="relative h-44 bg-black flex items-center justify-center group overflow-hidden">
+                    <video
+                      controls
+                      poster="https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=800&auto=format&fit=crop&q=80"
+                      className="w-full h-full object-cover"
+                    >
+                      <source src="https://assets.mixkit.co/videos/preview/mixkit-heavy-machinery-paving-a-new-road-43206-large.mp4" type="video/mp4" />
+                      Browser Anda tidak mendukung pemutar video HTML5.
+                    </video>
+                    <div className="absolute top-2 left-2 bg-red-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                      <span>Video Drone 4K</span>
+                    </div>
+                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
+                      02:15
+                    </div>
                   </div>
-                  <div className="p-3 bg-white text-xs">
-                    <span className="font-bold text-[#184C78]">Pondasi &amp; Penataan Dasar</span>
-                    <p className="text-[11px] text-[#6C757D] mt-0.5">Diunggah oleh Pengawas Lapangan Dinas PU</p>
+                  <div className="p-3 bg-slate-800 text-xs flex-1 flex flex-col justify-between">
+                    <div>
+                      <span className="font-bold text-cyan-300 block">Inspeksi Udara &amp; Pemadatan Lapisan</span>
+                      <p className="text-[11px] text-slate-300 mt-1">
+                        Rekaman berkala pengawas lapangan untuk validasi bobot realisasi fisik mingguan.
+                      </p>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
+                      <span>Diunggah: Tim Pengawas PUPR</span>
+                      <span>Format: MP4 (H.264)</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="bg-slate-100 rounded-xl overflow-hidden border border-[#DCE0E6]">
-                  <div className="h-40 bg-gradient-to-br from-blue-900 to-slate-800 flex items-center justify-center text-white/80 p-4 text-center">
-                    <span className="text-xs font-medium">📸 Foto Fisik Progres Terkini ({project.progres_persen}%)</span>
+                {/* Item 2: Foto Progres Konstruksi */}
+                <div className="bg-white rounded-xl overflow-hidden border border-[#DCE0E6] shadow-sm flex flex-col">
+                  <div className="relative h-44 bg-slate-100 overflow-hidden">
+                    <img
+                      src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
+                      alt="Foto Fisik"
+                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2 left-2 bg-[#184C78]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                      📸 Foto Lapangan
+                    </div>
                   </div>
-                  <div className="p-3 bg-white text-xs">
-                    <span className="font-bold text-[#184C78]">{project.tahap_terkini || 'Pengerjaan Aktual'}</span>
-                    <p className="text-[11px] text-[#6C757D] mt-0.5">Status verifikasi: Disetujui Tim Teknis</p>
+                  <div className="p-3 bg-white text-xs flex-1 flex flex-col justify-between">
+                    <div>
+                      <span className="font-bold text-[#184C78] block">Pemasangan Struktur &amp; Perapihan Bahu Jalan</span>
+                      <p className="text-[11px] text-[#6C757D] mt-1">
+                        Pengecekan elevasi dan uji kepadatan agregat telah lolos uji laboratorium dinas.
+                      </p>
+                    </div>
+                    <div className="mt-2 pt-2 border-t border-[#DCE0E6]/60 flex items-center justify-between text-[10px] text-[#6C757D]">
+                      <span>Bobot Tahap: 65%</span>
+                      <span className="text-emerald-700 font-semibold">Terverifikasi</span>
+                    </div>
                   </div>
                 </div>
               </div>

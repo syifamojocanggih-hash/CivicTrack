@@ -3,8 +3,6 @@ import {
   Award,
   TrendingUp,
   AlertTriangle,
-  BarChart3,
-  FileSpreadsheet,
   ShieldCheck,
   DollarSign,
   Download,
@@ -15,18 +13,22 @@ import {
 } from 'lucide-react';
 import type { UserProfile, ProyekItem, DinasKinerjaItem } from '../../types';
 import { MOCK_DINAS_KINERJA, MOCK_EXECUTIVE_ALERTS } from '../../data/dashboardMockData';
+import { WILAYAH_DATA } from '../../data/geoWilayahData';
 
 interface PimpinanDashboardProps {
   currentUser: UserProfile;
   projects: ProyekItem[];
   onOpenProjectDetail?: (project: ProyekItem) => void;
+  activeSection?: string;
+  onSelectSection?: (section: string) => void;
 }
 
 export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
   currentUser,
   projects,
+  activeSection,
 }) => {
-  const [activeTab, setActiveTab] = useState<'kinerja_dinas' | 'sebaran_wilayah' | 'sentimen_ai' | 'laporan_eksekutif'>('kinerja_dinas');
+  const activeTab = (activeSection as any) || 'kinerja_dinas';
 
   const [dinasList] = useState<DinasKinerjaItem[]>(MOCK_DINAS_KINERJA);
   const [alertsList] = useState(MOCK_EXECUTIVE_ALERTS);
@@ -43,15 +45,6 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
   const avgRatingDaerah = (
     dinasList.reduce((acc, d) => acc + d.rata_rata_rating, 0) / dinasList.length
   ).toFixed(2);
-
-  // Regional breakdown mock data
-  const wilayahBreakdown = [
-    { nama: 'Kecamatan Lowokwaru', proyekCount: 14, anggaran: 34500000000, avgProgress: 68, status: 'On Track' },
-    { nama: 'Kecamatan Blimbing', proyekCount: 11, anggaran: 28400000000, avgProgress: 62, status: 'On Track' },
-    { nama: 'Kecamatan Klojen', proyekCount: 9, anggaran: 22800000000, avgProgress: 88, status: 'Hampir Rampung' },
-    { nama: 'Kecamatan Sukun', proyekCount: 8, anggaran: 16900000000, avgProgress: 54, status: 'Perlu Akselerasi' },
-    { nama: 'Kecamatan Kedungkandang', proyekCount: 6, anggaran: 8800000000, avgProgress: 72, status: 'On Track' },
-  ];
 
   const handleExportPDF = () => {
     window.print();
@@ -232,58 +225,8 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
         </div>
       </div>
 
-      {/* ── TABS NAVIGATION ── */}
-      <div className="flex border-b border-[#DCE0E6] bg-white rounded-xl px-2 pt-2 shadow-xs overflow-x-auto">
-        <button
-          onClick={() => setActiveTab('kinerja_dinas')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'kinerja_dinas'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <BarChart3 className="w-4 h-4" />
-          <span>Matriks Kinerja Antar-Dinas</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('sebaran_wilayah')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'sebaran_wilayah'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <MapPin className="w-4 h-4" />
-          <span>Sebaran Wilayah &amp; Realisasi</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('sentimen_ai')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'sentimen_ai'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <Sparkles className="w-4 h-4" />
-          <span>Analisis Aspirasi Publik (AI)</span>
-        </button>
-
-        <button
-          onClick={() => setActiveTab('laporan_eksekutif')}
-          className={`flex items-center gap-2 px-4 py-3 text-xs font-bold font-['DM_Sans'] transition-all border-b-2 cursor-pointer shrink-0 ${
-            activeTab === 'laporan_eksekutif'
-              ? 'border-[#184C78] text-[#184C78]'
-              : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
-          }`}
-        >
-          <FileSpreadsheet className="w-4 h-4" />
-          <span>Pusat Unduh Laporan Eksekutif</span>
-        </button>
-      </div>
-
-      {/* ── TAB CONTENT 1: MATRIKS KINERJA DINAS ── */}
+      {/* ── ACTIVE SECTION VIEW (DRIVEN BY SIDEBAR) ── */}
+      {/* ── SECTION 1: MATRIKS KINERJA DINAS ── */}
       {activeTab === 'kinerja_dinas' && (
         <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs overflow-hidden">
           <div className="p-4 border-b border-[#DCE0E6] flex items-center justify-between">
@@ -370,70 +313,121 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
         </div>
       )}
 
-      {/* ── TAB CONTENT 2: SEBARAN WILAYAH ── */}
+      {/* ── TAB CONTENT 2: SEBARAN WILAYAH & REKAPITULASI AGREGAT ── */}
       {activeTab === 'sebaran_wilayah' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-4">
-            <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
-              Pemerataan Pembangunan Berdasarkan Wilayah Kecamatan
-            </h3>
-            <p className="text-xs text-[#6C757D]">
-              Proporsi alokasi dana dan rata-rata persentase penyelesaian fisik di 5 kecamatan kota.
-            </p>
-
-            <div className="space-y-3 pt-2">
-              {wilayahBreakdown.map((item, idx) => (
-                <div key={idx} className="p-3.5 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6]/70 space-y-2">
-                  <div className="flex justify-between items-center text-xs">
-                    <span className="font-bold text-[#212529]">{item.nama}</span>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded bg-white text-[#184C78]">
-                      {item.proyekCount} Proyek
-                    </span>
-                  </div>
-                  <div className="flex justify-between text-[11px] text-[#6C757D]">
-                    <span>Alokasi: Rp {(item.anggaran / 1000000000).toFixed(1)} Miliar</span>
-                    <span className="font-bold text-[#184C78]">{item.avgProgress}% Progres</span>
-                  </div>
-                  <div className="w-full bg-[#DCE0E6] h-2 rounded-full overflow-hidden">
-                    <div
-                      className="bg-[#2980B9] h-full rounded-full"
-                      style={{ width: `${item.avgProgress}%` }}
-                    />
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-4 flex flex-col justify-between">
-            <div>
-              <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
-                Ringkasan Rekomendasi Pimpinan Daerah
-              </h3>
-              <div className="mt-3 space-y-3 text-xs">
-                <div className="p-3 bg-[#EBF4FB] rounded-xl border border-[#c5def2] text-[#184C78] space-y-1">
-                  <div className="font-bold">1. Akselerasi Kecamatan Sukun:</div>
-                  <p className="text-[#212529] text-[11px] leading-relaxed">
-                    Percepatan revitalisasi pasar tradisional terpadu agar tidak melampaui target akhir tahun anggaran.
-                  </p>
-                </div>
-                <div className="p-3 bg-[#E6F7F1] rounded-xl border border-[#B7EBD8] text-[#0E6243] space-y-1">
-                  <div className="font-bold">2. Best Practice Penanganan Drainase Klojen:</div>
-                  <p className="text-[#212529] text-[11px] leading-relaxed">
-                    Normalisasi drainase MT Haryono mencatatkan kepuasan publik tertinggi (4.8/5.0). Model mitigasi banjir dapat diterapkan pada koridor Lowokwaru.
-                  </p>
-                </div>
-                <div className="p-3 bg-[#FEF3E7] rounded-xl border border-[#FBD8B3] text-[#9A4C08] space-y-1">
-                  <div className="font-bold">3. Audit Tambahan Jembatan Dinoyo:</div>
-                  <p className="text-[#212529] text-[11px] leading-relaxed">
-                    Perintahkan Inspektorat bersama Dinas PUPR untuk memonitor hasil uji geoteknik lanjutan pada pekan ini.
-                  </p>
-                </div>
+        <div className="space-y-6">
+          {/* Top Aggregate Visual Chart & Breakdown */}
+          <div className="bg-white p-6 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#DCE0E6] pb-4">
+              <div>
+                <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78] flex items-center gap-2">
+                  <MapPin className="w-5 h-5 text-[#2980B9]" />
+                  <span>Rekapitulasi Agregat Proyek per Wilayah Kecamatan (Kabupaten Lamongan)</span>
+                </h3>
+                <p className="text-xs text-[#6C757D] mt-0.5">
+                  Distribusi sebaran proyek fisik, status pengerjaan, dan alokasi dana APBD di 6 kecamatan utama.
+                </p>
+              </div>
+              <div className="flex items-center gap-3 text-xs">
+                <span className="flex items-center gap-1 text-[#2980B9] font-bold">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#2980B9]" /> Berjalan
+                </span>
+                <span className="flex items-center gap-1 text-[#1A9E6E] font-bold">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#1A9E6E]" /> Selesai
+                </span>
+                <span className="flex items-center gap-1 text-[#E74C3C] font-bold">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#E74C3C]" /> Tertunda
+                </span>
               </div>
             </div>
 
-            <div className="p-3 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6] text-[11px] text-[#6C757D]">
-              Terakhir diperbarui: Hari ini, pukul 14:00 WIB • Sinkronisasi Otomatis Database MySQL
+            {/* Visual Bar Charts per Subdistrict */}
+            <div className="space-y-4">
+              {WILAYAH_DATA.kecamatanList.map((kec, idx) => {
+                const totalProyekKec = kec.proyekBerjalan + kec.proyekSelesai + kec.proyekTertunda;
+                const berjalanPct = totalProyekKec > 0 ? ((kec.proyekBerjalan / totalProyekKec) * 100).toFixed(0) : '0';
+                const selesaiPct = totalProyekKec > 0 ? ((kec.proyekSelesai / totalProyekKec) * 100).toFixed(0) : '0';
+                const tertundaPct = totalProyekKec > 0 ? ((kec.proyekTertunda / totalProyekKec) * 100).toFixed(0) : '0';
+
+                return (
+                  <div key={idx} className="p-4 bg-[#F8FAFC] rounded-xl border border-[#DCE0E6] space-y-2.5">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                      <div>
+                        <strong className="text-sm font-bold text-[#184C78]">{kec.nama}</strong>
+                        <span className="text-[#6C757D] text-[11px] ml-2">
+                          ({kec.desaList.length - 1} Desa / Kelurahan)
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-3 font-semibold text-xs">
+                        <span className="text-slate-700">Total: <strong>{totalProyekKec} Proyek</strong></span>
+                        <span className="text-emerald-700">Alokasi: <strong>Rp {(kec.anggaranTotal / 1000000000).toFixed(1)} Miliar</strong></span>
+                      </div>
+                    </div>
+
+                    {/* Stacked Percentage Bar Chart */}
+                    <div className="w-full bg-[#E2E8F0] h-3 rounded-full overflow-hidden flex shadow-inner">
+                      <div
+                        style={{ width: `${berjalanPct}%` }}
+                        className="bg-[#2980B9] h-full transition-all"
+                        title={`Berjalan: ${kec.proyekBerjalan} Proyek (${berjalanPct}%)`}
+                      />
+                      <div
+                        style={{ width: `${selesaiPct}%` }}
+                        className="bg-[#1A9E6E] h-full transition-all"
+                        title={`Selesai: ${kec.proyekSelesai} Proyek (${selesaiPct}%)`}
+                      />
+                      <div
+                        style={{ width: `${tertundaPct}%` }}
+                        className="bg-[#E74C3C] h-full transition-all"
+                        title={`Tertunda: ${kec.proyekTertunda} Proyek (${tertundaPct}%)`}
+                      />
+                    </div>
+
+                    {/* Numeric breakdown badges */}
+                    <div className="flex items-center justify-between text-[11px] text-[#6C757D] pt-1 border-t border-slate-200/60">
+                      <div className="flex items-center gap-4">
+                        <span>Sedang Berjalan: <strong className="text-[#2980B9] font-bold">{kec.proyekBerjalan}</strong></span>
+                        <span>Selesai (FHO): <strong className="text-[#1A9E6E] font-bold">{kec.proyekSelesai}</strong></span>
+                        {kec.proyekTertunda > 0 ? (
+                          <span>Tertunda/Revisi: <strong className="text-[#E74C3C] font-bold">{kec.proyekTertunda}</strong></span>
+                        ) : (
+                          <span className="text-emerald-600">✓ Nol Kendala Tertunda</span>
+                        )}
+                      </div>
+                      <span className="text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">
+                        Desa Utama: {kec.desaList[1]}
+                      </span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Strategic Executive Recommendations */}
+          <div className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-4">
+            <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
+              Rekomendasi Kebijakan Pimpinan Daerah Berbasis Data Wilayah
+            </h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div className="p-3.5 bg-[#EBF4FB] rounded-xl border border-[#c5def2] text-[#184C78] space-y-1">
+                <div className="font-bold">1. Akselerasi Koridor Deket &amp; Sukodadi:</div>
+                <p className="text-[#212529] text-[11px] leading-relaxed">
+                  Terdapat masing-masing 1 proyek tertunda akibat utilitas kabel &amp; pipa. Perlu fasilitasi koordinasi lintas sektoral dengan PLN dan PDAM.
+                </p>
+              </div>
+              <div className="p-3.5 bg-[#E6F7F1] rounded-xl border border-[#B7EBD8] text-[#0E6243] space-y-1">
+                <div className="font-bold">2. Pencapaian Wilayah Paciran &amp; Babat:</div>
+                <p className="text-[#212529] text-[11px] leading-relaxed">
+                  Penyelesaian proyek infrastruktur pelabuhan &amp; jembatan penghubung tepat waktu dengan serapan anggaran fisik di atas 85%.
+                </p>
+              </div>
+              <div className="p-3.5 bg-[#FEF3E7] rounded-xl border border-[#FBD8B3] text-[#9A4C08] space-y-1">
+                <div className="font-bold">3. Optimalisasi Pembangunan Perkotaan:</div>
+                <p className="text-[#212529] text-[11px] leading-relaxed">
+                  Kecamatan Lamongan (Kota) menyerap porsi terbesar (Rp 34.5 M). Fokuskan pada penyelesaian tuntas ruang terbuka hijau dan penataan pedestrian.
+                </p>
+              </div>
             </div>
           </div>
         </div>

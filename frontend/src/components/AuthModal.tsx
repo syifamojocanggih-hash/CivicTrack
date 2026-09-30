@@ -63,13 +63,12 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
-  const handleQuickLogin = async (demoRole: 'pemerintah' | 'admin' | 'pimpinan' | 'warga' | 'peneliti') => {
+  const handleQuickLogin = async (demoRole: 'warga' | 'aparatur_pemerintah' | 'penanggung_jawab') => {
     setIsLoading(true);
     setErrorMsg(null);
     let targetEmail = 'budi.santoso@gmail.com';
-    if (demoRole === 'pemerintah' || demoRole === 'admin') targetEmail = 'admin.pu@bojonegoro.go.id';
-    if (demoRole === 'pimpinan') targetEmail = 'pimpinan.pu@bojonegoro.go.id';
-    if (demoRole === 'peneliti') targetEmail = 'rahmat.peneliti@unair.ac.id';
+    if (demoRole === 'penanggung_jawab') targetEmail = 'admin.pu@bojonegoro.go.id';
+    if (demoRole === 'aparatur_pemerintah') targetEmail = 'pimpinan.pu@bojonegoro.go.id';
 
     try {
       const res = await apiService.login(targetEmail, 'password123');
@@ -79,30 +78,25 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       console.warn('Quick login fallback:', err);
       let demoUser: UserProfile;
       switch (demoRole) {
-        case 'pemerintah':
-        case 'admin':
+        case 'penanggung_jawab':
           demoUser = {
             id: 1,
-            nama: 'Ir. Hendro Wijaya',
-            email: 'admin.pu@bojonegoro.go.id',
-            role: 'pemerintah',
+            nama: 'Ir. Hendro Wijaya, S.T.',
+            email: 'penanggungjawab.pu@bojonegoro.go.id',
+            role: 'penanggung_jawab',
+            nama_dinas: 'Dinas PUPR / Tim Pelaksana Proyek',
+            nip: '19780412 200312 1 004',
             dinas_id: 1,
           };
           break;
-        case 'pimpinan':
+        case 'aparatur_pemerintah':
           demoUser = {
             id: 2,
             nama: 'Drs. H. M. Fauzi, M.Si',
-            email: 'pimpinan.pu@bojonegoro.go.id',
-            role: 'pemerintah',
-          };
-          break;
-        case 'peneliti':
-          demoUser = {
-            id: 4,
-            nama: 'Dr. Rahmat Hidayat',
-            email: 'rahmat.peneliti@unair.ac.id',
-            role: 'media_peneliti',
+            email: 'aparatur.pemerintah@bojonegoro.go.id',
+            role: 'aparatur_pemerintah',
+            nama_dinas: 'Sekretariat Daerah & Bappeda',
+            nip: '19690815 199403 1 002',
           };
           break;
         case 'warga':
@@ -112,6 +106,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             nama: 'Budi Santoso',
             email: 'budi.santoso@gmail.com',
             role: 'warga',
+            telepon: '081234567890',
           };
           break;
       }
@@ -141,7 +136,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </h3>
           <p className="text-xs text-white/70 mt-1">
             {mode === 'login'
-              ? 'Akses laporan, langganan proyek, dan fitur partisipasi warga'
+              ? 'Akses laporan, langganan proyek, dan monitoring pembangunan daerah'
               : 'Daftarkan diri untuk memantau transparansi pembangunan daerah'}
           </p>
         </div>
@@ -235,9 +230,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 onChange={(e) => setRole(e.target.value as any)}
                 className="w-full px-3 py-2 text-sm border border-[#DCE0E6] rounded-lg focus:border-[#2980B9] outline-none bg-white text-[#212529]"
               >
-                <option value="warga">Warga Masyarakat (Partisipasi &amp; Pengaduan)</option>
-                <option value="pemerintah">Aparatur Pemerintah (Operasional Dinas &amp; Eksekutif)</option>
-                <option value="media_peneliti">Media / Akademisi / LSM (Open Data)</option>
+                <option value="warga">1. Warga Masyarakat (Partisipasi, Pantau &amp; Lapor)</option>
+                <option value="aparatur_pemerintah">2. Aparatur Pemerintah (Monitoring Eksekutif &amp; Wilayah)</option>
+                <option value="penanggung_jawab">3. Penanggung Jawab Proyek (Kelola Proyek &amp; Tanggapi Aduan)</option>
               </select>
             </div>
           )}
@@ -259,32 +254,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </button>
         </form>
 
-        {/* Quick Demo Login Preset (Helpful for quick testing) */}
-        <div className="px-6 pb-6 pt-1 border-t border-[#DCE0E6] bg-[#F5F7FA]">
+        {/* Quick Demo Login Preset (3 Roles) */}
+        <div className="px-6 pb-6 pt-2 border-t border-[#DCE0E6] bg-[#F5F7FA]">
           <div className="text-[11px] font-bold text-[#6C757D] uppercase tracking-wider mb-2.5">
-            ⚡ Quick Demo Login (3 Role Utama):
+            ⚡ Quick Demo Login (3 Role):
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
             <button
               onClick={() => handleQuickLogin('warga')}
-              className="px-2.5 py-2 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors cursor-pointer"
+              className="px-2.5 py-2 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors cursor-pointer shadow-2xs"
             >
               👤 Warga
-              <div className="text-[10px] text-[#6C757D] font-normal">Budi Santoso</div>
+              <div className="text-[10px] text-[#6C757D] font-normal truncate">Budi Santoso</div>
             </button>
             <button
-              onClick={() => handleQuickLogin('pemerintah')}
-              className="px-2.5 py-2 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors cursor-pointer"
+              onClick={() => handleQuickLogin('aparatur_pemerintah')}
+              className="px-2.5 py-2 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors cursor-pointer shadow-2xs"
             >
-              🏛️ Pemerintah
-              <div className="text-[10px] text-[#6C757D] font-normal">Dinas &amp; Pimpinan</div>
+              🏛️ Aparatur Pemda
+              <div className="text-[10px] text-[#6C757D] font-normal truncate">Eksekutif / Bappeda</div>
             </button>
             <button
-              onClick={() => handleQuickLogin('peneliti')}
-              className="px-2.5 py-2 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors cursor-pointer"
+              onClick={() => handleQuickLogin('penanggung_jawab')}
+              className="px-2.5 py-2 bg-white border border-[#DCE0E6] rounded-lg text-xs font-semibold text-[#184C78] hover:border-[#2980B9] hover:bg-[#EBF4FB] text-left transition-colors cursor-pointer shadow-2xs"
             >
-              🔬 Peneliti/LSM
-              <div className="text-[10px] text-[#6C757D] font-normal">Dr. Rahmat</div>
+              👷 Penanggung Jawab
+              <div className="text-[10px] text-[#6C757D] font-normal truncate">Dinas PUPR / Pelaksana</div>
             </button>
           </div>
         </div>

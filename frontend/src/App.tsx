@@ -157,19 +157,20 @@ export function App() {
     if (!currentUser) return;
     let newName = currentUser.nama;
     let newEmail = currentUser.email;
+    let newDinas = currentUser.nama_dinas;
 
-    if (newRole === 'pemerintah' || newRole === 'admin_dinas') {
-      newName = 'Ir. Hendro Wijaya (Dinas PU & Tim Eksekutif)';
-      newEmail = 'aparatur.pemerintah@bojonegoro.go.id';
-    } else if (newRole === 'pimpinan_instansi') {
+    if (newRole === 'penanggung_jawab' || newRole === 'admin_dinas' || newRole === 'pemerintah') {
+      newName = 'Ir. Hendro Wijaya, S.T.';
+      newEmail = 'penanggungjawab.pu@bojonegoro.go.id';
+      newDinas = 'Dinas Pekerjaan Umum & Tim Pelaksana';
+    } else if (newRole === 'aparatur_pemerintah' || newRole === 'pimpinan_instansi') {
       newName = 'Drs. H. M. Fauzi, M.Si';
-      newEmail = 'pimpinan.pu@bojonegoro.go.id';
-    } else if (newRole === 'media_peneliti') {
-      newName = 'Dr. Rahmat Hidayat';
-      newEmail = 'rahmat.peneliti@unair.ac.id';
+      newEmail = 'aparatur.pemerintah@bojonegoro.go.id';
+      newDinas = 'Sekretariat Daerah & Bappeda';
     } else {
       newName = 'Budi Santoso';
       newEmail = 'budi.santoso@gmail.com';
+      newDinas = undefined;
     }
 
     setCurrentUser({
@@ -177,6 +178,7 @@ export function App() {
       nama: newName,
       email: newEmail,
       role: newRole,
+      nama_dinas: newDinas,
     });
   };
 

@@ -52,7 +52,7 @@ export interface CategoryItem {
   description: string;
 }
 
-export type UserRole = 'warga' | 'pemerintah' | 'admin_dinas' | 'pimpinan_instansi' | 'media_peneliti';
+export type UserRole = 'warga' | 'aparatur_pemerintah' | 'penanggung_jawab' | 'pemerintah' | 'admin_dinas' | 'pimpinan_instansi';
 
 export interface UserProfile {
   id: number;
@@ -63,6 +63,29 @@ export interface UserProfile {
   nama_dinas?: string;
   nip?: string;
   telepon?: string;
+}
+
+export interface NotificationItem {
+  id: number;
+  proyek_id?: number;
+  nama_proyek?: string;
+  judul: string;
+  pesan: string;
+  kategori: 'progres' | 'aduan' | 'evaluasi' | 'sistem';
+  waktu: string;
+  dibaca: boolean;
+  link_url?: string;
+}
+
+export interface AuditTrailLogItem {
+  id: number;
+  evaluasi_id: number;
+  status_sebelumnya?: string;
+  status_baru: string;
+  diubah_oleh: string;
+  role_pengubah: string;
+  catatan: string;
+  waktu: string;
 }
 
 export type StatusAduan = 'menunggu' | 'diproses' | 'selesai' | 'ditolak';

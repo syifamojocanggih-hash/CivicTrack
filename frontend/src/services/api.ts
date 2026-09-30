@@ -111,10 +111,10 @@ export const apiService = {
     localStorage.setItem('civictrack_token', token);
 
     let role: UserProfile['role'] = 'warga';
-    if (data.user?.role === 'admin_dinas' || data.user?.role === 'pimpinan_instansi') {
-      role = 'pemerintah';
-    } else if (data.user?.role === 'media_peneliti') {
-      role = 'media_peneliti';
+    if (data.user?.role === 'pimpinan_instansi' || data.user?.role === 'aparatur_pemerintah') {
+      role = 'aparatur_pemerintah';
+    } else if (data.user?.role === 'admin_dinas' || data.user?.role === 'penanggung_jawab' || data.user?.role === 'pemerintah') {
+      role = 'penanggung_jawab';
     }
 
     const user: UserProfile = {
@@ -123,6 +123,7 @@ export const apiService = {
       email: data.user?.email || email,
       role: role,
       dinas_id: data.user?.dinas_id,
+      nama_dinas: data.user?.nama_dinas,
     };
 
     return { user, token };
@@ -131,9 +132,8 @@ export const apiService = {
   // Register with backend
   async register(nama: string, email: string, password: string, role: string = 'warga'): Promise<{ user: UserProfile; token: string }> {
     let backendRole = 'warga';
-    if (role === 'pemerintah' || role === 'admin') backendRole = 'admin_dinas';
-    if (role === 'pimpinan') backendRole = 'pimpinan_instansi';
-    if (role === 'media_peneliti' || role === 'peneliti') backendRole = 'media_peneliti';
+    if (role === 'penanggung_jawab' || role === 'pemerintah' || role === 'admin') backendRole = 'admin_dinas';
+    if (role === 'aparatur_pemerintah' || role === 'pimpinan') backendRole = 'pimpinan_instansi';
 
     const res = await fetch(`${BASE_URL}/auth/register`, {
       method: 'POST',
@@ -150,11 +150,15 @@ export const apiService = {
     const token = data.access_token;
     localStorage.setItem('civictrack_token', token);
 
+    let normalizedRole: UserProfile['role'] = 'warga';
+    if (role === 'aparatur_pemerintah' || role === 'pimpinan') normalizedRole = 'aparatur_pemerintah';
+    if (role === 'penanggung_jawab' || role === 'pemerintah' || role === 'admin') normalizedRole = 'penanggung_jawab';
+
     const user: UserProfile = {
       id: data.user?.id || 1,
       nama: data.user?.nama || nama,
       email: data.user?.email || email,
-      role: (role === 'pemerintah' || role === 'admin' ? 'pemerintah' : role) as any,
+      role: normalizedRole,
     };
 
     return { user, token };

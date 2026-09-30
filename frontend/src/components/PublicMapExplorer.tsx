@@ -30,6 +30,7 @@ import {
 import type { ProyekItem, ProyekKategori, UserProfile } from '../types';
 import centennialParkImg from '../assets/centennial_park.jpg';
 import { apiService } from '../services/api';
+import { WILAYAH_DATA, BUDGET_RANGES } from '../data/geoWilayahData';
 
 interface PublicMapExplorerProps {
   currentUser: UserProfile | null;
@@ -98,6 +99,12 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [selectedProjectId, setSelectedProjectId] = useState<number>(1);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(true);
 
+  // Hierarchical Wilayah & Budget filter state
+  const [selectedKecamatan, setSelectedKecamatan] = useState<string>('all');
+  const [selectedDesa, setSelectedDesa] = useState<string>('all');
+  const [selectedBudget, setSelectedBudget] = useState<string>('all');
+  const [showBoundaryPolygons, setShowBoundaryPolygons] = useState<boolean>(true);
+
   // Mobile Bottom Sheet state
   const [mobileSheetState, setMobileSheetState] = useState<'collapsed' | 'expanded'>('collapsed');
   const [mobileActiveTab, setMobileActiveTab] = useState<'explore' | 'my-projects' | 'search' | 'profile'>('explore');
@@ -148,6 +155,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const mapInstanceRef = useRef<L.Map | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
   const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const polygonsLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
 
   // 1. Geolocation Watcher for Real-time GPS
@@ -218,10 +226,34 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     });
   }, [liveProjects, userLocation.lat, userLocation.lng, liveTelemetryTick]);
 
-  // Filtered projects
+  // Filtered projects with hierarchical subdistrict & budget range filters
   const filteredProjects = useMemo(() => {
     return enrichedProjects.filter((p) => {
+      // Category filter
       if (selectedCategory !== 'all' && p.kategori !== selectedCategory) return false;
+
+      // Hierarchical Kecamatan filter
+      if (selectedKecamatan !== 'all') {
+        const matchKec = (p.nama_wilayah || '').toLowerCase().includes(selectedKecamatan.toLowerCase().replace('kecamatan ', ''));
+        if (!matchKec) return false;
+      }
+
+      // Hierarchical Desa filter
+      if (selectedDesa !== 'all' && selectedDesa !== 'Semua Desa / Kelurahan') {
+        const cleanDesa = selectedDesa.replace('Desa ', '').replace('Kelurahan ', '').toLowerCase();
+        const matchDesa = (p.nama_wilayah || '').toLowerCase().includes(cleanDesa) || p.deskripsi.toLowerCase().includes(cleanDesa);
+        if (!matchDesa) return false;
+      }
+
+      // Budget Range filter
+      if (selectedBudget !== 'all') {
+        const bConfig = BUDGET_RANGES.find((b) => b.id === selectedBudget);
+        if (bConfig) {
+          if (p.anggaran < bConfig.min || p.anggaran > bConfig.max) return false;
+        }
+      }
+
+      // Search Query filter
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
         const matchTitle = p.nama_proyek.toLowerCase().includes(q);
@@ -231,7 +263,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       }
       return true;
     });
-  }, [enrichedProjects, selectedCategory, searchQuery]);
+  }, [enrichedProjects, selectedCategory, selectedKecamatan, selectedDesa, selectedBudget, searchQuery]);
 
   // Selected project object
   const currentProject = useMemo(() => {
@@ -241,7 +273,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     );
   }, [selectedProjectId, enrichedProjects]);
 
-  // 3. Initialize Leaflet Map (Using OSM HOT tiles to avoid watermark)
+  // 3. Initialize Leaflet Map (Using OSM HOT tiles)
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -249,10 +281,10 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     const map = L.map(mapContainerRef.current, {
       center: [-7.1195, 112.4154],
       zoom: 14,
-      zoomControl: false, // We use custom UI controls matching the user's mockup
+      zoomControl: false,
     });
 
-    // OpenStreetMap HOT tiles (zero API key, zero watermark, clean & fast)
+    // OpenStreetMap HOT tiles
     const standardTile = L.tileLayer(
       'https://{s}.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
       {
@@ -263,6 +295,10 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     ).addTo(map);
 
     tileLayerRef.current = standardTile;
+
+    // Layer group for GeoJSON administrative boundary polygons
+    const polygonsGroup = L.layerGroup().addTo(map);
+    polygonsLayerRef.current = polygonsGroup;
 
     // Layer group for project markers
     const markersGroup = L.layerGroup().addTo(map);
@@ -275,6 +311,48 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       mapInstanceRef.current = null;
     };
   }, []);
+
+  // 3b. Render GeoJSON Boundary Polygons for Districts (Kecamatan)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const polyGroup = polygonsLayerRef.current;
+    if (!map || !polyGroup) return;
+
+    polyGroup.clearLayers();
+
+    if (!showBoundaryPolygons) return;
+
+    WILAYAH_DATA.kecamatanList.forEach((kec) => {
+      const isSelected = selectedKecamatan === kec.nama;
+      const poly = L.polygon(kec.polygon as any, {
+        color: isSelected ? '#184C78' : '#2980B9',
+        weight: isSelected ? 3 : 1.5,
+        opacity: 0.85,
+        fillColor: isSelected ? '#184C78' : '#38BDF8',
+        fillOpacity: isSelected ? 0.28 : 0.1,
+        dashArray: isSelected ? undefined : '5, 5',
+      });
+
+      // Tooltip on Hover
+      poly.bindTooltip(
+        `<div class="p-1 text-xs">
+          <strong class="text-[#184C78] block font-bold">${kec.nama}</strong>
+          <span class="text-slate-600 text-[10px]">Total Proyek: <strong>${kec.proyekBerjalan + kec.proyekSelesai + kec.proyekTertunda} Proyek</strong></span><br/>
+          <span class="text-slate-600 text-[10px]">Alokasi Dana: <strong>Rp ${(kec.anggaranTotal / 1000000000).toFixed(1)} M</strong></span>
+        </div>`,
+        { sticky: true, direction: 'top', opacity: 0.95 }
+      );
+
+      // On Click: Select and zoom to district
+      poly.on('click', () => {
+        setSelectedKecamatan(kec.nama);
+        setSelectedDesa('all');
+        map.flyTo(kec.koordinatPusat, 13, { animate: true, duration: 0.8 });
+      });
+
+      polyGroup.addLayer(poly);
+    });
+  }, [showBoundaryPolygons, selectedKecamatan]);
 
   // 4. Update Tile Layer on toggle (Standard vs Satellite)
   useEffect(() => {
@@ -602,39 +680,135 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               </button>
             </div>
 
-            {/* Horizontal Filter Pills (Matches Image 1 & 2) */}
-            <div className="pointer-events-auto flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full scrollbar-none">
-              {[
-                { id: 'all', label: 'All Projects', count: enrichedProjects.length },
-                { id: 'jalan', label: 'Roadworks', count: 3 },
-                { id: 'taman', label: 'Parks & Rec', count: 1 },
-                { id: 'drainase', label: 'Water & Drainage', count: 1 },
-                { id: 'fasilitas', label: 'Fasilitas Umum', count: 1 },
-              ].map((pill) => (
+            {/* Horizontal Filter Controls & Cascading Selectors */}
+            <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 max-w-full">
+              {/* Category Pills */}
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 max-w-full scrollbar-none">
+                {[
+                  { id: 'all', label: 'Semua Kategori' },
+                  { id: 'jalan', label: 'Jalan & Jembatan' },
+                  { id: 'taman', label: 'Taman & RTH' },
+                  { id: 'drainase', label: 'Drainase Air' },
+                  { id: 'fasilitas', label: 'Fasilitas Umum' },
+                ].map((pill) => (
+                  <button
+                    key={pill.id}
+                    onClick={() => {
+                      setSelectedCategory(pill.id as any);
+                    }}
+                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
+                      selectedCategory === pill.id
+                        ? 'bg-[#184C78] text-white shadow-md'
+                        : 'bg-white/95 backdrop-blur-md text-[#475569] hover:bg-white hover:text-[#184C78] border border-slate-200/80'
+                    }`}
+                  >
+                    <span>{pill.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Hierarchical Subdistrict & Budget Dropdowns Row */}
+              <div className="flex flex-wrap items-center gap-1.5 mt-1">
+                {/* 1. Kecamatan Filter */}
+                <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl px-2.5 py-1 shadow-xs flex items-center gap-1.5 text-xs">
+                  <span className="text-[#184C78] font-bold text-[11px]">📍 Kec:</span>
+                  <select
+                    value={selectedKecamatan}
+                    onChange={(e) => {
+                      setSelectedKecamatan(e.target.value);
+                      setSelectedDesa('all');
+                      if (e.target.value !== 'all' && mapInstanceRef.current) {
+                        const target = WILAYAH_DATA.kecamatanList.find((k) => k.nama === e.target.value);
+                        if (target) {
+                          mapInstanceRef.current.flyTo(target.koordinatPusat, 13, { animate: true, duration: 0.8 });
+                        }
+                      }
+                    }}
+                    className="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer"
+                  >
+                    <option value="all">Semua Kecamatan (Kab. Lamongan)</option>
+                    {WILAYAH_DATA.kecamatanList.map((kec) => (
+                      <option key={kec.nama} value={kec.nama}>
+                        {kec.nama}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 2. Desa/Kelurahan Filter (Cascading based on selected Kecamatan) */}
+                {selectedKecamatan !== 'all' && (
+                  <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl px-2.5 py-1 shadow-xs flex items-center gap-1.5 text-xs animate-fade-in">
+                    <span className="text-[#2980B9] font-bold text-[11px]">🏘️ Desa:</span>
+                    <select
+                      value={selectedDesa}
+                      onChange={(e) => setSelectedDesa(e.target.value)}
+                      className="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer max-w-[140px]"
+                    >
+                      {WILAYAH_DATA.kecamatanList
+                        .find((k) => k.nama === selectedKecamatan)
+                        ?.desaList.map((desa) => (
+                          <option key={desa} value={desa}>
+                            {desa}
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+
+                {/* 3. Budget Range Filter */}
+                <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl px-2.5 py-1 shadow-xs flex items-center gap-1.5 text-xs">
+                  <span className="text-[#1A9E6E] font-bold text-[11px]">💰 Anggaran:</span>
+                  <select
+                    value={selectedBudget}
+                    onChange={(e) => setSelectedBudget(e.target.value)}
+                    className="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer"
+                  >
+                    {BUDGET_RANGES.map((b) => (
+                      <option key={b.id} value={b.id}>
+                        {b.label}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* 4. Toggle Boundary Polygons Switch */}
                 <button
-                  key={pill.id}
-                  onClick={() => {
-                    setSelectedCategory(pill.id as any);
-                    const matched = enrichedProjects.find((p) => pill.id === 'all' || p.kategori === pill.id);
-                    if (matched) handleSelectPin(matched.id);
-                  }}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                    selectedCategory === pill.id
-                      ? 'bg-[#184C78] text-white shadow-md'
-                      : 'bg-white/95 backdrop-blur-md text-[#475569] hover:bg-white hover:text-[#184C78] border border-slate-200/80'
+                  onClick={() => setShowBoundaryPolygons(!showBoundaryPolygons)}
+                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
+                    showBoundaryPolygons
+                      ? 'bg-[#184C78] text-white border-[#184C78]'
+                      : 'bg-white/95 backdrop-blur-md text-slate-600 border-slate-200 hover:bg-slate-50'
                   }`}
+                  title="Tampilkan / Sembunyikan Layer Poligon Batas Wilayah Kecamatan"
                 >
-                  <span>{pill.label}</span>
+                  <Layers className="w-3.5 h-3.5" />
+                  <span>Batas Wilayah (GeoJSON)</span>
                 </button>
-              ))}
+
+                {/* Clear Active Filters */}
+                {(selectedCategory !== 'all' || selectedKecamatan !== 'all' || selectedBudget !== 'all' || searchQuery) && (
+                  <button
+                    onClick={() => {
+                      setSelectedCategory('all');
+                      setSelectedKecamatan('all');
+                      setSelectedDesa('all');
+                      setSelectedBudget('all');
+                      setSearchQuery('');
+                    }}
+                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
+                    title="Reset semua filter"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                    <span>Reset Filter</span>
+                  </button>
+                )}
+              </div>
             </div>
 
-            {/* Mobile Real-time GPS status banner */}
-            <div className="pointer-events-auto md:hidden flex items-center gap-1.5 bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-[10px] font-semibold text-slate-700 border border-slate-200 shadow-xs w-fit">
+            {/* Real-time status banner */}
+            <div className="pointer-events-auto flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[11px] font-semibold text-slate-700 border border-slate-200 shadow-xs w-fit">
               <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              <span>{isBackendConnected ? 'Backend MySQL Aktif' : 'Leaflet Live'}</span>
-              <span className="text-slate-400">•</span>
-              <span className="text-slate-500">{lastSyncTime}</span>
+              <span>Menampilkan {filteredProjects.length} dari {projects.length} Proyek Aktif</span>
             </div>
           </div>
 
