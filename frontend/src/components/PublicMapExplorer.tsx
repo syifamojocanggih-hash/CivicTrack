@@ -562,18 +562,18 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-[#F8FAFC] flex flex-col font-['Inter'] text-[#212529] select-none overflow-hidden">
+    <div className="fixed inset-0 z-40 bg-[#F8FAFC] flex flex-col font-['Inter'] text-[#212529] select-none overflow-hidden">
       {/* ── TOP NAV HEADER (DESKTOP & TABLET) ── */}
       <header className="h-14 bg-white/95 backdrop-blur-md border-b border-[#DCE4EC] px-4 sm:px-6 flex items-center justify-between shrink-0 z-30 shadow-xs">
         {/* Left: Brand & Back to Home */}
         <div className="flex items-center gap-3 sm:gap-4">
           <button
             onClick={onBackToLanding}
-            className="p-1.5 rounded-lg hover:bg-slate-100 text-[#184C78] transition-colors flex items-center gap-1.5 text-xs font-semibold cursor-pointer"
-            title="Kembali ke Beranda"
+            className="px-3 py-1.5 rounded-lg bg-[#EBF4FB] hover:bg-[#d9ecf8] text-[#184C78] border border-[#c5def2] transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer shadow-2xs"
+            title="Kembali ke Beranda Utama"
           >
             <ArrowLeft className="w-4 h-4" />
-            <span className="hidden sm:inline">Beranda</span>
+            <span>← Beranda</span>
           </button>
 
           <div className="h-4 w-px bg-slate-200 hidden sm:block" />

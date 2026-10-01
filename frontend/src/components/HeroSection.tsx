@@ -168,36 +168,34 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             </span>
           </h1>
 
-          {/* Description paragraph - clean without dashes */}
+          {/* Description paragraph - clean & concise */}
           <p className="text-[15px] sm:text-[16px] text-[#475569] leading-[1.65] max-w-[480px] mb-6">
-            CivicTrack membuka akses informasi progres, anggaran, dan dokumentasi seluruh proyek infrastruktur daerah dari jalan hingga taman dalam satu peta yang bisa dijangkau siapa saja.
+            Akses langsung linimasa progres, serapan anggaran, dan dokumentasi foto/video proyek pembangunan daerah secara transparan dan mudah dipahami.
           </p>
 
-          {/* ── 2 ACTION BUTTONS: CEK DI SEKITAR & PANTAU PROJECT ── */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3.5 max-w-[480px]">
-            {/* Button 1: Cek Disekitar (Primary Action) */}
+          {/* ── 2 ACTION BUTTONS: BUKA PETA SPASIAL & DAFTAR PROYEK ── */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 max-w-[480px]">
+            {/* Button 1: Buka Peta Spasial (GIS) */}
             <button
               type="button"
               id="btn-cek-disekitar"
               onClick={handleCekDisekitar}
-              className="flex-1 px-6 py-3.5 bg-gradient-to-r from-[#184C78] to-[#1F629C] hover:from-[#123B5E] hover:to-[#184C78] text-white font-bold text-sm sm:text-[15px] rounded-xl shadow-[0_8px_20px_-4px_rgba(24,76,120,0.35)] hover:shadow-[0_12px_24px_-4px_rgba(24,76,120,0.45)] flex items-center justify-center gap-2.5 transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer group"
+              className="flex-1 px-5 py-3.5 bg-gradient-to-r from-[#184C78] to-[#1F629C] hover:from-[#123B5E] hover:to-[#184C78] text-white font-bold text-sm rounded-xl shadow-[0_8px_20px_-4px_rgba(24,76,120,0.35)] hover:shadow-[0_12px_24px_-4px_rgba(24,76,120,0.45)] flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer group"
             >
-              <div className="w-5 h-5 rounded-lg bg-white/20 flex items-center justify-center">
-                <Navigation className="w-3.5 h-3.5 text-cyan-200 transition-transform group-hover:rotate-45" />
-              </div>
-              <span>Cek Disekitar</span>
+              <Navigation className="w-4 h-4 text-cyan-200 transition-transform group-hover:rotate-45" />
+              <span>Buka Peta Spasial (GIS)</span>
               <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping ml-0.5" />
             </button>
 
-            {/* Button 2: Pantau Project (Secondary Action) */}
+            {/* Button 2: Lihat Daftar Proyek */}
             <button
               type="button"
               id="btn-pantau-project"
               onClick={handlePantauProyek}
-              className="flex-1 px-6 py-3.5 bg-white hover:bg-[#F8FAFC] text-[#184C78] border-[1.5px] border-[#CBD5E1] hover:border-[#184C78] font-bold text-sm sm:text-[15px] rounded-xl shadow-xs hover:shadow-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer group"
+              className="flex-1 px-5 py-3.5 bg-white hover:bg-[#F8FAFC] text-[#184C78] border-[1.5px] border-[#CBD5E1] hover:border-[#184C78] font-bold text-sm rounded-xl shadow-xs hover:shadow-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer group"
             >
               <Eye className="w-4 h-4 text-[#184C78] group-hover:scale-110 transition-transform" />
-              <span>Pantau Project</span>
+              <span>Lihat Daftar Proyek</span>
               <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-[#184C78] transition-all" />
             </button>
           </div>

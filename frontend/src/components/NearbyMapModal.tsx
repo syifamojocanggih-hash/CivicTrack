@@ -135,7 +135,7 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
   const svgRadius = Math.min(selectedRadius * 48, 230);
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-sm animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl border border-[#DCE0E6] overflow-hidden my-auto animate-scale-up">
         {/* ── MODAL HEADER ── */}
         <div className="bg-[#184C78] text-white px-5 sm:px-7 py-4.5 flex items-center justify-between shrink-0">

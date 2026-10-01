@@ -126,13 +126,7 @@ export function App() {
   };
 
   const handleCekDisekitarAction = () => {
-    if (!currentUser) {
-      setPostLoginRedirect('map-explorer');
-      setAuthNotice('Silakan masuk terlebih dahulu untuk membuka Peta Eksplorasi Proyek di sekitar Anda.');
-      handleOpenAuth('login');
-    } else {
-      setCurrentView('map-explorer');
-    }
+    setCurrentView('map-explorer');
   };
 
   const handleLoginSuccess = (user: UserProfile) => {
@@ -225,6 +219,7 @@ export function App() {
           currentUser={currentUser}
           projects={projects}
           onBackToLanding={() => setCurrentView('landing')}
+          onOpenMapExplorer={() => setCurrentView('map-explorer')}
           onLogout={handleLogout}
           onSwitchRole={handleSwitchRole}
           onOpenProjectDetail={(proj) => setSelectedProject(proj)}
@@ -242,6 +237,7 @@ export function App() {
             setActiveNav={setActiveNav}
             currentView={currentView}
             onNavigateView={(view) => setCurrentView(view as any)}
+            onOpenOpenData={() => setIsOpenDataModalOpen(true)}
           />
 
           {/* ── HERO ── */}
@@ -272,7 +268,13 @@ export function App() {
           <CategoriesSection
             categories={CATEGORIES_DATA}
             selectedCategory={selectedCategory}
-            onSelectCategory={(cat) => setSelectedCategory(cat)}
+            onSelectCategory={(cat) => {
+              setSelectedCategory(cat);
+              const recentElem = document.querySelector('#recent-projects');
+              if (recentElem) {
+                recentElem.scrollIntoView({ behavior: 'smooth' });
+              }
+            }}
           />
 
           {/* ── RECENT PROJECTS ── */}
@@ -282,6 +284,7 @@ export function App() {
             selectedCategory={selectedCategory}
             onClearFilters={handleClearFilters}
             searchQuery={searchQuery}
+            onOpenMapExplorer={() => setCurrentView('map-explorer')}
           />
 
           {/* ── CTA SECTION ── */}

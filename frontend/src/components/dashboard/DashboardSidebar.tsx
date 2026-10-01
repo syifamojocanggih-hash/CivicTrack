@@ -21,6 +21,7 @@ import {
   ListTodo,
   Camera,
   ChevronDown,
+  Home,
 } from 'lucide-react';
 import type { UserProfile, UserRole } from '../../types';
 
@@ -29,6 +30,7 @@ interface DashboardSidebarProps {
   activeNavSection: string;
   onSelectNavSection: (section: string) => void;
   onBackToLanding: () => void;
+  onOpenMapExplorer?: () => void;
   onLogout: () => void;
   onSwitchRole: (role: UserRole) => void;
   onOpenOpenDataModal: () => void;
@@ -43,6 +45,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   activeNavSection,
   onSelectNavSection,
   onBackToLanding,
+  onOpenMapExplorer,
   onLogout,
   onSwitchRole,
   onOpenOpenDataModal,
@@ -321,14 +324,24 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             )}
 
             <div className="space-y-1">
-              {/* Back to Public Interactive Map */}
+              {/* Back to Landing Page */}
               <button
                 onClick={onBackToLanding}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-all cursor-pointer group"
-                title={isCollapsed ? 'Jelajah Peta Publik' : undefined}
+                title={isCollapsed ? 'Beranda Utama' : undefined}
+              >
+                <Home className="w-4 h-4 text-slate-400 shrink-0 group-hover:scale-110 transition-transform" />
+                {!isCollapsed && <span className="truncate">Beranda Utama</span>}
+              </button>
+
+              {/* Public Interactive Map (GIS) */}
+              <button
+                onClick={onOpenMapExplorer || onBackToLanding}
+                className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-all cursor-pointer group"
+                title={isCollapsed ? 'Peta Spasial (GIS)' : undefined}
               >
                 <Compass className="w-4 h-4 text-emerald-400 shrink-0 group-hover:rotate-45 transition-transform" />
-                {!isCollapsed && <span className="truncate">Jelajah Peta Publik</span>}
+                {!isCollapsed && <span className="truncate">Peta Spasial (GIS)</span>}
               </button>
 
               {/* Open Data REST API */}

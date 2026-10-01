@@ -8,6 +8,7 @@ interface RecentProjectsSectionProps {
   selectedCategory: ProyekKategori | null;
   onClearFilters: () => void;
   searchQuery: string;
+  onOpenMapExplorer?: () => void;
 }
 
 export const RecentProjectsSection: React.FC<RecentProjectsSectionProps> = ({
@@ -16,6 +17,7 @@ export const RecentProjectsSection: React.FC<RecentProjectsSectionProps> = ({
   selectedCategory,
   onClearFilters,
   searchQuery,
+  onOpenMapExplorer,
 }) => {
   const getStatusBadge = (status: ProyekItem['status']) => {
     switch (status) {
@@ -79,12 +81,22 @@ export const RecentProjectsSection: React.FC<RecentProjectsSectionProps> = ({
               </div>
             )}
           </div>
-          <button
-            onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
-            className="text-[13px] font-semibold text-[#2980B9] hover:underline flex items-center gap-1"
-          >
-            Lihat semua proyek <ArrowRight className="w-3.5 h-3.5" />
-          </button>
+          {onOpenMapExplorer ? (
+            <button
+              onClick={onOpenMapExplorer}
+              className="text-[13px] font-bold text-[#184C78] hover:text-[#2980B9] flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white border border-[#DCE0E6] hover:border-[#184C78] shadow-2xs transition-all cursor-pointer group"
+            >
+              <span>Buka di Peta Spasial (GIS)</span>
+              <ArrowRight className="w-3.5 h-3.5 text-[#2980B9] group-hover:translate-x-0.5 transition-transform" />
+            </button>
+          ) : (
+            <button
+              onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+              className="text-[13px] font-semibold text-[#2980B9] hover:underline flex items-center gap-1 cursor-pointer"
+            >
+              Lihat semua proyek <ArrowRight className="w-3.5 h-3.5" />
+            </button>
+          )}
         </div>
 
         {/* Project List */}

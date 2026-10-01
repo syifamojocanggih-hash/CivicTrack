@@ -86,8 +86,10 @@ pip install -r requirements.txt
 
 ### 5. Jalankan Server Pengembangan
 ```bash
-uvicorn app.main:app --reload --port 8000
+python -m uvicorn app.main:app --reload --port 8000
 ```
+*(Catatan Windows: Menjalankan via `python -m uvicorn` mencegah pemblokiran `uvicorn.exe` oleh Windows Application Control / AppLocker)*
+
 
 Server akan aktif di:
 - **API Base URL**: `http://127.0.0.1:8000`

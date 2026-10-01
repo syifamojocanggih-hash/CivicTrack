@@ -26,7 +26,7 @@ export const OpenDataModal: React.FC<OpenDataModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
+    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
       <div className="bg-white rounded-2xl w-full max-w-2xl overflow-hidden shadow-2xl border border-[#DCE0E6] my-8">
         {/* Header */}
         <div className="bg-[#184C78] text-white p-6 relative">

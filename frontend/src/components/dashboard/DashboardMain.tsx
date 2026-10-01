@@ -10,6 +10,7 @@ interface DashboardMainProps {
   currentUser: UserProfile;
   projects: ProyekItem[];
   onBackToLanding: () => void;
+  onOpenMapExplorer?: () => void;
   onLogout: () => void;
   onSwitchRole: (role: UserRole) => void;
   onOpenProjectDetail: (project: ProyekItem) => void;
@@ -21,6 +22,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
   currentUser,
   projects,
   onBackToLanding,
+  onOpenMapExplorer,
   onLogout,
   onSwitchRole,
   onOpenProjectDetail,
@@ -96,6 +98,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
         activeNavSection={activeNavSection}
         onSelectNavSection={(sec) => setActiveNavSection(sec)}
         onBackToLanding={onBackToLanding}
+        onOpenMapExplorer={onOpenMapExplorer}
         onLogout={onLogout}
         onSwitchRole={onSwitchRole}
         onOpenOpenDataModal={onOpenOpenDataModal}
@@ -115,6 +118,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
         <DashboardHeader
           currentUser={currentUser}
           onBackToLanding={onBackToLanding}
+          onOpenMapExplorer={onOpenMapExplorer}
           onLogout={onLogout}
           onSwitchRole={onSwitchRole}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}

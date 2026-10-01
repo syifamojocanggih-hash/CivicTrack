@@ -8,6 +8,7 @@ import {
   HardHat,
   Check,
   ChevronDown,
+  Compass,
 } from 'lucide-react';
 import type { UserProfile, UserRole, NotificationItem } from '../../types';
 import { MOCK_DYNAMIC_NOTIFICATIONS } from '../../data/dashboardMockData';
@@ -15,6 +16,7 @@ import { MOCK_DYNAMIC_NOTIFICATIONS } from '../../data/dashboardMockData';
 interface DashboardHeaderProps {
   currentUser: UserProfile;
   onBackToLanding: () => void;
+  onOpenMapExplorer?: () => void;
   onLogout: () => void;
   onSwitchRole: (role: UserRole) => void;
   onSelectProjectNotification?: (projectId: number) => void;
@@ -25,6 +27,8 @@ interface DashboardHeaderProps {
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   currentUser,
+  onBackToLanding,
+  onOpenMapExplorer,
   onLogout,
   onSwitchRole,
   onSelectProjectNotification,
@@ -107,8 +111,29 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </div>
         </div>
 
-          {/* Right: 3 Role Switcher Demo, Notifications, Profile & Logout */}
-          <div className="flex items-center gap-3">
+        {/* Center: Quick Nav to Landing Page & GIS Map */}
+        <div className="hidden md:flex items-center gap-2">
+          <button
+            onClick={onBackToLanding}
+            className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-[#184C78] text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+            title="Kembali ke Beranda Publik"
+          >
+            <span>← Beranda Publik</span>
+          </button>
+          {onOpenMapExplorer && (
+            <button
+              onClick={onOpenMapExplorer}
+              className="px-3 py-1.5 rounded-lg bg-[#EBF4FB] hover:bg-[#d8eaf7] border border-[#c5def2] text-[#184C78] text-xs font-bold transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
+              title="Buka Peta Spasial Interaktif"
+            >
+              <Compass className="w-3.5 h-3.5 text-[#2980B9]" />
+              <span>Peta Spasial (GIS)</span>
+            </button>
+          )}
+        </div>
+
+        {/* Right: 3 Role Switcher Demo, Notifications, Profile & Logout */}
+        <div className="flex items-center gap-3">
             {/* Quick Demo Role Switcher (3 Roles) */}
             <div className="relative">
               <button
