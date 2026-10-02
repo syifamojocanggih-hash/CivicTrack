@@ -14,6 +14,7 @@ import {
 import type { UserProfile, ProyekItem, DinasKinerjaItem } from '../../types';
 import { MOCK_DINAS_KINERJA, MOCK_EXECUTIVE_ALERTS } from '../../data/dashboardMockData';
 import { WILAYAH_DATA } from '../../data/geoWilayahData';
+import { MiniMapOverview } from './MiniMapOverview';
 
 interface PimpinanDashboardProps {
   currentUser: UserProfile;
@@ -21,12 +22,14 @@ interface PimpinanDashboardProps {
   onOpenProjectDetail?: (project: ProyekItem) => void;
   activeSection?: string;
   onSelectSection?: (section: string) => void;
+  onOpenMapExplorer?: () => void;
 }
 
 export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
   currentUser,
   projects,
   activeSection,
+  onOpenMapExplorer,
 }) => {
   const activeTab = (activeSection as any) || 'kinerja_dinas';
 
@@ -112,6 +115,14 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
         {/* Decorative background shape */}
         <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/5 rounded-full blur-2xl pointer-events-none -mr-16 -mb-16" />
       </div>
+
+      {/* ── SPATIAL MINIMAP OVERVIEW WIDGET (GIS PREVIEW) ── */}
+      {onOpenMapExplorer && (
+        <MiniMapOverview
+          projects={projects}
+          onOpenMapExplorer={onOpenMapExplorer}
+        />
+      )}
 
       {/* ── EXECUTIVE KPI METRICS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
@@ -227,7 +238,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
 
       {/* ── ACTIVE SECTION VIEW (DRIVEN BY SIDEBAR) ── */}
       {/* ── SECTION 1: MATRIKS KINERJA DINAS ── */}
-      {activeTab === 'kinerja_dinas' && (
+      {(activeTab === 'kinerja_dinas' || activeTab === 'overview') && (
         <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs overflow-hidden">
           <div className="p-4 border-b border-[#DCE0E6] flex items-center justify-between">
             <div>

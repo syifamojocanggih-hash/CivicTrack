@@ -31,6 +31,7 @@ import {
   MOCK_RATING_ULASAN,
   MOCK_AUDIT_TRAIL_LOGS,
 } from '../../data/dashboardMockData';
+import { MiniMapOverview } from './MiniMapOverview';
 
 interface WargaDashboardProps {
   currentUser: UserProfile;
@@ -39,6 +40,7 @@ interface WargaDashboardProps {
   onOpenAIRoute: (projectName: string) => void;
   activeSection?: string;
   onSelectSection?: (section: string) => void;
+  onOpenMapExplorer?: () => void;
 }
 
 export const WargaDashboard: React.FC<WargaDashboardProps> = ({
@@ -47,6 +49,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   onOpenProjectDetail,
   onOpenAIRoute,
   activeSection,
+  onOpenMapExplorer,
 }) => {
   const [activeAuditTrailId, setActiveAuditTrailId] = useState<number | null>(null);
 
@@ -246,6 +249,14 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/5 rounded-full blur-2xl pointer-events-none -mr-16 -mb-16" />
       </div>
 
+      {/* ── SPATIAL MINIMAP OVERVIEW WIDGET (GIS PREVIEW) ── */}
+      {onOpenMapExplorer && (
+        <MiniMapOverview
+          projects={projects}
+          onOpenMapExplorer={onOpenMapExplorer}
+        />
+      )}
+
       {/* ── METRIC CARDS ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs flex items-center gap-4">
@@ -299,7 +310,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
       {/* ── ACTIVE SECTION VIEW (DRIVEN BY SIDEBAR) ── */}
       {/* ── SECTION 1: PROYEK DI IKUTI ── */}
-      {activeTab === 'langganan' && (
+      {(activeTab === 'langganan' || activeTab === 'overview') && (
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
             <div className="flex items-center gap-3">

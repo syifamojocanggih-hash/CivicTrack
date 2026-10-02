@@ -3,29 +3,29 @@ import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import {
   Search,
-  Filter,
   X,
-  MapPin,
   Compass,
   Navigation,
   Layers,
   Plus,
   Minus,
   CheckCircle2,
-  AlertTriangle,
   Sparkles,
   ArrowLeft,
-  ChevronUp,
-  ChevronDown,
-  DollarSign,
-  Calendar,
   ArrowRight,
   User,
   ShieldCheck,
-  Bookmark,
   RefreshCw,
   Radio,
-  Clock
+  Phone,
+  Heart,
+  ChevronDown,
+  Building2,
+  Check,
+  SlidersHorizontal,
+  FileText,
+  AlertCircle,
+  Send
 } from 'lucide-react';
 import type { ProyekItem, ProyekKategori, UserProfile } from '../types';
 import centennialParkImg from '../assets/centennial_park.jpg';
@@ -59,14 +59,14 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
 function getCategoryIconSvg(category: string): string {
   switch (category) {
     case 'taman':
-      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v12"/><path d="M12 2a5 5 0 0 0-5 5c0 2 1.5 3.5 3 4.5V14h4v-2.5c1.5-1 3-2.5 3-4.5a5 5 0 0 0-5-5Z"/></svg>`;
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 10v12"/><path d="M12 2a5 5 0 0 0-5 5c0 2 1.5 3.5 3 4.5V14h4v-2.5c1.5-1 3-2.5 3-4.5a5 5 0 0 0-5-5Z"/></svg>`;
     case 'drainase':
-      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a6 6 0 1 0 7.8 0L12 3z"/></svg>`;
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a6 6 0 1 0 7.8 0L12 3z"/></svg>`;
     case 'fasilitas':
-      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>`;
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18Z"/><path d="M6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2"/><path d="M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2"/></svg>`;
     case 'jalan':
     default:
-      return `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="m14 12-4-4"/><path d="m14 16-4-4"/><path d="M4 22 14.5 4a2 2 0 0 1 3 0L20 7"/></svg>`;
+      return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m14 12-4-4"/><path d="m14 16-4-4"/><path d="M4 22 14.5 4a2 2 0 0 1 3 0L20 7"/></svg>`;
   }
 }
 
@@ -89,25 +89,29 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   projects,
   onBackToLanding,
   onOpenDashboard,
-  onOpenProjectDetail,
   onOpenAIRoute,
   onOpenAuth,
 }) => {
-  // Filter & Search states
+  // Filter & Search states (Matches Image 1)
   const [selectedCategory, setSelectedCategory] = useState<ProyekKategori | 'all'>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'berjalan' | 'selesai'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<number>(1);
-  const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(true);
+  const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
+  const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
+
+  // Right Detail Drawer Tabs & Citizen Report form
+  const [detailTab, setDetailTab] = useState<'ringkasan' | 'transparansi' | 'aduan' | 'sekitar'>('ringkasan');
+  const [reportTitle, setReportTitle] = useState('');
+  const [reportDesc, setReportDesc] = useState('');
+  const [reportCategory, setReportCategory] = useState('keterlambatan');
+  const [reportSent, setReportSent] = useState(false);
 
   // Hierarchical Wilayah & Budget filter state
   const [selectedKecamatan, setSelectedKecamatan] = useState<string>('all');
   const [selectedDesa, setSelectedDesa] = useState<string>('all');
   const [selectedBudget, setSelectedBudget] = useState<string>('all');
   const [showBoundaryPolygons, setShowBoundaryPolygons] = useState<boolean>(true);
-
-  // Mobile Bottom Sheet state
-  const [mobileSheetState, setMobileSheetState] = useState<'collapsed' | 'expanded'>('collapsed');
-  const [mobileActiveTab, setMobileActiveTab] = useState<'explore' | 'my-projects' | 'search' | 'profile'>('explore');
 
   // Real-time GPS & Geolocation state (Default to Pusat Kota Lamongan)
   const [userLocation, setUserLocation] = useState<{
@@ -188,7 +192,9 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     const timer = setInterval(() => {
       setLiveTelemetryTick((t) => t + 1);
       const now = new Date();
-      setLastSyncTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`);
+      setLastSyncTime(
+        `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
+      );
     }, 12000);
     return () => clearInterval(timer);
   }, []);
@@ -204,31 +210,34 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         distanceStr: `${dist} km`,
         milestones: [
           {
-            title: 'Site Preparation & Land Clearing',
-            date: 'Jan 15, 2024',
+            title: 'Persiapan Lahan & Perizinan Amdal',
+            date: 'Jan 2024',
             status: 'completed',
-            note: 'Demolition, soil grading and drainage pipes completed.',
+            note: 'Pembongkaran, perataan tanah dan instalasi utilitas dasar selesai 100%.',
           },
           {
-            title: 'Phase 2: Landscaping & Construction',
+            title: 'Tahap 2: Konstruksi Fisik & Struktur',
             date: 'Aktif (Saat Ini)',
             status: 'current',
-            note: 'Planting native trees, pathway paving & playground installation.',
+            note: 'Pengecoran aspal/beton, penguatan pondasi & pemasangan drainase.',
           },
           {
-            title: 'Final Quality Inspection & Handover',
+            title: 'Finishing & Serah Terima Hasil (PHO)',
             date: p.estimasi_selesai || 'Okt 2024',
             status: 'upcoming',
-            note: 'Commissioning, safety testing and citizen open access ceremony.',
+            note: 'Uji kelayakan keselamatan, marka jalan & peresmian akses publik.',
           },
         ],
       };
     });
   }, [liveProjects, userLocation.lat, userLocation.lng, liveTelemetryTick]);
 
-  // Filtered projects with hierarchical subdistrict & budget range filters
+  // Filtered projects
   const filteredProjects = useMemo(() => {
     return enrichedProjects.filter((p) => {
+      // Status filter
+      if (selectedStatus !== 'all' && p.status !== selectedStatus) return false;
+
       // Category filter
       if (selectedCategory !== 'all' && p.kategori !== selectedCategory) return false;
 
@@ -263,7 +272,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       }
       return true;
     });
-  }, [enrichedProjects, selectedCategory, selectedKecamatan, selectedDesa, selectedBudget, searchQuery]);
+  }, [enrichedProjects, selectedStatus, selectedCategory, selectedKecamatan, selectedDesa, selectedBudget, searchQuery]);
 
   // Selected project object
   const currentProject = useMemo(() => {
@@ -273,7 +282,45 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     );
   }, [selectedProjectId, enrichedProjects]);
 
-  // 3. Initialize Leaflet Map (Using OSM HOT tiles)
+  // Nearby projects in the same district or related (Matches Image 2 list)
+  const nearbyProjects = useMemo(() => {
+    return enrichedProjects
+      .filter((p) => p.id !== currentProject?.id)
+      .slice(0, 5);
+  }, [enrichedProjects, currentProject]);
+
+  const activeFilterCount = useMemo(() => {
+    let count = 0;
+    if (selectedCategory !== 'all') count++;
+    if (selectedStatus !== 'all') count++;
+    if (selectedKecamatan !== 'all') count++;
+    if (selectedBudget !== 'all') count++;
+    if (searchQuery.trim()) count++;
+    return count;
+  }, [selectedCategory, selectedStatus, selectedKecamatan, selectedBudget, searchQuery]);
+
+  const toggleBookmark = (id: number, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setBookmarkedIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  };
+
+  const handleReportSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentUser) {
+      onOpenAuth('login');
+      return;
+    }
+    setReportSent(true);
+    setTimeout(() => {
+      setReportSent(false);
+      setReportTitle('');
+      setReportDesc('');
+    }, 4000);
+  };
+
+  // 3. Initialize Leaflet Map
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
@@ -329,21 +376,19 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         weight: isSelected ? 3 : 1.5,
         opacity: 0.85,
         fillColor: isSelected ? '#184C78' : '#38BDF8',
-        fillOpacity: isSelected ? 0.28 : 0.1,
+        fillOpacity: isSelected ? 0.25 : 0.08,
         dashArray: isSelected ? undefined : '5, 5',
       });
 
-      // Tooltip on Hover
       poly.bindTooltip(
         `<div class="p-1 text-xs">
           <strong class="text-[#184C78] block font-bold">${kec.nama}</strong>
           <span class="text-slate-600 text-[10px]">Total Proyek: <strong>${kec.proyekBerjalan + kec.proyekSelesai + kec.proyekTertunda} Proyek</strong></span><br/>
-          <span class="text-slate-600 text-[10px]">Alokasi Dana: <strong>Rp ${(kec.anggaranTotal / 1000000000).toFixed(1)} M</strong></span>
+          <span class="text-slate-600 text-[10px]">Alokasi: <strong>Rp ${(kec.anggaranTotal / 1000000000).toFixed(1)} M</strong></span>
         </div>`,
         { sticky: true, direction: 'top', opacity: 0.95 }
       );
 
-      // On Click: Select and zoom to district
       poly.on('click', () => {
         setSelectedKecamatan(kec.nama);
         setSelectedDesa('all');
@@ -423,7 +468,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     userMarkerRef.current = marker;
   }, [userLocation]);
 
-  // 6. Update Project Markers on Leaflet when projects or selection change
+  // 6. Update Project Markers (Styled exactly like Image 1 & Image 2)
   useEffect(() => {
     const map = mapInstanceRef.current;
     const markersGroup = markersLayerRef.current;
@@ -432,85 +477,58 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     markersGroup.clearLayers();
 
     filteredProjects.forEach((proj) => {
-      const isSelected = proj.id === selectedProjectId;
-      const catConfig = getCategoryColor(proj.kategori);
+      const isSelected = proj.id === selectedProjectId && isDetailPanelOpen;
       const iconSvg = getCategoryIconSvg(proj.kategori);
 
-      const pulseRing = isSelected
-        ? `<span class="absolute -inset-2.5 rounded-full border-2 border-[#184C78] animate-ping opacity-75"></span>
-           <span class="absolute -inset-1 rounded-full border-2 border-[#184C78] opacity-90 shadow-sm"></span>`
-        : '';
-
-      const markerHtml = `
-        <div class="relative flex items-center justify-center transition-transform hover:scale-115 cursor-pointer">
-          ${pulseRing}
-          <div style="background-color: ${catConfig.bg}; border-color: #ffffff;" class="w-10 h-10 rounded-full flex items-center justify-center text-white shadow-xl border-2 transition-all">
-            ${iconSvg}
+      const markerHtml = isSelected
+        ? `
+          <div class="relative flex flex-col items-center justify-center transition-all scale-110 cursor-pointer group">
+            <span class="absolute -inset-2 rounded-2xl bg-blue-500/30 animate-ping"></span>
+            <div class="relative w-11 h-11 bg-[#2563EB] rounded-2xl shadow-2xl flex items-center justify-center text-white border-2 border-white transition-transform">
+              ${iconSvg}
+            </div>
+            <div class="w-2.5 h-2.5 bg-[#2563EB] rotate-45 -mt-1 shadow-sm border-r border-b border-white"></div>
+            <div class="absolute -top-7 bg-slate-900/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap pointer-events-none">
+              ${proj.progres_persen}% • ${proj.nama_wilayah || 'Proyek'}
+            </div>
           </div>
-          <div class="absolute -bottom-1 -right-1 bg-white text-[#184C78] text-[9px] font-extrabold px-1 rounded-full shadow-xs border border-slate-200">
-            ${proj.progres_persen}%
+        `
+        : `
+          <div class="relative flex flex-col items-center justify-center transition-all hover:scale-110 cursor-pointer group">
+            <div class="w-9 h-9 bg-[#1E293B] hover:bg-[#0F172A] rounded-xl shadow-lg flex items-center justify-center text-white border-2 border-white transition-all">
+              ${iconSvg}
+            </div>
+            <div class="w-2 h-2 bg-[#1E293B] group-hover:bg-[#0F172A] rotate-45 -mt-1 shadow-xs border-r border-b border-white"></div>
+            <div class="absolute -top-2 -right-2 bg-white text-[#184C78] text-[9px] font-extrabold px-1.5 py-0.2 rounded-full shadow-xs border border-slate-200">
+              ${proj.progres_persen}%
+            </div>
           </div>
-        </div>
-      `;
+        `;
 
       const customIcon = L.divIcon({
         className: 'project-leaflet-marker',
         html: markerHtml,
-        iconSize: [40, 40],
-        iconAnchor: [20, 20],
-        popupAnchor: [0, -22],
+        iconSize: [42, 42],
+        iconAnchor: [21, 21],
       });
 
       const marker = L.marker([proj.latitude, proj.longitude], {
         icon: customIcon,
       });
 
-      // Interactive popup
-      const popupContent = document.createElement('div');
-      popupContent.className = 'p-1 text-slate-800 font-sans';
-      popupContent.innerHTML = `
-        <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400 mb-0.5">${catConfig.label}</div>
-        <div class="font-bold text-xs text-[#184C78] mb-1 line-clamp-2">${proj.nama_proyek}</div>
-        <div class="flex items-center justify-between text-[11px] text-slate-500 mb-1.5">
-          <span>Progres: <strong class="text-[#184C78]">${proj.progres_persen}%</strong></span>
-          <span>Jarak: <strong class="text-emerald-600">${proj.distanceStr}</strong></span>
-        </div>
-        <div class="w-full bg-slate-100 rounded-full h-1.5 mb-2 overflow-hidden">
-          <div class="bg-[#184C78] h-full" style="width: ${proj.progres_persen}%"></div>
-        </div>
-        <button id="leaflet-btn-select-${proj.id}" class="w-full py-1 px-2 bg-[#184C78] text-white text-[11px] font-bold rounded-lg hover:bg-[#0f3252] transition-colors cursor-pointer text-center">
-          Pilih & Tampilkan Info
-        </button>
-      `;
-
-      marker.bindPopup(popupContent, { maxWidth: 220, closeButton: false });
-
-      marker.on('popupopen', () => {
-        const btn = document.getElementById(`leaflet-btn-select-${proj.id}`);
-        if (btn) {
-          btn.onclick = () => {
-            setSelectedProjectId(proj.id);
-            setIsDetailPanelOpen(true);
-            setMobileSheetState('expanded');
-          };
-        }
-      });
-
       marker.on('click', () => {
-        setSelectedProjectId(proj.id);
-        setIsDetailPanelOpen(true);
-        setMobileSheetState('expanded');
+        handleSelectPin(proj.id);
       });
 
       markersGroup.addLayer(marker);
     });
-  }, [filteredProjects, selectedProjectId]);
+  }, [filteredProjects, selectedProjectId, isDetailPanelOpen]);
 
   // Center to selected project when changed
   const handleSelectPin = (id: number) => {
     setSelectedProjectId(id);
     setIsDetailPanelOpen(true);
-    setMobileSheetState('expanded');
+    setDetailTab('ringkasan');
 
     const proj = enrichedProjects.find((p) => p.id === id);
     if (proj && mapInstanceRef.current) {
@@ -557,23 +575,31 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     } finally {
       setIsSyncing(false);
       const now = new Date();
-      setLastSyncTime(`${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`);
+      setLastSyncTime(
+        `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
+      );
     }
   };
 
   return (
     <div className="fixed inset-0 z-40 bg-[#F8FAFC] flex flex-col font-['Inter'] text-[#212529] select-none overflow-hidden">
-      {/* ── TOP NAV HEADER (DESKTOP & TABLET) ── */}
+      {/* ── TOP NAV HEADER ── */}
       <header className="h-14 bg-white/95 backdrop-blur-md border-b border-[#DCE4EC] px-4 sm:px-6 flex items-center justify-between shrink-0 z-30 shadow-xs">
-        {/* Left: Brand & Back to Home */}
+        {/* Left: Brand & Back */}
         <div className="flex items-center gap-3 sm:gap-4">
           <button
-            onClick={onBackToLanding}
+            onClick={() => {
+              if (currentUser && onOpenDashboard) {
+                onOpenDashboard();
+              } else {
+                onBackToLanding();
+              }
+            }}
             className="px-3 py-1.5 rounded-lg bg-[#EBF4FB] hover:bg-[#d9ecf8] text-[#184C78] border border-[#c5def2] transition-colors flex items-center gap-1.5 text-xs font-bold cursor-pointer shadow-2xs"
-            title="Kembali ke Beranda Utama"
+            title={currentUser ? 'Kembali ke Dashboard' : 'Kembali ke Beranda'}
           >
             <ArrowLeft className="w-4 h-4" />
-            <span>← Beranda</span>
+            <span>{currentUser ? 'Dashboard' : 'Beranda'}</span>
           </button>
 
           <div className="h-4 w-px bg-slate-200 hidden sm:block" />
@@ -582,51 +608,40 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             <div className="w-7 h-7 bg-[#184C78] rounded-lg flex items-center justify-center text-white shadow-xs">
               <Compass className="w-4 h-4 text-cyan-300" />
             </div>
-            <span className="font-['DM_Sans'] font-extrabold text-base text-[#184C78] tracking-tight hidden md:inline">
-              CivicTrack <span className="text-xs font-medium text-slate-500">| Peta Proyek Kab. Lamongan</span>
+            <span className="font-['DM_Sans'] font-extrabold text-base text-[#184C78] tracking-tight">
+              CivicTrack <span className="text-xs font-medium text-slate-500 hidden md:inline">| Peta Spasial Proyek</span>
             </span>
           </div>
         </div>
 
-        {/* Center: Search Bar (Desktop) */}
-        <div className="hidden md:flex items-center flex-1 max-w-md mx-6">
-          <div className="relative w-full">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Cari proyek di Lamongan, nama jalan, atau ID..."
-              className="w-full pl-9.5 pr-4 py-2 text-xs sm:text-sm bg-slate-100/80 hover:bg-slate-100 focus:bg-white border border-slate-200 focus:border-[#2980B9] rounded-xl outline-none transition-all shadow-inner"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        </div>
-
-        {/* Right: Live Sync Indicator, User & Dashboard */}
+        {/* Right: Live Sync, AI Route & User */}
         <div className="flex items-center gap-2.5">
-          {/* Live Realtime Leaflet Badge */}
+          {/* Live Sync Badge */}
           <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold">
             <span className="relative flex h-2 w-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
-            <span>{isBackendConnected ? 'Backend Aktif (MySQL)' : 'Live Sync'} • {lastSyncTime}</span>
+            <span>{isBackendConnected ? 'Backend Aktif' : 'Live Sync'} • {lastSyncTime}</span>
             <button
               onClick={handleManualSync}
               className={`p-0.5 hover:text-emerald-950 transition-transform cursor-pointer ${isSyncing ? 'animate-spin' : ''}`}
-              title="Refresh Data dari Backend"
+              title="Refresh Data dari Server"
             >
               <RefreshCw className="w-3 h-3" />
             </button>
           </div>
+
+          {/* Rute Alternatif AI Button */}
+          <button
+            onClick={() => onOpenAIRoute(currentProject?.nama_proyek || 'Pelebaran Jalan Veteran - Lamongan')}
+            className="px-3 py-1.5 bg-gradient-to-r from-[#6D28D9] to-[#184C78] hover:from-[#5B21B6] hover:to-[#0f3252] text-white text-xs font-bold rounded-xl shadow-xs hover:shadow-sm flex items-center gap-1.5 transition-all cursor-pointer hover:scale-102"
+            title="Buka Navigasi Rute Alternatif AI"
+          >
+            <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+            <span className="hidden sm:inline">Rute Alternatif AI</span>
+            <span className="sm:hidden">Rute AI</span>
+          </button>
 
           {currentUser ? (
             <div className="flex items-center gap-2">
@@ -655,322 +670,570 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         </div>
       </header>
 
-      {/* ── MAIN CONTENT AREA: LEAFLET MAP + DETAIL DRAWER ── */}
-      <div className="flex-1 relative flex overflow-hidden">
-        {/* ── FULL-SCREEN REAL LEAFLET MAP ── */}
-        <div className="flex-1 relative bg-[#EBF3E8] overflow-hidden flex flex-col">
-          {/* FLOATING TOP CONTROLS (FILTER PILLS & MOBILE SEARCH) */}
-          <div className="absolute top-3 left-3 right-3 sm:left-4 sm:right-auto z-[1000] flex flex-col gap-2 pointer-events-none max-w-full">
-            {/* Mobile Search Bar (Only visible on small screen PWA) */}
-            <div className="md:hidden pointer-events-auto bg-white/95 backdrop-blur-md rounded-2xl shadow-md border border-slate-200/80 p-2 flex items-center gap-2">
-              <Search className="w-4 h-4 text-slate-400 shrink-0 ml-1" />
+      {/* ── MAIN CONTENT AREA (MAP + TRUE SIDEBAR DRAWERS) ── */}
+      <div className="flex-1 relative overflow-hidden">
+        {/* FULL-SCREEN LEAFLET MAP CONTAINER */}
+        <div
+          ref={mapContainerRef}
+          id="leaflet-map-explorer"
+          className="w-full h-full z-0 outline-none"
+        />
+
+        {/* ── FLOATING REOPEN SEARCH BUTTON (When Detail is Open) ── */}
+        {isDetailPanelOpen && (
+          <button
+            onClick={() => setIsDetailPanelOpen(false)}
+            className="absolute top-4 left-4 z-20 px-4 py-2.5 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xl text-xs font-bold text-[#184C78] hover:bg-slate-50 flex items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95 animate-fade-in"
+            title="Buka Kembali Panel Pencarian & Filter"
+          >
+            <Search className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span>Pencarian & Filter</span>
+            <span className="bg-blue-50 text-[#2563EB] font-extrabold px-1.5 py-0.5 rounded-full text-[10px]">
+              {filteredProjects.length}
+            </span>
+          </button>
+        )}
+
+        {/* ── 1. LEFT SEARCH & FILTER SIDEBAR (ATTACHED DIRECTLY TO LEFT EDGE) ── */}
+        {/* Slides cleanly on X-axis: 0 to -100% */}
+        <aside
+          className={`absolute top-0 left-0 bottom-0 h-full w-full sm:w-[390px] xl:w-[420px] bg-white border-r border-slate-200/90 shadow-2xl z-20 flex flex-col overflow-hidden transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${
+            isDetailPanelOpen
+              ? '-translate-x-full'
+              : 'translate-x-0'
+          }`}
+        >
+          {/* Header */}
+          <div className="p-4 sm:p-5 border-b border-slate-100 shrink-0 bg-white">
+            <h1 className="font-['DM_Sans'] text-xl font-bold text-slate-900 tracking-tight">
+              Cari Proyek Pembangunan
+            </h1>
+            <p className="text-xs text-slate-500 mt-0.5 font-medium">
+              {filteredProjects.length} proyek infrastruktur ditemukan
+            </p>
+
+            {/* Segmented Status Pills */}
+            <div className="mt-3.5 bg-slate-100/90 p-1 rounded-2xl flex items-center gap-1 border border-slate-200/60">
+              {[
+                { id: 'all', label: 'Semua' },
+                { id: 'berjalan', label: 'Berjalan' },
+                { id: 'selesai', label: 'Selesai' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setSelectedStatus(tab.id as any)}
+                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
+                    selectedStatus === tab.id
+                      ? 'bg-[#2563EB] text-white shadow-sm'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Scrollable Filters & Results List */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 scrollbar-thin">
+            {/* Search Input Box */}
+            <div className="relative">
+              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search projects, locations..."
-                className="flex-1 bg-transparent text-xs text-[#212529] outline-none"
+                placeholder="Cari nama proyek, lokasi, jalan..."
+                className="w-full pl-9.5 pr-8 py-2.5 text-xs bg-slate-50 hover:bg-slate-100/80 focus:bg-white border border-slate-200 focus:border-[#2563EB] rounded-2xl outline-none transition-all shadow-inner font-medium"
               />
-              <button
-                onClick={() => setSelectedCategory('all')}
-                className="p-1.5 bg-slate-100 text-[#184C78] rounded-xl hover:bg-slate-200 transition-colors"
-                title="Filter"
-              >
-                <Filter className="w-4 h-4" />
-              </button>
+              {searchQuery && (
+                <button
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
 
-            {/* Horizontal Filter Controls & Cascading Selectors */}
-            <div className="pointer-events-auto flex flex-wrap items-center gap-1.5 max-w-full">
-              {/* Category Pills */}
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-0.5 max-w-full scrollbar-none">
+            {/* Kategori Proyek - 2x2 Grid with Radio */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-2">
+                Kategori Pembangunan
+              </label>
+              <div className="grid grid-cols-2 gap-2">
                 {[
-                  { id: 'all', label: 'Semua Kategori' },
                   { id: 'jalan', label: 'Jalan & Jembatan' },
-                  { id: 'taman', label: 'Taman & RTH' },
                   { id: 'drainase', label: 'Drainase Air' },
+                  { id: 'taman', label: 'Taman & RTH' },
                   { id: 'fasilitas', label: 'Fasilitas Umum' },
-                ].map((pill) => (
+                ].map((cat) => {
+                  const isCatSelected = selectedCategory === cat.id;
+                  return (
+                    <button
+                      key={cat.id}
+                      onClick={() => setSelectedCategory(isCatSelected ? 'all' : (cat.id as any))}
+                      className={`p-2.5 rounded-2xl border transition-all flex items-center gap-2 text-left cursor-pointer ${
+                        isCatSelected
+                          ? 'border-[#2563EB] bg-blue-50/70 text-[#184C78] shadow-xs'
+                          : 'border-slate-200/90 bg-white text-slate-700 hover:border-slate-300'
+                      }`}
+                    >
+                      <span
+                        className={`w-4 h-4 rounded-full border-2 flex items-center justify-center shrink-0 transition-colors ${
+                          isCatSelected ? 'border-[#2563EB]' : 'border-slate-300'
+                        }`}
+                      >
+                        {isCatSelected && <span className="w-2 h-2 rounded-full bg-[#2563EB]" />}
+                      </span>
+                      <span className="text-xs font-semibold truncate">{cat.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Kecamatan / Wilayah Dropdown */}
+            <div>
+              <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1.5">
+                Wilayah / Kecamatan
+              </label>
+              <div className="relative">
+                <select
+                  value={selectedKecamatan}
+                  onChange={(e) => {
+                    setSelectedKecamatan(e.target.value);
+                    setSelectedDesa('all');
+                    if (e.target.value !== 'all' && mapInstanceRef.current) {
+                      const target = WILAYAH_DATA.kecamatanList.find((k) => k.nama === e.target.value);
+                      if (target) {
+                        mapInstanceRef.current.flyTo(target.koordinatPusat, 13, { animate: true, duration: 0.8 });
+                      }
+                    }
+                  }}
+                  className="w-full appearance-none bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 outline-none cursor-pointer pr-9 focus:border-[#2563EB]"
+                >
+                  <option value="all">Semua Kecamatan (Kab. Lamongan)</option>
+                  {WILAYAH_DATA.kecamatanList.map((kec) => (
+                    <option key={kec.nama} value={kec.nama}>
+                      {kec.nama}
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+
+            {/* Cascading Desa / Kelurahan Selector */}
+            {selectedKecamatan !== 'all' && (
+              <div className="animate-fade-in">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1.5">
+                  Desa / Kelurahan
+                </label>
+                <div className="relative">
+                  <select
+                    value={selectedDesa}
+                    onChange={(e) => setSelectedDesa(e.target.value)}
+                    className="w-full appearance-none bg-blue-50/50 hover:bg-blue-50 border border-blue-200 rounded-2xl px-3.5 py-2 text-xs font-semibold text-slate-800 outline-none cursor-pointer pr-9"
+                  >
+                    {WILAYAH_DATA.kecamatanList
+                      .find((k) => k.nama === selectedKecamatan)
+                      ?.desaList.map((desa) => (
+                        <option key={desa} value={desa}>
+                          {desa}
+                        </option>
+                      ))}
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+            )}
+
+            {/* Rentang Anggaran */}
+            <div>
+              <div className="flex items-center justify-between mb-1.5">
+                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider">
+                  Alokasi Anggaran
+                </label>
+                <span className="text-[10px] text-slate-400 font-medium">Miliar Rupiah</span>
+              </div>
+
+              {/* Min - Max Indicator Boxes */}
+              <div className="grid grid-cols-2 gap-2 mb-2">
+                <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-center">
+                  <span className="text-[10px] text-slate-400 block font-medium">Min</span>
+                  <span className="text-xs font-bold text-[#184C78]">Rp 100 Jt</span>
+                </div>
+                <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-center">
+                  <span className="text-[10px] text-slate-400 block font-medium">Max</span>
+                  <span className="text-xs font-bold text-[#184C78]">Rp 25 M</span>
+                </div>
+              </div>
+
+              {/* Dual-Handle Range Slider Graphic */}
+              <div className="relative py-2.5 px-1 mb-2">
+                <div className="h-1.5 w-full bg-slate-200/80 rounded-full relative">
+                  <div
+                    className="absolute top-0 bottom-0 bg-[#6366F1] rounded-full"
+                    style={{ left: '12%', right: '22%' }}
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-[3px] border-[#6366F1] shadow-md -ml-2 cursor-pointer hover:scale-115 transition-transform"
+                    style={{ left: '12%' }}
+                  />
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-[3px] border-[#6366F1] shadow-md -ml-2 cursor-pointer hover:scale-115 transition-transform"
+                    style={{ left: '78%' }}
+                  />
+                </div>
+              </div>
+
+              {/* Budget Range Presets */}
+              <div className="flex flex-wrap gap-1.5">
+                {BUDGET_RANGES.map((b) => (
                   <button
-                    key={pill.id}
-                    onClick={() => {
-                      setSelectedCategory(pill.id as any);
-                    }}
-                    className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all shadow-xs whitespace-nowrap cursor-pointer flex items-center gap-1.5 ${
-                      selectedCategory === pill.id
-                        ? 'bg-[#184C78] text-white shadow-md'
-                        : 'bg-white/95 backdrop-blur-md text-[#475569] hover:bg-white hover:text-[#184C78] border border-slate-200/80'
+                    key={b.id}
+                    onClick={() => setSelectedBudget(b.id)}
+                    className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
+                      selectedBudget === b.id
+                        ? 'bg-[#2563EB] text-white shadow-xs'
+                        : 'bg-slate-100 hover:bg-slate-200/70 text-slate-700'
                     }`}
                   >
-                    <span>{pill.label}</span>
+                    {b.label}
                   </button>
                 ))}
               </div>
+            </div>
 
-              {/* Hierarchical Subdistrict & Budget Dropdowns Row */}
-              <div className="flex flex-wrap items-center gap-1.5 mt-1">
-                {/* 1. Kecamatan Filter */}
-                <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl px-2.5 py-1 shadow-xs flex items-center gap-1.5 text-xs">
-                  <span className="text-[#184C78] font-bold text-[11px]">📍 Kec:</span>
-                  <select
-                    value={selectedKecamatan}
-                    onChange={(e) => {
-                      setSelectedKecamatan(e.target.value);
-                      setSelectedDesa('all');
-                      if (e.target.value !== 'all' && mapInstanceRef.current) {
-                        const target = WILAYAH_DATA.kecamatanList.find((k) => k.nama === e.target.value);
-                        if (target) {
-                          mapInstanceRef.current.flyTo(target.koordinatPusat, 13, { animate: true, duration: 0.8 });
-                        }
-                      }
-                    }}
-                    className="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer"
-                  >
-                    <option value="all">Semua Kecamatan (Kab. Lamongan)</option>
-                    {WILAYAH_DATA.kecamatanList.map((kec) => (
-                      <option key={kec.nama} value={kec.nama}>
-                        {kec.nama}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 2. Desa/Kelurahan Filter (Cascading based on selected Kecamatan) */}
+            {/* Active Filter Chips */}
+            {(selectedCategory !== 'all' || selectedKecamatan !== 'all' || selectedBudget !== 'all' || selectedStatus !== 'all' || searchQuery) && (
+              <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
+                {selectedCategory !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#184C78] border border-blue-200">
+                    <span>Kat: {selectedCategory}</span>
+                    <button onClick={() => setSelectedCategory('all')} className="hover:text-blue-900 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedStatus !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                    <span>Status: {selectedStatus}</span>
+                    <button onClick={() => setSelectedStatus('all')} className="hover:text-emerald-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
                 {selectedKecamatan !== 'all' && (
-                  <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl px-2.5 py-1 shadow-xs flex items-center gap-1.5 text-xs animate-fade-in">
-                    <span className="text-[#2980B9] font-bold text-[11px]">🏘️ Desa:</span>
-                    <select
-                      value={selectedDesa}
-                      onChange={(e) => setSelectedDesa(e.target.value)}
-                      className="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer max-w-[140px]"
-                    >
-                      {WILAYAH_DATA.kecamatanList
-                        .find((k) => k.nama === selectedKecamatan)
-                        ?.desaList.map((desa) => (
-                          <option key={desa} value={desa}>
-                            {desa}
-                          </option>
-                        ))}
-                    </select>
-                  </div>
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-800 border border-purple-200">
+                    <span>{selectedKecamatan}</span>
+                    <button onClick={() => setSelectedKecamatan('all')} className="hover:text-purple-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
                 )}
-
-                {/* 3. Budget Range Filter */}
-                <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl px-2.5 py-1 shadow-xs flex items-center gap-1.5 text-xs">
-                  <span className="text-[#1A9E6E] font-bold text-[11px]">💰 Anggaran:</span>
-                  <select
-                    value={selectedBudget}
-                    onChange={(e) => setSelectedBudget(e.target.value)}
-                    className="bg-transparent text-xs font-semibold text-slate-800 outline-none cursor-pointer"
-                  >
-                    {BUDGET_RANGES.map((b) => (
-                      <option key={b.id} value={b.id}>
-                        {b.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* 4. Toggle Boundary Polygons Switch */}
+                {selectedBudget !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                    <span>Anggaran Filter</span>
+                    <button onClick={() => setSelectedBudget('all')} className="hover:text-amber-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
                 <button
-                  onClick={() => setShowBoundaryPolygons(!showBoundaryPolygons)}
-                  className={`px-2.5 py-1 rounded-xl text-xs font-semibold border transition-all flex items-center gap-1.5 cursor-pointer shadow-xs ${
-                    showBoundaryPolygons
-                      ? 'bg-[#184C78] text-white border-[#184C78]'
-                      : 'bg-white/95 backdrop-blur-md text-slate-600 border-slate-200 hover:bg-slate-50'
-                  }`}
-                  title="Tampilkan / Sembunyikan Layer Poligon Batas Wilayah Kecamatan"
+                  onClick={() => {
+                    setSelectedCategory('all');
+                    setSelectedStatus('all');
+                    setSelectedKecamatan('all');
+                    setSelectedDesa('all');
+                    setSelectedBudget('all');
+                    setSearchQuery('');
+                  }}
+                  className="text-[11px] text-rose-600 font-bold hover:underline cursor-pointer ml-1"
                 >
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Batas Wilayah (GeoJSON)</span>
+                  Reset Semua
                 </button>
-
-                {/* Clear Active Filters */}
-                {(selectedCategory !== 'all' || selectedKecamatan !== 'all' || selectedBudget !== 'all' || searchQuery) && (
-                  <button
-                    onClick={() => {
-                      setSelectedCategory('all');
-                      setSelectedKecamatan('all');
-                      setSelectedDesa('all');
-                      setSelectedBudget('all');
-                      setSearchQuery('');
-                    }}
-                    className="px-2.5 py-1 bg-rose-50 hover:bg-rose-100 text-rose-700 border border-rose-200 rounded-xl text-xs font-bold transition-colors cursor-pointer flex items-center gap-1 shadow-xs"
-                    title="Reset semua filter"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                    <span>Reset Filter</span>
-                  </button>
-                )}
               </div>
-            </div>
+            )}
 
-            {/* Real-time status banner */}
-            <div className="pointer-events-auto flex items-center gap-2 bg-white/90 backdrop-blur-sm px-3 py-1 rounded-full text-[11px] font-semibold text-slate-700 border border-slate-200 shadow-xs w-fit">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping" />
-              <span>Menampilkan {filteredProjects.length} dari {projects.length} Proyek Aktif</span>
+            {/* Matching Projects List */}
+            <div className="pt-2 border-t border-slate-100">
+              <div className="flex items-center justify-between text-xs font-bold text-slate-700 mb-2.5">
+                <span>Daftar Proyek Sesuai Filter</span>
+                <span className="text-[#2563EB]">{filteredProjects.length} Proyek</span>
+              </div>
+
+              <div className="space-y-2">
+                {filteredProjects.map((p) => {
+                  const catConfig = getCategoryColor(p.kategori);
+                  const isFavorited = bookmarkedIds.includes(p.id);
+
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => handleSelectPin(p.id)}
+                      className="group p-3 bg-white hover:bg-blue-50/40 border border-slate-200/80 hover:border-[#2563EB]/50 rounded-2xl transition-all shadow-xs hover:shadow-md cursor-pointer flex flex-col gap-2"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
+                            <span
+                              className="w-2 h-2 rounded-full inline-block"
+                              style={{ backgroundColor: catConfig.bg }}
+                            />
+                            <span>{catConfig.label}</span>
+                            <span>•</span>
+                            <span className="text-[#2563EB]">{p.distanceStr}</span>
+                          </div>
+                          <h4 className="font-['DM_Sans'] text-xs font-bold text-slate-900 group-hover:text-[#184C78] line-clamp-1 transition-colors">
+                            {p.nama_proyek}
+                          </h4>
+                          <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
+                            {p.nama_wilayah || 'Kabupaten Lamongan'}
+                          </p>
+                        </div>
+
+                        <button
+                          onClick={(e) => toggleBookmark(p.id, e)}
+                          className="text-slate-300 hover:text-rose-500 transition-colors p-1"
+                          title="Simpan Proyek"
+                        >
+                          <Heart
+                            className={`w-4 h-4 ${isFavorited ? 'fill-rose-500 text-rose-500' : ''}`}
+                          />
+                        </button>
+                      </div>
+
+                      {/* Progress and Budget strip */}
+                      <div className="flex items-center justify-between text-[11px] pt-1.5 border-t border-slate-100">
+                        <span className="font-bold text-[#184C78]">
+                          Rp {(p.anggaran / 1000000000).toFixed(1)}M
+                        </span>
+                        <div className="flex items-center gap-2">
+                          <div className="w-16 bg-slate-100 rounded-full h-1.5 overflow-hidden">
+                            <div
+                              className="bg-[#2563EB] h-full rounded-full"
+                              style={{ width: `${p.progres_persen}%` }}
+                            />
+                          </div>
+                          <span className="text-[10px] font-extrabold text-emerald-600">
+                            {p.progres_persen}%
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           </div>
 
-          {/* FLOATING MAP ZOOM & LAYER CONTROLS (RIGHT CORNER) */}
-          <div className="absolute right-3.5 bottom-24 sm:bottom-6 z-[1000] flex flex-col gap-2">
+          {/* Bottom Action (Filters + Show) */}
+          <div className="p-4 border-t border-slate-100 shrink-0 bg-white flex items-center gap-2">
             <button
-              onClick={() => setActiveLayer(activeLayer === 'standard' ? 'satellite' : 'standard')}
-              className={`w-10 h-10 rounded-xl shadow-md flex items-center justify-center transition-transform active:scale-95 cursor-pointer border ${
-                activeLayer === 'satellite'
-                  ? 'bg-[#184C78] text-white border-[#184C78]'
-                  : 'bg-white/95 backdrop-blur-md hover:bg-white text-[#184C78] border-slate-200/90'
-              }`}
-              title="Ganti Layer Peta (Standard / Satelit)"
+              onClick={() => {
+                setSelectedCategory('all');
+                setSelectedStatus('all');
+                setSelectedKecamatan('all');
+                setSelectedDesa('all');
+                setSelectedBudget('all');
+                setSearchQuery('');
+              }}
+              className="py-3 px-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-200/90 text-slate-800 text-xs font-bold rounded-2xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-98"
+              title="Reset Semua Filter"
             >
-              <Layers className="w-4 h-4" />
+              <SlidersHorizontal className="w-3.5 h-3.5 text-slate-600" />
+              <span>Filters</span>
+              {activeFilterCount > 0 && (
+                <span className="w-4 h-4 rounded-full bg-[#6366F1] text-white text-[10px] font-bold flex items-center justify-center">
+                  {activeFilterCount}
+                </span>
+              )}
             </button>
+
             <button
-              onClick={handleCenterUserLocation}
-              className="w-10 h-10 bg-white/95 backdrop-blur-md hover:bg-white border border-slate-200/90 rounded-xl shadow-md flex items-center justify-center text-[#184C78] transition-transform active:scale-95 cursor-pointer"
-              title="Pusatkan ke Lokasi Saya (GPS)"
+              onClick={() => {
+                if (filteredProjects[0]) {
+                  handleSelectPin(filteredProjects[0].id);
+                }
+              }}
+              className="flex-1 py-3 bg-[#111827] hover:bg-black text-white text-xs font-bold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
             >
-              <Navigation className="w-4 h-4 text-[#2980B9]" />
+              <span>Show ({filteredProjects.length})</span>
+              <ArrowRight className="w-4 h-4" />
             </button>
-            <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-xl shadow-md flex flex-col overflow-hidden">
-              <button
-                onClick={handleZoomIn}
-                className="w-10 h-9 flex items-center justify-center text-[#184C78] hover:bg-slate-100 transition-colors border-b border-slate-100 cursor-pointer"
-                title="Perbesar Peta"
-              >
-                <Plus className="w-4 h-4" />
-              </button>
-              <button
-                onClick={handleZoomOut}
-                className="w-10 h-9 flex items-center justify-center text-[#184C78] hover:bg-slate-100 transition-colors cursor-pointer"
-                title="Perkecil Peta"
-              >
-                <Minus className="w-4 h-4" />
-              </button>
+          </div>
+        </aside>
+
+        {/* ── 2. RIGHT DETAIL SIDEBAR (ATTACHED DIRECTLY TO RIGHT EDGE) ── */}
+        {/* Slides cleanly on X-axis directly from the right: 100% to 0 */}
+        <aside
+          className={`absolute top-0 right-0 bottom-0 h-full w-full sm:w-[480px] xl:w-[540px] bg-white border-l border-slate-200/90 shadow-2xl z-30 flex flex-col overflow-hidden transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${
+            isDetailPanelOpen
+              ? 'translate-x-0'
+              : 'translate-x-full'
+          }`}
+        >
+          {/* Header */}
+          <div className="p-4 sm:p-5 border-b border-slate-100 shrink-0 flex items-center justify-between bg-slate-50/70">
+            <div>
+              <h2 className="font-['DM_Sans'] text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight">
+                {currentProject.nama_wilayah || 'Kabupaten Lamongan'}
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-0.5">
+                {nearbyProjects.length + 1} proyek infrastruktur di wilayah sekitar ini
+              </p>
             </div>
+
+            {/* Circular Close Button (Sliding Drawer back to the right) */}
+            <button
+              onClick={() => setIsDetailPanelOpen(false)}
+              className="w-9 h-9 rounded-full bg-white hover:bg-purple-50 border-2 border-[#6366F1]/30 hover:border-[#6366F1] flex items-center justify-center text-[#6366F1] transition-all cursor-pointer shadow-xs shrink-0 hover:scale-105 active:scale-95"
+              title="Tutup Detail & Buka Pencarian"
+            >
+              <X className="w-4 h-4" />
+            </button>
           </div>
 
-          {/* ── REAL LEAFLET CONTAINER ── */}
-          <div
-            ref={mapContainerRef}
-            id="leaflet-map-explorer"
-            className="w-full h-full z-0 outline-none"
-            style={{ minHeight: '100%' }}
-          />
-        </div>
-
-        {/* ── RIGHT DRAWER / PROJECT DETAIL PANEL (DESKTOP) ── */}
-        {isDetailPanelOpen && (
-          <aside className="hidden lg:flex flex-col w-[420px] bg-white border-l border-[#DCE4EC] shadow-2xl z-20 overflow-y-auto">
-            {/* Header: Status + Close Button */}
-            <div className="p-4 border-b border-[#E2E8F0] flex items-center justify-between bg-slate-50/70">
-              <div className="flex items-center gap-2">
-                <span
-                  className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                    currentProject.status === 'selesai'
-                      ? 'bg-emerald-100 text-emerald-800'
-                      : currentProject.status === 'ditangguhkan'
-                      ? 'bg-slate-200 text-slate-700'
-                      : 'bg-blue-100 text-[#184C78]'
-                  }`}
-                >
-                  {currentProject.status === 'berjalan' ? 'IN PROGRESS' : currentProject.status.toUpperCase()}
-                </span>
-                <span className="text-xs text-slate-500 font-medium">
-                  Est. {currentProject.estimasi_selesai || 'Okt 2024'}
-                </span>
-              </div>
-
+          {/* Navigation Tabs directly in this Right Sidebar */}
+          <div className="flex items-center border-b border-slate-200 bg-slate-50/80 px-4 pt-2 gap-1 overflow-x-auto scrollbar-none shrink-0">
+            {[
+              { id: 'ringkasan', label: 'Ringkasan' },
+              { id: 'transparansi', label: 'Transparansi APBD' },
+              { id: 'aduan', label: 'Aduan Warga' },
+              { id: 'sekitar', label: 'Proyek Sekitar' },
+            ].map((tab) => (
               <button
-                onClick={() => setIsDetailPanelOpen(false)}
-                className="text-slate-400 hover:text-slate-700 p-1.5 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
-                title="Tutup Panel"
+                key={tab.id}
+                onClick={() => setDetailTab(tab.id as any)}
+                className={`px-3 py-2 text-xs font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+                  detailTab === tab.id
+                    ? 'border-[#2563EB] text-[#2563EB] bg-white rounded-t-lg shadow-2xs'
+                    : 'border-transparent text-slate-500 hover:text-slate-800'
+                }`}
               >
-                <X className="w-4 h-4" />
+                {tab.label}
               </button>
-            </div>
+            ))}
+          </div>
 
-            {/* Project Body Info */}
-            <div className="p-5 flex-1 space-y-5">
-              {/* Project Title */}
-              <div>
-                <h2 className="font-['DM_Sans'] text-xl font-bold text-[#184C78] leading-snug">
-                  {currentProject.nama_proyek}
-                </h2>
-                <div className="flex items-center gap-1.5 text-xs text-slate-500 mt-1">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  <span>{currentProject.nama_wilayah || 'Kota Malang'}</span>
-                  <span>•</span>
-                  <span className="text-[#2980B9] font-bold">{currentProject.distanceStr} dari posisi Anda</span>
-                </div>
-              </div>
-
-              {/* Photo Showcase (Matches Image 1) */}
-              <div className="rounded-xl overflow-hidden border border-slate-200 shadow-xs relative group">
+          {/* Tab 1: Ringkasan Proyek */}
+          {detailTab === 'ringkasan' && (
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 scrollbar-thin animate-fade-in">
+              {/* Photo Showcase with Telemetry Tag */}
+              <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
                 <img
                   src={centennialParkImg}
                   alt={currentProject.nama_proyek}
                   className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
                 />
-                <div className="absolute top-2 left-2 bg-black/60 backdrop-blur-md text-white text-[10px] font-semibold px-2 py-0.5 rounded-md flex items-center gap-1">
+                <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
                   <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
                   <span>Real-time Field Telemetry</span>
                 </div>
+                <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md text-[#184C78] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md">
+                  {currentProject.distanceStr} dari lokasi Anda
+                </div>
               </div>
 
-              {/* 2 Stat Metric Boxes: Budget & Est Completion (Matches Image 1) */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
-                  <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                    <span>Project Budget</span>
-                    <DollarSign className="w-3.5 h-3.5 text-emerald-600" />
-                  </div>
-                  <div className="font-['DM_Sans'] text-lg font-extrabold text-[#184C78]">
-                    Rp {(currentProject.anggaran / 1000000000).toFixed(1)}M
-                  </div>
-                  <span className="inline-block mt-1 text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full">
-                    On Track
+              {/* Title & Status */}
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span
+                    className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                      currentProject.status === 'selesai'
+                        ? 'bg-emerald-100 text-emerald-800'
+                        : 'bg-blue-100 text-[#184C78]'
+                    }`}
+                  >
+                    {currentProject.status === 'berjalan' ? 'IN PROGRESS' : currentProject.status.toUpperCase()}
+                  </span>
+                  <span className="text-xs text-slate-400 font-medium">
+                    Est. {currentProject.estimasi_selesai || 'Okt 2024'}
                   </span>
                 </div>
 
-                <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-3">
-                  <div className="flex items-center justify-between text-xs text-slate-500 mb-1">
-                    <span>Est. Completion</span>
-                    <Calendar className="w-3.5 h-3.5 text-blue-600" />
-                  </div>
+                <h3 className="font-['DM_Sans'] text-xl font-bold text-slate-900 leading-snug">
+                  {currentProject.nama_proyek}
+                </h3>
+                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+                  {currentProject.deskripsi}
+                </p>
+              </div>
+
+              {/* Metric Boxes */}
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                    Total Anggaran
+                  </span>
                   <div className="font-['DM_Sans'] text-lg font-extrabold text-[#184C78]">
-                    {currentProject.estimasi_selesai || 'Okt 2024'}
+                    Rp {(currentProject.anggaran / 1000000000).toFixed(1)} M
                   </div>
-                  <span className="inline-block mt-1 text-[10px] font-semibold text-slate-600 bg-slate-200/80 px-2 py-0.5 rounded-full">
+                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1">
+                    APBD Kab. Lamongan
+                  </span>
+                </div>
+
+                <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                    Progres Lapangan
+                  </span>
+                  <div className="font-['DM_Sans'] text-lg font-extrabold text-emerald-600">
+                    {currentProject.progres_persen}%
+                  </div>
+                  <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full inline-block mt-1">
                     Sesuai Jadwal
                   </span>
                 </div>
               </div>
 
-              {/* Overall Progress Bar */}
+              {/* Progress Bar */}
               <div>
-                <div className="flex items-center justify-between text-xs font-semibold mb-1.5">
-                  <span className="text-slate-600">OVERALL PROGRESS</span>
+                <div className="flex items-center justify-between text-xs font-semibold mb-1">
+                  <span className="text-slate-600">Realisasi Fisik Proyek</span>
                   <span className="text-[#184C78] font-bold">{currentProject.progres_persen}%</span>
                 </div>
                 <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
                   <div
-                    className="h-full bg-gradient-to-r from-[#2980B9] to-[#184C78] rounded-full transition-all duration-500"
+                    className="h-full bg-gradient-to-r from-[#2563EB] to-[#184C78] rounded-full transition-all duration-500"
                     style={{ width: `${currentProject.progres_persen}%` }}
                   />
                 </div>
-                <div className="text-[11px] text-slate-500 mt-1 flex items-center justify-between">
-                  <span>Tahap: <strong>{currentProject.tahap_terkini || 'Konstruksi fisik aktif'}</strong></span>
-                  <span className="text-[10px] text-slate-400">Sync: {lastSyncTime}</span>
-                </div>
               </div>
 
-              {/* Key Milestones Timeline (Matches Image 1) */}
+              {/* Contractor Contact Button & Heart Bookmark */}
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => alert(`Hotline Pengawas Proyek: +62 (322) 321-450 (Dinas Bina Marga & Cipta Karya Lamongan)`)}
+                  className="flex-1 py-2.5 px-4 bg-slate-900 hover:bg-black text-white rounded-2xl text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-sm active:scale-98"
+                >
+                  <Phone className="w-3.5 h-3.5" />
+                  <span>+62 (322) 321-450 • Hubungi PPK</span>
+                </button>
+
+                <button
+                  onClick={(e) => toggleBookmark(currentProject.id, e)}
+                  className={`p-2.5 rounded-2xl border transition-all cursor-pointer ${
+                    bookmarkedIds.includes(currentProject.id)
+                      ? 'border-rose-200 bg-rose-50 text-rose-600'
+                      : 'border-slate-200 bg-white text-slate-400 hover:text-slate-600'
+                  }`}
+                  title="Simpan Proyek Favorit"
+                >
+                  <Heart
+                    className={`w-4 h-4 ${bookmarkedIds.includes(currentProject.id) ? 'fill-rose-500' : ''}`}
+                  />
+                </button>
+              </div>
+
+              {/* Key Milestones Timeline */}
               <div>
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-3">
-                  KEY MILESTONES
+                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2.5">
+                  Tahapan & Milestone Pelaksanaan
                 </h4>
-                <div className="space-y-3 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
+                <div className="space-y-2.5 relative before:absolute before:left-3 before:top-2 before:bottom-2 before:w-0.5 before:bg-slate-200">
                   {currentProject.milestones?.map((step, idx) => (
                     <div key={idx} className="flex items-start gap-3 relative">
                       <div
@@ -978,7 +1241,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                           step.status === 'completed'
                             ? 'bg-emerald-500 border-white text-white'
                             : step.status === 'current'
-                            ? 'bg-[#184C78] border-white text-white shadow-xs'
+                            ? 'bg-[#2563EB] border-white text-white shadow-xs'
                             : 'bg-white border-slate-300 text-slate-400'
                         }`}
                       >
@@ -992,7 +1255,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                       <div
                         className={`flex-1 p-2.5 rounded-xl border text-xs ${
                           step.status === 'current'
-                            ? 'bg-[#F0F7FF] border-[#2980B9]/40 shadow-2xs'
+                            ? 'bg-blue-50/70 border-blue-200 shadow-2xs'
                             : 'bg-white border-slate-200'
                         }`}
                       >
@@ -1009,237 +1272,356 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 </div>
               </div>
 
-              {/* Action Buttons at Bottom */}
+              {/* Action Buttons: Tab Switcher & AI Alternative Route */}
               <div className="space-y-2 pt-2 border-t border-slate-200">
                 <button
-                  onClick={() => onOpenProjectDetail(currentProject)}
+                  onClick={() => setDetailTab('transparansi')}
                   className="w-full py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
-                  <span>Buka Lembar Transparansi Lengkap</span>
+                  <FileText className="w-3.5 h-3.5" />
+                  <span>Buka Transparansi APBD & Kontrak</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
 
-                <div className="grid grid-cols-2 gap-2">
-                  <button
-                    onClick={() => onOpenAIRoute(currentProject.nama_proyek)}
-                    className="py-2 px-3 border border-slate-200 hover:border-[#2980B9] text-[#184C78] bg-slate-50 hover:bg-[#EBF4FB] rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Sparkles className="w-3.5 h-3.5 text-[#2980B9]" />
-                    <span>Rute Cerdas AI</span>
-                  </button>
+                <button
+                  onClick={() => onOpenAIRoute(currentProject.nama_proyek)}
+                  className="w-full py-2 px-3 bg-gradient-to-r from-[#6D28D9] to-[#184C78] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:shadow-sm"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>Cari Rute Alternatif AI untuk Proyek Ini</span>
+                </button>
+              </div>
+            </div>
+          )}
 
-                  <button
-                    onClick={() => onOpenProjectDetail(currentProject)}
-                    className="py-2 px-3 border border-slate-200 hover:border-slate-300 text-slate-700 bg-white hover:bg-slate-50 rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-                  >
-                    <Bookmark className="w-3.5 h-3.5 text-slate-500" />
-                    <span>Pantau Proyek</span>
-                  </button>
+          {/* Tab 2: Transparansi APBD & Kontrak */}
+          {detailTab === 'transparansi' && (
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 scrollbar-thin animate-fade-in text-xs">
+              <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4">
+                <h4 className="font-['DM_Sans'] text-sm font-bold text-[#184C78] mb-1">
+                  Rincian Anggaran & Efisiensi LPSE
+                </h4>
+                <p className="text-slate-600 text-[11px] mb-3">
+                  Transparansi penggunaan anggaran APBD Kabupaten Lamongan Tahun Anggaran 2024.
+                </p>
+
+                <div className="space-y-2">
+                  <div className="flex items-center justify-between py-1 border-b border-blue-100">
+                    <span className="text-slate-500">Pagu Anggaran Awal</span>
+                    <span className="font-bold text-slate-800">Rp {(currentProject.anggaran / 1000000000).toFixed(2)} Miliar</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1 border-b border-blue-100">
+                    <span className="text-slate-500">Nilai Kontrak Terkoreksi</span>
+                    <span className="font-bold text-[#184C78]">Rp {((currentProject.anggaran * 0.94) / 1000000000).toFixed(2)} Miliar</span>
+                  </div>
+                  <div className="flex items-center justify-between py-1 border-b border-blue-100">
+                    <span className="text-slate-500">Realisasi Pembayaran Tahap Ini</span>
+                    <span className="font-bold text-emerald-600">
+                      Rp {((currentProject.anggaran * currentProject.progres_persen / 100) / 1000000000).toFixed(2)} Miliar ({currentProject.progres_persen}%)
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between py-1">
+                    <span className="text-slate-500">Efisiensi Penghematan Dana</span>
+                    <span className="font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full text-[10px]">
+                      Hemat 6.0% (Tender Terbuka)
+                    </span>
+                  </div>
                 </div>
               </div>
+
+              {/* Tim Pelaksana & Kontraktor */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2.5">
+                <h4 className="font-['DM_Sans'] text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Penyedia Jasa & Tim Teknis
+                </h4>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                  <div>
+                    <span className="text-slate-400 block">Kontraktor Pelaksana:</span>
+                    <span className="font-bold text-slate-800">PT. Lamongan Sarana Konstruksi</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Konsultan Pengawas:</span>
+                    <span className="font-bold text-slate-800">CV. Cipta Engineering Konsultan</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Instansi Penanggung Jawab:</span>
+                    <span className="font-bold text-slate-800">Dinas PU Bina Marga Lamongan</span>
+                  </div>
+                  <div>
+                    <span className="text-slate-400 block">Nomor Kontrak LPSE:</span>
+                    <span className="font-mono text-slate-700">602.1/SPK-BM/041/APBD/2024</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dokumen Teknis & Perizinan */}
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
+                <h4 className="font-['DM_Sans'] text-xs font-bold text-slate-800 uppercase tracking-wider">
+                  Legalitas & Sertifikasi Teknis
+                </h4>
+                <div className="space-y-1.5 text-[11px]">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">Dokumen Amdal / UKL-UPL</span>
+                    <span className="text-emerald-600 font-bold flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Terverifikasi DLH
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">Surat Perintah Mulai Kerja (SPMK)</span>
+                    <span className="text-slate-800 font-semibold">02 Januari 2024</span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600">Uji Tekan Mutu Beton / Aspal</span>
+                    <span className="text-emerald-600 font-bold flex items-center gap-1">
+                      <Check className="w-3.5 h-3.5" /> Lolos Lab PU
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <button
+                onClick={() => setDetailTab('ringkasan')}
+                className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
+              >
+                Kembali ke Ringkasan Proyek
+              </button>
             </div>
-          </aside>
-        )}
+          )}
 
-        {/* Toggle button to reopen panel if closed on desktop */}
-        {!isDetailPanelOpen && (
-          <button
-            onClick={() => setIsDetailPanelOpen(true)}
-            className="hidden lg:flex absolute right-4 top-20 z-20 px-3 py-2 bg-white/95 backdrop-blur-md border border-slate-200 rounded-xl shadow-lg text-xs font-bold text-[#184C78] items-center gap-1.5 hover:bg-slate-50 cursor-pointer"
-          >
-            <span>Detail Proyek Terpilih</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </div>
+          {/* Tab 3: Form Aduan Warga (Lapor Langsung dari Sidebar) */}
+          {detailTab === 'aduan' && (
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 scrollbar-thin animate-fade-in text-xs">
+              <div className="bg-amber-50 border border-amber-200 rounded-2xl p-3.5 flex items-start gap-2.5">
+                <AlertCircle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <p className="text-amber-800 text-[11px] leading-relaxed">
+                  Laporkan kendala lapangan, keterlambatan fisik, atau gangguan akses lalu lintas pada proyek ini. Laporan Anda langsung diteruskan ke PPK dinas terkait.
+                </p>
+              </div>
 
-      {/* ── MOBILE PWA BOTTOM SHEET (MATCHES IMAGE 2) ── */}
-      <div
-        className={`lg:hidden fixed left-0 right-0 z-30 bg-white/95 backdrop-blur-md rounded-t-3xl border-t border-slate-200 shadow-[0_-8px_24px_rgba(0,0,0,0.12)] transition-all duration-300 ease-out flex flex-col ${
-          mobileSheetState === 'expanded' ? 'bottom-16 max-h-[70vh]' : 'bottom-16 max-h-36'
-        }`}
-      >
-        {/* Drag handle pill */}
+              {reportSent ? (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-5 text-center space-y-2 animate-fade-in">
+                  <div className="w-10 h-10 rounded-full bg-emerald-500 text-white flex items-center justify-center mx-auto">
+                    <Check className="w-5 h-5" />
+                  </div>
+                  <h4 className="font-bold text-emerald-800 text-sm">Aduan Berhasil Terkirim!</h4>
+                  <p className="text-emerald-700 text-[11px]">
+                    Laporan telah dicatat ke sistem dan tiket pelacakan telah diterbitkan untuk tim pengawas lapangan.
+                  </p>
+                </div>
+              ) : (
+                <form onSubmit={handleReportSubmit} className="space-y-3">
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Kategori Aduan</label>
+                    <select
+                      value={reportCategory}
+                      onChange={(e) => setReportCategory(e.target.value)}
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none"
+                    >
+                      <option value="keterlambatan">Keterlambatan Pengerjaan Fisik</option>
+                      <option value="kerusakan">Jalan Rusak / Kualitas Aspal Buruk</option>
+                      <option value="lalu_lintas">Kemacetan / Pengalihan Rute Terganggu</option>
+                      <option value="debu">Debu &amp; Dampak Lingkungan Warga</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Judul Laporan</label>
+                    <input
+                      type="text"
+                      required
+                      value={reportTitle}
+                      onChange={(e) => setReportTitle(e.target.value)}
+                      placeholder="Contoh: Aspal bergelombang di km 2"
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-[#2563EB]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="font-bold text-slate-700 block mb-1">Detail Keterangan</label>
+                    <textarea
+                      required
+                      rows={4}
+                      value={reportDesc}
+                      onChange={(e) => setReportDesc(e.target.value)}
+                      placeholder="Jelaskan kondisi riil lapangan secara singkat dan jelas..."
+                      className="w-full p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs outline-none focus:border-[#2563EB]"
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white rounded-xl font-bold flex items-center justify-center gap-1.5 cursor-pointer shadow-xs transition-colors"
+                  >
+                    <Send className="w-3.5 h-3.5" />
+                    <span>Kirimkan Aduan ke Dinas</span>
+                  </button>
+                </form>
+              )}
+            </div>
+          )}
+
+          {/* Tab 4: Proyek Sekitar (Matches Image 2) */}
+          {detailTab === 'sekitar' && (
+            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 scrollbar-thin animate-fade-in">
+              <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                Infrastruktur Terkait di Sekitar Wilayah
+              </h4>
+
+              <div className="space-y-3">
+                {nearbyProjects.map((p) => {
+                  const isFav = bookmarkedIds.includes(p.id);
+                  return (
+                    <div
+                      key={p.id}
+                      onClick={() => handleSelectPin(p.id)}
+                      className="p-3 bg-white hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl transition-all shadow-xs hover:shadow-md cursor-pointer flex flex-col gap-2.5 group"
+                    >
+                      <div className="flex gap-3">
+                        {/* Image Thumbnail on Left */}
+                        <img
+                          src={centennialParkImg}
+                          alt={p.nama_proyek}
+                          className="w-24 h-24 rounded-2xl object-cover shrink-0 shadow-2xs group-hover:scale-102 transition-transform"
+                        />
+
+                        {/* Content on Right */}
+                        <div className="flex-1 min-w-0 flex flex-col justify-between">
+                          <div>
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-baseline gap-1">
+                                <span className="font-['DM_Sans'] text-sm font-bold text-slate-900 group-hover:text-[#6366F1] transition-colors">
+                                  Rp {(p.anggaran / 1000000000).toFixed(1)} M
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-normal">/proyek</span>
+                              </div>
+                              <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] shrink-0">
+                                <Check className="w-2.5 h-2.5" />
+                              </span>
+                            </div>
+
+                            <span className="text-[10px] text-slate-400 block mt-0.5 font-medium truncate">
+                              Est: {p.estimasi_selesai || '2024'} • {p.nama_wilayah || 'Lamongan'}
+                            </span>
+
+                            <h5 className="text-xs font-semibold text-slate-800 line-clamp-1 mt-1">
+                              {p.nama_proyek}
+                            </h5>
+                          </div>
+
+                          {/* Specs Line with Icons */}
+                          <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1">
+                            <span>🏷️ {p.kategori.toUpperCase()}</span>
+                            <span>•</span>
+                            <span>📏 {p.distanceStr}</span>
+                            <span>•</span>
+                            <span className="font-bold text-emerald-600">{p.progres_persen}%</span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Black Phone Pill Button & Heart Bookmark */}
+                      <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleSelectPin(p.id);
+                          }}
+                          className="flex-1 py-1.5 px-3 bg-[#111827] hover:bg-black text-white text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-98"
+                        >
+                          <Phone className="w-3 h-3" />
+                          <span>+62 (322) 321-450</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => toggleBookmark(p.id, e)}
+                          className="p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                          title="Simpan Proyek"
+                        >
+                          <Heart
+                            className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`}
+                          />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+        </aside>
+
+        {/* ── FLOATING MAP CONTROLS (RIGHT CORNER) ── */}
+        {/* Dynamically shifts left when detail drawer is open so it's always accessible! */}
         <div
-          onClick={() =>
-            setMobileSheetState(mobileSheetState === 'expanded' ? 'collapsed' : 'expanded')
-          }
-          className="w-full py-2.5 flex items-center justify-center cursor-pointer"
+          className={`absolute bottom-5 z-[1000] flex flex-col gap-2 transition-all duration-500 ${
+            isDetailPanelOpen
+              ? 'right-4 sm:right-[500px] xl:right-[560px]'
+              : 'right-4'
+          }`}
         >
-          <div className="w-10 h-1.5 rounded-full bg-slate-300" />
-        </div>
-
-        {/* Mobile Header Info: Current Location & Quick Actions (Matches Image 2) */}
-        <div className="px-4 pb-3">
-          <div className="flex items-center justify-between mb-2">
-            <div>
-              <div className="flex items-center gap-1.5">
-                <span className="text-[10px] text-slate-400 uppercase font-bold tracking-wider block">
-                  Current Location:
-                </span>
-                {userLocation.isLiveGps && (
-                  <span className="text-[9px] bg-emerald-100 text-emerald-800 font-extrabold px-1.5 py-0.2 rounded-full">
-                    GPS Realtime
-                  </span>
-                )}
-              </div>
-              <h5 className="font-['DM_Sans'] text-xs font-bold text-[#184C78] truncate max-w-[240px]">
-                {userLocation.address}
-              </h5>
-            </div>
-            <button
-              onClick={() =>
-                setMobileSheetState(mobileSheetState === 'expanded' ? 'collapsed' : 'expanded')
-              }
-              className="p-1 rounded-full text-slate-400 hover:text-slate-600"
-            >
-              {mobileSheetState === 'expanded' ? <ChevronDown className="w-4 h-4" /> : <ChevronUp className="w-4 h-4" />}
-            </button>
-          </div>
-
-          {/* 2 Quick Buttons: Directions & Report Issue (Matches Image 2) */}
-          <div className="grid grid-cols-2 gap-2 mb-2">
-            <button
-              onClick={() => onOpenAIRoute(currentProject.nama_proyek)}
-              className="py-2 px-3 bg-[#184C78] text-white text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>Directions</span>
-            </button>
-            <button
-              onClick={() => onOpenProjectDetail(currentProject)}
-              className="py-2 px-3 bg-white border border-slate-200 text-slate-700 text-xs font-bold rounded-xl shadow-xs flex items-center justify-center gap-1.5 cursor-pointer active:scale-98"
-            >
-              <AlertTriangle className="w-3.5 h-3.5 text-amber-500" />
-              <span>Report Issue</span>
-            </button>
-          </div>
-
-          {/* Nearby Project Strip */}
-          <div
-            onClick={() => handleSelectPin(currentProject.id)}
-            className="flex items-center justify-between text-xs py-1 border-t border-slate-100 cursor-pointer hover:bg-slate-50 transition-colors"
+          {/* Rute Alternatif AI Floating Quick Button */}
+          <button
+            onClick={() => onOpenAIRoute(currentProject?.nama_proyek || 'Pelebaran Jalan Veteran - Lamongan')}
+            className="w-10 h-10 bg-white/95 backdrop-blur-md hover:bg-gradient-to-r hover:from-[#6D28D9] hover:to-[#184C78] hover:text-white border border-purple-200/90 rounded-2xl shadow-md flex items-center justify-center text-[#6D28D9] transition-all active:scale-95 cursor-pointer group"
+            title="Input & Analisis Rute Alternatif AI"
           >
-            <span className="text-slate-500 truncate max-w-[200px]">
-              Nearby: <strong className="text-[#184C78]">{currentProject.nama_proyek}</strong>
-            </span>
-            <span className="text-[#2980B9] font-bold shrink-0">
-              Jarak {currentProject.distanceStr}
-            </span>
-          </div>
-        </div>
+            <Sparkles className="w-4 h-4 text-amber-500 group-hover:text-amber-300 transition-colors" />
+          </button>
 
-        {/* Expanded Content (when dragged up on mobile) */}
-        {mobileSheetState === 'expanded' && (
-          <div className="px-4 pb-6 overflow-y-auto space-y-3 flex-1 border-t border-slate-100 pt-2">
-            <div className="flex items-center justify-between">
-              <span className="text-[11px] font-bold text-slate-700">Detail Pembangunan Terdekat</span>
-              <span className="text-[10px] text-slate-400 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                <span>Sync {lastSyncTime}</span>
-              </span>
-            </div>
+          {/* Toggle Satellite / Standard Layer */}
+          <button
+            onClick={() => setActiveLayer(activeLayer === 'standard' ? 'satellite' : 'standard')}
+            className={`w-10 h-10 rounded-2xl shadow-md flex items-center justify-center transition-transform active:scale-95 cursor-pointer border ${
+              activeLayer === 'satellite'
+                ? 'bg-[#184C78] text-white border-[#184C78]'
+                : 'bg-white/95 backdrop-blur-md hover:bg-white text-[#184C78] border-slate-200/90'
+            }`}
+            title="Ganti Layer Peta (Standard / Satelit)"
+          >
+            <Layers className="w-4 h-4" />
+          </button>
 
-            <div className="bg-slate-50 rounded-xl p-3 border border-slate-200/80">
-              <div className="flex items-center justify-between mb-1.5">
-                <span className="text-xs font-bold text-[#184C78]">{currentProject.nama_proyek}</span>
-                <span className="text-xs font-bold text-emerald-600">{currentProject.progres_persen}%</span>
-              </div>
-              <p className="text-[11px] text-slate-600 mb-2 leading-relaxed">
-                {currentProject.deskripsi}
-              </p>
-              <div className="flex items-center justify-between text-[11px] text-slate-500">
-                <span>Anggaran: <strong>Rp {(currentProject.anggaran / 1000000000).toFixed(1)}M</strong></span>
-                <span>Target: <strong>{currentProject.estimasi_selesai}</strong></span>
-              </div>
-            </div>
+          {/* Toggle District Boundary Polygons */}
+          <button
+            onClick={() => setShowBoundaryPolygons(!showBoundaryPolygons)}
+            className={`w-10 h-10 rounded-2xl shadow-md flex items-center justify-center transition-transform active:scale-95 cursor-pointer border ${
+              showBoundaryPolygons
+                ? 'bg-[#2563EB] text-white border-[#2563EB]'
+                : 'bg-white/95 backdrop-blur-md hover:bg-white text-slate-700 border-slate-200/90'
+            }`}
+            title="Tampilkan / Sembunyikan Poligon Batas Kecamatan"
+          >
+            <Building2 className="w-4 h-4" />
+          </button>
 
+          {/* My Location (GPS) */}
+          <button
+            onClick={handleCenterUserLocation}
+            className="w-10 h-10 bg-white/95 backdrop-blur-md hover:bg-white border border-slate-200/90 rounded-2xl shadow-md flex items-center justify-center text-[#184C78] transition-transform active:scale-95 cursor-pointer"
+            title="Pusatkan ke Lokasi Saya (GPS)"
+          >
+            <Navigation className="w-4 h-4 text-[#2563EB]" />
+          </button>
+
+          {/* Zoom In & Out */}
+          <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-md flex flex-col overflow-hidden">
             <button
-              onClick={() => onOpenProjectDetail(currentProject)}
-              className="w-full py-2.5 bg-[#184C78] text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center gap-2 cursor-pointer"
+              onClick={handleZoomIn}
+              className="w-10 h-9 flex items-center justify-center text-[#184C78] hover:bg-slate-100 transition-colors border-b border-slate-100 cursor-pointer"
+              title="Perbesar Peta"
             >
-              <span>Buka Transparansi Proyek Ini</span>
-              <ArrowRight className="w-3.5 h-3.5" />
+              <Plus className="w-4 h-4" />
+            </button>
+            <button
+              onClick={handleZoomOut}
+              className="w-10 h-9 flex items-center justify-center text-[#184C78] hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Perkecil Peta"
+            >
+              <Minus className="w-4 h-4" />
             </button>
           </div>
-        )}
+        </div>
       </div>
-
-      {/* ── FIXED BOTTOM PWA NAVIGATION BAR (MATCHES IMAGE 2) ── */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 bg-white/95 backdrop-blur-md border-t border-slate-200 h-16 px-4 flex items-center justify-around shadow-lg">
-        {/* Tab 1: Explore (Active) */}
-        <button
-          onClick={() => {
-            setMobileActiveTab('explore');
-            handleCenterUserLocation();
-          }}
-          className={`flex flex-col items-center justify-center w-16 py-1 rounded-xl transition-all cursor-pointer ${
-            mobileActiveTab === 'explore'
-              ? 'text-white bg-[#184C78] shadow-xs'
-              : 'text-slate-500 hover:text-[#184C78]'
-          }`}
-        >
-          <Compass className="w-4 h-4" />
-          <span className="text-[10px] font-bold mt-0.5">Explore</span>
-        </button>
-
-        {/* Tab 2: My Projects */}
-        <button
-          onClick={() => {
-            setMobileActiveTab('my-projects');
-            if (currentUser && onOpenDashboard) {
-              onOpenDashboard();
-            } else {
-              onOpenAuth('login');
-            }
-          }}
-          className={`flex flex-col items-center justify-center w-16 py-1 rounded-xl transition-all cursor-pointer ${
-            mobileActiveTab === 'my-projects'
-              ? 'text-white bg-[#184C78] shadow-xs'
-              : 'text-slate-500 hover:text-[#184C78]'
-          }`}
-        >
-          <Bookmark className="w-4 h-4" />
-          <span className="text-[10px] font-bold mt-0.5">Projects</span>
-        </button>
-
-        {/* Tab 3: Search */}
-        <button
-          onClick={() => {
-            setMobileActiveTab('search');
-            const searchInput = document.querySelector('input[type="text"]') as HTMLInputElement;
-            if (searchInput) searchInput.focus();
-          }}
-          className={`flex flex-col items-center justify-center w-16 py-1 rounded-xl transition-all cursor-pointer ${
-            mobileActiveTab === 'search'
-              ? 'text-white bg-[#184C78] shadow-xs'
-              : 'text-slate-500 hover:text-[#184C78]'
-          }`}
-        >
-          <Search className="w-4 h-4" />
-          <span className="text-[10px] font-bold mt-0.5">Search</span>
-        </button>
-
-        {/* Tab 4: Profile / Dashboard */}
-        <button
-          onClick={() => {
-            setMobileActiveTab('profile');
-            if (currentUser && onOpenDashboard) {
-              onOpenDashboard();
-            } else {
-              onOpenAuth('login');
-            }
-          }}
-          className={`flex flex-col items-center justify-center w-16 py-1 rounded-xl transition-all cursor-pointer ${
-            mobileActiveTab === 'profile'
-              ? 'text-white bg-[#184C78] shadow-xs'
-              : 'text-slate-500 hover:text-[#184C78]'
-          }`}
-        >
-          <User className="w-4 h-4" />
-          <span className="text-[10px] font-bold mt-0.5">Profile</span>
-        </button>
-      </nav>
     </div>
   );
 };

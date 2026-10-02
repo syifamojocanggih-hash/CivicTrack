@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LogOut, Menu, X, Shield, Compass, Database } from 'lucide-react';
+import { LogOut, Menu, X, Shield, Database } from 'lucide-react';
 import type { UserProfile } from '../types';
 
 interface NavbarProps {
@@ -64,7 +64,7 @@ export const Navbar: React.FC<NavbarProps> = ({
         </a>
 
         {/* Desktop Navigation Links */}
-        <div className="hidden lg:flex items-center gap-1.5 flex-1">
+        <div className="hidden lg:flex items-center gap-1 flex-1 ml-3">
           <button
             onClick={() => handleNavClick('beranda', '#hero')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-colors cursor-pointer ${
@@ -72,15 +72,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             Beranda
-          </button>
-
-          <button
-            onClick={() => onNavigateView && onNavigateView('map-explorer')}
-            className="px-3 py-1.5 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 bg-[#EBF4FB] text-[#184C78] hover:bg-[#184C78] hover:text-white border border-[#c5def2] shadow-2xs group"
-          >
-            <Compass className="w-3.5 h-3.5 text-[#2980B9] group-hover:text-cyan-200 transition-colors" />
-            <span>Peta Spasial</span>
-            <span className="text-[9px] bg-emerald-500 text-white font-extrabold px-1 rounded-sm">GIS</span>
           </button>
 
           <button
@@ -126,15 +117,11 @@ export const Navbar: React.FC<NavbarProps> = ({
           {currentUser ? (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => onNavigateView && onNavigateView(currentView === 'dashboard' ? 'landing' : 'dashboard')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  currentView === 'dashboard'
-                    ? 'bg-[#184C78] text-white shadow-xs'
-                    : 'bg-[#EBF4FB] text-[#184C78] border border-[#c5def2] hover:bg-[#184C78] hover:text-white'
-                }`}
+                onClick={() => onNavigateView && onNavigateView('dashboard')}
+                className="px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer bg-[#184C78] text-white shadow-xs hover:bg-[#12395b]"
               >
                 <Shield className="w-3.5 h-3.5" />
-                <span>{currentView === 'dashboard' ? 'Buka Peta Publik' : 'Buka Dashboard'}</span>
+                <span>Buka Dashboard</span>
               </button>
 
               <div className="flex items-center gap-2 bg-[#F5F7FA] border border-[#DCE0E6] px-3 py-1 rounded-full text-xs font-medium text-[#184C78]">
@@ -196,13 +183,9 @@ export const Navbar: React.FC<NavbarProps> = ({
               setIsMobileMenuOpen(false);
               onNavigateView && onNavigateView('map-explorer');
             }}
-            className="text-left px-3 py-2 text-sm font-bold rounded-lg bg-[#EBF4FB] text-[#184C78] border border-[#c5def2] flex items-center justify-between"
+            className="text-left px-3 py-2 text-sm font-semibold rounded-lg text-slate-700 hover:bg-[#F5F7FA] hover:text-[#184C78] transition-colors"
           >
-            <span className="flex items-center gap-2">
-              <Compass className="w-4 h-4 text-[#2980B9]" />
-              <span>Peta Spasial (GIS)</span>
-            </span>
-            <span className="text-[9px] bg-emerald-500 text-white font-extrabold px-1.5 py-0.5 rounded-sm">LIVE</span>
+            🗺️ Peta Spasial
           </button>
 
           <button
@@ -255,11 +238,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <button
                   onClick={() => {
                     setIsMobileMenuOpen(false);
-                    onNavigateView && onNavigateView(currentView === 'dashboard' ? 'landing' : 'dashboard');
+                    onNavigateView && onNavigateView('dashboard');
                   }}
                   className="w-full py-2 bg-[#184C78] text-white text-xs font-bold rounded-lg text-center shadow-xs"
                 >
-                  {currentView === 'dashboard' ? '← Lihat Beranda Publik' : 'Buka Dashboard Saya'}
+                  Buka Dashboard
                 </button>
                 <button onClick={onLogout} className="text-center py-1.5 text-xs text-red-600 hover:underline">
                   Keluar dari Akun

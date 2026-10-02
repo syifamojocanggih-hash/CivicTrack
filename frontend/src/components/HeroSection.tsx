@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, Navigation, Eye, ShieldCheck, ChevronRight } from 'lucide-react';
+import { MapPin, ShieldCheck, Compass, LayoutDashboard } from 'lucide-react';
 import type { ProyekItem } from '../types';
 
 interface HeroSectionProps {
@@ -10,6 +10,7 @@ interface HeroSectionProps {
   onSelectProject: (project: ProyekItem) => void;
   projects: ProyekItem[];
   onOpenNearbyMap?: () => void;
+  onOpenDashboard?: () => void;
   onOpenAuth?: (mode?: 'login' | 'register') => void;
 }
 
@@ -17,7 +18,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   onSelectProject,
   projects,
   onOpenNearbyMap,
-  onOpenAuth,
+  onOpenDashboard,
 }) => {
   const [mapFilter, setMapFilter] = useState<'all' | 'jalan' | 'taman'>('all');
   const [selectedPinIndex, setSelectedPinIndex] = useState<number>(0);
@@ -30,17 +31,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       const mapVisual = document.querySelector('.hero-visual');
       if (mapVisual) {
         mapVisual.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
-    }
-  };
-
-  const handlePantauProyek = () => {
-    if (onOpenAuth) {
-      onOpenAuth('login');
-    } else {
-      const recentElem = document.querySelector('#recent-projects');
-      if (recentElem) {
-        recentElem.scrollIntoView({ behavior: 'smooth' });
       }
     }
   };
@@ -173,30 +163,28 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
             Akses langsung linimasa progres, serapan anggaran, dan dokumentasi foto/video proyek pembangunan daerah secara transparan dan mudah dipahami.
           </p>
 
-          {/* ── 2 ACTION BUTTONS: BUKA PETA SPASIAL & DAFTAR PROYEK ── */}
-          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 max-w-[480px]">
-            {/* Button 1: Buka Peta Spasial (GIS) */}
+          {/* ── 2 BALANCED ACTION BUTTONS ── */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+            {/* Button 1: Buka Peta Spasial */}
             <button
               type="button"
-              id="btn-cek-disekitar"
+              id="btn-buka-peta"
               onClick={handleCekDisekitar}
-              className="flex-1 px-5 py-3.5 bg-gradient-to-r from-[#184C78] to-[#1F629C] hover:from-[#123B5E] hover:to-[#184C78] text-white font-bold text-sm rounded-xl shadow-[0_8px_20px_-4px_rgba(24,76,120,0.35)] hover:shadow-[0_12px_24px_-4px_rgba(24,76,120,0.45)] flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer group"
+              className="h-12 px-6 bg-[#184C78] hover:bg-[#12395b] text-white font-bold text-sm rounded-xl shadow-xs hover:shadow-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap group"
             >
-              <Navigation className="w-4 h-4 text-cyan-200 transition-transform group-hover:rotate-45" />
-              <span>Buka Peta Spasial (GIS)</span>
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping ml-0.5" />
+              <Compass className="w-4 h-4 text-cyan-300 transition-transform group-hover:rotate-45" />
+              <span>Buka Peta Spasial</span>
             </button>
 
-            {/* Button 2: Lihat Daftar Proyek */}
+            {/* Button 2: Buka Dashboard */}
             <button
               type="button"
-              id="btn-pantau-project"
-              onClick={handlePantauProyek}
-              className="flex-1 px-5 py-3.5 bg-white hover:bg-[#F8FAFC] text-[#184C78] border-[1.5px] border-[#CBD5E1] hover:border-[#184C78] font-bold text-sm rounded-xl shadow-xs hover:shadow-sm flex items-center justify-center gap-2 transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer group"
+              id="btn-buka-dashboard"
+              onClick={onOpenDashboard}
+              className="h-12 px-6 bg-[#EBF4FB] hover:bg-[#dcebf7] text-[#184C78] border border-[#c5def2] font-bold text-sm rounded-xl shadow-xs hover:shadow-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer whitespace-nowrap group"
             >
-              <Eye className="w-4 h-4 text-[#184C78] group-hover:scale-110 transition-transform" />
-              <span>Lihat Daftar Proyek</span>
-              <ChevronRight className="w-4 h-4 text-slate-400 group-hover:translate-x-1 group-hover:text-[#184C78] transition-all" />
+              <LayoutDashboard className="w-4 h-4 text-[#184C78] group-hover:scale-110 transition-transform" />
+              <span>Buka Dashboard</span>
             </button>
           </div>
 
@@ -227,7 +215,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   <MapPin className="w-3.5 h-3.5 text-[#184C78]" />
                 </div>
                 <span className="text-xs font-bold text-[#184C78] font-['DM_Sans']">
-                  Peta Proyek Kota Malang
+                  Peta Proyek Pembangunan Daerah
                 </span>
               </div>
 

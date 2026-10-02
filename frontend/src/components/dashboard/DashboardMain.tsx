@@ -9,7 +9,6 @@ import type { UserProfile, ProyekItem, UserRole } from '../../types';
 interface DashboardMainProps {
   currentUser: UserProfile;
   projects: ProyekItem[];
-  onBackToLanding: () => void;
   onOpenMapExplorer?: () => void;
   onLogout: () => void;
   onSwitchRole: (role: UserRole) => void;
@@ -21,7 +20,6 @@ interface DashboardMainProps {
 export const DashboardMain: React.FC<DashboardMainProps> = ({
   currentUser,
   projects,
-  onBackToLanding,
   onOpenMapExplorer,
   onLogout,
   onSwitchRole,
@@ -34,19 +32,8 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
 
   // Default active section per role
-  const getDefaultSection = (role: UserRole) => {
-    switch (role) {
-      case 'aparatur_pemerintah':
-      case 'pimpinan_instansi':
-        return 'kinerja_dinas';
-      case 'penanggung_jawab':
-      case 'admin_dinas':
-      case 'pemerintah':
-        return 'proyek';
-      case 'warga':
-      default:
-        return 'langganan';
-    }
+  const getDefaultSection = (_role: UserRole) => {
+    return 'overview';
   };
 
   const [activeNavSection, setActiveNavSection] = useState<string>(getDefaultSection(currentUser.role));
@@ -59,6 +46,8 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
   // Compute title for the top header breadcrumb
   const getNavTitle = () => {
     switch (activeNavSection) {
+      case 'overview':
+        return 'Realtime Overview & Monitoring';
       case 'langganan':
         return 'Proyek Diikuti (Langganan Notifikasi)';
       case 'laporan':
@@ -97,7 +86,6 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
         currentUser={currentUser}
         activeNavSection={activeNavSection}
         onSelectNavSection={(sec) => setActiveNavSection(sec)}
-        onBackToLanding={onBackToLanding}
         onOpenMapExplorer={onOpenMapExplorer}
         onLogout={onLogout}
         onSwitchRole={onSwitchRole}
@@ -117,10 +105,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
         {/* Top Header Bar */}
         <DashboardHeader
           currentUser={currentUser}
-          onBackToLanding={onBackToLanding}
-          onOpenMapExplorer={onOpenMapExplorer}
           onLogout={onLogout}
-          onSwitchRole={onSwitchRole}
           onToggleMobileSidebar={() => setIsMobileSidebarOpen(true)}
           activeNavTitle={getNavTitle()}
           onSelectProjectNotification={(pId) => {
@@ -131,7 +116,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
         />
 
         {/* Main Content View (Driven by Active Role & Section) */}
-        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
           {/* Role 1: Warga Masyarakat */}
           {currentUser.role === 'warga' && (
             <WargaDashboard
@@ -141,6 +126,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
               onOpenAIRoute={onOpenAIRoute}
               activeSection={activeNavSection}
               onSelectSection={(sec) => setActiveNavSection(sec)}
+              onOpenMapExplorer={onOpenMapExplorer}
             />
           )}
 
@@ -152,6 +138,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
               onOpenProjectDetail={onOpenProjectDetail}
               activeSection={activeNavSection}
               onSelectSection={(sec) => setActiveNavSection(sec)}
+              onOpenMapExplorer={onOpenMapExplorer}
             />
           )}
 
@@ -163,23 +150,15 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
               onOpenProjectDetail={onOpenProjectDetail}
               activeSection={activeNavSection}
               onSelectSection={(sec) => setActiveNavSection(sec)}
+              onOpenMapExplorer={onOpenMapExplorer}
             />
           )}
         </main>
 
         {/* Footer for Dashboard */}
         <footer className="border-t border-[#DCE0E6] bg-white py-4 text-center text-xs text-[#6C757D] mt-auto">
-          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-2">
+          <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-center gap-2">
             <span>&copy; {new Date().getFullYear()} CivicTrack — Sistem Transparansi &amp; Akuntabilitas Pembangunan Daerah</span>
-            <div className="flex items-center gap-4">
-              <button onClick={onBackToLanding} className="hover:text-[#184C78] transition-colors cursor-pointer">
-                Beranda Publik
-              </button>
-              <span>•</span>
-              <button onClick={onOpenOpenDataModal} className="hover:text-[#184C78] transition-colors cursor-pointer">
-                Open Data API
-              </button>
-            </div>
           </div>
         </footer>
       </div>

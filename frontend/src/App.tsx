@@ -140,6 +140,16 @@ export function App() {
     setAuthNotice('');
   };
 
+  const handleOpenDashboard = () => {
+    if (!currentUser) {
+      setPostLoginRedirect('dashboard');
+      setAuthNotice('Silakan masuk ke akun atau pilih peran Anda untuk mengakses Dashboard.');
+      handleOpenAuth('login');
+      return;
+    }
+    setCurrentView('dashboard');
+  };
+
   const handleLogout = () => {
     setCurrentUser(null);
     setCurrentView('landing');
@@ -218,12 +228,14 @@ export function App() {
         <DashboardMain
           currentUser={currentUser}
           projects={projects}
-          onBackToLanding={() => setCurrentView('landing')}
           onOpenMapExplorer={() => setCurrentView('map-explorer')}
           onLogout={handleLogout}
           onSwitchRole={handleSwitchRole}
           onOpenProjectDetail={(proj) => setSelectedProject(proj)}
-          onOpenAIRoute={(name) => setAIRouteModal({ isOpen: true, projectName: name })}
+          onOpenAIRoute={(name) => {
+            setCurrentView('map-explorer');
+            setAIRouteModal({ isOpen: true, projectName: name });
+          }}
           onOpenOpenDataModal={() => setIsOpenDataModalOpen(true)}
         />
       ) : (
@@ -243,6 +255,7 @@ export function App() {
           {/* ── HERO ── */}
           <HeroSection
             onOpenNearbyMap={handleCekDisekitarAction}
+            onOpenDashboard={handleOpenDashboard}
             onOpenAuth={(mode = 'login') => handleOpenAuth(mode)}
             searchQuery={searchQuery}
             setSearchQuery={setSearchQuery}
@@ -320,7 +333,7 @@ export function App() {
 
       <ProjectDetailModal
         project={selectedProject}
-        isOpen={!!selectedProject}
+        isOpen={!!selectedProject && currentView !== 'map-explorer'}
         onClose={() => setSelectedProject(null)}
         currentUser={currentUser}
         onOpenAIRoute={(name) => setAIRouteModal({ isOpen: true, projectName: name })}
