@@ -24,12 +24,13 @@ import {
   SlidersHorizontal,
   FileText,
   AlertCircle,
-  Send
+  Send,
+  Compass
 } from 'lucide-react';
 import type { ProyekItem, ProyekKategori, UserProfile } from '../types';
 import centennialParkImg from '../assets/centennial_park.jpg';
 import { apiService } from '../services/api';
-import { WILAYAH_DATA, BUDGET_RANGES } from '../data/geoWilayahData';
+import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON } from '../data/geoWilayahData';
 
 interface PublicMapExplorerProps {
   currentUser: UserProfile | null;
@@ -134,7 +135,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [liveProjects, setLiveProjects] = useState<ProyekItem[]>(projects);
   const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
 
-  // Sync projects from backend on mount and center on Lamongan
+  // Sync projects from backend on mount or fall back to 27 comprehensive projects
   useEffect(() => {
     apiService.getProjects().then((res) => {
       if (res.isFromBackend && res.projects.length > 0) {
@@ -142,13 +143,8 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         const merged = [...res.projects, ...projects.filter((p) => !existingIds.has(p.id))];
         setLiveProjects(merged);
         setIsBackendConnected(true);
-        if (mapInstanceRef.current && res.projects[0]) {
-          mapInstanceRef.current.flyTo(
-            [Number(res.projects[0].latitude), Number(res.projects[0].longitude)],
-            14,
-            { duration: 1 }
-          );
-        }
+      } else {
+        setLiveProjects(projects);
       }
     });
   }, [projects]);
@@ -323,10 +319,10 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Centered at Lamongan (Alun-Alun & Pusat Pemerintahan Kab. Lamongan)
+    // Centered at Kabupaten Lamongan (Menjangkau seluruh 27 Kecamatan dari Pantura hingga Pegunungan Selatan)
     const map = L.map(mapContainerRef.current, {
-      center: [-7.1195, 112.4154],
-      zoom: 14,
+      center: [-7.1150, 112.3200],
+      zoom: 10.5,
       zoomControl: false,
     });
 
@@ -358,7 +354,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     };
   }, []);
 
-  // 3b. Render GeoJSON Boundary Polygons for Districts (Kecamatan)
+  // 3b. Render Authentic Google Maps-style Administrative GeoJSON Boundaries for all 27 Districts
   useEffect(() => {
     const map = mapInstanceRef.current;
     const polyGroup = polygonsLayerRef.current;
@@ -368,34 +364,115 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
     if (!showBoundaryPolygons) return;
 
-    WILAYAH_DATA.kecamatanList.forEach((kec) => {
-      const isSelected = selectedKecamatan === kec.nama;
-      const poly = L.polygon(kec.polygon as any, {
-        color: isSelected ? '#184C78' : '#2980B9',
-        weight: isSelected ? 3 : 1.5,
-        opacity: 0.85,
-        fillColor: isSelected ? '#184C78' : '#38BDF8',
-        fillOpacity: isSelected ? 0.25 : 0.08,
-        dashArray: isSelected ? undefined : '5, 5',
-      });
+    let activeLayerBounds: L.LatLngBounds | null = null;
 
-      poly.bindTooltip(
-        `<div class="p-1 text-xs">
-          <strong class="text-[#184C78] block font-bold">${kec.nama}</strong>
-          <span class="text-slate-600 text-[10px]">Total Proyek: <strong>${kec.proyekBerjalan + kec.proyekSelesai + kec.proyekTertunda} Proyek</strong></span><br/>
-          <span class="text-slate-600 text-[10px]">Alokasi: <strong>Rp ${(kec.anggaranTotal / 1000000000).toFixed(1)} M</strong></span>
-        </div>`,
-        { sticky: true, direction: 'top', opacity: 0.95 }
-      );
+    const geoLayer = L.geoJSON(LAMONGAN_KECAMATAN_GEOJSON as any, {
+      style: (feature: any) => {
+        const isSelected = selectedKecamatan === feature.properties.nama;
+        const isAnySelected = selectedKecamatan !== 'all';
 
-      poly.on('click', () => {
-        setSelectedKecamatan(kec.nama);
-        setSelectedDesa('all');
-        map.flyTo(kec.koordinatPusat, 13, { animate: true, duration: 0.8 });
-      });
+        if (isSelected) {
+          // Google Maps highlighted district style:
+          // Distinct primary boundary, crisp stroke, soft semi-transparent fill
+          return {
+            color: '#184C78',
+            weight: 3.5,
+            opacity: 1,
+            fillColor: '#2563EB',
+            fillOpacity: 0.22,
+          };
+        } else if (isAnySelected) {
+          // When a specific kecamatan is selected, others are muted into faint boundaries
+          return {
+            color: '#94A3B8',
+            weight: 1,
+            opacity: 0.35,
+            fillColor: '#94A3B8',
+            fillOpacity: 0.02,
+            dashArray: '4, 4',
+          };
+        } else {
+          // Default: all 27 kecamatan borders cleanly visible with crisp, elegant boundary lines
+          return {
+            color: '#184C78',
+            weight: 1.2,
+            opacity: 0.45,
+            fillColor: '#38BDF8',
+            fillOpacity: 0.04,
+            dashArray: undefined,
+          };
+        }
+      },
+      onEachFeature: (feature: any, layer: any) => {
+        const props = feature.properties;
+        const isSelected = selectedKecamatan === props.nama;
 
-      polyGroup.addLayer(poly);
+        if (isSelected && typeof layer.getBounds === 'function') {
+          activeLayerBounds = layer.getBounds();
+        }
+
+        // Sleek Google Maps style district tooltip
+        layer.bindTooltip(
+          `<div class="p-2 font-['DM_Sans'] text-xs min-w-[150px]">
+            <div class="flex items-center gap-1.5 pb-1 mb-1 border-b border-slate-100">
+              <span class="w-2.5 h-2.5 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-[#184C78]'}"></span>
+              <strong class="text-[#184C78] font-bold text-xs">${props.nama}</strong>
+            </div>
+            <div class="space-y-0.5 text-[11px] text-slate-600">
+              <div class="flex justify-between">
+                <span>Total Proyek:</span>
+                <b class="text-slate-800 font-bold">${props.totalProyek} Proyek</b>
+              </div>
+              <div class="flex justify-between">
+                <span>Alokasi APBD:</span>
+                <b class="text-[#184C78] font-bold">Rp ${(props.anggaranTotal / 1000000000).toFixed(1)} M</b>
+              </div>
+            </div>
+            <div class="mt-1 pt-1 border-t border-slate-100 text-[10px] text-blue-600 font-medium">
+              👉 Klik untuk fokus batas kecamatan ini
+            </div>
+          </div>`,
+          { sticky: true, direction: 'top', opacity: 0.98 }
+        );
+
+        // Hover & click interaction
+        layer.on({
+          mouseover: (e: any) => {
+            if (selectedKecamatan !== props.nama) {
+              const l = e.target;
+              l.setStyle({
+                weight: 2.5,
+                color: '#2563EB',
+                fillColor: '#60A5FA',
+                fillOpacity: 0.18,
+              });
+              if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                l.bringToFront();
+              }
+            }
+          },
+          mouseout: (e: any) => {
+            if (selectedKecamatan !== props.nama) {
+              geoLayer.resetStyle(e.target);
+            }
+          },
+          click: () => {
+            setSelectedKecamatan(props.nama);
+            setSelectedDesa('all');
+            if (typeof layer.getBounds === 'function') {
+              map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 14, animate: true });
+            }
+          },
+        });
+      },
     });
+
+    polyGroup.addLayer(geoLayer);
+
+    // If a specific kecamatan was selected, fit bounds to that layer
+    if (activeLayerBounds && selectedKecamatan !== 'all') {
+      map.fitBounds(activeLayerBounds, { padding: [50, 50], maxZoom: 14, animate: true });
+    }
   }, [showBoundaryPolygons, selectedKecamatan]);
 
   // 4. Update Tile Layer on toggle (Standard vs Satellite)
@@ -532,6 +609,18 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     const proj = enrichedProjects.find((p) => p.id === id);
     if (proj && mapInstanceRef.current) {
       mapInstanceRef.current.flyTo([proj.latitude, proj.longitude], 15, {
+        animate: true,
+        duration: 0.8,
+      });
+    }
+  };
+
+  // Fit map view to cover all 27 Kecamatan in Kabupaten Lamongan
+  const handleFitAllLamongan = () => {
+    setSelectedKecamatan('all');
+    setSelectedDesa('all');
+    if (mapInstanceRef.current) {
+      mapInstanceRef.current.flyTo([-7.1150, 112.3200], 10.5, {
         animate: true,
         duration: 0.8,
       });
@@ -676,6 +765,32 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           className="w-full h-full z-0 outline-none"
         />
 
+        {/* ── FLOATING ACTIVE DISTRICT BANNER (Google Maps Style) ── */}
+        {selectedKecamatan !== 'all' && (
+          <div
+            className={`absolute top-4 z-20 flex items-center gap-2.5 bg-white/95 backdrop-blur-md border border-blue-200/90 shadow-xl rounded-2xl px-4 py-2 text-xs font-semibold text-slate-800 transition-all duration-300 animate-fade-in ${
+              isDetailPanelOpen
+                ? 'left-4 sm:left-[210px]'
+                : 'left-4 sm:left-[410px] xl:left-[440px]'
+            }`}
+          >
+            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
+            <div>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block -mb-0.5">Batas Wilayah Terpilih</span>
+              <strong className="text-[#184C78] font-bold text-xs">{selectedKecamatan}</strong>
+            </div>
+            <span className="h-4 w-px bg-slate-200" />
+            <span className="text-slate-600 text-[11px] font-bold">{filteredProjects.length} Proyek</span>
+            <button
+              onClick={handleFitAllLamongan}
+              className="ml-1 p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+              title="Kembali ke Seluruh Kabupaten Lamongan"
+            >
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
+
         {/* ── FLOATING REOPEN SEARCH BUTTON (When Detail is Open) ── */}
         {isDetailPanelOpen && (
           <button
@@ -799,18 +914,26 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 <select
                   value={selectedKecamatan}
                   onChange={(e) => {
-                    setSelectedKecamatan(e.target.value);
+                    const val = e.target.value;
+                    setSelectedKecamatan(val);
                     setSelectedDesa('all');
-                    if (e.target.value !== 'all' && mapInstanceRef.current) {
-                      const target = WILAYAH_DATA.kecamatanList.find((k) => k.nama === e.target.value);
-                      if (target) {
-                        mapInstanceRef.current.flyTo(target.koordinatPusat, 13, { animate: true, duration: 0.8 });
+                    if (val !== 'all' && mapInstanceRef.current) {
+                      const feat = LAMONGAN_KECAMATAN_GEOJSON.features.find((f: any) => f.properties.nama === val);
+                      if (feat) {
+                        mapInstanceRef.current.fitBounds(feat.properties.bounds, { padding: [50, 50], maxZoom: 14, animate: true });
+                      } else {
+                        const target = WILAYAH_DATA.kecamatanList.find((k) => k.nama === val);
+                        if (target) {
+                          mapInstanceRef.current.flyTo(target.koordinatPusat, 13, { animate: true, duration: 0.8 });
+                        }
                       }
+                    } else if (mapInstanceRef.current) {
+                      mapInstanceRef.current.flyTo([-7.1150, 112.3200], 10.5, { animate: true, duration: 0.8 });
                     }
                   }}
                   className="w-full appearance-none bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 outline-none cursor-pointer pr-9 focus:border-[#2563EB]"
                 >
-                  <option value="all">Semua Kecamatan (Kab. Lamongan)</option>
+                  <option value="all">Semua Kecamatan (Kab. Lamongan • 27 Kecamatan)</option>
                   {WILAYAH_DATA.kecamatanList.map((kec) => (
                     <option key={kec.nama} value={kec.nama}>
                       {kec.nama}
@@ -1036,6 +1159,9 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 setSelectedDesa('all');
                 setSelectedBudget('all');
                 setSearchQuery('');
+                if (mapInstanceRef.current) {
+                  mapInstanceRef.current.flyTo([-7.1150, 112.3200], 10.5, { animate: true, duration: 0.8 });
+                }
               }}
               className="py-3 px-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-200/90 text-slate-800 text-xs font-bold rounded-2xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-98"
               title="Reset Semua Filter"
@@ -1563,6 +1689,15 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             title="Input & Analisis Rute Alternatif AI"
           >
             <Sparkles className="w-4 h-4 text-amber-500 group-hover:text-amber-300 transition-colors" />
+          </button>
+
+          {/* Fokus Seluruh Wilayah Kab. Lamongan (27 Kecamatan) */}
+          <button
+            onClick={handleFitAllLamongan}
+            className="w-10 h-10 bg-white/95 backdrop-blur-md hover:bg-[#184C78] hover:text-white border border-slate-200/90 rounded-2xl shadow-md flex items-center justify-center text-[#184C78] transition-all active:scale-95 cursor-pointer group"
+            title="Tampilkan Seluruh Wilayah Kab. Lamongan (27 Kecamatan)"
+          >
+            <Compass className="w-4 h-4 group-hover:rotate-45 transition-transform" />
           </button>
 
           {/* Toggle Satellite / Standard Layer */}
