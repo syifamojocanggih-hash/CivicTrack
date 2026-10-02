@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, User, Shield, AlertCircle, Loader2 } from 'lucide-react';
+import { X, Lock, Mail, User, AlertCircle, Loader2 } from 'lucide-react';
 import type { UserProfile } from '../types';
 import { apiService } from '../services/api';
 
@@ -128,8 +128,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           >
             <X className="w-5 h-5" />
           </button>
-          <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center mb-3">
-            <Shield className="w-5 h-5 text-white" />
+          <div className="w-12 h-12 bg-white rounded-xl flex items-center justify-center p-1.5 mb-3 shadow-md">
+            <img src="/civictrack-icon.png" alt="CivicTrack" className="w-full h-full object-contain" />
           </div>
           <h3 className="font-['DM_Sans'] text-xl font-bold">
             {mode === 'login' ? 'Masuk ke CivicTrack' : 'Buat Akun Baru'}

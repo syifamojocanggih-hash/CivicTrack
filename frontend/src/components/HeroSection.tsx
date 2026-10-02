@@ -46,9 +46,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       date: 'Okt 2024',
       status: 'berjalan',
       color: '#E67E22',
-      x: 155,
-      y: 36,
-      r: 14,
+      x: 170,
+      y: 35,
+      r: 12,
+      wilayah: 'Kec. Klojen',
     },
     {
       id: 2,
@@ -59,9 +60,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       date: 'Des 2024',
       status: 'berjalan',
       color: '#184C78',
-      x: 295,
-      y: 125,
-      r: 14,
+      x: 250,
+      y: 105,
+      r: 12,
+      wilayah: 'Kec. Lowokwaru',
     },
     {
       id: 3,
@@ -72,9 +74,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       date: 'Feb 2024',
       status: 'selesai',
       color: '#1A9E6E',
-      x: 430,
-      y: 210,
-      r: 13,
+      x: 420,
+      y: 120,
+      r: 12,
+      wilayah: 'Kec. Dinoyo',
     },
     {
       id: 4,
@@ -85,9 +88,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       date: 'Nov 2024',
       status: 'ditangguhkan',
       color: '#9BA5B0',
-      x: 450,
-      y: 60,
-      r: 11,
+      x: 440,
+      y: 42,
+      r: 10,
+      wilayah: 'Kec. Lowokwaru',
     },
     {
       id: 5,
@@ -98,9 +102,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
       date: 'Sep 2024',
       status: 'berjalan',
       color: '#2980B9',
-      x: 70,
-      y: 215,
-      r: 12,
+      x: 80,
+      y: 110,
+      r: 11,
+      wilayah: 'Kec. Klojen',
     },
   ];
 
@@ -205,17 +210,20 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
           </div>
         </div>
 
-        {/* Right Column: Interactive Map Frame (5-6 Cols on desktop) */}
+        {/* Right Column: Versi Baru Ringkas & Mudah Dimengerti */}
         <div className="lg:col-span-6 xl:col-span-5 hero-visual relative">
-          <div className="bg-white border border-[#CBD5E1] rounded-2xl overflow-hidden shadow-[0_16px_40px_rgba(24,76,120,0.12),0_2px_8px_rgba(24,76,120,0.06)] relative transition-all">
-            {/* Map Card Header Bar */}
+          <div className="bg-white border border-[#CBD5E1] rounded-2xl overflow-hidden shadow-[0_14px_36px_rgba(24,76,120,0.09),0_2px_8px_rgba(24,76,120,0.04)] transition-all">
+            {/* 1. Header Bar Ringkas (1 Baris) */}
             <div className="bg-white border-b border-[#E2E8F0] px-4 py-2.5 flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
                 <div className="w-6 h-6 rounded-md bg-[#EBF4FB] flex items-center justify-center text-[#184C78]">
                   <MapPin className="w-3.5 h-3.5 text-[#184C78]" />
                 </div>
                 <span className="text-xs font-bold text-[#184C78] font-['DM_Sans']">
-                  Peta Proyek Pembangunan Daerah
+                  Peta Proyek Pembangunan
+                </span>
+                <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
+                  5 Titik Aktif
                 </span>
               </div>
 
@@ -231,58 +239,45 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                         : 'text-[#64748B] hover:text-[#184C78]'
                     }`}
                   >
-                    {filterKey === 'all' ? 'Semua' : filterKey}
+                    {filterKey === 'all' ? 'Semua' : filterKey === 'jalan' ? 'Jalan' : 'Taman'}
                   </button>
                 ))}
               </div>
             </div>
 
-            {/* Interactive SVG Map Body */}
-            <div className="relative bg-[#E8F2E8] select-none">
-              <svg className="w-full h-auto block" viewBox="0 0 540 340" xmlns="http://www.w3.org/2000/svg">
+            {/* 2. Peta Spasial Bersih (100% Tampak Jelas, Bebas Hambatan) */}
+            <div className="relative bg-[#EBF3EB] select-none">
+              <svg className="w-full h-auto block" viewBox="0 0 540 210" xmlns="http://www.w3.org/2000/svg">
                 {/* Base background */}
-                <rect fill="#E8F2E8" width="540" height="340" />
+                <rect fill="#EBF3EB" width="540" height="210" />
 
                 {/* Primary & Secondary Roads */}
-                <line x1="0" y1="80" x2="540" y2="80" stroke="#fff" strokeWidth="10" opacity="0.85" />
-                <line x1="0" y1="170" x2="540" y2="170" stroke="#fff" strokeWidth="8" opacity="0.75" />
-                <line x1="0" y1="260" x2="540" y2="260" stroke="#fff" strokeWidth="6" opacity="0.65" />
-                <line x1="90" y1="0" x2="90" y2="340" stroke="#fff" strokeWidth="9" opacity="0.85" />
-                <line x1="220" y1="0" x2="220" y2="340" stroke="#fff" strokeWidth="8" opacity="0.75" />
-                <line x1="370" y1="0" x2="370" y2="340" stroke="#fff" strokeWidth="7" opacity="0.7" />
-                <line x1="480" y1="0" x2="480" y2="340" stroke="#fff" strokeWidth="5" opacity="0.55" />
-
-                {/* Diagonal roads */}
-                <line x1="0" y1="120" x2="220" y2="80" stroke="#fff" strokeWidth="6" opacity="0.6" />
-                <line x1="220" y1="170" x2="480" y2="120" stroke="#fff" strokeWidth="5" opacity="0.5" />
+                <line x1="0" y1="65" x2="540" y2="65" stroke="#FFFFFF" strokeWidth="8" opacity="0.9" />
+                <line x1="0" y1="145" x2="540" y2="145" stroke="#FFFFFF" strokeWidth="9" opacity="0.95" />
+                <line x1="100" y1="0" x2="100" y2="210" stroke="#FFFFFF" strokeWidth="8" opacity="0.9" />
+                <line x1="250" y1="0" x2="250" y2="210" stroke="#FFFFFF" strokeWidth="10" opacity="0.95" />
+                <line x1="390" y1="0" x2="390" y2="210" stroke="#FFFFFF" strokeWidth="8" opacity="0.9" />
 
                 {/* City Blocks */}
-                <rect x="100" y="0" width="112" height="73" rx="4" fill="#C8DDC8" opacity="0.65" />
-                <rect x="230" y="0" width="130" height="73" rx="4" fill="#C8DDC8" opacity="0.55" />
-                <rect x="380" y="0" width="90" height="73" rx="4" fill="#C8DDC8" opacity="0.5" />
-                <rect x="0" y="90" width="83" height="72" rx="4" fill="#C8DDC8" opacity="0.5" />
-                <rect x="100" y="90" width="112" height="72" rx="4" fill="#C8DDC8" opacity="0.55" />
-                <rect x="230" y="90" width="130" height="72" rx="4" fill="#C8DDC8" opacity="0.5" />
-                <rect x="380" y="90" width="90" height="72" rx="4" fill="#C8DDC8" opacity="0.45" />
-                <rect x="0" y="180" width="83" height="72" rx="4" fill="#C8DDC8" opacity="0.45" />
-                <rect x="100" y="180" width="112" height="72" rx="4" fill="#C8DDC8" opacity="0.5" />
-                <rect x="230" y="180" width="130" height="72" rx="4" fill="#C8DDC8" opacity="0.45" />
-                <rect x="380" y="180" width="90" height="72" rx="4" fill="#C8DDC8" opacity="0.4" />
-                <rect x="0" y="270" width="83" height="70" rx="4" fill="#C8DDC8" opacity="0.4" />
-                <rect x="100" y="270" width="112" height="70" rx="4" fill="#C8DDC8" opacity="0.45" />
-                <rect x="230" y="270" width="130" height="70" rx="4" fill="#C8DDC8" opacity="0.4" />
-                <rect x="380" y="270" width="90" height="70" rx="4" fill="#C8DDC8" opacity="0.35" />
-                <rect x="490" y="90" width="50" height="160" rx="4" fill="#C8DDC8" opacity="0.35" />
+                <rect x="15" y="10" width="75" height="48" rx="4" fill="#D3E6D3" opacity="0.75" />
+                <rect x="260" y="10" width="120" height="48" rx="4" fill="#D3E6D3" opacity="0.75" />
+                <rect x="400" y="10" width="125" height="48" rx="4" fill="#D3E6D3" opacity="0.65" />
 
-                {/* Park area */}
-                <ellipse cx="155" cy="36" rx="40" ry="28" fill="#6CB87A" opacity="0.6" />
+                <rect x="15" y="75" width="75" height="60" rx="4" fill="#D3E6D3" opacity="0.7" />
+                <rect x="110" y="75" width="130" height="60" rx="4" fill="#D3E6D3" opacity="0.8" />
+                <rect x="260" y="75" width="120" height="60" rx="4" fill="#D3E6D3" opacity="0.75" />
+                <rect x="400" y="75" width="125" height="60" rx="4" fill="#D3E6D3" opacity="0.65" />
 
-                {/* River / Water body */}
-                <path d="M0 290 Q60 270 120 290 Q180 310 240 285 Q300 265 370 280 Q420 290 480 270 L480 340 L0 340Z" fill="#A8C8E0" opacity="0.45" />
+                {/* Centennial Park area */}
+                <ellipse cx="170" cy="34" rx="42" ry="24" fill="#6CB87A" opacity="0.65" />
+                <text x="145" y="38" fill="#166534" fontSize="8" fontWeight="bold" opacity="0.85">TAMAN KOTA</text>
+
+                {/* River / Water body at bottom */}
+                <path d="M0 185 Q90 165 180 180 Q270 195 360 175 Q450 160 540 175 L540 210 L0 210 Z" fill="#A8D4F0" opacity="0.6" />
 
                 {/* Interactive Markers */}
                 {filteredPins.map((pin, idx) => {
-                  const isSelected = mapProjects[selectedPinIndex]?.id === pin.id;
+                  const isSelected = currentHighlight.id === pin.id;
                   return (
                     <g
                       key={pin.id}
@@ -291,33 +286,34 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                       onClick={() => handleMarkerClick(idx)}
                     >
                       {isSelected && (
-                        <circle r={pin.r + 7} fill={pin.color} opacity="0.25" className="animate-ping" />
+                        <circle r={pin.r + 7} fill={pin.color} opacity="0.3" className="animate-ping" />
                       )}
                       <circle
                         r={pin.r}
                         fill="white"
                         stroke={pin.color}
                         strokeWidth={isSelected ? '3.5' : '2.5'}
-                        filter="drop-shadow(0px 2px 5px rgba(0,0,0,0.22))"
+                        filter="drop-shadow(0px 2px 4px rgba(0,0,0,0.18))"
                       />
                       <circle r={pin.r / 2} fill={pin.color} />
+                      {isSelected && (
+                        <circle r={pin.r / 4} fill="white" />
+                      )}
                     </g>
                   );
                 })}
               </svg>
 
-              {/* Badge top-left: Live counter */}
-              <div className="absolute top-3 left-3 bg-[#184C78]/95 backdrop-blur-md text-white text-[11px] font-bold px-2.5 py-1 rounded-full font-['DM_Sans'] shadow-sm flex items-center gap-1.5">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping" />
-                <span>23 proyek aktif</span>
+              {/* Petunjuk Interaksi Ringkas */}
+              <div className="absolute top-2 left-2 bg-[#184C78]/90 text-white text-[10px] font-semibold px-2 py-0.5 rounded-full shadow-xs">
+                Klik pin untuk melihat detail
               </div>
+            </div>
 
-              {/* Floating interactive card on bottom-right */}
-              <div
-                onClick={handleOpenDetailFromMap}
-                className="absolute bottom-3 right-3 bg-white/95 backdrop-blur-md border border-[#CBD5E1] rounded-xl p-3 w-[215px] shadow-[0_6px_16px_rgba(24,76,120,0.14)] cursor-pointer hover:border-[#2980B9] transition-all group"
-              >
-                <div className="flex items-center justify-between mb-1.5">
+            {/* 3. Panel Info Proyek Terpadu (Ringkas, Terbuka & Mudah Dimengerti) */}
+            <div className="p-3.5 bg-white border-t border-[#E2E8F0]">
+              <div className="flex items-center justify-between gap-2 mb-1.5">
+                <div className="flex items-center gap-2">
                   <span
                     className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                       currentHighlight.status === 'selesai'
@@ -329,44 +325,75 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                   >
                     {currentHighlight.tag}
                   </span>
-                  <span className="text-[10px] text-[#2980B9] font-medium group-hover:underline flex items-center gap-0.5">
-                    Detail &rarr;
+                  <span className="text-xs text-slate-300">•</span>
+                  <span className="text-[11px] font-medium text-slate-500">
+                    Target: {currentHighlight.date}
                   </span>
                 </div>
 
-                <h4 className="text-xs font-bold text-[#184C78] line-clamp-1 mb-1.5 font-['DM_Sans']">
-                  {currentHighlight.name}
-                </h4>
+                <span className="text-xs font-bold text-[#184C78] bg-[#EBF4FB] px-2 py-0.5 rounded-md">
+                  {currentHighlight.progress}% Selesai
+                </span>
+              </div>
 
-                <div className="h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden mb-1">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#2980B9] to-[#184C78] rounded-full transition-all duration-500"
-                    style={{ width: `${currentHighlight.progress}%` }}
-                  />
+              {/* Title & Action Button */}
+              <div className="flex items-center justify-between gap-3 mb-2">
+                <div>
+                  <h4 className="text-sm font-extrabold text-[#0B2540] font-['DM_Sans'] line-clamp-1 leading-snug">
+                    {currentHighlight.name}
+                  </h4>
+                  <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">
+                    <MapPin className="w-3 h-3 text-[#184C78] shrink-0" />
+                    <span>{currentHighlight.wilayah || 'Kota Malang'}</span>
+                  </p>
                 </div>
 
-                <div className="text-[11px] text-[#64748B] flex justify-between">
-                  <span>{currentHighlight.progress}% selesai</span>
-                  <span>{currentHighlight.date}</span>
+                <button
+                  type="button"
+                  onClick={handleOpenDetailFromMap}
+                  className="px-3 py-1.5 bg-[#184C78] hover:bg-[#12395b] text-white text-[11px] font-bold rounded-lg shadow-xs transition-colors shrink-0 cursor-pointer flex items-center gap-1 group"
+                >
+                  <span>Lihat Detail</span>
+                  <span className="group-hover:translate-x-0.5 transition-transform">&rarr;</span>
+                </button>
+              </div>
+
+              {/* Progress Bar */}
+              <div className="h-1.5 bg-[#E2E8F0] rounded-full overflow-hidden mb-2.5">
+                <div
+                  className="h-full bg-gradient-to-r from-[#2980B9] to-[#184C78] rounded-full transition-all duration-500"
+                  style={{ width: `${currentHighlight.progress}%` }}
+                />
+              </div>
+
+              {/* Navigasi Proyek Cepat (5 Titik) & Legenda Ringkas */}
+              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                <div className="flex items-center gap-1.5">
+                  {mapProjects.map((p, idx) => (
+                    <button
+                      key={p.id}
+                      onClick={() => handleMarkerClick(idx)}
+                      className={`h-2 rounded-full transition-all cursor-pointer ${
+                        selectedPinIndex === idx ? 'w-5 bg-[#184C78]' : 'w-2 bg-slate-300 hover:bg-slate-400'
+                      }`}
+                      title={p.name}
+                    />
+                  ))}
+                  <span className="text-[10px] text-slate-400 ml-1">
+                    {selectedPinIndex + 1} dari {mapProjects.length}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center gap-1 text-[11px]">
+                    <span className="w-2 h-2 rounded-full bg-[#E67E22]" /> Berjalan
+                  </span>
+                  <span className="flex items-center gap-1 text-[11px]">
+                    <span className="w-2 h-2 rounded-full bg-[#1A9E6E]" /> Selesai
+                  </span>
                 </div>
               </div>
             </div>
-          </div>
-
-          {/* Map Legend Pills */}
-          <div className="flex gap-4 mt-3 justify-center flex-wrap">
-            <span className="flex items-center gap-1.5 text-xs text-[#64748B] font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#E67E22] inline-block"></span>
-              Berjalan
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-[#64748B] font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#1A9E6E] inline-block"></span>
-              Selesai
-            </span>
-            <span className="flex items-center gap-1.5 text-xs text-[#64748B] font-medium">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#9BA5B0] inline-block"></span>
-              Ditangguhkan
-            </span>
           </div>
         </div>
       </div>

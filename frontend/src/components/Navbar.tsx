@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { LogOut, Menu, X, Shield, Database } from 'lucide-react';
 import type { UserProfile } from '../types';
+import { CivicTrackLogo } from './CivicTrackLogo';
 
 interface NavbarProps {
   currentUser: UserProfile | null;
@@ -52,15 +53,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         <a 
           href="#" 
           onClick={(e) => { e.preventDefault(); handleNavClick('beranda', '#hero'); }}
-          className="flex items-center gap-2.5 font-['DM_Sans'] font-extrabold text-[18px] text-[#184C78] no-underline tracking-[-0.4px] mr-4 sm:mr-6 shrink-0 group"
+          className="flex items-center no-underline mr-4 sm:mr-6 shrink-0 group"
+          title="CivicTrack Beranda"
         >
-          <div className="w-[30px] h-[30px] bg-[#184C78] rounded-lg flex items-center justify-center transition-transform group-hover:scale-105 shadow-sm">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-          </div>
-          <span className="tracking-tight">CivicTrack</span>
+          <CivicTrackLogo size="sm" />
         </a>
 
         {/* Desktop Navigation Links */}

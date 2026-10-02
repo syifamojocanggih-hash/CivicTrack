@@ -1,4 +1,5 @@
 import React from 'react';
+import { CivicTrackLogo } from './CivicTrackLogo';
 
 interface FooterProps {
   onOpenOpenData?: () => void;
@@ -10,15 +11,10 @@ export const Footer: React.FC<FooterProps> = ({ onOpenOpenData }) => {
       <div className="max-w-[1180px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap">
         <a
           href="#"
-          className="flex items-center gap-2 font-['DM_Sans'] font-extrabold text-[15px] text-white/85 no-underline"
+          className="flex items-center no-underline"
+          title="CivicTrack"
         >
-          <div className="w-6 h-6 bg-white/10 rounded flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.9)" strokeWidth="2.5">
-              <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-              <polyline points="9 22 9 12 15 12 15 22" />
-            </svg>
-          </div>
-          CivicTrack
+          <CivicTrackLogo size="xs" theme="dark" />
         </a>
 
         <div className="flex gap-5 flex-wrap text-center">

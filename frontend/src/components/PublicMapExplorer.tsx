@@ -4,7 +4,6 @@ import 'leaflet/dist/leaflet.css';
 import {
   Search,
   X,
-  Compass,
   Navigation,
   Layers,
   Plus,
@@ -605,10 +604,8 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
           <div className="flex items-center gap-2">
-            <div className="w-7 h-7 bg-[#184C78] rounded-lg flex items-center justify-center text-white shadow-xs">
-              <Compass className="w-4 h-4 text-cyan-300" />
-            </div>
-            <span className="font-['DM_Sans'] font-extrabold text-base text-[#184C78] tracking-tight">
+            <img src="/civictrack-icon.png" alt="CivicTrack Logo" className="h-7 w-auto object-contain" />
+            <span className="font-['DM_Sans'] font-black text-base text-[#184C78] tracking-tight">
               CivicTrack <span className="text-xs font-medium text-slate-500 hidden md:inline">| Peta Spasial Proyek</span>
             </span>
           </div>

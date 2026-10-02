@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import {
-  Globe,
   Search,
   Activity,
   Bookmark,
@@ -20,6 +19,7 @@ import {
   X,
 } from 'lucide-react';
 import type { UserProfile, UserRole } from '../../types';
+import iconSrc from '../../assets/civictrack-icon.png';
 
 interface DashboardSidebarProps {
   currentUser: UserProfile;
@@ -107,16 +107,16 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         {/* ── 1. HEADER (CIRCULAR BRAND & SEARCH) ── */}
         <div className="h-16 px-4 flex items-center justify-between border-b border-slate-200/70 shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
-            {/* Globe Brand Icon in Circle */}
-            <div className="w-9 h-9 rounded-full bg-white border border-slate-200/90 shadow-2xs flex items-center justify-center text-slate-800 shrink-0">
-              <Globe className="w-5 h-5 text-[#184C78]" />
+            {/* Official CivicTrack Logo Mark */}
+            <div className="w-9 h-9 rounded-xl bg-white border border-slate-200/90 shadow-2xs flex items-center justify-center p-1 shrink-0">
+              <img src={iconSrc} alt="CivicTrack" className="w-full h-full object-contain" />
             </div>
 
             {!isCollapsed && (
               <div className="leading-tight overflow-hidden">
-                <span className="font-['DM_Sans'] font-extrabold text-[15px] text-slate-900 tracking-tight">
+                <div className="font-['DM_Sans'] font-black text-[15px] text-[#184C78] tracking-tight">
                   CivicTrack
-                </span>
+                </div>
                 <div className="text-[10px] text-slate-500 font-medium truncate">
                   Sistem Transparansi Proyek
                 </div>
