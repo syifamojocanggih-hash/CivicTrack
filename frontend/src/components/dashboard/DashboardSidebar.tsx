@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   Search,
-  Activity,
+  LayoutDashboard,
   Bookmark,
   MessageSquarePlus,
   Star,
@@ -175,7 +175,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
         {/* ── 2. NAVIGATION BUTTONS (AIRY SPACING & CLEAN MINIMALISM) ── */}
         <div className="flex-1 overflow-y-auto px-3.5 py-4 space-y-2.5 scrollbar-none">
-          {/* Button 1: Realtime Overview (Active Pill Card) */}
+          {/* Button 1: Dashboard (Active Pill Card) */}
           <button
             onClick={() => {
               onSelectNavSection('overview');
@@ -186,16 +186,16 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 ? 'bg-white shadow-xs border border-slate-200/60 text-slate-900 font-bold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 font-medium'
             }`}
-            title={isCollapsed ? 'Realtime Overview' : undefined}
+            title={isCollapsed ? 'Dashboard' : undefined}
           >
             <div className="flex items-center gap-3 min-w-0">
-              <Activity
+              <LayoutDashboard
                 className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${
                   isOverviewActive ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-800'
                 }`}
               />
               {!isCollapsed && (
-                <span className="truncate leading-tight">Realtime Overview</span>
+                <span className="truncate leading-tight">Dashboard</span>
               )}
             </div>
 

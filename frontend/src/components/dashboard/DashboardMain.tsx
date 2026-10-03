@@ -47,9 +47,9 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
   const getNavTitle = () => {
     switch (activeNavSection) {
       case 'overview':
-        return 'Realtime Overview & Monitoring';
+        return 'Dashboard Ringkasan & Monitoring';
       case 'langganan':
-        return 'Proyek Diikuti (Langganan Notifikasi)';
+        return 'Proyek Diikuti';
       case 'laporan':
         return 'Kanal Aduan & Aspirasi Publik';
       case 'rating':

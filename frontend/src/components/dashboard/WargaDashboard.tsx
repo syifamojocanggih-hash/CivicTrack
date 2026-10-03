@@ -1,6 +1,8 @@
 import React, { useState } from 'react';
 import {
   Bookmark,
+  Bell,
+  BellOff,
   MessageSquarePlus,
   Star,
   AlertTriangle,
@@ -49,11 +51,12 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   onOpenProjectDetail,
   onOpenAIRoute,
   activeSection,
+  onSelectSection,
   onOpenMapExplorer,
 }) => {
   const [activeAuditTrailId, setActiveAuditTrailId] = useState<number | null>(null);
 
-  const activeTab = (activeSection as any) || 'langganan';
+  const activeTab = (activeSection as any) || 'overview';
 
   // Subscribed state
   const [subscribedList, setSubscribedList] = useState<SubscribedProject[]>(MOCK_SUBSCRIBED_PROJECTS);
@@ -213,116 +216,252 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
   return (
     <div className="space-y-6 animate-hero-in">
-      {/* ── TOP HERO BANNER WARGA ── */}
-      <div className="bg-gradient-to-r from-[#184C78] via-[#1a6fa8] to-[#2980B9] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
-        <div className="relative z-10 max-w-3xl">
-          <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide mb-3">
-            <ShieldCheck className="w-4 h-4 text-emerald-300" />
-            <span>Portal Partisipasi &amp; Pengawasan Warga</span>
-          </div>
-          <h1 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold tracking-tight">
-            Selamat Datang, {currentUser.nama}! 👋
-          </h1>
-          <p className="text-white/85 text-xs sm:text-sm mt-2 leading-relaxed">
-            Pantau perkembangan proyek infrastruktur di sekitar tempat tinggalmu secara transparan, kirimkan tanggapan langsung ke dinas pengawas, serta berikan penilaian kepuasan pembangunan.
-          </p>
+      {/* ── TAB CONTENT 1: DASHBOARD OVERVIEW (RINGKASAN & MONITORING) ── */}
+      {activeTab === 'overview' && (
+        <>
+          {/* ── TOP HERO BANNER WARGA ── */}
+          <div className="bg-gradient-to-r from-[#184C78] via-[#1a6fa8] to-[#2980B9] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
+            <div className="relative z-10 max-w-3xl">
+              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide mb-3">
+                <ShieldCheck className="w-4 h-4 text-emerald-300" />
+                <span>Portal Partisipasi &amp; Pengawasan Warga</span>
+              </div>
+              <h1 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold tracking-tight">
+                Selamat Datang, {currentUser.nama}! 👋
+              </h1>
+              <p className="text-white/85 text-xs sm:text-sm mt-2 leading-relaxed">
+                Pantau perkembangan proyek infrastruktur di sekitar tempat tinggalmu secara transparan, kirimkan tanggapan langsung ke dinas pengawas, serta berikan penilaian kepuasan pembangunan.
+              </p>
 
-          <div className="flex flex-wrap gap-3 mt-5">
-            <button
-              onClick={() => setIsNewReportModalOpen(true)}
-              className="px-4 py-2 bg-white text-[#184C78] font-bold text-xs rounded-xl shadow-xs hover:bg-slate-100 flex items-center gap-2 transition-transform hover:scale-102 cursor-pointer"
+              <div className="flex flex-wrap gap-3 mt-5">
+                <button
+                  onClick={() => setIsNewReportModalOpen(true)}
+                  className="px-4 py-2 bg-white text-[#184C78] font-bold text-xs rounded-xl shadow-xs hover:bg-slate-100 flex items-center gap-2 transition-transform hover:scale-102 cursor-pointer"
+                >
+                  <Plus className="w-4 h-4 text-[#184C78]" />
+                  <span>Buat Laporan / Masukan Baru</span>
+                </button>
+                <button
+                  onClick={() => onOpenAIRoute('Pelebaran Jalan Soekarno Hatta')}
+                  className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold text-xs rounded-xl backdrop-blur-md flex items-center gap-2 transition-all cursor-pointer"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>Cek Rute Alternatif AI</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Decorative background shape */}
+            <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/5 rounded-full blur-2xl pointer-events-none -mr-16 -mb-16" />
+          </div>
+
+          {/* ── SPATIAL MINIMAP OVERVIEW WIDGET (GIS PREVIEW) ── */}
+          {onOpenMapExplorer && (
+            <MiniMapOverview
+              projects={projects}
+              onOpenMapExplorer={onOpenMapExplorer}
+            />
+          )}
+
+          {/* ── METRIC CARDS ── */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            <div
+              onClick={() => onSelectSection && onSelectSection('langganan')}
+              className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs flex items-center gap-4 hover:border-[#184C78]/40 transition-all cursor-pointer group"
             >
-              <Plus className="w-4 h-4 text-[#184C78]" />
-              <span>Buat Laporan / Masukan Baru</span>
-            </button>
-            <button
-              onClick={() => onOpenAIRoute('Pelebaran Jalan Soekarno Hatta')}
-              className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold text-xs rounded-xl backdrop-blur-md flex items-center gap-2 transition-all cursor-pointer"
-            >
-              <Sparkles className="w-4 h-4 text-amber-300" />
-              <span>Cek Rute Alternatif AI</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Decorative background shape */}
-        <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/5 rounded-full blur-2xl pointer-events-none -mr-16 -mb-16" />
-      </div>
-
-      {/* ── SPATIAL MINIMAP OVERVIEW WIDGET (GIS PREVIEW) ── */}
-      {onOpenMapExplorer && (
-        <MiniMapOverview
-          projects={projects}
-          onOpenMapExplorer={onOpenMapExplorer}
-        />
-      )}
-
-      {/* ── METRIC CARDS ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#EBF4FB] text-[#184C78] flex items-center justify-center shrink-0">
-            <Bookmark className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#184C78]">
-              {subscribedList.length}
-            </div>
-            <div className="text-xs text-[#6C757D] font-medium">Proyek Diikuti</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#FEF3E7] text-[#E67E22] flex items-center justify-center shrink-0">
-            <MessageSquarePlus className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529]">
-              {laporanList.length}
-            </div>
-            <div className="text-xs text-[#6C757D] font-medium">Laporan Terkirim</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#E6F7F1] text-[#1A9E6E] flex items-center justify-center shrink-0">
-            <Star className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529]">
-              {ratingList.length}
-            </div>
-            <div className="text-xs text-[#6C757D] font-medium">Rating Diberikan</div>
-          </div>
-        </div>
-
-        <div className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs flex items-center gap-4">
-          <div className="w-12 h-12 rounded-xl bg-[#FDEDEC] text-[#E74C3C] flex items-center justify-center shrink-0">
-            <AlertTriangle className="w-6 h-6" />
-          </div>
-          <div>
-            <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529]">
-              {evaluasiList.length}
-            </div>
-            <div className="text-xs text-[#6C757D] font-medium">Evaluasi Cacat Fisik</div>
-          </div>
-        </div>
-      </div>
-
-      {/* ── ACTIVE SECTION VIEW (DRIVEN BY SIDEBAR) ── */}
-      {/* ── SECTION 1: PROYEK DI IKUTI ── */}
-      {(activeTab === 'langganan' || activeTab === 'overview') && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-[#EBF4FB] text-[#184C78] flex items-center justify-center shrink-0">
-                <Bookmark className="w-5 h-5" />
+              <div className="w-12 h-12 rounded-xl bg-[#EBF4FB] text-[#184C78] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Bookmark className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
+                <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#184C78]">
+                  {subscribedList.length}
+                </div>
+                <div className="text-xs text-[#6C757D] font-medium">Proyek Diikuti</div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => onSelectSection && onSelectSection('laporan')}
+              className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs flex items-center gap-4 hover:border-[#E67E22]/40 transition-all cursor-pointer group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#FEF3E7] text-[#E67E22] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <MessageSquarePlus className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529]">
+                  {laporanList.length}
+                </div>
+                <div className="text-xs text-[#6C757D] font-medium">Laporan Terkirim</div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => onSelectSection && onSelectSection('rating')}
+              className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs flex items-center gap-4 hover:border-[#1A9E6E]/40 transition-all cursor-pointer group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#E6F7F1] text-[#1A9E6E] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <Star className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529]">
+                  {ratingList.length}
+                </div>
+                <div className="text-xs text-[#6C757D] font-medium">Rating Diberikan</div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => onSelectSection && onSelectSection('evaluasi')}
+              className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs flex items-center gap-4 hover:border-[#E74C3C]/40 transition-all cursor-pointer group"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#FDEDEC] text-[#E74C3C] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                <AlertTriangle className="w-6 h-6" />
+              </div>
+              <div>
+                <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529]">
+                  {evaluasiList.length}
+                </div>
+                <div className="text-xs text-[#6C757D] font-medium">Evaluasi Cacat Fisik</div>
+              </div>
+            </div>
+          </div>
+
+          {/* ── RINGKASAN PROYEK DI IKUTI (PREVIEW SINGKAT PADA DASHBOARD OVERVIEW) ── */}
+          <div className="space-y-4">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#EBF4FB] text-[#184C78] flex items-center justify-center shrink-0">
+                  <Bookmark className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
+                    Ringkasan Proyek yang Anda Ikuti
+                  </h2>
+                  <p className="text-xs text-[#6C757D]">
+                    Preview perkembangan terkini dari proyek pilihan Anda.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onSelectSection && onSelectSection('langganan')}
+                className="text-xs font-semibold px-3.5 py-1.5 bg-[#EBF4FB] hover:bg-[#dcebf7] text-[#184C78] rounded-xl border border-[#c5def2] shrink-0 self-start sm:self-auto flex items-center gap-1.5 transition-colors cursor-pointer"
+              >
+                <span>Lihat Halaman Proyek Diikuti ({subscribedList.length})</span>
+                <ChevronRight className="w-3.5 h-3.5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {subscribedList.slice(0, 3).map((sub) => {
+                const p = sub.proyek;
+                return (
+                  <div
+                    key={sub.id}
+                    className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-['DM_Sans'] font-bold text-base text-[#0B2540] leading-snug">
+                            {p.nama_proyek}
+                          </h3>
+                          <p className="text-xs text-[#6C757D] mt-1 flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5 text-[#2980B9] shrink-0" />
+                            <span className="truncate">{p.nama_wilayah}</span>
+                          </p>
+                        </div>
+
+                        {/* Instagram-style Follow/Notif icon toggle */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleNotification(sub.id)}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                            sub.notifikasi_aktif
+                              ? 'bg-[#EBF4FB] text-[#184C78] hover:bg-[#dcebf7]'
+                              : 'bg-[#F1F5F9] text-[#94A3B8] hover:bg-[#E2E8F0] hover:text-[#64748B]'
+                          }`}
+                          title={sub.notifikasi_aktif ? 'Mengikuti (Klik untuk senyapkan)' : 'Tidak Mengikuti (Klik untuk ikuti)'}
+                          aria-label={sub.notifikasi_aktif ? 'Mengikuti' : 'Tidak Mengikuti'}
+                        >
+                          {sub.notifikasi_aktif ? (
+                            <Bell className="w-4 h-4 fill-[#184C78]" />
+                          ) : (
+                            <BellOff className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Progress visual */}
+                      <div className="mt-4 bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/60">
+                        <div className="flex justify-between text-xs font-semibold mb-1.5">
+                          <span className="text-[#6C757D]">Progres Fisik</span>
+                          <span className="text-[#184C78] font-bold">{p.progres_persen}%</span>
+                        </div>
+                        <div className="w-full bg-[#DCE0E6] h-2 rounded-full overflow-hidden">
+                          <div
+                            className="bg-[#184C78] h-full rounded-full transition-all duration-500"
+                            style={{ width: `${p.progres_persen}%` }}
+                          />
+                        </div>
+                        <div className="text-[11px] text-[#6C757D] mt-2 italic">
+                          Tahap: {p.tahap_terkini || 'Pelaksanaan Konstruksi'}
+                        </div>
+                      </div>
+
+                      {/* Latest alert update */}
+                      <div className="mt-3 p-2.5 bg-[#f4f9fd] rounded-lg border-l-3 border-[#2980B9] text-xs">
+                        <div className="font-semibold text-[#184C78] flex items-center justify-between">
+                          <span>Pembaruan Terkini</span>
+                          <span className="text-[10px] text-[#6C757D] font-mono">{sub.update_terakhir}</span>
+                        </div>
+                        <p className="text-[11px] text-[#212529] mt-1 leading-relaxed">
+                          {sub.pesan_update}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 pt-3 border-t border-[#DCE0E6] flex gap-2">
+                      <button
+                        onClick={() => onOpenProjectDetail(p)}
+                        className="flex-1 py-2 bg-[#184C78] hover:bg-[#0f3252] text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Lihat Linimasa &amp; Foto</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                      {p.kategori === 'jalan' && (
+                        <button
+                          onClick={() => onOpenAIRoute(p.nama_proyek)}
+                          className="px-3 py-2 bg-[#FEF3E7] hover:bg-[#FDEBD0] text-[#E67E22] text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                          title="Rute Alternatif AI"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </>
+      )}
+
+      {/* ── TAB CONTENT 2: HALAMAN KHUSUS PROYEK DI IKUTI ── */}
+      {activeTab === 'langganan' && (
+        <div className="space-y-5 animate-fade-in">
+          {/* Dedicated Header for Proyek Diikuti */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="flex items-center gap-3.5">
+              <div className="w-11 h-11 rounded-xl bg-[#EBF4FB] text-[#184C78] flex items-center justify-center shrink-0">
+                <Bookmark className="w-6 h-6" />
+              </div>
+              <div>
+                <h2 className="text-lg font-bold font-['DM_Sans'] text-[#0B2540]">
                   Proyek Pilihan yang Anda Ikuti
                 </h2>
-                <p className="text-xs text-[#6C757D]">
-                  Anda menerima notifikasi otomatis setiap kali pihak pelaksana memperbarui progres fisik atau linimasa proyek ini.
+                <p className="text-xs text-[#6C757D] mt-0.5">
+                  Daftar seluruh proyek pembangunan yang Anda pantau linimasa, foto lapangan, dan notifikasi pembaruannya.
                 </p>
               </div>
             </div>
@@ -331,91 +470,121 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {subscribedList.map((sub) => {
-              const p = sub.proyek;
-              return (
-                <div
-                  key={sub.id}
-                  className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+          {/* Grid Proyek Diikuti Lengkap */}
+          {subscribedList.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {subscribedList.map((sub) => {
+                const p = sub.proyek;
+                return (
+                  <div
+                    key={sub.id}
+                    className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="flex-1 min-w-0">
+                          <h3 className="font-['DM_Sans'] font-bold text-base text-[#0B2540] leading-snug">
+                            {p.nama_proyek}
+                          </h3>
+                          <p className="text-xs text-[#6C757D] mt-1 flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5 text-[#2980B9] shrink-0" />
+                            <span className="truncate">{p.nama_wilayah}</span>
+                          </p>
+                        </div>
+
+                        {/* Instagram-style Follow/Notif icon toggle */}
+                        <button
+                          type="button"
+                          onClick={() => handleToggleNotification(sub.id)}
+                          className={`w-8 h-8 rounded-full flex items-center justify-center transition-all cursor-pointer shrink-0 ${
+                            sub.notifikasi_aktif
+                              ? 'bg-[#EBF4FB] text-[#184C78] hover:bg-[#dcebf7]'
+                              : 'bg-[#F1F5F9] text-[#94A3B8] hover:bg-[#E2E8F0] hover:text-[#64748B]'
+                          }`}
+                          title={sub.notifikasi_aktif ? 'Mengikuti (Klik untuk senyapkan)' : 'Tidak Mengikuti (Klik untuk ikuti)'}
+                          aria-label={sub.notifikasi_aktif ? 'Mengikuti' : 'Tidak Mengikuti'}
+                        >
+                          {sub.notifikasi_aktif ? (
+                            <Bell className="w-4 h-4 fill-[#184C78]" />
+                          ) : (
+                            <BellOff className="w-4 h-4" />
+                          )}
+                        </button>
+                      </div>
+
+                      {/* Progress visual */}
+                      <div className="mt-4 bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/60">
+                        <div className="flex justify-between text-xs font-semibold mb-1.5">
+                          <span className="text-[#6C757D]">Progres Fisik</span>
+                          <span className="text-[#184C78] font-bold">{p.progres_persen}%</span>
+                        </div>
+                        <div className="w-full bg-[#DCE0E6] h-2 rounded-full overflow-hidden">
+                          <div
+                            className="bg-[#184C78] h-full rounded-full transition-all duration-500"
+                            style={{ width: `${p.progres_persen}%` }}
+                          />
+                        </div>
+                        <div className="text-[11px] text-[#6C757D] mt-2 italic">
+                          Tahap: {p.tahap_terkini || 'Pelaksanaan Konstruksi'}
+                        </div>
+                      </div>
+
+                      {/* Latest alert update */}
+                      <div className="mt-3 p-2.5 bg-[#f4f9fd] rounded-lg border-l-3 border-[#2980B9] text-xs">
+                        <div className="font-semibold text-[#184C78] flex items-center justify-between">
+                          <span>Pembaruan Terkini</span>
+                          <span className="text-[10px] text-[#6C757D] font-mono">{sub.update_terakhir}</span>
+                        </div>
+                        <p className="text-[11px] text-[#212529] mt-1 leading-relaxed">
+                          {sub.pesan_update}
+                        </p>
+                      </div>
+                    </div>
+
+                    <div className="mt-5 pt-3 border-t border-[#DCE0E6] flex gap-2">
+                      <button
+                        onClick={() => onOpenProjectDetail(p)}
+                        className="flex-1 py-2 bg-[#184C78] hover:bg-[#0f3252] text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Lihat Linimasa &amp; Foto</span>
+                        <ChevronRight className="w-3.5 h-3.5" />
+                      </button>
+                      {p.kategori === 'jalan' && (
+                        <button
+                          onClick={() => onOpenAIRoute(p.nama_proyek)}
+                          className="px-3 py-2 bg-[#FEF3E7] hover:bg-[#FDEBD0] text-[#E67E22] text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                          title="Rute Alternatif AI"
+                        >
+                          <Sparkles className="w-4 h-4" />
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="bg-white rounded-2xl border border-[#DCE0E6] p-12 text-center">
+              <div className="w-16 h-16 rounded-2xl bg-[#F5F7FA] text-[#6C757D] flex items-center justify-center mx-auto mb-4">
+                <Bookmark className="w-8 h-8 text-slate-400" />
+              </div>
+              <h3 className="text-base font-bold text-[#0B2540] font-['DM_Sans']">
+                Belum Ada Proyek yang Diikuti
+              </h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto mt-1.5 mb-5">
+                Anda belum menandai proyek pembangunan untuk diikuti. Buka Peta Spasial untuk menemukan proyek di sekitar Anda dan tekan ikon lonceng untuk mengikutinya.
+              </p>
+              {onOpenMapExplorer && (
+                <button
+                  onClick={onOpenMapExplorer}
+                  className="px-5 py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer inline-flex items-center gap-2"
                 >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <span className="text-[11px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-md bg-[#EBF4FB] text-[#184C78]">
-                        {p.kategori}
-                      </span>
-                      <button
-                        onClick={() => handleToggleNotification(sub.id)}
-                        className={`text-xs px-2 py-1 rounded-md font-medium transition-colors ${
-                          sub.notifikasi_aktif
-                            ? 'bg-[#E6F7F1] text-[#1A9E6E]'
-                            : 'bg-[#F5F7FA] text-[#6C757D]'
-                        }`}
-                        title="Klik untuk ubah status notifikasi"
-                      >
-                        {sub.notifikasi_aktif ? '🔔 Notif Aktif' : '🔕 Notif Senyap'}
-                      </button>
-                    </div>
-
-                    <h3 className="font-['DM_Sans'] font-bold text-base text-[#212529] mt-3 leading-snug">
-                      {p.nama_proyek}
-                    </h3>
-                    <p className="text-xs text-[#6C757D] mt-1 flex items-center gap-1">
-                      <MapPin className="w-3.5 h-3.5 text-[#2980B9]" />
-                      <span>{p.nama_wilayah}</span>
-                    </p>
-
-                    {/* Progress visual */}
-                    <div className="mt-4 bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/60">
-                      <div className="flex justify-between text-xs font-semibold mb-1.5">
-                        <span className="text-[#6C757D]">Progres Fisik</span>
-                        <span className="text-[#184C78] font-bold">{p.progres_persen}%</span>
-                      </div>
-                      <div className="w-full bg-[#DCE0E6] h-2 rounded-full overflow-hidden">
-                        <div
-                          className="bg-[#184C78] h-full rounded-full transition-all duration-500"
-                          style={{ width: `${p.progres_persen}%` }}
-                        />
-                      </div>
-                      <div className="text-[11px] text-[#6C757D] mt-2 italic">
-                        Tahap: {p.tahap_terkini || 'Pelaksanaan Konstruksi'}
-                      </div>
-                    </div>
-
-                    {/* Latest alert update */}
-                    <div className="mt-3 p-2.5 bg-[#f4f9fd] rounded-lg border-l-3 border-[#2980B9] text-xs">
-                      <div className="font-semibold text-[#184C78] flex items-center justify-between">
-                        <span>Pembaruan Terkini</span>
-                        <span className="text-[10px] text-[#6C757D] font-mono">{sub.update_terakhir}</span>
-                      </div>
-                      <p className="text-[11px] text-[#212529] mt-1 leading-relaxed">
-                        {sub.pesan_update}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-3 border-t border-[#DCE0E6] flex gap-2">
-                    <button
-                      onClick={() => onOpenProjectDetail(p)}
-                      className="flex-1 py-2 bg-[#184C78] hover:bg-[#0f3252] text-white text-xs font-semibold rounded-lg transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                    >
-                      <span>Lihat Linimasa &amp; Foto</span>
-                      <ChevronRight className="w-3.5 h-3.5" />
-                    </button>
-                    {p.kategori === 'jalan' && (
-                      <button
-                        onClick={() => onOpenAIRoute(p.nama_proyek)}
-                        className="px-3 py-2 bg-[#FEF3E7] hover:bg-[#FDEBD0] text-[#E67E22] text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                        title="Rute Alternatif AI"
-                      >
-                        <Sparkles className="w-4 h-4" />
-                      </button>
-                    )}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                  <MapPin className="w-4 h-4" />
+                  <span>Buka Peta Spasial Proyek</span>
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { MapPin, ShieldCheck, Compass, LayoutDashboard } from 'lucide-react';
+import { MapPin, Compass, LayoutDashboard } from 'lucide-react';
 import type { ProyekItem } from '../types';
 
 interface HeroSectionProps {
@@ -132,29 +132,10 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
   });
 
   return (
-    <section id="hero" className="relative bg-gradient-to-b from-[#F8FAFC] via-white to-white border-b border-[#DCE4EC] overflow-hidden">
-      {/* Subtle modern dot-grid background texture for spatial GIS feel */}
-      <div 
-        className="absolute inset-0 opacity-[0.45] pointer-events-none"
-        style={{
-          backgroundImage: 'radial-gradient(#184C78 0.75px, transparent 0.75px)',
-          backgroundSize: '24px 24px',
-          maskImage: 'radial-gradient(ellipse at top, black 30%, transparent 80%)',
-          WebkitMaskImage: 'radial-gradient(ellipse at top, black 30%, transparent 80%)'
-        }}
-      />
-
+    <section id="hero" className="relative bg-gradient-to-b from-[#F8FAFC] to-white border-b border-[#DCE4EC] overflow-hidden">
       <div className="relative max-w-[1180px] mx-auto px-5 sm:px-8 py-8 sm:py-10 lg:py-12 grid grid-cols-1 lg:grid-cols-12 items-center gap-8 lg:gap-10 animate-hero-in">
         {/* Left Column: Hero Text & Actions (7 Cols on desktop for better breathing room) */}
         <div className="lg:col-span-6 xl:col-span-7 flex flex-col justify-center">
-          {/* Official badge */}
-          <div className="inline-flex items-center gap-2 bg-white/90 backdrop-blur-md border border-[#cbe1f2] rounded-full px-3.5 py-1 text-xs font-semibold text-[#184C78] mb-4 w-fit shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.7)] animate-pulse" />
-            <span className="text-[#2980B9] font-bold">Platform Resmi</span>
-            <span className="text-slate-300">•</span>
-            <span>Transparansi Pembangunan Daerah</span>
-          </div>
-
           {/* Headline with typographic contrast */}
           <h1 className="font-['DM_Sans'] text-3xl sm:text-4xl lg:text-[42px] font-black text-[#0B2540] leading-[1.15] tracking-[-1px] mb-4 max-w-[540px]">
             Pantau proyek pembangunan di kotamu{' '}
@@ -191,22 +172,6 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               <LayoutDashboard className="w-4 h-4 text-[#184C78] group-hover:scale-110 transition-transform" />
               <span>Buka Dashboard</span>
             </button>
-          </div>
-
-          {/* Quick highlight feature proof pills */}
-          <div className="flex flex-wrap items-center gap-2.5 mt-5 pt-3.5 border-t border-slate-200/80 text-xs text-slate-600">
-            <div className="inline-flex items-center gap-1.5 bg-white border border-slate-200/90 rounded-lg px-2.5 py-1 font-medium shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>5 Titik Konstruksi Aktif</span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 bg-white border border-slate-200/90 rounded-lg px-2.5 py-1 font-medium shadow-2xs">
-              <MapPin className="w-3.5 h-3.5 text-[#2980B9]" />
-              <span>Radius GPS Terdekat</span>
-            </div>
-            <div className="inline-flex items-center gap-1.5 bg-white border border-slate-200/90 rounded-lg px-2.5 py-1 font-medium shadow-2xs">
-              <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-              <span>Data APBD Terbuka</span>
-            </div>
           </div>
         </div>
 
