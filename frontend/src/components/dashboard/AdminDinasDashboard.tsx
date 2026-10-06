@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import {
   Building2,
   FolderKanban,
@@ -11,6 +11,7 @@ import {
   MapPin,
   Sparkles,
   Check,
+  AlertTriangle,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -29,6 +30,8 @@ import {
   MOCK_DOKUMENTASI_PROYEK,
 } from '../../data/dashboardMockData';
 import { MiniMapOverview } from './MiniMapOverview';
+import { WILAYAH_DATA } from '../../data/geoWilayahData';
+import { validateCoordinatesInKecamatan } from '../../utils/spatial';
 
 interface AdminDinasDashboardProps {
   currentUser: UserProfile;
@@ -63,10 +66,21 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     anggaran: 5000000000,
     status: 'berjalan' as ProyekStatus,
     progres_persen: 0,
-    nama_wilayah: 'Kec. Lowokwaru, Kota Malang',
+    nama_wilayah: 'Kecamatan Lamongan (Kota)',
+    latitude: -7.1197,
+    longitude: 112.4150,
     nama_dinas: 'Dinas Pekerjaan Umum dan Penataan Ruang',
     tahap_terkini: 'Pembersihan & Pengukuran Lahan',
   });
+
+  // Validasi real-time Point-in-Polygon terhadap wilayah terpilih
+  const spatialValidation = useMemo(() => {
+    return validateCoordinatesInKecamatan(
+      Number(newProjectForm.latitude),
+      Number(newProjectForm.longitude),
+      newProjectForm.nama_wilayah
+    );
+  }, [newProjectForm.latitude, newProjectForm.longitude, newProjectForm.nama_wilayah]);
 
   // Linimasa state
   const [selectedProjectForTimeline, setSelectedProjectForTimeline] = useState<number>(2);
@@ -106,13 +120,17 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   // Handle create new project
   const handleCreateProject = (e: React.FormEvent) => {
     e.preventDefault();
+    if (!spatialValidation.isValid) {
+      alert(`Validasi Koordinat Gagal (Point-in-Polygon):\n${spatialValidation.message}`);
+      return;
+    }
     const newProj: ProyekItem = {
       id: Date.now(),
       nama_proyek: newProjectForm.nama_proyek,
       kategori: newProjectForm.kategori,
       deskripsi: newProjectForm.deskripsi,
-      latitude: -7.95 + (Math.random() - 0.5) * 0.05,
-      longitude: 112.62 + (Math.random() - 0.5) * 0.05,
+      latitude: Number(newProjectForm.latitude),
+      longitude: Number(newProjectForm.longitude),
       anggaran: Number(newProjectForm.anggaran),
       status: newProjectForm.status,
       progres_persen: Number(newProjectForm.progres_persen),
@@ -131,7 +149,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       anggaran: 5000000000,
       status: 'berjalan',
       progres_persen: 0,
-      nama_wilayah: 'Kec. Lowokwaru, Kota Malang',
+      nama_wilayah: 'Kecamatan Lamongan (Kota)',
+      latitude: -7.1197,
+      longitude: 112.4150,
       nama_dinas: 'Dinas Pekerjaan Umum dan Penataan Ruang',
       tahap_terkini: 'Pembersihan & Pengukuran Lahan',
     });
@@ -859,16 +879,113 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
               </div>
 
+              {/* Pilihan Wilayah Administratif Berjenjang */}
               <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Wilayah / Lokasi Administratif</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Kec. Klojen, Kota Malang"
+                <label className="block font-semibold text-[#184C78] mb-1">
+                  Wilayah Administratif Terdaftar
+                </label>
+                <select
                   value={newProjectForm.nama_wilayah}
-                  onChange={(e) => setNewProjectForm({ ...newProjectForm, nama_wilayah: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
+                  onChange={(e) => {
+                    const selName = e.target.value;
+                    const matched = WILAYAH_DATA.kecamatanList.find((k) => k.nama === selName);
+                    setNewProjectForm({
+                      ...newProjectForm,
+                      nama_wilayah: selName,
+                      latitude: matched ? matched.koordinatPusat[0] : newProjectForm.latitude,
+                      longitude: matched ? matched.koordinatPusat[1] : newProjectForm.longitude,
+                    });
+                  }}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                >
+                  {WILAYAH_DATA.kecamatanList.map((k) => (
+                    <option key={k.nama} value={k.nama}>
+                      {k.nama}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Koordinat Lintang & Bujur (Point-in-Polygon Validation) */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">
+                    Latitude (Lintang)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    required
+                    value={newProjectForm.latitude}
+                    onChange={(e) =>
+                      setNewProjectForm({
+                        ...newProjectForm,
+                        latitude: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">
+                    Longitude (Bujur)
+                  </label>
+                  <input
+                    type="number"
+                    step="0.0001"
+                    required
+                    value={newProjectForm.longitude}
+                    onChange={(e) =>
+                      setNewProjectForm({
+                        ...newProjectForm,
+                        longitude: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+              </div>
+
+              {/* Status Badge Verifikasi Spasial Point-in-Polygon */}
+              <div
+                className={`p-3 rounded-xl border flex items-start gap-2.5 text-xs transition-colors ${
+                  spatialValidation.isValid
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : 'bg-rose-50 border-rose-300 text-rose-800'
+                }`}
+              >
+                {spatialValidation.isValid ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">
+                  <div className="font-bold flex items-center justify-between">
+                    <span>
+                      {spatialValidation.isValid
+                        ? 'Point-in-Polygon: Terverifikasi di Dalam Wilayah'
+                        : 'Point-in-Polygon: Di Luar Batas Wilayah!'}
+                    </span>
+                    {spatialValidation.centerCoordinates && !spatialValidation.isValid && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setNewProjectForm({
+                            ...newProjectForm,
+                            latitude: spatialValidation.centerCoordinates![0],
+                            longitude: spatialValidation.centerCoordinates![1],
+                          })
+                        }
+                        className="text-[11px] underline font-semibold text-rose-700 hover:text-rose-900 cursor-pointer ml-2"
+                      >
+                        Reset ke Titik Wilayah
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">
+                    {spatialValidation.message}
+                  </p>
+                </div>
               </div>
 
               <div>

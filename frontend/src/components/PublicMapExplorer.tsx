@@ -375,10 +375,10 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           // Google Maps highlighted district style:
           // Distinct primary boundary, crisp stroke, soft semi-transparent fill
           return {
-            color: '#184C78',
-            weight: 3.5,
-            opacity: 1,
-            fillColor: '#2563EB',
+            color: '#2563EB',
+            weight: 2.5,
+            opacity: 0.95,
+            fillColor: '#3B82F6',
             fillOpacity: 0.22,
           };
         } else if (isAnySelected) {
@@ -394,11 +394,11 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         } else {
           // Default: all 27 kecamatan borders cleanly visible with crisp, elegant boundary lines
           return {
-            color: '#184C78',
+            color: '#0284C7',
             weight: 1.2,
-            opacity: 0.45,
+            opacity: 0.55,
             fillColor: '#38BDF8',
-            fillOpacity: 0.04,
+            fillOpacity: 0.06,
             dashArray: undefined,
           };
         }
@@ -415,8 +415,8 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         layer.bindTooltip(
           `<div class="p-2 font-['DM_Sans'] text-xs min-w-[150px]">
             <div class="flex items-center gap-1.5 pb-1 mb-1 border-b border-slate-100">
-              <span class="w-2.5 h-2.5 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-[#184C78]'}"></span>
-              <strong class="text-[#184C78] font-bold text-xs">${props.nama}</strong>
+              <span class="w-2.5 h-2.5 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-[#0284C7]'}"></span>
+              <strong class="text-[#0B2540] font-bold text-xs">${props.nama}</strong>
             </div>
             <div class="space-y-0.5 text-[11px] text-slate-600">
               <div class="flex justify-between">
@@ -425,7 +425,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               </div>
               <div class="flex justify-between">
                 <span>Alokasi APBD:</span>
-                <b class="text-[#184C78] font-bold">Rp ${(props.anggaranTotal / 1000000000).toFixed(1)} M</b>
+                <b class="text-[#0284C7] font-bold">Rp ${(props.anggaranTotal / 1000000000).toFixed(1)} M</b>
               </div>
             </div>
             <div class="mt-1 pt-1 border-t border-slate-100 text-[10px] text-blue-600 font-medium">
@@ -441,7 +441,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             if (selectedKecamatan !== props.nama) {
               const l = e.target;
               l.setStyle({
-                weight: 2.5,
+                weight: 2.2,
                 color: '#2563EB',
                 fillColor: '#60A5FA',
                 fillOpacity: 0.18,
@@ -473,6 +473,10 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     if (activeLayerBounds && selectedKecamatan !== 'all') {
       map.fitBounds(activeLayerBounds, { padding: [50, 50], maxZoom: 14, animate: true });
     }
+
+    return () => {
+      polyGroup.clearLayers();
+    };
   }, [showBoundaryPolygons, selectedKecamatan]);
 
   // 4. Update Tile Layer on toggle (Standard vs Satellite)

@@ -13,6 +13,7 @@ from app.schemas.project import (
     TahapanCreate, TahapanResponse
 )
 from app.services.notification_service import notify_project_subscribers
+from app.core.spatial import validate_coordinates_in_wilayah
 
 router = APIRouter(prefix="/proyek", tags=["Proyek Pembangunan"])
 
@@ -147,6 +148,16 @@ def create_project(
     if not dinas:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dinas penanggung jawab tidak valid.")
 
+    # Validasi Spasial PRD 10.1: Koordinat harus berada di dalam batas poligon wilayah (Point-in-Polygon)
+    is_valid_coords, coord_err = validate_coordinates_in_wilayah(
+        db=db,
+        latitude=float(req.latitude),
+        longitude=float(req.longitude),
+        wilayah_id=req.wilayah_id
+    )
+    if not is_valid_coords:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=coord_err)
+
     # Jika admin dinas, pastikan dinas sesuai dengan instansinya jika terikat
     if current_user.role == UserRole.admin_dinas and current_user.dinas_id and current_user.dinas_id != req.dinas_id:
         raise HTTPException(
@@ -217,6 +228,21 @@ def update_project(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail="Penurunan persentase progres wajib menyertakan alasan keterangan (catatan_perubahan), misal revisi teknis atau penghentian sementara."
             )
+
+    # Validasi Spasial PRD 10.1 jika koordinat atau wilayah diubah (Point-in-Polygon)
+    if any(k in update_data for k in ["latitude", "longitude", "wilayah_id"]):
+        check_lat = float(update_data.get("latitude") if update_data.get("latitude") is not None else proyek.latitude)
+        check_lon = float(update_data.get("longitude") if update_data.get("longitude") is not None else proyek.longitude)
+        check_wil_id = int(update_data.get("wilayah_id") if update_data.get("wilayah_id") is not None else proyek.wilayah_id)
+
+        is_valid_coords, coord_err = validate_coordinates_in_wilayah(
+            db=db,
+            latitude=check_lat,
+            longitude=check_lon,
+            wilayah_id=check_wil_id
+        )
+        if not is_valid_coords:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=coord_err)
 
     for field, value in update_data.items():
         setattr(proyek, field, value)

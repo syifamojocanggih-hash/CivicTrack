@@ -74,7 +74,7 @@ Keluarkan output HANYA berupa JSON valid dengan format persis seperti ini:
   }}
 ]
 """
-            response = model.generate_content(prompt)
+            response = model.generate_content(prompt, request_options={"timeout": 5.0})
             clean_text = _clean_json_markdown(response.text)
             parsed = json.loads(clean_text)
             if isinstance(parsed, list) and len(parsed) >= 3:
@@ -140,7 +140,7 @@ Format JSON wajib:
   "ringkasan_analisis_ai": "Analisis teknis singkat dan rekomendasi aksi dinas terkait"
 }}
 """
-            response = model.generate_content(prompt)
+            response = model.generate_content(prompt, request_options={"timeout": 5.0})
             clean_text = _clean_json_markdown(response.text)
             parsed = json.loads(clean_text)
             score = int(parsed.get("skor_urgensi_ai", 3))

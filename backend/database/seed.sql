@@ -10,7 +10,7 @@ USE civictrack_db;
 INSERT INTO wilayah_administratif (id, kode_wilayah, nama_wilayah, level, parent_id, geom_boundary) VALUES
 (1, '35.22', 'Kabupaten Bojonegoro', 'kabupaten', NULL, '{"type": "Polygon", "coordinates": [[[111.7, -7.1], [112.0, -7.1], [112.0, -7.3], [111.7, -7.3], [111.7, -7.1]]]}'),
 (2, '35.22.01', 'Kecamatan Bojonegoro', 'kecamatan', 1, '{"type": "Polygon", "coordinates": [[[111.85, -7.14], [111.91, -7.14], [111.91, -7.18], [111.85, -7.18], [111.85, -7.14]]]}'),
-(3, '35.22.01.1001', 'Kelurahan Sukorejo', 'desa', 2, '{"type": "Polygon", "coordinates": [[[111.87, -7.15], [111.89, -7.15], [111.89, -7.17], [111.87, -7.17], [111.87, -7.15]]]}'),
+(3, '35.22.01.1001', 'Kelurahan Sukorejo', 'desa', 2, '{"type": "Polygon", "coordinates": [[[111.865, -7.145], [111.905, -7.145], [111.905, -7.175], [111.865, -7.175], [111.865, -7.145]]]}'),
 (4, '35.22.01.1002', 'Desa Klangonan', 'desa', 2, '{"type": "Polygon", "coordinates": [[[111.86, -7.16], [111.88, -7.16], [111.88, -7.18], [111.86, -7.18], [111.86, -7.16]]]}'),
 (5, '35.22.02', 'Kecamatan Dander', 'kecamatan', 1, '{"type": "Polygon", "coordinates": [[[111.82, -7.19], [111.90, -7.19], [111.90, -7.26], [111.82, -7.26], [111.82, -7.19]]]}'),
 (6, '35.22.02.2001', 'Desa Ngumpakdalem', 'desa', 5, '{"type": "Polygon", "coordinates": [[[111.85, -7.20], [111.88, -7.20], [111.88, -7.23], [111.85, -7.23], [111.85, -7.20]]]}');

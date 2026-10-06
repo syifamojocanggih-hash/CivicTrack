@@ -51,7 +51,8 @@ def run_seed():
             kode_wilayah="35.22.02",
             nama_wilayah="Kecamatan Dander",
             level=WilayahLevel.kecamatan,
-            parent_id=kab.id
+            parent_id=kab.id,
+            geom_boundary='{"type": "Polygon", "coordinates": [[[111.82, -7.19], [111.90, -7.19], [111.90, -7.26], [111.82, -7.26], [111.82, -7.19]]]}'
         )
         db.add_all([kec_bj, kec_dander])
         db.commit()
@@ -62,19 +63,22 @@ def run_seed():
             kode_wilayah="35.22.01.1001",
             nama_wilayah="Kelurahan Sukorejo",
             level=WilayahLevel.desa,
-            parent_id=kec_bj.id
+            parent_id=kec_bj.id,
+            geom_boundary='{"type": "Polygon", "coordinates": [[[111.865, -7.145], [111.905, -7.145], [111.905, -7.175], [111.865, -7.175], [111.865, -7.145]]]}'
         )
         desa_klangonan = WilayahAdministratif(
             kode_wilayah="35.22.01.1002",
             nama_wilayah="Desa Klangonan",
             level=WilayahLevel.desa,
-            parent_id=kec_bj.id
+            parent_id=kec_bj.id,
+            geom_boundary='{"type": "Polygon", "coordinates": [[[111.86, -7.16], [111.88, -7.16], [111.88, -7.18], [111.86, -7.18], [111.86, -7.16]]]}'
         )
         desa_ngumpak = WilayahAdministratif(
             kode_wilayah="35.22.02.2001",
             nama_wilayah="Desa Ngumpakdalem",
             level=WilayahLevel.desa,
-            parent_id=kec_dander.id
+            parent_id=kec_dander.id,
+            geom_boundary='{"type": "Polygon", "coordinates": [[[111.85, -7.20], [111.88, -7.20], [111.88, -7.23], [111.85, -7.23], [111.85, -7.20]]]}'
         )
         db.add_all([desa_sukorejo, desa_klangonan, desa_ngumpak])
         db.commit()
