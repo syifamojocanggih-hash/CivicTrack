@@ -1,6 +1,9 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect, useRef, useCallback } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import 'leaflet.markercluster';
+import 'leaflet.markercluster/dist/MarkerCluster.css';
+import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import {
   Search,
   X,
@@ -25,12 +28,20 @@ import {
   FileText,
   AlertCircle,
   Send,
-  Compass
+  Compass,
+  Info,
+  ChevronLeft
 } from 'lucide-react';
 import type { ProyekItem, ProyekKategori, UserProfile } from '../types';
 import centennialParkImg from '../assets/centennial_park.jpg';
 import { apiService } from '../services/api';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON } from '../data/geoWilayahData';
+
+// Bounding box resmi gabungan seluruh 27 Kecamatan di Kab. Lamongan (dihitung dari poligon GeoJSON BPS/BIG)
+const ALL_LAMONGAN_BOUNDS: L.LatLngBoundsExpression = [
+  [-7.384821, 112.072567],
+  [-6.861185, 112.552381]
+];
 
 interface PublicMapExplorerProps {
   currentUser: UserProfile | null;
@@ -70,17 +81,91 @@ function getCategoryIconSvg(category: string): string {
   }
 }
 
-function getCategoryColor(category: string): { bg: string; border: string; label: string } {
+// Skema warna visual per kategori infrastruktur (Langkah 3)
+function getCategoryTheme(category: string): {
+  hex: string;
+  bgTailwind: string;
+  badgeBg: string;
+  badgeText: string;
+  borderHex: string;
+  label: string;
+} {
   switch (category) {
     case 'taman':
-      return { bg: '#10B981', border: '#059669', label: 'Taman & RTH' };
+      return {
+        hex: '#059669', // Emerald
+        bgTailwind: 'bg-emerald-600',
+        badgeBg: 'bg-emerald-50',
+        badgeText: 'text-emerald-700',
+        borderHex: '#10B981',
+        label: 'Taman & RTH',
+      };
     case 'drainase':
-      return { bg: '#0284C7', border: '#0369A1', label: 'Drainase Air' };
+      return {
+        hex: '#0891B2', // Cyan/Teal
+        bgTailwind: 'bg-cyan-600',
+        badgeBg: 'bg-cyan-50',
+        badgeText: 'text-cyan-700',
+        borderHex: '#06B6D4',
+        label: 'Drainase Air',
+      };
     case 'fasilitas':
-      return { bg: '#8B5CF6', border: '#7C3AED', label: 'Fasilitas' };
+      return {
+        hex: '#7C3AED', // Violet
+        bgTailwind: 'bg-purple-600',
+        badgeBg: 'bg-purple-50',
+        badgeText: 'text-purple-700',
+        borderHex: '#8B5CF6',
+        label: 'Fasilitas Umum',
+      };
     case 'jalan':
     default:
-      return { bg: '#F59E0B', border: '#D97706', label: 'Pekerjaan Jalan' };
+      return {
+        hex: '#2563EB', // Blue
+        bgTailwind: 'bg-blue-600',
+        badgeBg: 'bg-blue-50',
+        badgeText: 'text-blue-700',
+        borderHex: '#3B82F6',
+        label: 'Jalan & Jembatan',
+      };
+  }
+}
+
+// Skema warna badge progres sesuai 3 rentang nilai (Langkah 3):
+// - Merah (<30%): Awal konstruksi / butuh atensi
+// - Kuning (30% - 70%): Pekerjaan konstruksi intensif
+// - Hijau (>70%): Menuju finishing / selesai
+function getProgressBadge(percent: number): {
+  badgeBg: string;
+  textColor: string;
+  borderColor: string;
+  indicatorDot: string;
+  label: string;
+} {
+  if (percent < 30) {
+    return {
+      badgeBg: 'bg-rose-50',
+      textColor: 'text-rose-700',
+      borderColor: 'border-rose-200',
+      indicatorDot: 'bg-rose-500',
+      label: 'Tahap Awal (<30%)',
+    };
+  } else if (percent <= 70) {
+    return {
+      badgeBg: 'bg-amber-50',
+      textColor: 'text-amber-800',
+      borderColor: 'border-amber-200',
+      indicatorDot: 'bg-amber-500',
+      label: 'Konstruksi (30-70%)',
+    };
+  } else {
+    return {
+      badgeBg: 'bg-emerald-50',
+      textColor: 'text-emerald-700',
+      borderColor: 'border-emerald-200',
+      indicatorDot: 'bg-emerald-500',
+      label: 'Finishing (>70%)',
+    };
   }
 }
 
@@ -99,6 +184,10 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [selectedProjectId, setSelectedProjectId] = useState<number>(1);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
+
+  // UX & Visual states (Legenda peta & Responsivitas Mobile)
+  const [isLegendOpen, setIsLegendOpen] = useState(true);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Right Detail Drawer Tabs & Citizen Report form
   const [detailTab, setDetailTab] = useState<'ringkasan' | 'transparansi' | 'aduan' | 'sekitar'>('ringkasan');
@@ -153,7 +242,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const tileLayerRef = useRef<L.TileLayer | null>(null);
-  const markersLayerRef = useRef<L.LayerGroup | null>(null);
+  const markersLayerRef = useRef<any | null>(null);
   const polygonsLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
 
@@ -319,10 +408,10 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Centered at Kabupaten Lamongan (Menjangkau seluruh 27 Kecamatan dari Pantura hingga Pegunungan Selatan)
+    // Centered at Kabupaten Lamongan
     const map = L.map(mapContainerRef.current, {
-      center: [-7.1150, 112.3200],
-      zoom: 10.5,
+      center: [-7.1230, 112.3125],
+      zoom: 11,
       zoomControl: false,
     });
 
@@ -342,9 +431,33 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     const polygonsGroup = L.layerGroup().addTo(map);
     polygonsLayerRef.current = polygonsGroup;
 
-    // Layer group for project markers
-    const markersGroup = L.layerGroup().addTo(map);
-    markersLayerRef.current = markersGroup;
+    // Marker Cluster Group for project markers with custom bubble counter
+    const clusterGroup = (L as any).markerClusterGroup({
+      showCoverageOnHover: false,
+      zoomToBoundsOnClick: true,
+      spiderfyOnMaxZoom: true,
+      removeOutsideVisibleBounds: true,
+      maxClusterRadius: 42,
+      iconCreateFunction: (cluster: any) => {
+        const count = cluster.getChildCount();
+        return L.divIcon({
+          html: `
+            <div class="relative flex items-center justify-center cursor-pointer group">
+              <span class="absolute -inset-1.5 rounded-2xl bg-blue-500/25 animate-ping"></span>
+              <div class="relative w-10 h-10 rounded-2xl bg-[#0B2540] border-2 border-white shadow-xl flex flex-col items-center justify-center text-white transition-all group-hover:scale-105 group-hover:bg-[#1E40AF]">
+                <span class="text-xs font-black leading-none">${count}</span>
+                <span class="text-[7.5px] font-extrabold text-blue-300 uppercase leading-none mt-0.5">Proyek</span>
+              </div>
+            </div>
+          `,
+          className: 'custom-cluster-marker',
+          iconSize: [40, 40],
+          iconAnchor: [20, 20],
+        });
+      },
+    });
+    map.addLayer(clusterGroup);
+    markersLayerRef.current = clusterGroup;
 
     mapInstanceRef.current = map;
 
@@ -354,7 +467,37 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     };
   }, []);
 
-  // 3b. Render Authentic Google Maps-style Administrative GeoJSON Boundaries for all 27 Districts
+  // 3a. Single Camera Controller (Single Source of Truth)
+  // Replaces all conflicting fitBounds/flyTo calls. Always moves smoothly with flyToBounds.
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    if (!map) return;
+
+    map.invalidateSize();
+
+    if (selectedKecamatan === 'all') {
+      // Smoothly fly to the overall bounding box of all 27 Lamongan districts
+      map.flyToBounds(ALL_LAMONGAN_BOUNDS, {
+        padding: [35, 35],
+        maxZoom: 12,
+        duration: 0.9,
+      });
+    } else {
+      // Find selected district feature bounds in GeoJSON
+      const feat = LAMONGAN_KECAMATAN_GEOJSON.features.find(
+        (f: any) => f.properties.nama === selectedKecamatan
+      );
+      if (feat && feat.properties.bounds) {
+        map.flyToBounds(feat.properties.bounds, {
+          padding: [45, 45],
+          maxZoom: 14,
+          duration: 0.9,
+        });
+      }
+    }
+  }, [selectedKecamatan]);
+
+  // 3b. Render Google Maps-style Administrative GeoJSON Boundaries for all 27 Districts
   useEffect(() => {
     const map = mapInstanceRef.current;
     const polyGroup = polygonsLayerRef.current;
@@ -364,25 +507,22 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
     if (!showBoundaryPolygons) return;
 
-    let activeLayerBounds: L.LatLngBounds | null = null;
-
     const geoLayer = L.geoJSON(LAMONGAN_KECAMATAN_GEOJSON as any, {
       style: (feature: any) => {
         const isSelected = selectedKecamatan === feature.properties.nama;
         const isAnySelected = selectedKecamatan !== 'all';
 
         if (isSelected) {
-          // Google Maps highlighted district style:
-          // Distinct primary boundary, crisp stroke, soft semi-transparent fill
+          // Highlighted district style
           return {
-            color: '#2563EB',
-            weight: 2.5,
+            color: '#1D4ED8',
+            weight: 2.8,
             opacity: 0.95,
             fillColor: '#3B82F6',
             fillOpacity: 0.22,
           };
         } else if (isAnySelected) {
-          // When a specific kecamatan is selected, others are muted into faint boundaries
+          // When a specific kecamatan is selected, others are muted
           return {
             color: '#94A3B8',
             weight: 1,
@@ -392,13 +532,13 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             dashArray: '4, 4',
           };
         } else {
-          // Default: all 27 kecamatan borders cleanly visible with crisp, elegant boundary lines
+          // Mode "Semua Kecamatan": Peningkatan kontras sesuai usulan (weight 1.8, opacity 0.75, color #0369A1)
           return {
-            color: '#0284C7',
-            weight: 1.2,
-            opacity: 0.55,
+            color: '#0369A1',
+            weight: 1.8,
+            opacity: 0.75,
             fillColor: '#38BDF8',
-            fillOpacity: 0.06,
+            fillOpacity: 0.08,
             dashArray: undefined,
           };
         }
@@ -407,29 +547,25 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         const props = feature.properties;
         const isSelected = selectedKecamatan === props.nama;
 
-        if (isSelected && typeof layer.getBounds === 'function') {
-          activeLayerBounds = layer.getBounds();
-        }
-
         // Sleek Google Maps style district tooltip
         layer.bindTooltip(
-          `<div class="p-2 font-['DM_Sans'] text-xs min-w-[150px]">
-            <div class="flex items-center gap-1.5 pb-1 mb-1 border-b border-slate-100">
-              <span class="w-2.5 h-2.5 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-[#0284C7]'}"></span>
+          `<div class="p-2.5 font-['DM_Sans'] text-xs min-w-[160px] bg-white rounded-xl shadow-lg border border-slate-100">
+            <div class="flex items-center gap-1.5 pb-1.5 mb-1.5 border-b border-slate-100">
+              <span class="w-2.5 h-2.5 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-[#0369A1]'}"></span>
               <strong class="text-[#0B2540] font-bold text-xs">${props.nama}</strong>
             </div>
-            <div class="space-y-0.5 text-[11px] text-slate-600">
+            <div class="space-y-1 text-[11px] text-slate-600">
               <div class="flex justify-between">
                 <span>Total Proyek:</span>
-                <b class="text-slate-800 font-bold">${props.totalProyek} Proyek</b>
+                <b class="text-slate-900 font-bold">${props.totalProyek} Proyek</b>
               </div>
               <div class="flex justify-between">
                 <span>Alokasi APBD:</span>
-                <b class="text-[#0284C7] font-bold">Rp ${(props.anggaranTotal / 1000000000).toFixed(1)} M</b>
+                <b class="text-[#0369A1] font-bold">Rp ${(props.anggaranTotal / 1000000000).toFixed(1)} M</b>
               </div>
             </div>
-            <div class="mt-1 pt-1 border-t border-slate-100 text-[10px] text-blue-600 font-medium">
-              👉 Klik untuk fokus batas kecamatan ini
+            <div class="mt-1.5 pt-1 border-t border-slate-100 text-[10px] text-blue-600 font-medium">
+              👉 Klik untuk fokus kecamatan ini
             </div>
           </div>`,
           { sticky: true, direction: 'top', opacity: 0.98 }
@@ -441,7 +577,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             if (selectedKecamatan !== props.nama) {
               const l = e.target;
               l.setStyle({
-                weight: 2.2,
+                weight: 2.4,
                 color: '#2563EB',
                 fillColor: '#60A5FA',
                 fillOpacity: 0.18,
@@ -457,22 +593,15 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             }
           },
           click: () => {
+            // Decoupled: only set state. The single camera effect smoothly handles navigation!
             setSelectedKecamatan(props.nama);
             setSelectedDesa('all');
-            if (typeof layer.getBounds === 'function') {
-              map.fitBounds(layer.getBounds(), { padding: [50, 50], maxZoom: 14, animate: true });
-            }
           },
         });
       },
     });
 
     polyGroup.addLayer(geoLayer);
-
-    // If a specific kecamatan was selected, fit bounds to that layer
-    if (activeLayerBounds && selectedKecamatan !== 'all') {
-      map.fitBounds(activeLayerBounds, { padding: [50, 50], maxZoom: 14, animate: true });
-    }
 
     return () => {
       polyGroup.clearLayers();
@@ -548,64 +677,8 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     userMarkerRef.current = marker;
   }, [userLocation]);
 
-  // 6. Update Project Markers (Styled exactly like Image 1 & Image 2)
-  useEffect(() => {
-    const map = mapInstanceRef.current;
-    const markersGroup = markersLayerRef.current;
-    if (!map || !markersGroup) return;
-
-    markersGroup.clearLayers();
-
-    filteredProjects.forEach((proj) => {
-      const isSelected = proj.id === selectedProjectId && isDetailPanelOpen;
-      const iconSvg = getCategoryIconSvg(proj.kategori);
-
-      const markerHtml = isSelected
-        ? `
-          <div class="relative flex flex-col items-center justify-center transition-all scale-110 cursor-pointer group">
-            <span class="absolute -inset-2 rounded-2xl bg-blue-500/30 animate-ping"></span>
-            <div class="relative w-11 h-11 bg-[#2563EB] rounded-2xl shadow-2xl flex items-center justify-center text-white border-2 border-white transition-transform">
-              ${iconSvg}
-            </div>
-            <div class="w-2.5 h-2.5 bg-[#2563EB] rotate-45 -mt-1 shadow-sm border-r border-b border-white"></div>
-            <div class="absolute -top-7 bg-slate-900/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-lg whitespace-nowrap pointer-events-none">
-              ${proj.progres_persen}% • ${proj.nama_wilayah || 'Proyek'}
-            </div>
-          </div>
-        `
-        : `
-          <div class="relative flex flex-col items-center justify-center transition-all hover:scale-110 cursor-pointer group">
-            <div class="w-9 h-9 bg-[#1E293B] hover:bg-[#0F172A] rounded-xl shadow-lg flex items-center justify-center text-white border-2 border-white transition-all">
-              ${iconSvg}
-            </div>
-            <div class="w-2 h-2 bg-[#1E293B] group-hover:bg-[#0F172A] rotate-45 -mt-1 shadow-xs border-r border-b border-white"></div>
-            <div class="absolute -top-2 -right-2 bg-white text-[#184C78] text-[9px] font-extrabold px-1.5 py-0.2 rounded-full shadow-xs border border-slate-200">
-              ${proj.progres_persen}%
-            </div>
-          </div>
-        `;
-
-      const customIcon = L.divIcon({
-        className: 'project-leaflet-marker',
-        html: markerHtml,
-        iconSize: [42, 42],
-        iconAnchor: [21, 21],
-      });
-
-      const marker = L.marker([proj.latitude, proj.longitude], {
-        icon: customIcon,
-      });
-
-      marker.on('click', () => {
-        handleSelectPin(proj.id);
-      });
-
-      markersGroup.addLayer(marker);
-    });
-  }, [filteredProjects, selectedProjectId, isDetailPanelOpen]);
-
   // Center to selected project when changed
-  const handleSelectPin = (id: number) => {
+  const handleSelectPin = useCallback((id: number) => {
     setSelectedProjectId(id);
     setIsDetailPanelOpen(true);
     setDetailTab('ringkasan');
@@ -617,18 +690,90 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         duration: 0.8,
       });
     }
-  };
+  }, [enrichedProjects]);
 
-  // Fit map view to cover all 27 Kecamatan in Kabupaten Lamongan
+  // 6. Update Project Markers into Marker Cluster (Langkah 2 & Langkah 3)
+  useEffect(() => {
+    const map = mapInstanceRef.current;
+    const markersGroup = markersLayerRef.current;
+    if (!map || !markersGroup) return;
+
+    markersGroup.clearLayers();
+
+    filteredProjects.forEach((proj) => {
+      const isSelected = proj.id === selectedProjectId && isDetailPanelOpen;
+      const iconSvg = getCategoryIconSvg(proj.kategori);
+      const theme = getCategoryTheme(proj.kategori);
+      const prog = getProgressBadge(proj.progres_persen);
+
+      const markerHtml = isSelected
+        ? `
+          <div class="relative flex flex-col items-center justify-center transition-all scale-110 cursor-pointer group">
+            <span class="absolute -inset-2.5 rounded-2xl bg-blue-500/35 animate-ping"></span>
+            <div class="relative w-11 h-11 rounded-2xl shadow-2xl flex items-center justify-center text-white border-2 border-white transition-transform" style="background-color: ${theme.hex}">
+              ${iconSvg}
+            </div>
+            <div class="w-2.5 h-2.5 rotate-45 -mt-1 shadow-sm border-r border-b border-white" style="background-color: ${theme.hex}"></div>
+            <div class="absolute -top-7.5 bg-slate-900/95 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xl whitespace-nowrap pointer-events-none flex items-center gap-1.5 border border-white/20">
+              <span class="w-1.5 h-1.5 rounded-full ${prog.indicatorDot}"></span>
+              <span>${proj.progres_persen}% • ${proj.nama_wilayah?.split(',')[0] || 'Proyek'}</span>
+            </div>
+          </div>
+        `
+        : `
+          <div class="relative flex flex-col items-center justify-center transition-all hover:scale-115 cursor-pointer group">
+            <div class="w-9 h-9 rounded-xl shadow-lg flex items-center justify-center text-white border-2 border-white transition-all group-hover:brightness-110" style="background-color: ${theme.hex}">
+              ${iconSvg}
+            </div>
+            <div class="w-2.5 h-2.5 rotate-45 -mt-1 shadow-xs border-r border-b border-white transition-all group-hover:brightness-110" style="background-color: ${theme.hex}"></div>
+            
+            <!-- Badge Persentase Progres 3 Rentang Warna (Merah <30%, Kuning 30-70%, Hijau >70%) -->
+            <div class="absolute -top-2.5 -right-3 ${prog.badgeBg} ${prog.textColor} text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-sm border ${prog.borderColor} flex items-center gap-0.5 leading-none">
+              <span class="w-1.5 h-1.5 rounded-full ${prog.indicatorDot} shrink-0"></span>
+              <span>${proj.progres_persen}%</span>
+            </div>
+          </div>
+        `;
+
+      const customIcon = L.divIcon({
+        className: 'project-leaflet-marker',
+        html: markerHtml,
+        iconSize: [44, 44],
+        iconAnchor: [22, 22],
+      });
+
+      const marker = L.marker([proj.latitude, proj.longitude], {
+        icon: customIcon,
+      });
+
+      // Sleek interactive tooltip for project details
+      marker.bindTooltip(
+        `<div class="p-2 font-['DM_Sans'] text-xs min-w-[170px] bg-white rounded-xl shadow-md border border-slate-100">
+          <div class="flex items-center gap-1 pb-1 mb-1 border-b border-slate-100">
+            <span class="w-2 h-2 rounded-full" style="background-color: ${theme.hex}"></span>
+            <span class="text-[10px] font-extrabold uppercase text-slate-500">${theme.label}</span>
+          </div>
+          <strong class="text-slate-900 font-bold text-xs block leading-snug mb-1">${proj.nama_proyek}</strong>
+          <div class="flex justify-between items-center text-[10px] text-slate-600 pt-0.5">
+            <span>Progres: <b class="font-extrabold ${prog.textColor}">${proj.progres_persen}%</b></span>
+            <span class="text-blue-600 font-bold">Rp ${(proj.anggaran / 1000000000).toFixed(1)} M</span>
+          </div>
+        </div>`,
+        { direction: 'top', offset: [0, -22], opacity: 0.98 }
+      );
+
+      marker.on('click', () => {
+        handleSelectPin(proj.id);
+      });
+
+      markersGroup.addLayer(marker);
+    });
+  }, [filteredProjects, selectedProjectId, isDetailPanelOpen, handleSelectPin]);
+
+  // Fit map view to cover all 27 Kecamatan in Kabupaten Lamongan (Smooth flyToBounds via single camera effect)
   const handleFitAllLamongan = () => {
     setSelectedKecamatan('all');
     setSelectedDesa('all');
-    if (mapInstanceRef.current) {
-      mapInstanceRef.current.flyTo([-7.1150, 112.3200], 10.5, {
-        animate: true,
-        duration: 0.8,
-      });
-    }
   };
 
   const handleCenterUserLocation = () => {
@@ -775,7 +920,9 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             className={`absolute top-4 z-20 flex items-center gap-2.5 bg-white/95 backdrop-blur-md border border-blue-200/90 shadow-xl rounded-2xl px-4 py-2 text-xs font-semibold text-slate-800 transition-all duration-300 animate-fade-in ${
               isDetailPanelOpen
                 ? 'left-4 sm:left-[210px]'
-                : 'left-4 sm:left-[410px] xl:left-[440px]'
+                : isSidebarCollapsed
+                  ? 'left-4 sm:left-[170px]'
+                  : 'left-4 sm:left-[410px] xl:left-[440px]'
             }`}
           >
             <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
@@ -810,23 +957,47 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           </button>
         )}
 
+        {/* ── FLOATING EXPAND SIDEBAR BUTTON (When Sidebar Collapsed) ── */}
+        {isSidebarCollapsed && !isDetailPanelOpen && (
+          <button
+            onClick={() => setIsSidebarCollapsed(false)}
+            className="absolute top-4 left-4 z-20 px-3.5 py-2.5 bg-white/95 backdrop-blur-md border border-slate-200/90 rounded-2xl shadow-xl text-xs font-bold text-[#184C78] hover:bg-slate-50 flex items-center gap-2 transition-all cursor-pointer hover:scale-105 active:scale-95 animate-fade-in"
+            title="Buka Panel Filter Pencarian"
+          >
+            <SlidersHorizontal className="w-3.5 h-3.5 text-[#2563EB]" />
+            <span>Filter Proyek</span>
+            <span className="bg-blue-50 text-[#2563EB] font-extrabold px-1.5 py-0.5 rounded-full text-[10px]">
+              {filteredProjects.length}
+            </span>
+          </button>
+        )}
+
         {/* ── 1. LEFT SEARCH & FILTER SIDEBAR (ATTACHED DIRECTLY TO LEFT EDGE) ── */}
         {/* Slides cleanly on X-axis: 0 to -100% */}
         <aside
           className={`absolute top-0 left-0 bottom-0 h-full w-full sm:w-[390px] xl:w-[420px] bg-white border-r border-slate-200/90 shadow-2xl z-20 flex flex-col overflow-hidden transition-transform duration-500 cubic-bezier(0.16, 1, 0.3, 1) ${
-            isDetailPanelOpen
+            isDetailPanelOpen || isSidebarCollapsed
               ? '-translate-x-full'
               : 'translate-x-0'
           }`}
         >
           {/* Header */}
-          <div className="p-4 sm:p-5 border-b border-slate-100 shrink-0 bg-white">
-            <h1 className="font-['DM_Sans'] text-xl font-bold text-slate-900 tracking-tight">
-              Cari Proyek Pembangunan
-            </h1>
-            <p className="text-xs text-slate-500 mt-0.5 font-medium">
-              {filteredProjects.length} proyek infrastruktur ditemukan
-            </p>
+          <div className="p-4 sm:p-5 border-b border-slate-100 shrink-0 bg-white flex items-start justify-between">
+            <div>
+              <h1 className="font-['DM_Sans'] text-xl font-bold text-slate-900 tracking-tight">
+                Cari Proyek Pembangunan
+              </h1>
+              <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                {filteredProjects.length} proyek infrastruktur ditemukan
+              </p>
+            </div>
+            <button
+              onClick={() => setIsSidebarCollapsed(true)}
+              className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
+              title="Sembunyikan Panel Filter"
+            >
+              <ChevronLeft className="w-5 h-5" />
+            </button>
 
             {/* Segmented Status Pills */}
             <div className="mt-3.5 bg-slate-100/90 p-1 rounded-2xl flex items-center gap-1 border border-slate-200/60">
@@ -921,19 +1092,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                     const val = e.target.value;
                     setSelectedKecamatan(val);
                     setSelectedDesa('all');
-                    if (val !== 'all' && mapInstanceRef.current) {
-                      const feat = LAMONGAN_KECAMATAN_GEOJSON.features.find((f: any) => f.properties.nama === val);
-                      if (feat) {
-                        mapInstanceRef.current.fitBounds(feat.properties.bounds, { padding: [50, 50], maxZoom: 14, animate: true });
-                      } else {
-                        const target = WILAYAH_DATA.kecamatanList.find((k) => k.nama === val);
-                        if (target) {
-                          mapInstanceRef.current.flyTo(target.koordinatPusat, 13, { animate: true, duration: 0.8 });
-                        }
-                      }
-                    } else if (mapInstanceRef.current) {
-                      mapInstanceRef.current.flyTo([-7.1150, 112.3200], 10.5, { animate: true, duration: 0.8 });
-                    }
                   }}
                   className="w-full appearance-none bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 outline-none cursor-pointer pr-9 focus:border-[#2563EB]"
                 >
@@ -1090,7 +1248,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
               <div className="space-y-2">
                 {filteredProjects.map((p) => {
-                  const catConfig = getCategoryColor(p.kategori);
+                  const catConfig = getCategoryTheme(p.kategori);
                   const isFavorited = bookmarkedIds.includes(p.id);
 
                   return (
@@ -1104,7 +1262,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                           <div className="flex items-center gap-1.5 text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">
                             <span
                               className="w-2 h-2 rounded-full inline-block"
-                              style={{ backgroundColor: catConfig.bg }}
+                              style={{ backgroundColor: catConfig.hex }}
                             />
                             <span>{catConfig.label}</span>
                             <span>•</span>
@@ -1163,9 +1321,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 setSelectedDesa('all');
                 setSelectedBudget('all');
                 setSearchQuery('');
-                if (mapInstanceRef.current) {
-                  mapInstanceRef.current.flyTo([-7.1150, 112.3200], 10.5, { animate: true, duration: 0.8 });
-                }
               }}
               className="py-3 px-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-200/90 text-slate-800 text-xs font-bold rounded-2xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-98"
               title="Reset Semua Filter"
@@ -1756,6 +1911,100 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               <Minus className="w-4 h-4" />
             </button>
           </div>
+        </div>
+
+        {/* ── FLOATING INTERACTIVE MAP LEGEND (Langkah 3) ── */}
+        <div className={`absolute bottom-5 z-20 transition-all duration-300 ${
+          isDetailPanelOpen
+            ? 'left-4 sm:left-[210px]'
+            : isSidebarCollapsed
+              ? 'left-4'
+              : 'left-4 sm:left-[410px] xl:left-[440px]'
+        }`}>
+          {isLegendOpen ? (
+            <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl rounded-2xl p-3.5 max-w-[280px] animate-fade-in text-xs space-y-2.5">
+              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                <span className="font-['DM_Sans'] font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                  <Info className="w-3.5 h-3.5 text-blue-600" />
+                  Legenda Peta
+                </span>
+                <button
+                  onClick={() => setIsLegendOpen(false)}
+                  className="p-0.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                  title="Tutup Legenda"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Kategori Ikon */}
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Kategori Proyek
+                </span>
+                <div className="grid grid-cols-2 gap-1 text-[11px] font-medium text-slate-700">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-[#2563EB] shrink-0"></span>
+                    <span>Jalan</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-[#059669] shrink-0"></span>
+                    <span>Taman</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-[#0891B2] shrink-0"></span>
+                    <span>Drainase</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-md bg-[#7C3AED] shrink-0"></span>
+                    <span>Fasilitas</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Status Progres */}
+              <div>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                  Status Progres Pin
+                </span>
+                <div className="space-y-1 text-[11px] font-medium text-slate-700">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                    <span>&lt; 30% (Tahap Awal)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                    <span>30% - 70% (Konstruksi)</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                    <span>&gt; 70% (Finishing / Siap)</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Batas Kecamatan */}
+              <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+                <div className="flex items-center gap-1.5">
+                  <span className="w-4 h-0.5 bg-[#0369A1] shrink-0"></span>
+                  <span>Batas 27 Kecamatan</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="w-4 h-0.5 bg-[#1D4ED8] ring-1 ring-blue-300 shrink-0"></span>
+                  <span>Terpilih</span>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <button
+              onClick={() => setIsLegendOpen(true)}
+              className="bg-white/95 backdrop-blur-md hover:bg-white border border-slate-200/90 shadow-md rounded-2xl px-3 py-2 text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95 transition-all"
+              title="Buka Legenda Peta"
+            >
+              <Info className="w-3.5 h-3.5 text-blue-600" />
+              <span>Legenda</span>
+            </button>
+          )}
         </div>
       </div>
     </div>
