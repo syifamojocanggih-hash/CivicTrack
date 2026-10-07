@@ -5,7 +5,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
-from app.models.user import User, UserRole, WilayahAdministratif, Dinas
+from app.models.user import User, UserRole, WilayahAdministratif, WilayahLevel, Dinas
 from app.models.project import Proyek, TahapanProgres, ProyekKategori, ProyekStatus
 from app.models.report import RatingKepuasan
 from app.schemas.project import (
@@ -20,6 +20,7 @@ router = APIRouter(prefix="/proyek", tags=["Proyek Pembangunan"])
 @router.get("", response_model=PaginatedProyekResponse)
 def get_projects(
     wilayah_id: Optional[int] = Query(None, description="Filter wilayah administratif (hierarkis)"),
+    desa_id: Optional[int] = Query(None, description="Filter desa administratif"),
     kategori: Optional[ProyekKategori] = Query(None, description="Filter kategori: jalan, taman, drainase, dll"),
     status_proyek: Optional[ProyekStatus] = Query(None, alias="status", description="Filter status pengerjaan"),
     min_anggaran: Optional[Decimal] = Query(None, description="Filter anggaran minimum"),
@@ -45,6 +46,9 @@ def get_projects(
             for gc in grand_child:
                 sub_ids.append(gc[0])
         query = query.filter(Proyek.wilayah_id.in_(sub_ids))
+
+    if desa_id:
+        query = query.filter(Proyek.desa_id == desa_id)
 
     if kategori:
         query = query.filter(Proyek.kategori == kategori)
@@ -86,6 +90,7 @@ def get_projects(
             latitude=p.latitude,
             longitude=p.longitude,
             wilayah_id=p.wilayah_id,
+            desa_id=p.desa_id,
             dinas_id=p.dinas_id,
             anggaran=p.anggaran,
             status=p.status,
@@ -95,6 +100,7 @@ def get_projects(
             created_at=p.created_at,
             updated_at=p.updated_at,
             nama_wilayah=p.wilayah.nama_wilayah if p.wilayah else None,
+            nama_desa=p.desa.nama_wilayah if p.desa else None,
             nama_dinas=p.dinas.nama_dinas if p.dinas else None,
             rata_rata_rating=avg_score,
             jumlah_rating=rating_count
@@ -171,6 +177,25 @@ def create_project(
             detail="Admin dinas hanya diperkenankan menginput proyek untuk dinas instansinya sendiri."
         )
 
+    # Verifikasi desa (jika diisi): harus terdaftar, level='desa', dan child dari wilayah_id (kecamatan)
+    if req.desa_id is not None:
+        desa = db.query(WilayahAdministratif).filter(WilayahAdministratif.id == req.desa_id).first()
+        if not desa:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Desa/kelurahan dengan ID tersebut tidak ditemukan di database."
+            )
+        if desa.level != WilayahLevel.desa:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Wilayah administratif yang dipilih untuk desa_id harus bertingkat 'desa'."
+            )
+        if desa.parent_id != req.wilayah_id:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Desa '{desa.nama_wilayah}' bukan merupakan bagian dari kecamatan terpilih (wilayah_id {req.wilayah_id})."
+            )
+
     proyek = Proyek(
         nama_proyek=req.nama_proyek,
         kategori=req.kategori,
@@ -178,6 +203,7 @@ def create_project(
         latitude=req.latitude,
         longitude=req.longitude,
         wilayah_id=req.wilayah_id,
+        desa_id=req.desa_id,
         dinas_id=req.dinas_id,
         anggaran=req.anggaran,
         status=req.status,
@@ -266,6 +292,28 @@ def update_project(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail="Wilayah administratif dengan ID tersebut tidak ditemukan di database."
             )
+
+    # Validasi desa_id jika diperbarui atau jika wilayah_id diperbarui
+    if "desa_id" in update_data or "wilayah_id" in update_data:
+        check_desa_id = update_data.get("desa_id", proyek.desa_id)
+        check_wilayah_id = update_data.get("wilayah_id", proyek.wilayah_id)
+        if check_desa_id is not None:
+            desa = db.query(WilayahAdministratif).filter(WilayahAdministratif.id == check_desa_id).first()
+            if not desa:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Desa/kelurahan dengan ID tersebut tidak ditemukan di database."
+                )
+            if desa.level != WilayahLevel.desa:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail="Wilayah administratif yang dipilih untuk desa_id harus bertingkat 'desa'."
+                )
+            if desa.parent_id != check_wilayah_id:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=f"Desa '{desa.nama_wilayah}' bukan merupakan bagian dari kecamatan terpilih (wilayah_id {check_wilayah_id})."
+                )
 
     # Validasi keberadaan dinas jika dinas_id diperbarui
     if "dinas_id" in update_data:

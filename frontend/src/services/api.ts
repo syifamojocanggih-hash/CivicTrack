@@ -1,4 +1,4 @@
-import type { ProyekItem, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem } from '../types';
+import type { ProyekItem, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem, WilayahOptionItem } from '../types';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
 
 const BASE_URL = '/api/v1';
@@ -11,6 +11,7 @@ export interface BackendProjectItem {
   latitude: string | number;
   longitude: string | number;
   wilayah_id?: number;
+  desa_id?: number | null;
   dinas_id?: number;
   anggaran: string | number;
   status: string;
@@ -18,6 +19,7 @@ export interface BackendProjectItem {
   tanggal_mulai?: string;
   estimasi_selesai?: string;
   nama_wilayah?: string;
+  nama_desa?: string;
   nama_dinas?: string;
   rata_rata_rating?: number | null;
   jumlah_rating?: number;
@@ -38,6 +40,7 @@ export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
     latitude: Number(p.latitude) || -7.1195,
     longitude: Number(p.longitude) || 112.4154,
     wilayah_id: p.wilayah_id || 1,
+    desa_id: p.desa_id ?? null,
     dinas_id: p.dinas_id || 1,
     anggaran: Number(p.anggaran) || 0,
     status: (p.status === 'tertunda' ? 'ditangguhkan' : p.status) as any,
@@ -45,6 +48,7 @@ export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
     tanggal_mulai: p.tanggal_mulai || '2024-01-01',
     estimasi_selesai: p.estimasi_selesai || '2024-12-31',
     nama_wilayah: p.nama_wilayah || 'Kabupaten Lamongan',
+    nama_desa: p.nama_desa,
     nama_dinas: p.nama_dinas || 'Dinas Pekerjaan Umum Kab. Lamongan',
     rata_rata_rating: p.rata_rata_rating || 4.5,
     jumlah_rating: p.jumlah_rating || 10,
@@ -119,6 +123,22 @@ export const apiService = {
     } catch (err) {
       console.warn('Backend API /stats/ringkasan not reached:', err);
       return null;
+    }
+  },
+
+  // Fetch sub-wilayah / desa by level and parent_id
+  async getWilayah(level?: string, parentId?: number): Promise<WilayahOptionItem[]> {
+    try {
+      const params = new URLSearchParams();
+      if (level) params.append('level', level);
+      if (parentId !== undefined) params.append('parent_id', String(parentId));
+      const url = `${BASE_URL}/wilayah${params.toString() ? '?' + params.toString() : ''}`;
+      const res = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.warn('Backend API /wilayah fetch failed:', err);
+      return [];
     }
   },
 

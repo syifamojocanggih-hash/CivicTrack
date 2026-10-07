@@ -29,7 +29,7 @@ class WilayahAdministratif(Base):
     # Relasi hierarki
     parent = relationship("WilayahAdministratif", remote_side=[id], backref=backref("sub_wilayah", lazy="selectin"))
     dinas_list = relationship("Dinas", back_populates="wilayah")
-    proyek_list = relationship("Proyek", back_populates="wilayah")
+    proyek_list = relationship("Proyek", foreign_keys="Proyek.wilayah_id", back_populates="wilayah")
 
 class Dinas(Base):
     __tablename__ = "dinas"

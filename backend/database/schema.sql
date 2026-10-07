@@ -87,6 +87,7 @@ CREATE TABLE proyek (
     latitude DECIMAL(9, 6) NOT NULL,
     longitude DECIMAL(9, 6) NOT NULL,
     wilayah_id BIGINT NOT NULL,
+    desa_id BIGINT NULL,
     dinas_id BIGINT NOT NULL,
     anggaran DECIMAL(18, 2) NULL,
     status ENUM('berjalan', 'selesai', 'tertunda', 'dalam_peninjauan_ulang') NOT NULL DEFAULT 'berjalan',
@@ -98,6 +99,8 @@ CREATE TABLE proyek (
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_proyek_wilayah FOREIGN KEY (wilayah_id) 
         REFERENCES wilayah_administratif (id) ON DELETE RESTRICT,
+    CONSTRAINT fk_proyek_desa FOREIGN KEY (desa_id) 
+        REFERENCES wilayah_administratif (id) ON DELETE SET NULL,
     CONSTRAINT fk_proyek_dinas FOREIGN KEY (dinas_id) 
         REFERENCES dinas (id) ON DELETE RESTRICT,
     CONSTRAINT fk_proyek_creator FOREIGN KEY (dibuat_oleh) 

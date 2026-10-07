@@ -10,6 +10,7 @@ export interface ProyekItem {
   latitude: number;
   longitude: number;
   wilayah_id?: number;
+  desa_id?: number | null;
   dinas_id?: number;
   anggaran: number;
   status: ProyekStatus;
@@ -17,10 +18,19 @@ export interface ProyekItem {
   tanggal_mulai?: string;
   estimasi_selesai?: string;
   nama_wilayah?: string;
+  nama_desa?: string;
   nama_dinas?: string;
   rata_rata_rating?: number | null;
   jumlah_rating?: number;
   tahap_terkini?: string;
+}
+
+export interface WilayahOptionItem {
+  id: number;
+  kode_wilayah: string;
+  nama_wilayah: string;
+  level: 'kabupaten' | 'kecamatan' | 'desa';
+  parent_id?: number | null;
 }
 
 export interface StatSummary {

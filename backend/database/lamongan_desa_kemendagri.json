@@ -1,0 +1,2372 @@
+[
+  {
+    "kode_wilayah": "35.24.01.2001",
+    "nama_wilayah": "Desa Sembung",
+    "kecamatan_kode": "35.24.01"
+  },
+  {
+    "kode_wilayah": "35.24.01.2002",
+    "nama_wilayah": "Desa Banggle",
+    "kecamatan_kode": "35.24.01"
+  },
+  {
+    "kode_wilayah": "35.24.01.2003",
+    "nama_wilayah": "Desa Kedungkumpul",
+    "kecamatan_kode": "35.24.01"
+  },
+  {
+    "kode_wilayah": "35.24.01.2004",
+    "nama_wilayah": "Desa Sukorame",
+    "kecamatan_kode": "35.24.01"
+  },
+  {
+    "kode_wilayah": "35.24.01.2005",
+    "nama_wilayah": "Desa Mragel",
+    "kecamatan_kode": "35.24.01"
+  },
+  {
+    "kode_wilayah": "35.24.01.2006",
+    "nama_wilayah": "Desa Kedungrejo",
+    "kecamatan_kode": "35.24.01"
+  },
+  {
+    "kode_wilayah": "35.24.01.2007",
+    "nama_wilayah": "Desa Sewor",
+    "kecamatan_kode": "35.24.01"
+  },
+  {
+    "kode_wilayah": "35.24.01.2008",
+    "nama_wilayah": "Desa Wedoro",
+    "kecamatan_kode": "35.24.01"
+  },
+  {
+    "kode_wilayah": "35.24.01.2009",
+    "nama_wilayah": "Desa Pendowokumpul",
+    "kecamatan_kode": "35.24.01"
+  },
+  {
+    "kode_wilayah": "35.24.02.2001",
+    "nama_wilayah": "Desa Talunrejo",
+    "kecamatan_kode": "35.24.02"
+  },
+  {
+    "kode_wilayah": "35.24.02.2002",
+    "nama_wilayah": "Desa Banjargondang",
+    "kecamatan_kode": "35.24.02"
+  },
+  {
+    "kode_wilayah": "35.24.02.2003",
+    "nama_wilayah": "Desa Bluluk",
+    "kecamatan_kode": "35.24.02"
+  },
+  {
+    "kode_wilayah": "35.24.02.2004",
+    "nama_wilayah": "Desa Cangkring",
+    "kecamatan_kode": "35.24.02"
+  },
+  {
+    "kode_wilayah": "35.24.02.2005",
+    "nama_wilayah": "Desa Bronjong",
+    "kecamatan_kode": "35.24.02"
+  },
+  {
+    "kode_wilayah": "35.24.02.2006",
+    "nama_wilayah": "Desa Songowareng",
+    "kecamatan_kode": "35.24.02"
+  },
+  {
+    "kode_wilayah": "35.24.02.2007",
+    "nama_wilayah": "Desa Kuwurejo",
+    "kecamatan_kode": "35.24.02"
+  },
+  {
+    "kode_wilayah": "35.24.02.2008",
+    "nama_wilayah": "Desa Sumberbanjar",
+    "kecamatan_kode": "35.24.02"
+  },
+  {
+    "kode_wilayah": "35.24.02.2009",
+    "nama_wilayah": "Desa Primpen",
+    "kecamatan_kode": "35.24.02"
+  },
+  {
+    "kode_wilayah": "35.24.03.2001",
+    "nama_wilayah": "Desa Jegreg",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2002",
+    "nama_wilayah": "Desa Kedungpengaron",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2003",
+    "nama_wilayah": "Desa Sumberagung",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2004",
+    "nama_wilayah": "Desa Kedunglerep",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2005",
+    "nama_wilayah": "Desa Jatipayak",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2006",
+    "nama_wilayah": "Desa Kedungwaras",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2007",
+    "nama_wilayah": "Desa Sidomulyo",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2008",
+    "nama_wilayah": "Desa Sambangrejo",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2009",
+    "nama_wilayah": "Desa Medalem",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2010",
+    "nama_wilayah": "Desa Sidodowo",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2011",
+    "nama_wilayah": "Desa Mojorejo",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2012",
+    "nama_wilayah": "Desa Sambungrejo",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2013",
+    "nama_wilayah": "Desa Kedungrejo",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2014",
+    "nama_wilayah": "Desa Kacangan",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2015",
+    "nama_wilayah": "Desa Nguwok",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2016",
+    "nama_wilayah": "Desa Pule",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.03.2017",
+    "nama_wilayah": "Desa Yungyang",
+    "kecamatan_kode": "35.24.03"
+  },
+  {
+    "kode_wilayah": "35.24.04.2001",
+    "nama_wilayah": "Desa Kedungmentawar",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2002",
+    "nama_wilayah": "Desa Cerme",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2003",
+    "nama_wilayah": "Desa Gebangangkrik",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2004",
+    "nama_wilayah": "Desa Ngasemlemahbang",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2005",
+    "nama_wilayah": "Desa Slaharwotan",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2006",
+    "nama_wilayah": "Desa Ganggangtingan",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2007",
+    "nama_wilayah": "Desa Jejel",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2008",
+    "nama_wilayah": "Desa Purwokerto",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2009",
+    "nama_wilayah": "Desa Kakatpenjalin",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2010",
+    "nama_wilayah": "Desa Tlemang",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2011",
+    "nama_wilayah": "Desa Mendogo",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2012",
+    "nama_wilayah": "Desa Lawak",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2013",
+    "nama_wilayah": "Desa Drujugurit",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2014",
+    "nama_wilayah": "Desa Girik",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2015",
+    "nama_wilayah": "Desa Munungrejo",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2016",
+    "nama_wilayah": "Desa Ngimbang",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2017",
+    "nama_wilayah": "Desa Durikedungjero",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2018",
+    "nama_wilayah": "Desa Lamongrejo",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.04.2019",
+    "nama_wilayah": "Desa Sendangrejo",
+    "kecamatan_kode": "35.24.04"
+  },
+  {
+    "kode_wilayah": "35.24.05.1001",
+    "nama_wilayah": "Kelurahan Banaran",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.1003",
+    "nama_wilayah": "Kelurahan Babat",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2002",
+    "nama_wilayah": "Desa Karangkembang",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2004",
+    "nama_wilayah": "Desa Pucakwangi",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2005",
+    "nama_wilayah": "Desa Sogo",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2006",
+    "nama_wilayah": "Desa Bedahan",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2007",
+    "nama_wilayah": "Desa Truni",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2008",
+    "nama_wilayah": "Desa Gendongkulon",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2009",
+    "nama_wilayah": "Desa Plaosan",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2010",
+    "nama_wilayah": "Desa Trepan",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2011",
+    "nama_wilayah": "Desa Kuripan",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2012",
+    "nama_wilayah": "Desa Kebalanpelang",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2013",
+    "nama_wilayah": "Desa Sumurgenuk",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2014",
+    "nama_wilayah": "Desa Gembong",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2015",
+    "nama_wilayah": "Desa Bulumargi",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2016",
+    "nama_wilayah": "Desa Datinawong",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2017",
+    "nama_wilayah": "Desa Kebalandono",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2018",
+    "nama_wilayah": "Desa Patihan",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2019",
+    "nama_wilayah": "Desa Moropelang",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2020",
+    "nama_wilayah": "Desa Keyongan",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2021",
+    "nama_wilayah": "Desa Sambangan",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2022",
+    "nama_wilayah": "Desa Tritunggal",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.05.2023",
+    "nama_wilayah": "Desa Kebonagung",
+    "kecamatan_kode": "35.24.05"
+  },
+  {
+    "kode_wilayah": "35.24.06.2001",
+    "nama_wilayah": "Desa Dradahblumbang",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2002",
+    "nama_wilayah": "Desa Kalen",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2003",
+    "nama_wilayah": "Desa Mojodadi",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2004",
+    "nama_wilayah": "Desa Gunungrejo",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2005",
+    "nama_wilayah": "Desa Warungring",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2006",
+    "nama_wilayah": "Desa Jatidrojog",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2007",
+    "nama_wilayah": "Desa Kradenanrejo",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2008",
+    "nama_wilayah": "Desa Kandangrejo",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2009",
+    "nama_wilayah": "Desa Kedungpring",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2010",
+    "nama_wilayah": "Desa Tlanak",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2011",
+    "nama_wilayah": "Desa Sukomalo",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2012",
+    "nama_wilayah": "Desa Mlati",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2013",
+    "nama_wilayah": "Desa Karangcangkring",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2014",
+    "nama_wilayah": "Desa Mekanderejo",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2015",
+    "nama_wilayah": "Desa Banjarejo",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2016",
+    "nama_wilayah": "Desa Sidobangun",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2017",
+    "nama_wilayah": "Desa Blawirejo",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2018",
+    "nama_wilayah": "Desa Maindu",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2019",
+    "nama_wilayah": "Desa Tenggerejo",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2020",
+    "nama_wilayah": "Desa Majenang",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2021",
+    "nama_wilayah": "Desa Sidomlangean",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2022",
+    "nama_wilayah": "Desa Nglebur",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.06.2023",
+    "nama_wilayah": "Desa Sumengko",
+    "kecamatan_kode": "35.24.06"
+  },
+  {
+    "kode_wilayah": "35.24.07.1010",
+    "nama_wilayah": "Kelurahan Brondong",
+    "kecamatan_kode": "35.24.07"
+  },
+  {
+    "kode_wilayah": "35.24.07.2001",
+    "nama_wilayah": "Desa Lohgung",
+    "kecamatan_kode": "35.24.07"
+  },
+  {
+    "kode_wilayah": "35.24.07.2002",
+    "nama_wilayah": "Desa Labuhan",
+    "kecamatan_kode": "35.24.07"
+  },
+  {
+    "kode_wilayah": "35.24.07.2003",
+    "nama_wilayah": "Desa Sidomukti",
+    "kecamatan_kode": "35.24.07"
+  },
+  {
+    "kode_wilayah": "35.24.07.2004",
+    "nama_wilayah": "Desa Brengkok",
+    "kecamatan_kode": "35.24.07"
+  },
+  {
+    "kode_wilayah": "35.24.07.2005",
+    "nama_wilayah": "Desa Tlogoretno",
+    "kecamatan_kode": "35.24.07"
+  },
+  {
+    "kode_wilayah": "35.24.07.2006",
+    "nama_wilayah": "Desa Sendangharjo",
+    "kecamatan_kode": "35.24.07"
+  },
+  {
+    "kode_wilayah": "35.24.07.2007",
+    "nama_wilayah": "Desa Lembor",
+    "kecamatan_kode": "35.24.07"
+  },
+  {
+    "kode_wilayah": "35.24.07.2008",
+    "nama_wilayah": "Desa Sedayulawas",
+    "kecamatan_kode": "35.24.07"
+  },
+  {
+    "kode_wilayah": "35.24.07.2009",
+    "nama_wilayah": "Desa Sumberagung",
+    "kecamatan_kode": "35.24.07"
+  },
+  {
+    "kode_wilayah": "35.24.08.2001",
+    "nama_wilayah": "Desa Dateng",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2002",
+    "nama_wilayah": "Desa Jabung",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2003",
+    "nama_wilayah": "Desa Keduyung",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2004",
+    "nama_wilayah": "Desa Centini",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2005",
+    "nama_wilayah": "Desa Durikulon",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2006",
+    "nama_wilayah": "Desa Pesanggrahan",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2007",
+    "nama_wilayah": "Desa Gelap",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2008",
+    "nama_wilayah": "Desa Mojoasem",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2009",
+    "nama_wilayah": "Desa Siser",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2010",
+    "nama_wilayah": "Desa Bulutigo",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2011",
+    "nama_wilayah": "Desa Pelangwot",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2012",
+    "nama_wilayah": "Desa Laren",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2013",
+    "nama_wilayah": "Desa Gampangsejati",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2014",
+    "nama_wilayah": "Desa Tamanprijeg",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2015",
+    "nama_wilayah": "Desa Karangtawar",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2016",
+    "nama_wilayah": "Desa Tejoasri",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2017",
+    "nama_wilayah": "Desa Godog",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2018",
+    "nama_wilayah": "Desa Bulubrangsi",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2019",
+    "nama_wilayah": "Desa Karangwungulor",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.08.2020",
+    "nama_wilayah": "Desa Brangsi",
+    "kecamatan_kode": "35.24.08"
+  },
+  {
+    "kode_wilayah": "35.24.09.2001",
+    "nama_wilayah": "Desa Besur",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2002",
+    "nama_wilayah": "Desa Titik",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2003",
+    "nama_wilayah": "Desa Kendal",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2004",
+    "nama_wilayah": "Desa Keting",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2005",
+    "nama_wilayah": "Desa Ngarum",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2006",
+    "nama_wilayah": "Desa Kebalankulon",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2007",
+    "nama_wilayah": "Desa Kudikan",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2008",
+    "nama_wilayah": "Desa Jugo",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2009",
+    "nama_wilayah": "Desa Manyar",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2010",
+    "nama_wilayah": "Desa Trosono",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2011",
+    "nama_wilayah": "Desa Latek",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2012",
+    "nama_wilayah": "Desa Miru",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2013",
+    "nama_wilayah": "Desa Sekaran",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2014",
+    "nama_wilayah": "Desa Moro",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2015",
+    "nama_wilayah": "Desa Karang",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2016",
+    "nama_wilayah": "Desa Kembangan",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2017",
+    "nama_wilayah": "Desa Siman",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2018",
+    "nama_wilayah": "Desa Bulutengger",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2019",
+    "nama_wilayah": "Desa Porodeso",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2020",
+    "nama_wilayah": "Desa Bugel",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.09.2021",
+    "nama_wilayah": "Desa Sungegeneng",
+    "kecamatan_kode": "35.24.09"
+  },
+  {
+    "kode_wilayah": "35.24.10.2001",
+    "nama_wilayah": "Desa Duriwetan",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2002",
+    "nama_wilayah": "Desa Taji",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2003",
+    "nama_wilayah": "Desa Brumbun",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2004",
+    "nama_wilayah": "Desa Siwuran",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2005",
+    "nama_wilayah": "Desa Klagensrampat",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2006",
+    "nama_wilayah": "Desa Pangean",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2007",
+    "nama_wilayah": "Desa Maduran",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2008",
+    "nama_wilayah": "Desa Jangkungsomo",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2009",
+    "nama_wilayah": "Desa Parengan",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2010",
+    "nama_wilayah": "Desa Pangkatrejo",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2011",
+    "nama_wilayah": "Desa Kanugrahan",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2012",
+    "nama_wilayah": "Desa Gumantuk",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2013",
+    "nama_wilayah": "Desa Ngayung",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2014",
+    "nama_wilayah": "Desa Pringgoboyo",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2015",
+    "nama_wilayah": "Desa Gedangan",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2016",
+    "nama_wilayah": "Desa Turi",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.10.2017",
+    "nama_wilayah": "Desa Blumbang",
+    "kecamatan_kode": "35.24.10"
+  },
+  {
+    "kode_wilayah": "35.24.11.2001",
+    "nama_wilayah": "Desa Sidokumpul",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2002",
+    "nama_wilayah": "Desa Pasarlegi",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2003",
+    "nama_wilayah": "Desa Semampirejo",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2004",
+    "nama_wilayah": "Desa Wateswinangun",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2005",
+    "nama_wilayah": "Desa Sumbersari",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2006",
+    "nama_wilayah": "Desa Pataan",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2007",
+    "nama_wilayah": "Desa Tenggiring",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2008",
+    "nama_wilayah": "Desa Garung",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2009",
+    "nama_wilayah": "Desa Wonorejo",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2010",
+    "nama_wilayah": "Desa Ardirejo",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2011",
+    "nama_wilayah": "Desa Sekidang",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2012",
+    "nama_wilayah": "Desa Kedungwangi",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2013",
+    "nama_wilayah": "Desa Jatipandak",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2014",
+    "nama_wilayah": "Desa Candisari",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2015",
+    "nama_wilayah": "Desa Nogojatisari",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2016",
+    "nama_wilayah": "Desa Pamotan",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2017",
+    "nama_wilayah": "Desa Wudi",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2018",
+    "nama_wilayah": "Desa Barurejo",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2019",
+    "nama_wilayah": "Desa Kedungbanjar",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2020",
+    "nama_wilayah": "Desa Gempolmanis",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2021",
+    "nama_wilayah": "Desa Selorejo",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.11.2022",
+    "nama_wilayah": "Desa Kreteranggon",
+    "kecamatan_kode": "35.24.11"
+  },
+  {
+    "kode_wilayah": "35.24.12.2001",
+    "nama_wilayah": "Desa Sidobogem",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2002",
+    "nama_wilayah": "Desa Kalitengah",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2003",
+    "nama_wilayah": "Desa Kedungdadi",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2004",
+    "nama_wilayah": "Desa Sidorejo",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2005",
+    "nama_wilayah": "Desa Kedungbanjar",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2006",
+    "nama_wilayah": "Desa Bedingin",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2007",
+    "nama_wilayah": "Desa Bakalrejo",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2008",
+    "nama_wilayah": "Desa Gondanglor",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2009",
+    "nama_wilayah": "Desa Pangkatrejo",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2010",
+    "nama_wilayah": "Desa Karangsambigalih",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2011",
+    "nama_wilayah": "Desa Supenuh",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2012",
+    "nama_wilayah": "Desa Lebakadi",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2013",
+    "nama_wilayah": "Desa Deketagung",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2014",
+    "nama_wilayah": "Desa Jubellor",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2015",
+    "nama_wilayah": "Desa Sugio",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2016",
+    "nama_wilayah": "Desa Daliwangun",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2017",
+    "nama_wilayah": "Desa Jubelkidul",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2018",
+    "nama_wilayah": "Desa Lawanganagung",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2019",
+    "nama_wilayah": "Desa Kalipang",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2020",
+    "nama_wilayah": "Desa German",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.12.2021",
+    "nama_wilayah": "Desa Sekarbagus",
+    "kecamatan_kode": "35.24.12"
+  },
+  {
+    "kode_wilayah": "35.24.13.2001",
+    "nama_wilayah": "Desa Pucuk",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2002",
+    "nama_wilayah": "Desa Gempolpading",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2003",
+    "nama_wilayah": "Desa Kesambi",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2004",
+    "nama_wilayah": "Desa Plososetro",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2005",
+    "nama_wilayah": "Desa Wanar",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2006",
+    "nama_wilayah": "Desa Karangtinggil",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2007",
+    "nama_wilayah": "Desa Warukulon",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2008",
+    "nama_wilayah": "Desa Waruwetan",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2009",
+    "nama_wilayah": "Desa Kedali",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2010",
+    "nama_wilayah": "Desa Paji",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2011",
+    "nama_wilayah": "Desa Sumberjo",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2012",
+    "nama_wilayah": "Desa Cungkup",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2013",
+    "nama_wilayah": "Desa Bugoharjo",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2014",
+    "nama_wilayah": "Desa Ngambeg",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2015",
+    "nama_wilayah": "Desa Babatkumpul",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2016",
+    "nama_wilayah": "Desa Tanggungan",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.13.2017",
+    "nama_wilayah": "Desa Padenganploso",
+    "kecamatan_kode": "35.24.13"
+  },
+  {
+    "kode_wilayah": "35.24.14.1001",
+    "nama_wilayah": "Kelurahan Blimbing",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2002",
+    "nama_wilayah": "Desa Kandangsemangkon",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2003",
+    "nama_wilayah": "Desa Paciran",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2004",
+    "nama_wilayah": "Desa Sumurgayam",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2005",
+    "nama_wilayah": "Desa Sendangagung",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2006",
+    "nama_wilayah": "Desa Sendangduwur",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2007",
+    "nama_wilayah": "Desa Tunggul",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2008",
+    "nama_wilayah": "Desa Kranji",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2009",
+    "nama_wilayah": "Desa Drajat",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2010",
+    "nama_wilayah": "Desa Banjarwati",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2011",
+    "nama_wilayah": "Desa Kemantren",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2012",
+    "nama_wilayah": "Desa Sidokelar",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2013",
+    "nama_wilayah": "Desa Tlogosadang",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2014",
+    "nama_wilayah": "Desa Paloh",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2015",
+    "nama_wilayah": "Desa Weru",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2016",
+    "nama_wilayah": "Desa Sidokumpul",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.14.2017",
+    "nama_wilayah": "Desa Warulor",
+    "kecamatan_kode": "35.24.14"
+  },
+  {
+    "kode_wilayah": "35.24.15.2001",
+    "nama_wilayah": "Desa Dadapan",
+    "kecamatan_kode": "35.24.15"
+  },
+  {
+    "kode_wilayah": "35.24.15.2002",
+    "nama_wilayah": "Desa Tebluru",
+    "kecamatan_kode": "35.24.15"
+  },
+  {
+    "kode_wilayah": "35.24.15.2003",
+    "nama_wilayah": "Desa Sugihan",
+    "kecamatan_kode": "35.24.15"
+  },
+  {
+    "kode_wilayah": "35.24.15.2004",
+    "nama_wilayah": "Desa Tenggulun",
+    "kecamatan_kode": "35.24.15"
+  },
+  {
+    "kode_wilayah": "35.24.15.2005",
+    "nama_wilayah": "Desa Payaman",
+    "kecamatan_kode": "35.24.15"
+  },
+  {
+    "kode_wilayah": "35.24.15.2006",
+    "nama_wilayah": "Desa Solokuro",
+    "kecamatan_kode": "35.24.15"
+  },
+  {
+    "kode_wilayah": "35.24.15.2007",
+    "nama_wilayah": "Desa Takerharjo",
+    "kecamatan_kode": "35.24.15"
+  },
+  {
+    "kode_wilayah": "35.24.15.2008",
+    "nama_wilayah": "Desa Dagan",
+    "kecamatan_kode": "35.24.15"
+  },
+  {
+    "kode_wilayah": "35.24.15.2009",
+    "nama_wilayah": "Desa Banyubang",
+    "kecamatan_kode": "35.24.15"
+  },
+  {
+    "kode_wilayah": "35.24.15.2010",
+    "nama_wilayah": "Desa Bluri",
+    "kecamatan_kode": "35.24.15"
+  },
+  {
+    "kode_wilayah": "35.24.16.2001",
+    "nama_wilayah": "Desa Sukobendu",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2002",
+    "nama_wilayah": "Desa Tunggunjagir",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2003",
+    "nama_wilayah": "Desa Sumberbendo",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2004",
+    "nama_wilayah": "Desa Mantup",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2005",
+    "nama_wilayah": "Desa Kedukbembem",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2006",
+    "nama_wilayah": "Desa Sumberdadi",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2007",
+    "nama_wilayah": "Desa Kedungsoko",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2008",
+    "nama_wilayah": "Desa Tugu",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2009",
+    "nama_wilayah": "Desa Sukosari",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2010",
+    "nama_wilayah": "Desa Sumberagung",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2011",
+    "nama_wilayah": "Desa Sidomulyo",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2012",
+    "nama_wilayah": "Desa Mojosari",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2013",
+    "nama_wilayah": "Desa Plabuhanrejo",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2014",
+    "nama_wilayah": "Desa Sumberkerep",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.16.2015",
+    "nama_wilayah": "Desa Rumpuk",
+    "kecamatan_kode": "35.24.16"
+  },
+  {
+    "kode_wilayah": "35.24.17.2001",
+    "nama_wilayah": "Desa Siwalanrejo",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2002",
+    "nama_wilayah": "Desa Kebonsari",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2003",
+    "nama_wilayah": "Desa Sukolilo",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2004",
+    "nama_wilayah": "Desa Pajangan",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2005",
+    "nama_wilayah": "Desa Kadungrembug",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2006",
+    "nama_wilayah": "Desa Sumberagung",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2007",
+    "nama_wilayah": "Desa Sukodadi",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2008",
+    "nama_wilayah": "Desa Sumberaji",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2009",
+    "nama_wilayah": "Desa Menongo",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2010",
+    "nama_wilayah": "Desa Madulegi",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2011",
+    "nama_wilayah": "Desa Banjarejo",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2012",
+    "nama_wilayah": "Desa Plumpang",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2013",
+    "nama_wilayah": "Desa Bandungsari",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2014",
+    "nama_wilayah": "Desa Sidogembul",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2015",
+    "nama_wilayah": "Desa Balongtawun",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2016",
+    "nama_wilayah": "Desa Gedangan",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2017",
+    "nama_wilayah": "Desa Tlogorejo",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2018",
+    "nama_wilayah": "Desa Baturono",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2019",
+    "nama_wilayah": "Desa Surabayan",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.17.2020",
+    "nama_wilayah": "Desa Sugihrejo",
+    "kecamatan_kode": "35.24.17"
+  },
+  {
+    "kode_wilayah": "35.24.18.2001",
+    "nama_wilayah": "Desa Bantengputih",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2002",
+    "nama_wilayah": "Desa Karangrejo",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2003",
+    "nama_wilayah": "Desa Latukan",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2004",
+    "nama_wilayah": "Desa Guci",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2005",
+    "nama_wilayah": "Desa Kaligerman",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2006",
+    "nama_wilayah": "Desa Sungelebak",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2007",
+    "nama_wilayah": "Desa Prijekngablak",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2008",
+    "nama_wilayah": "Desa Tracal",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2009",
+    "nama_wilayah": "Desa Sonoadi",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2010",
+    "nama_wilayah": "Desa Kalanganyar",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2011",
+    "nama_wilayah": "Desa Banjarmadu",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2012",
+    "nama_wilayah": "Desa Kendalkemlagi",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2013",
+    "nama_wilayah": "Desa Kawistolegi",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2014",
+    "nama_wilayah": "Desa Jagran",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2015",
+    "nama_wilayah": "Desa Karangwungu",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2016",
+    "nama_wilayah": "Desa Sumberwudi",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2017",
+    "nama_wilayah": "Desa Karanggeneng",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.18.2018",
+    "nama_wilayah": "Desa Mertani",
+    "kecamatan_kode": "35.24.18"
+  },
+  {
+    "kode_wilayah": "35.24.19.2001",
+    "nama_wilayah": "Desa Tlogoagung",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2002",
+    "nama_wilayah": "Desa Kedungmegarih",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2003",
+    "nama_wilayah": "Desa Sidomukti",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2004",
+    "nama_wilayah": "Desa Sukosongo",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2005",
+    "nama_wilayah": "Desa Kaliwates",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2006",
+    "nama_wilayah": "Desa Kedungasri",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2007",
+    "nama_wilayah": "Desa Doyomulyo",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2008",
+    "nama_wilayah": "Desa Kembangbahu",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2009",
+    "nama_wilayah": "Desa Maor",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2010",
+    "nama_wilayah": "Desa Moronyamplung",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2011",
+    "nama_wilayah": "Desa Mangkujajar",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2012",
+    "nama_wilayah": "Desa Puter",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2013",
+    "nama_wilayah": "Desa Pelang",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2014",
+    "nama_wilayah": "Desa Dumpiagung",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2015",
+    "nama_wilayah": "Desa Randubener",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2016",
+    "nama_wilayah": "Desa Lopang",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2017",
+    "nama_wilayah": "Desa Gintungan",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.19.2018",
+    "nama_wilayah": "Desa Katemas",
+    "kecamatan_kode": "35.24.19"
+  },
+  {
+    "kode_wilayah": "35.24.20.2001",
+    "nama_wilayah": "Desa Pucangro",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2002",
+    "nama_wilayah": "Desa Pucangtelu",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2003",
+    "nama_wilayah": "Desa Somosari",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2004",
+    "nama_wilayah": "Desa Jelakcatur",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2005",
+    "nama_wilayah": "Desa Mungli",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2006",
+    "nama_wilayah": "Desa Pengangsalan",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2007",
+    "nama_wilayah": "Desa Dibee",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2008",
+    "nama_wilayah": "Desa Butungan",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2009",
+    "nama_wilayah": "Desa Lukrejo",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2010",
+    "nama_wilayah": "Desa Tiwet",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2011",
+    "nama_wilayah": "Desa Blajo",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2012",
+    "nama_wilayah": "Desa Kalitengah",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2013",
+    "nama_wilayah": "Desa Gambuhan",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2014",
+    "nama_wilayah": "Desa Cluring",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2015",
+    "nama_wilayah": "Desa Bojoasri",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2016",
+    "nama_wilayah": "Desa Kediren",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2017",
+    "nama_wilayah": "Desa Kuluran",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2018",
+    "nama_wilayah": "Desa Canditunggal",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2019",
+    "nama_wilayah": "Desa Sugihwaras",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.20.2020",
+    "nama_wilayah": "Desa Tunjungmekar",
+    "kecamatan_kode": "35.24.20"
+  },
+  {
+    "kode_wilayah": "35.24.21.2001",
+    "nama_wilayah": "Desa Geger",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2002",
+    "nama_wilayah": "Desa Badurame",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2003",
+    "nama_wilayah": "Desa Karangwedoro",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2004",
+    "nama_wilayah": "Desa Wangunrejo",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2005",
+    "nama_wilayah": "Desa Putatkumpul",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2006",
+    "nama_wilayah": "Desa Keben",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2007",
+    "nama_wilayah": "Desa Sukoanyar",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2008",
+    "nama_wilayah": "Desa Kemlagigede",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2009",
+    "nama_wilayah": "Desa Turi",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2010",
+    "nama_wilayah": "Desa Kemlagilor",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2011",
+    "nama_wilayah": "Desa Sukorejo",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2012",
+    "nama_wilayah": "Desa Tawangrejo",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2013",
+    "nama_wilayah": "Desa Bambang",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2014",
+    "nama_wilayah": "Desa Pomahanjanggan",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2015",
+    "nama_wilayah": "Desa Tambakploso",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2016",
+    "nama_wilayah": "Desa Balun",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2017",
+    "nama_wilayah": "Desa Ngujungrejo",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2018",
+    "nama_wilayah": "Desa Kepudibener",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.21.2019",
+    "nama_wilayah": "Desa Gedungboyountung",
+    "kecamatan_kode": "35.24.21"
+  },
+  {
+    "kode_wilayah": "35.24.22.1012",
+    "nama_wilayah": "Kelurahan Sukorejo",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.1013",
+    "nama_wilayah": "Kelurahan Sukomulyo",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.1014",
+    "nama_wilayah": "Kelurahan Sidoharjo",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.1015",
+    "nama_wilayah": "Kelurahan Tumenggungan",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.1017",
+    "nama_wilayah": "Kelurahan Sidokumpul",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.1018",
+    "nama_wilayah": "Kelurahan Tlogoanyar",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.1019",
+    "nama_wilayah": "Kelurahan Jetis",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.1020",
+    "nama_wilayah": "Kelurahan Banjarmendalan",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2001",
+    "nama_wilayah": "Desa Rancangkencono",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2002",
+    "nama_wilayah": "Desa Karanglangit",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2003",
+    "nama_wilayah": "Desa Pangkatrejo",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2004",
+    "nama_wilayah": "Desa Kebet",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2005",
+    "nama_wilayah": "Desa Sendangrejo",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2006",
+    "nama_wilayah": "Desa Sumberjo",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2007",
+    "nama_wilayah": "Desa Tanjung",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2008",
+    "nama_wilayah": "Desa Plosowahyu",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2009",
+    "nama_wilayah": "Desa Wajik",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2010",
+    "nama_wilayah": "Desa Kramat",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2011",
+    "nama_wilayah": "Desa Made",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.22.2016",
+    "nama_wilayah": "Desa Sidomukti",
+    "kecamatan_kode": "35.24.22"
+  },
+  {
+    "kode_wilayah": "35.24.23.2001",
+    "nama_wilayah": "Desa Wonokromo",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2002",
+    "nama_wilayah": "Desa Soko",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2003",
+    "nama_wilayah": "Desa Guminingrejo",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2004",
+    "nama_wilayah": "Desa Bakalanpule",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2005",
+    "nama_wilayah": "Desa Takeranklating",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2006",
+    "nama_wilayah": "Desa Kelorarum",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2007",
+    "nama_wilayah": "Desa Jotosanur",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2008",
+    "nama_wilayah": "Desa Pengumbulanadi",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2009",
+    "nama_wilayah": "Desa Jatirejo",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2010",
+    "nama_wilayah": "Desa Dukuhagung",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2011",
+    "nama_wilayah": "Desa Tambakrigadung",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2012",
+    "nama_wilayah": "Desa Botoputih",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.23.2013",
+    "nama_wilayah": "Desa Balongwangi",
+    "kecamatan_kode": "35.24.23"
+  },
+  {
+    "kode_wilayah": "35.24.24.2001",
+    "nama_wilayah": "Desa Waruk",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2002",
+    "nama_wilayah": "Desa Sukorejo",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2003",
+    "nama_wilayah": "Desa Karanganom",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2004",
+    "nama_wilayah": "Desa Somowinangun",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2005",
+    "nama_wilayah": "Desa Ketapangtelu",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2006",
+    "nama_wilayah": "Desa Mayong",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2007",
+    "nama_wilayah": "Desa Palangan",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2008",
+    "nama_wilayah": "Desa Blawi",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2009",
+    "nama_wilayah": "Desa Banjarejo",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2010",
+    "nama_wilayah": "Desa Putatbangah",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2011",
+    "nama_wilayah": "Desa Banyuurip",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2012",
+    "nama_wilayah": "Desa Pendowolimo",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2013",
+    "nama_wilayah": "Desa Baranggayam",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2014",
+    "nama_wilayah": "Desa Watangpanjang",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2015",
+    "nama_wilayah": "Desa Sambopinggir",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2016",
+    "nama_wilayah": "Desa Priyoso",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2017",
+    "nama_wilayah": "Desa Windu",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2018",
+    "nama_wilayah": "Desa Bogobabadan",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2019",
+    "nama_wilayah": "Desa Gawerejo",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2020",
+    "nama_wilayah": "Desa Kuro",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.24.2021",
+    "nama_wilayah": "Desa Karangbinangun",
+    "kecamatan_kode": "35.24.24"
+  },
+  {
+    "kode_wilayah": "35.24.25.2001",
+    "nama_wilayah": "Desa Sidorejo",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2002",
+    "nama_wilayah": "Desa Dlanggu",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2003",
+    "nama_wilayah": "Desa Laladan",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2004",
+    "nama_wilayah": "Desa Deketkulon",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2005",
+    "nama_wilayah": "Desa Deketwetan",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2006",
+    "nama_wilayah": "Desa Sugihwaras",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2007",
+    "nama_wilayah": "Desa Dinoyo",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2008",
+    "nama_wilayah": "Desa Sidomulyo",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2009",
+    "nama_wilayah": "Desa Rejosari",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2010",
+    "nama_wilayah": "Desa Pandanpancur",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2011",
+    "nama_wilayah": "Desa Sidobinangun",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2012",
+    "nama_wilayah": "Desa Babatagung",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2013",
+    "nama_wilayah": "Desa Tukkerto",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2014",
+    "nama_wilayah": "Desa Weduni",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2015",
+    "nama_wilayah": "Desa Rejotengah",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2016",
+    "nama_wilayah": "Desa Srirande",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.25.2017",
+    "nama_wilayah": "Desa Plosobuden",
+    "kecamatan_kode": "35.24.25"
+  },
+  {
+    "kode_wilayah": "35.24.26.2001",
+    "nama_wilayah": "Desa Soko",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2002",
+    "nama_wilayah": "Desa Morocalan",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2003",
+    "nama_wilayah": "Desa Gempolpendowo",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2004",
+    "nama_wilayah": "Desa Pasi",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2005",
+    "nama_wilayah": "Desa Rayunggumuk",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2006",
+    "nama_wilayah": "Desa Menganti",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2007",
+    "nama_wilayah": "Desa Margoanyar",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2008",
+    "nama_wilayah": "Desa Began",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2009",
+    "nama_wilayah": "Desa Mendogo",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2010",
+    "nama_wilayah": "Desa Kentong",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2011",
+    "nama_wilayah": "Desa Sudangan",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2012",
+    "nama_wilayah": "Desa Medang",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2013",
+    "nama_wilayah": "Desa Duduklor",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2014",
+    "nama_wilayah": "Desa Glagah",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2015",
+    "nama_wilayah": "Desa Wangen",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2016",
+    "nama_wilayah": "Desa Tanggungprigel",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2017",
+    "nama_wilayah": "Desa Karangagung",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2018",
+    "nama_wilayah": "Desa Bangkok",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2019",
+    "nama_wilayah": "Desa Jatirenggo",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2020",
+    "nama_wilayah": "Desa Bapuhbaru",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2021",
+    "nama_wilayah": "Desa Bapuhbandung",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2022",
+    "nama_wilayah": "Desa Meluntur",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2023",
+    "nama_wilayah": "Desa Konang",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2024",
+    "nama_wilayah": "Desa Dukuhtunggal",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2025",
+    "nama_wilayah": "Desa Panggang",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2026",
+    "nama_wilayah": "Desa Wonorejo",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2027",
+    "nama_wilayah": "Desa Wedoro",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2028",
+    "nama_wilayah": "Desa Karangturi",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.26.2029",
+    "nama_wilayah": "Desa Meluwur",
+    "kecamatan_kode": "35.24.26"
+  },
+  {
+    "kode_wilayah": "35.24.27.2001",
+    "nama_wilayah": "Desa Kedungkumpul",
+    "kecamatan_kode": "35.24.27"
+  },
+  {
+    "kode_wilayah": "35.24.27.2002",
+    "nama_wilayah": "Desa Dermolemahbang",
+    "kecamatan_kode": "35.24.27"
+  },
+  {
+    "kode_wilayah": "35.24.27.2003",
+    "nama_wilayah": "Desa Simbatan",
+    "kecamatan_kode": "35.24.27"
+  },
+  {
+    "kode_wilayah": "35.24.27.2004",
+    "nama_wilayah": "Desa Sumberjo",
+    "kecamatan_kode": "35.24.27"
+  },
+  {
+    "kode_wilayah": "35.24.27.2005",
+    "nama_wilayah": "Desa Canggah",
+    "kecamatan_kode": "35.24.27"
+  },
+  {
+    "kode_wilayah": "35.24.27.2006",
+    "nama_wilayah": "Desa Beru",
+    "kecamatan_kode": "35.24.27"
+  },
+  {
+    "kode_wilayah": "35.24.27.2007",
+    "nama_wilayah": "Desa Tambakmenjangan",
+    "kecamatan_kode": "35.24.27"
+  },
+  {
+    "kode_wilayah": "35.24.27.2008",
+    "nama_wilayah": "Desa Gempoltukmloko",
+    "kecamatan_kode": "35.24.27"
+  },
+  {
+    "kode_wilayah": "35.24.27.2009",
+    "nama_wilayah": "Desa Sarirejo",
+    "kecamatan_kode": "35.24.27"
+  }
+]

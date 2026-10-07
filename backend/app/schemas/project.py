@@ -41,6 +41,7 @@ class ProyekBase(BaseModel):
     latitude: Decimal = Field(..., ge=-90.0, le=90.0)
     longitude: Decimal = Field(..., ge=-180.0, le=180.0)
     wilayah_id: int = Field(..., gt=0)
+    desa_id: Optional[int] = Field(None, gt=0)
     dinas_id: int = Field(..., gt=0)
     anggaran: Optional[Decimal] = Field(None, ge=0)
     status: ProyekStatus = ProyekStatus.berjalan
@@ -106,6 +107,7 @@ class ProyekUpdate(BaseModel):
     latitude: Optional[Decimal] = Field(None, ge=-90.0, le=90.0)
     longitude: Optional[Decimal] = Field(None, ge=-180.0, le=180.0)
     wilayah_id: Optional[int] = Field(None, gt=0)
+    desa_id: Optional[int] = Field(None, gt=0)
     dinas_id: Optional[int] = Field(None, gt=0)
     anggaran: Optional[Decimal] = Field(None, ge=0)
     status: Optional[ProyekStatus] = None
@@ -168,6 +170,7 @@ class ProyekResponse(ProyekBase):
     created_at: datetime
     updated_at: datetime
     wilayah: Optional[WilayahBrief] = None
+    desa: Optional[WilayahBrief] = None
     dinas: Optional[DinasResponse] = None
     tahapan_list: List[TahapanResponse] = []
     dokumentasi_list: List[DokumentasiResponse] = []
@@ -184,6 +187,7 @@ class ProyekListItem(BaseModel):
     latitude: Decimal
     longitude: Decimal
     wilayah_id: int
+    desa_id: Optional[int] = None
     dinas_id: int
     anggaran: Optional[Decimal] = None
     status: ProyekStatus
@@ -193,6 +197,7 @@ class ProyekListItem(BaseModel):
     created_at: datetime
     updated_at: datetime
     nama_wilayah: Optional[str] = None
+    nama_desa: Optional[str] = None
     nama_dinas: Optional[str] = None
     rata_rata_rating: Optional[float] = None
     jumlah_rating: int = 0

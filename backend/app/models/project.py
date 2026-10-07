@@ -35,6 +35,7 @@ class Proyek(Base):
     latitude = Column(Numeric(9, 6), nullable=False)
     longitude = Column(Numeric(9, 6), nullable=False)
     wilayah_id = Column(BigInteger, ForeignKey("wilayah_administratif.id", ondelete="RESTRICT"), nullable=False, index=True)
+    desa_id = Column(BigInteger, ForeignKey("wilayah_administratif.id", ondelete="SET NULL"), nullable=True, index=True)
     dinas_id = Column(BigInteger, ForeignKey("dinas.id", ondelete="RESTRICT"), nullable=False, index=True)
     anggaran = Column(Numeric(18, 2), nullable=True)
     status = Column(Enum(ProyekStatus), nullable=False, default=ProyekStatus.berjalan, index=True)
@@ -45,7 +46,8 @@ class Proyek(Base):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 
-    wilayah = relationship("WilayahAdministratif", back_populates="proyek_list")
+    wilayah = relationship("WilayahAdministratif", foreign_keys=[wilayah_id], back_populates="proyek_list")
+    desa = relationship("WilayahAdministratif", foreign_keys=[desa_id])
     dinas = relationship("Dinas", back_populates="proyek_list")
     creator = relationship("User", foreign_keys=[dibuat_oleh])
     tahapan_list = relationship("TahapanProgres", back_populates="proyek", cascade="all, delete-orphan", order_by="TahapanProgres.tanggal_pencatatan.asc()")

@@ -74,9 +74,33 @@ def main():
         "geom_boundary": json.dumps(mapping(kab_union_simple)),
         "shape": kab_union
     }
-    all_wilayah = [kab_info] + wilayah_list
 
-    print(f"Total wilayah administratif: {len(all_wilayah)} (1 kabupaten, {len(wilayah_list)} kecamatan)")
+    # Load 474 desa/kelurahan resmi Kemendagri
+    desa_json_path = os.path.join(root_dir, "backend", "database", "lamongan_desa_kemendagri.json")
+    print(f"Membaca data desa Kemendagri dari: {desa_json_path}")
+    with open(desa_json_path, "r", encoding="utf-8") as f:
+        desa_raw = json.load(f)
+
+    kec_by_code = {k["kode_wilayah"]: k for k in wilayah_list}
+    desa_list = []
+    base_desa_id = 28 # ID 1 = kab, ID 2..28 = 27 kecamatan
+    for d_idx, d_item in enumerate(desa_raw):
+        p_kec = kec_by_code.get(d_item["kecamatan_kode"])
+        if not p_kec:
+            raise ValueError(f"Kecamatan dengan kode {d_item['kecamatan_kode']} tidak ditemukan!")
+        desa_id = base_desa_id + d_idx + 1 # ID 29 s/d 502
+        desa_list.append({
+            "id": desa_id,
+            "kode_wilayah": d_item["kode_wilayah"],
+            "nama_wilayah": d_item["nama_wilayah"],
+            "level": "desa",
+            "parent_id": p_kec["id"],
+            "geom_boundary": None
+        })
+
+    all_wilayah = [kab_info] + wilayah_list + desa_list
+
+    print(f"Total wilayah administratif: {len(all_wilayah)} (1 kabupaten, {len(wilayah_list)} kecamatan, {len(desa_list)} desa)")
 
     # 2. Parse 27 Proyek dari mockData.ts
     # Ekstrak objek proyek
@@ -123,6 +147,7 @@ def main():
             "latitude": lat_f,
             "longitude": lng_f,
             "wilayah_id": matched_kec["id"],
+            "desa_id": None,
             "nama_wilayah": matched_kec["nama_wilayah"],
             "dinas_id": int(did) if int(did) in [1, 2, 3] else 1,
             "anggaran": float(angg),
@@ -283,10 +308,13 @@ def main():
     w_values = []
     for w in all_wilayah:
         pid_str = "NULL" if w["parent_id"] is None else str(w["parent_id"])
-        # Escape single quotes in JSON string
-        geom_escaped = w["geom_boundary"].replace("'", "''")
+        if w.get("geom_boundary") is None:
+            geom_str = "NULL"
+        else:
+            geom_escaped = w["geom_boundary"].replace("'", "''")
+            geom_str = f"'{geom_escaped}'"
         w_values.append(
-            f"({w['id']}, '{w['kode_wilayah']}', '{w['nama_wilayah']}', '{w['level']}', {pid_str}, '{geom_escaped}')"
+            f"({w['id']}, '{w['kode_wilayah']}', '{w['nama_wilayah']}', '{w['level']}', {pid_str}, {geom_str})"
         )
     sql_lines.append(",\n".join(w_values) + ";")
     sql_lines.append("")
@@ -312,12 +340,13 @@ def main():
 
     # 4. Proyek
     sql_lines.append("-- 4. Data 27 Proyek Infrastruktur Lamongan")
-    sql_lines.append("INSERT INTO proyek (id, nama_proyek, kategori, deskripsi, latitude, longitude, wilayah_id, dinas_id, anggaran, status, progres_persen, tanggal_mulai, estimasi_selesai, dibuat_oleh) VALUES")
+    sql_lines.append("INSERT INTO proyek (id, nama_proyek, kategori, deskripsi, latitude, longitude, wilayah_id, desa_id, dinas_id, anggaran, status, progres_persen, tanggal_mulai, estimasi_selesai, dibuat_oleh) VALUES")
     p_values = []
     for p in proyek_list:
         desc_esc = p["deskripsi"].replace("'", "''")
+        desa_id_str = "NULL" if p.get("desa_id") is None else str(p["desa_id"])
         p_values.append(
-            f"({p['id']}, '{p['nama_proyek']}', '{p['kategori']}', '{desc_esc}', {p['latitude']:.6f}, {p['longitude']:.6f}, {p['wilayah_id']}, {p['dinas_id']}, {p['anggaran']:.2f}, '{p['status']}', {p['progres_persen']}, '{p['tanggal_mulai']}', '{p['estimasi_selesai']}', {p['dibuat_oleh']})"
+            f"({p['id']}, '{p['nama_proyek']}', '{p['kategori']}', '{desc_esc}', {p['latitude']:.6f}, {p['longitude']:.6f}, {p['wilayah_id']}, {desa_id_str}, {p['dinas_id']}, {p['anggaran']:.2f}, '{p['status']}', {p['progres_persen']}, '{p['tanggal_mulai']}', '{p['estimasi_selesai']}', {p['dibuat_oleh']})"
         )
     sql_lines.append(",\n".join(p_values) + ";")
     sql_lines.append("")
@@ -462,10 +491,15 @@ def run_seed():
             print("Database telah berisi data. Seeding dibatalkan.")
             return
 
-        print("1. Menambahkan data Wilayah Administratif (Kabupaten Lamongan + 27 Kecamatan)...")
+        print("1. Menambahkan data Wilayah Administratif (Kabupaten Lamongan + 27 Kecamatan + 474 Desa)...")
         wilayah_map = {{}}
         for w in RAW_WILAYAH:
-            level_enum = WilayahLevel.kabupaten if w["level"] == "kabupaten" else WilayahLevel.kecamatan
+            if w["level"] == "kabupaten":
+                level_enum = WilayahLevel.kabupaten
+            elif w["level"] == "kecamatan":
+                level_enum = WilayahLevel.kecamatan
+            else:
+                level_enum = WilayahLevel.desa
             obj = WilayahAdministratif(
                 id=w["id"],
                 kode_wilayah=w["kode_wilayah"],
@@ -475,7 +509,8 @@ def run_seed():
                 geom_boundary=w["geom_boundary"]
             )
             db.add(obj)
-            wilayah_map[w["id"]] = (obj, shape(json.loads(w["geom_boundary"])))
+            if w.get("geom_boundary"):
+                wilayah_map[w["id"]] = (obj, shape(json.loads(w["geom_boundary"])))
 
         db.commit()
 
@@ -529,6 +564,7 @@ def run_seed():
                 latitude=Decimal(str(p["latitude"])),
                 longitude=Decimal(str(p["longitude"])),
                 wilayah_id=p["wilayah_id"],
+                desa_id=p.get("desa_id"),
                 dinas_id=p["dinas_id"],
                 anggaran=Decimal(str(p["anggaran"])),
                 status=ProyekStatus(p["status"]),

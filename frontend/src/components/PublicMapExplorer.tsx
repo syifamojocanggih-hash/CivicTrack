@@ -30,9 +30,9 @@ import {
   Send,
   Compass,
   Info,
-  ChevronLeft
+  ChevronLeft,
 } from 'lucide-react';
-import type { ProyekItem, ProyekKategori, UserProfile } from '../types';
+import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem } from '../types';
 import centennialParkImg from '../assets/centennial_park.jpg';
 import { apiService } from '../services/api';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON } from '../data/geoWilayahData';
@@ -204,7 +204,9 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
   // Hierarchical Wilayah & Budget filter state
   const [selectedKecamatan, setSelectedKecamatan] = useState<string>('all');
-  const [selectedDesa, setSelectedDesa] = useState<string>('all');
+  const [selectedDesaId, setSelectedDesaId] = useState<string>('all');
+  const [desaOptions, setDesaOptions] = useState<WilayahOptionItem[]>([]);
+  const [isLoadingDesa, setIsLoadingDesa] = useState<boolean>(false);
   const [selectedBudget, setSelectedBudget] = useState<string>('all');
   const [showBoundaryPolygons, setShowBoundaryPolygons] = useState<boolean>(true);
 
@@ -243,6 +245,43 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       }
     });
   }, [projects]);
+
+  // Fetch cascading desa/kelurahan when kecamatan is selected
+  useEffect(() => {
+    if (selectedKecamatan === 'all') {
+      return;
+    }
+
+    const feat = LAMONGAN_KECAMATAN_GEOJSON?.features?.find(
+      (f: any) => f.properties?.nama === selectedKecamatan || f.properties?.kecamatan === selectedKecamatan
+    );
+    if (!feat) return;
+
+    // Kode kecamatan "35.24.XX" -> id = XX + 1 (Sukorame 01 -> ID 2, dsb)
+    const kecCode = feat.properties.id;
+    const kecNum = parseInt(kecCode.split('.')[2], 10);
+    const kecId = kecNum + 1;
+
+    let isCancelled = false;
+    setIsLoadingDesa(true);
+    apiService
+      .getWilayah('desa', kecId)
+      .then((res) => {
+        if (!isCancelled) {
+          setDesaOptions(res);
+          setIsLoadingDesa(false);
+        }
+      })
+      .catch(() => {
+        if (!isCancelled) {
+          setIsLoadingDesa(false);
+        }
+      });
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [selectedKecamatan]);
 
   // Leaflet refs
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -337,11 +376,9 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         if (!matchKec) return false;
       }
 
-      // Hierarchical Desa filter
-      if (selectedDesa !== 'all' && selectedDesa !== 'Semua Desa / Kelurahan') {
-        const cleanDesa = selectedDesa.replace('Desa ', '').replace('Kelurahan ', '').toLowerCase();
-        const matchDesa = (p.nama_wilayah || '').toLowerCase().includes(cleanDesa) || p.deskripsi.toLowerCase().includes(cleanDesa);
-        if (!matchDesa) return false;
+      // Hierarchical Desa filter (Strict relational ID comparison)
+      if (selectedDesaId !== 'all') {
+        if (p.desa_id !== Number(selectedDesaId)) return false;
       }
 
       // Budget Range filter
@@ -362,7 +399,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       }
       return true;
     });
-  }, [enrichedProjects, selectedStatus, selectedCategory, selectedKecamatan, selectedDesa, selectedBudget, searchQuery]);
+  }, [enrichedProjects, selectedStatus, selectedCategory, selectedKecamatan, selectedDesaId, selectedBudget, searchQuery]);
 
   // Selected project object
   const currentProject = useMemo(() => {
@@ -384,10 +421,11 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     if (selectedCategory !== 'all') count++;
     if (selectedStatus !== 'all') count++;
     if (selectedKecamatan !== 'all') count++;
+    if (selectedDesaId !== 'all') count++;
     if (selectedBudget !== 'all') count++;
     if (searchQuery.trim()) count++;
     return count;
-  }, [selectedCategory, selectedStatus, selectedKecamatan, selectedBudget, searchQuery]);
+  }, [selectedCategory, selectedStatus, selectedKecamatan, selectedDesaId, selectedBudget, searchQuery]);
 
   const toggleBookmark = (id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -611,7 +649,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           click: () => {
             // Decoupled: only set state. The single camera effect smoothly handles navigation!
             setSelectedKecamatan(props.nama);
-            setSelectedDesa('all');
+            setSelectedDesaId('all');
           },
         });
       },
@@ -789,7 +827,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   // Fit map view to cover all 27 Kecamatan in Kabupaten Lamongan (Smooth flyToBounds via single camera effect)
   const handleFitAllLamongan = () => {
     setSelectedKecamatan('all');
-    setSelectedDesa('all');
+    setSelectedDesaId('all');
   };
 
   const handleCenterUserLocation = () => {
@@ -1202,7 +1240,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   onChange={(e) => {
                     const val = e.target.value;
                     setSelectedKecamatan(val);
-                    setSelectedDesa('all');
+                    setSelectedDesaId('all');
                   }}
                   className="w-full appearance-none bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 outline-none cursor-pointer pr-9 focus:border-[#2563EB]"
                 >
@@ -1220,22 +1258,28 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             {/* Cascading Desa / Kelurahan Selector */}
             {selectedKecamatan !== 'all' && (
               <div className="animate-fade-in">
-                <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block mb-1.5">
-                  Desa / Kelurahan
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className="text-[11px] font-bold text-slate-700 uppercase tracking-wider block">
+                    Desa / Kelurahan
+                  </label>
+                  {isLoadingDesa && (
+                    <span className="text-[10px] text-blue-600 font-medium flex items-center gap-1">
+                      <RefreshCw className="w-3 h-3 animate-spin" /> Memuat...
+                    </span>
+                  )}
+                </div>
                 <div className="relative">
                   <select
-                    value={selectedDesa}
-                    onChange={(e) => setSelectedDesa(e.target.value)}
+                    value={selectedDesaId}
+                    onChange={(e) => setSelectedDesaId(e.target.value)}
                     className="w-full appearance-none bg-blue-50/50 hover:bg-blue-50 border border-blue-200 rounded-2xl px-3.5 py-2 text-xs font-semibold text-slate-800 outline-none cursor-pointer pr-9"
                   >
-                    {WILAYAH_DATA.kecamatanList
-                      .find((k) => k.nama === selectedKecamatan)
-                      ?.desaList.map((desa) => (
-                        <option key={desa} value={desa}>
-                          {desa}
-                        </option>
-                      ))}
+                    <option value="all">Semua Desa / Kelurahan</option>
+                    {desaOptions.map((desa) => (
+                      <option key={desa.id} value={String(desa.id)}>
+                        {desa.nama_wilayah}
+                      </option>
+                    ))}
                   </select>
                   <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
@@ -1321,7 +1365,15 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 {selectedKecamatan !== 'all' && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-purple-50 text-purple-800 border border-purple-200">
                     <span>{selectedKecamatan}</span>
-                    <button onClick={() => setSelectedKecamatan('all')} className="hover:text-purple-950 cursor-pointer">
+                    <button onClick={() => { setSelectedKecamatan('all'); setSelectedDesaId('all'); }} className="hover:text-purple-950 cursor-pointer">
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                )}
+                {selectedDesaId !== 'all' && (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
+                    <span>Desa: {desaOptions.find((d) => String(d.id) === selectedDesaId)?.nama_wilayah || selectedDesaId}</span>
+                    <button onClick={() => setSelectedDesaId('all')} className="hover:text-blue-950 cursor-pointer">
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -1339,7 +1391,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                     setSelectedCategory('all');
                     setSelectedStatus('all');
                     setSelectedKecamatan('all');
-                    setSelectedDesa('all');
+                    setSelectedDesaId('all');
                     setSelectedBudget('all');
                     setSearchQuery('');
                   }}
@@ -1429,7 +1481,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 setSelectedCategory('all');
                 setSelectedStatus('all');
                 setSelectedKecamatan('all');
-                setSelectedDesa('all');
+                setSelectedDesaId('all');
                 setSelectedBudget('all');
                 setSearchQuery('');
               }}
