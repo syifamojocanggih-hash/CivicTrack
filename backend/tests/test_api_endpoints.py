@@ -6,7 +6,7 @@ def test_full_civictrack_features_flow(client):
     # 1. Register Admin Dinas
     admin_payload = {
         "nama": "Pak Hendro Admin",
-        "email": "hendro.admin@bojonegoro.go.id",
+        "email": "hendro.admin@civictrack.demo",
         "password": "password123",
         "role": "admin_dinas"
     }
@@ -29,8 +29,8 @@ def test_full_civictrack_features_flow(client):
 
     # 3. Fitur 1: Buat Wilayah Administratif
     wilayah_payload = {
-        "kode_wilayah": "35.22.01",
-        "nama_wilayah": "Kecamatan Bojonegoro",
+        "kode_wilayah": "35.24.22",
+        "nama_wilayah": "Kecamatan Lamongan (Kota)",
         "level": "kecamatan"
     }
     w_res = client.post("/api/v1/wilayah", json=wilayah_payload, headers=admin_headers)

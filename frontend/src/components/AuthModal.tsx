@@ -66,9 +66,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   const handleQuickLogin = async (demoRole: 'warga' | 'aparatur_pemerintah' | 'penanggung_jawab') => {
     setIsLoading(true);
     setErrorMsg(null);
-    let targetEmail = 'budi.santoso@gmail.com';
-    if (demoRole === 'penanggung_jawab') targetEmail = 'admin.pu@bojonegoro.go.id';
-    if (demoRole === 'aparatur_pemerintah') targetEmail = 'pimpinan.pu@bojonegoro.go.id';
+    let targetEmail = 'budi.santoso@civictrack.demo';
+    if (demoRole === 'penanggung_jawab') targetEmail = 'admin.pu@civictrack.demo';
+    if (demoRole === 'aparatur_pemerintah') targetEmail = 'pimpinan.pu@civictrack.demo';
 
     try {
       const res = await apiService.login(targetEmail, 'password123');
@@ -81,10 +81,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         case 'penanggung_jawab':
           demoUser = {
             id: 1,
-            nama: 'Ir. Hendro Wijaya, S.T.',
-            email: 'penanggungjawab.pu@bojonegoro.go.id',
+            nama: 'Bambang Suryono, S.T.',
+            email: 'admin.pu@civictrack.demo',
             role: 'penanggung_jawab',
-            nama_dinas: 'Dinas PUPR / Tim Pelaksana Proyek',
+            nama_dinas: 'Dinas PU Bina Marga Lamongan',
             nip: '19780412 200312 1 004',
             dinas_id: 1,
           };
@@ -92,10 +92,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         case 'aparatur_pemerintah':
           demoUser = {
             id: 2,
-            nama: 'Drs. H. M. Fauzi, M.Si',
-            email: 'aparatur.pemerintah@bojonegoro.go.id',
+            nama: 'Drs. Joko Prasetyo, M.Si',
+            email: 'pimpinan.pu@civictrack.demo',
             role: 'aparatur_pemerintah',
-            nama_dinas: 'Sekretariat Daerah & Bappeda',
+            nama_dinas: 'Sekretariat Daerah & Bappeda Lamongan',
             nip: '19690815 199403 1 002',
           };
           break;
@@ -104,7 +104,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           demoUser = {
             id: 3,
             nama: 'Budi Santoso',
-            email: 'budi.santoso@gmail.com',
+            email: 'budi.santoso@civictrack.demo',
             role: 'warga',
             telepon: '081234567890',
           };

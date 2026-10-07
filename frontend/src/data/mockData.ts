@@ -177,7 +177,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
     kategori: 'jalan',
     deskripsi: 'Pembangunan jembatan melintasi Sungai Bengawan Solo untuk mempercepat mobilitas komoditas pertanian antar-kecamatan.',
     latitude: -6.9850,
-    longitude: 112.2850,
+    longitude: 112.2750,
     wilayah_id: 9,
     dinas_id: 1,
     anggaran: 9800000000,

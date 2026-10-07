@@ -141,3 +141,7 @@ dist
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
 .vite/
+
+# Diagnostic scripts (not to be committed)
+scripts/diagnostic_*.py
+scripts/test_geom_*.py

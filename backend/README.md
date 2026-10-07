@@ -98,17 +98,26 @@ Server akan aktif di:
 
 ---
 
-## Akun Demo Siap Pakai (dari `seed.sql`)
+## Akun Demo Siap Pakai (dari `seed.sql` & `seed.py`)
 
-Semua akun di bawah memiliki password: **`password123`**
+Semua akun di bawah memiliki password: **`password123`** (domain demo fiktif `@civictrack.demo`):
 
-| Role | Email | Nama | Keterangan |
+| Role | Email | Nama Fiktif | Keterangan |
 |---|---|---|---|
-| **Admin Dinas** | `admin.pu@bojonegoro.go.id` | Ir. Hendro Wijaya | Hak akses input proyek, tahapan, dokumentasi, verifikasi evaluasi |
-| **Pimpinan Instansi** | `pimpinan.pu@bojonegoro.go.id` | Drs. H. M. Fauzi, M.Si | Hak akses monitoring pimpinan seluruh proyek & dinas |
-| **Warga** | `budi.santoso@gmail.com` | Budi Santoso | Hak akses langganan proyek, rating, kirim laporan aduan |
-| **Warga** | `siti.nurhaliza@gmail.com` | Siti Nurhaliza | Hak akses pelaporan & evaluasi cacat pasca-proyek |
-| **Media / Peneliti**| `rahmat.peneliti@unair.ac.id`| Dr. Rahmat Hidayat | Akses data historis dan Open Data API |
+| **Admin Dinas** | `admin.pu@civictrack.demo` | Bambang Suryono, S.T. | Hak akses input proyek, tahapan, dokumentasi, verifikasi evaluasi |
+| **Pimpinan Instansi** | `pimpinan.pu@civictrack.demo` | Drs. Joko Prasetyo, M.Si | Hak akses monitoring pimpinan seluruh proyek & dinas |
+| **Warga** | `budi.santoso@civictrack.demo` | Budi Santoso | Hak akses langganan proyek, rating, kirim laporan aduan |
+| **Warga** | `siti.nurhaliza@civictrack.demo` | Siti Nurhaliza | Hak akses pelaporan & evaluasi cacat pasca-proyek |
+| **Media / Peneliti**| `rahmat.peneliti@civictrack.demo`| Dr. Rahmat Hidayat | Akses data historis dan Open Data API |
+
+---
+
+## Atribusi Sumber Data Wilayah Spasial
+Batas administratif 27 kecamatan Kabupaten Lamongan bersumber dari:
+- **Penyedia Data**: Badan Pusat Statistik (BPS) Republik Indonesia dan Badan Informasi Geospasial (BIG).
+- **Kompilasi Global**: UN OCHA Humanitarian Data Exchange (HDX) - [Indonesia Subnational Administrative Boundaries (COD-AB)](https://data.humdata.org/dataset/cod-ab-idn).
+- **Lisensi**: [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/) & CC BY-IGO.
+- **Keterangan Provenance**: Dataset geometri desa/kelurahan resmi BPS/BIG dari HDX diproses *dissolve* tingkat kecamatan (melalui repositori pendukung `JfrAziz/indonesia-district` yang memisahkan batas per wilayah) kemudian disederhanakan topologinya dengan Shapely untuk performa web GIS.
 
 ---
 

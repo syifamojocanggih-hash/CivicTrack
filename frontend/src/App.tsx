@@ -164,16 +164,16 @@ export function App() {
     let newDinas = currentUser.nama_dinas;
 
     if (newRole === 'penanggung_jawab' || newRole === 'admin_dinas' || newRole === 'pemerintah') {
-      newName = 'Ir. Hendro Wijaya, S.T.';
-      newEmail = 'penanggungjawab.pu@bojonegoro.go.id';
-      newDinas = 'Dinas Pekerjaan Umum & Tim Pelaksana';
+      newName = 'Bambang Suryono, S.T.';
+      newEmail = 'admin.pu@civictrack.demo';
+      newDinas = 'Dinas PU Bina Marga Lamongan';
     } else if (newRole === 'aparatur_pemerintah' || newRole === 'pimpinan_instansi') {
-      newName = 'Drs. H. M. Fauzi, M.Si';
-      newEmail = 'aparatur.pemerintah@bojonegoro.go.id';
-      newDinas = 'Sekretariat Daerah & Bappeda';
+      newName = 'Drs. Joko Prasetyo, M.Si';
+      newEmail = 'pimpinan.pu@civictrack.demo';
+      newDinas = 'Sekretariat Daerah & Bappeda Lamongan';
     } else {
       newName = 'Budi Santoso';
-      newEmail = 'budi.santoso@gmail.com';
+      newEmail = 'budi.santoso@civictrack.demo';
       newDinas = undefined;
     }
 

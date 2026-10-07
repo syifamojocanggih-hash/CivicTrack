@@ -25,7 +25,7 @@ export const MiniMapOverview: React.FC<MiniMapOverviewProps> = ({
       mapInstanceRef.current = null;
     }
 
-    // Default center: Lamongan / Bojonegoro coordinates
+    // Default center: Kabupaten Lamongan coordinates
     const defaultCenter: [number, number] = [-7.118, 112.416];
     const initialCenter =
       projects.length > 0 && projects[0].latitude && projects[0].longitude

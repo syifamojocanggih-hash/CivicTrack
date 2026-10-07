@@ -28,6 +28,7 @@ export interface BackendProjectItem {
 export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
   let cat = p.kategori.toLowerCase();
   if (cat === 'jembatan') cat = 'jalan';
+  if (cat === 'gedung_publik') cat = 'fasilitas';
   
   return {
     id: p.id,

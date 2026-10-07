@@ -30,7 +30,7 @@ def test_point_in_polygon_algorithm():
     """Memastikan algoritma ray-casting point-in-polygon bekerja akurat."""
     from app.core.spatial import point_in_ring, is_point_in_geojson
 
-    # Poligon kotak bujur sangkar sederhana (Bojonegoro dummy)
+    # Poligon kotak bujur sangkar sederhana (dummy)
     box_ring = [[111.85, -7.14], [111.91, -7.14], [111.91, -7.18], [111.85, -7.18], [111.85, -7.14]]
 
     # Titik di dalam
@@ -58,7 +58,7 @@ def test_api_point_in_polygon_rejection(client):
     # Register Admin
     admin_payload = {
         "nama": "Pak Irfan Admin",
-        "email": "irfan.admin@bojonegoro.go.id",
+        "email": "irfan.admin@civictrack.demo",
         "password": "password123",
         "role": "admin_dinas"
     }
@@ -69,7 +69,7 @@ def test_api_point_in_polygon_rejection(client):
 
     # Buat Wilayah dengan batas poligon
     wilayah_payload = {
-        "kode_wilayah": "35.22.99",
+        "kode_wilayah": "35.24.99",
         "nama_wilayah": "Kecamatan Zona Uji Spasial",
         "level": "kecamatan",
         "geom_boundary": '{"type": "Polygon", "coordinates": [[[111.85, -7.14], [111.91, -7.14], [111.91, -7.18], [111.85, -7.18], [111.85, -7.14]]]}'
@@ -119,7 +119,7 @@ def test_wilayah_geom_boundary_validation(client):
     """Pengujian penolakan geometri GeoJSON tidak valid pada pendaftaran wilayah."""
     admin_payload = {
         "nama": "Admin Wilayah Geom",
-        "email": "admin.geom@bojonegoro.go.id",
+        "email": "admin.geom@civictrack.demo",
         "password": "password123",
         "role": "admin_dinas"
     }
