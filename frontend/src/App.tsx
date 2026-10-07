@@ -250,6 +250,10 @@ export function App() {
             currentView={currentView}
             onNavigateView={(view) => setCurrentView(view as any)}
             onOpenOpenData={() => setIsOpenDataModalOpen(true)}
+            onSelectProjectNotification={(proyekId) => {
+              const proj = projects.find((p) => p.id === proyekId);
+              if (proj) setSelectedProject(proj);
+            }}
           />
 
           {/* ── HERO ── */}

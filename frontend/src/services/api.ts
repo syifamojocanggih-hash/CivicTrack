@@ -1,6 +1,5 @@
-import type { ProyekItem, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem, WilayahOptionItem } from '../types';
+import type { ProyekItem, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem, WilayahOptionItem, ApiNotificationItem, SubscriptionStatus } from '../types';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
-import { KEMENDAGRI_DESA_LIST } from '../data/kemendagriDesaData';
 
 const BASE_URL = '/api/v1';
 
@@ -127,30 +126,16 @@ export const apiService = {
     }
   },
 
-  // Fetch sub-wilayah / desa by level and parent_id
+  // Fetch sub-wilayah / desa by level and parent_id (pure API-driven)
   async getWilayah(level?: string, parentId?: number): Promise<WilayahOptionItem[]> {
-    try {
-      const params = new URLSearchParams();
-      if (level) params.append('level', level);
-      if (parentId !== undefined) params.append('parent_id', String(parentId));
-      const url = `${BASE_URL}/wilayah${params.toString() ? '?' + params.toString() : ''}`;
-      const res = await fetch(url, { headers: { Accept: 'application/json' } });
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      const data = await res.json();
-      if (Array.isArray(data) && data.length > 0) {
-        return data;
-      }
-      if (level === 'desa' && parentId !== undefined) {
-        return KEMENDAGRI_DESA_LIST.filter((d) => d.parent_id === parentId);
-      }
-      return data || [];
-    } catch (err) {
-      console.warn('Backend API /wilayah fetch failed, using Kemendagri fallback:', err);
-      if (level === 'desa' && parentId !== undefined) {
-        return KEMENDAGRI_DESA_LIST.filter((d) => d.parent_id === parentId);
-      }
-      return [];
-    }
+    const params = new URLSearchParams();
+    if (level) params.append('level', level);
+    if (parentId !== undefined) params.append('parent_id', String(parentId));
+    const url = `${BASE_URL}/wilayah${params.toString() ? '?' + params.toString() : ''}`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
   },
 
   // Login with backend
@@ -222,5 +207,111 @@ export const apiService = {
     };
 
     return { user, token };
+  },
+
+  // ── Subscription & Notifikasi ──
+
+  async checkSubscriptionStatus(projectId: number): Promise<SubscriptionStatus> {
+    const token = localStorage.getItem('civictrack_token');
+    if (!token) return { proyek_id: projectId, is_subscribed: false };
+    try {
+      const res = await fetch(`${BASE_URL}/proyek/${projectId}/subscribe/status`, {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) return { proyek_id: projectId, is_subscribed: false };
+      return await res.json();
+    } catch {
+      return { proyek_id: projectId, is_subscribed: false };
+    }
+  },
+
+  async subscribeProject(projectId: number): Promise<SubscriptionStatus> {
+    const token = localStorage.getItem('civictrack_token');
+    if (!token) throw new Error('Harap masuk terlebih dahulu untuk berlangganan notifikasi.');
+    const res = await fetch(`${BASE_URL}/proyek/${projectId}/subscribe`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Gagal berlangganan proyek.');
+    }
+    return await res.json();
+  },
+
+  async unsubscribeProject(projectId: number): Promise<SubscriptionStatus> {
+    const token = localStorage.getItem('civictrack_token');
+    if (!token) throw new Error('Harap masuk terlebih dahulu.');
+    const res = await fetch(`${BASE_URL}/proyek/${projectId}/subscribe`, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Gagal berhenti berlangganan.');
+    }
+    return await res.json();
+  },
+
+  async getNotifications(): Promise<ApiNotificationItem[]> {
+    const token = localStorage.getItem('civictrack_token');
+    if (!token) return [];
+    try {
+      const res = await fetch(`${BASE_URL}/notifikasi`, {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
+    }
+  },
+
+  async markNotificationRead(notificationId: number): Promise<ApiNotificationItem | null> {
+    const token = localStorage.getItem('civictrack_token');
+    if (!token) return null;
+    try {
+      const res = await fetch(`${BASE_URL}/notifikasi/${notificationId}/read`, {
+        method: 'PATCH',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) return null;
+      return await res.json();
+    } catch {
+      return null;
+    }
+  },
+
+  async markAllNotificationsRead(): Promise<boolean> {
+    const token = localStorage.getItem('civictrack_token');
+    if (!token) return false;
+    try {
+      const res = await fetch(`${BASE_URL}/notifikasi/read-all`, {
+        method: 'PATCH',
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
   }
 };

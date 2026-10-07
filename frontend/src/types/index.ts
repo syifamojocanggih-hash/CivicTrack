@@ -87,6 +87,21 @@ export interface NotificationItem {
   link_url?: string;
 }
 
+export interface ApiNotificationItem {
+  id: number;
+  user_id: number;
+  proyek_id: number;
+  pesan: string;
+  is_read: boolean;
+  created_at: string;
+  nama_proyek?: string;
+}
+
+export interface SubscriptionStatus {
+  proyek_id: number;
+  is_subscribed: boolean;
+}
+
 export interface AuditTrailLogItem {
   id: number;
   evaluasi_id: number;

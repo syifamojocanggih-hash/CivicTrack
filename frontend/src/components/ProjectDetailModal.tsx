@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { X, MapPin, Building, DollarSign, Star, CheckCircle, Bell, Sparkles, Send, Check } from 'lucide-react';
 import type { ProyekItem, UserProfile } from '../types';
+import { apiService } from '../services/api';
 
 interface ProjectDetailModalProps {
   project: ProyekItem | null;
@@ -21,6 +22,47 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 }) => {
   const [activeTab, setActiveTab] = useState<'timeline' | 'gallery' | 'report' | 'rating'>('timeline');
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [isSubscribing, setIsSubscribing] = useState(false);
+
+  // Sinkronisasi status langganan dari API saat modal dibuka
+  useEffect(() => {
+    if (!isOpen || !project || !currentUser) {
+      setIsSubscribed(false);
+      return;
+    }
+    let isCancelled = false;
+    apiService.checkSubscriptionStatus(project.id).then((res) => {
+      if (!isCancelled) {
+        setIsSubscribed(res.is_subscribed);
+      }
+    }).catch(() => {});
+    return () => {
+      isCancelled = true;
+    };
+  }, [isOpen, project?.id, currentUser]);
+
+  const handleToggleSubscribe = async () => {
+    if (!currentUser) {
+      onOpenAuth();
+      return;
+    }
+    if (!project || isSubscribing) return;
+
+    setIsSubscribing(true);
+    try {
+      if (isSubscribed) {
+        const res = await apiService.unsubscribeProject(project.id);
+        setIsSubscribed(res.is_subscribed);
+      } else {
+        const res = await apiService.subscribeProject(project.id);
+        setIsSubscribed(res.is_subscribed);
+      }
+    } catch (err) {
+      console.warn('Gagal mengubah status langganan proyek:', err);
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
   
   // Citizen report state
   const [reportTitle, setReportTitle] = useState('');
@@ -137,15 +179,17 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
           <div className="flex items-center gap-2">
             <button
-              onClick={() => setIsSubscribed(!isSubscribed)}
+              onClick={handleToggleSubscribe}
+              disabled={isSubscribing}
               className={`text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                 isSubscribed
-                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
                   : 'bg-white text-[#184C78] border border-[#DCE0E6] hover:bg-[#EBF4FB]'
-              }`}
+              } ${isSubscribing ? 'opacity-70 cursor-wait' : ''}`}
+              title={isSubscribed ? 'Berhenti mengikuti notifikasi proyek ini' : 'Ikuti notifikasi pembaruan progres proyek ini'}
             >
-              <Bell className="w-3.5 h-3.5" />
-              {isSubscribed ? 'Mengikuti' : 'Ikuti Notifikasi'}
+              <Bell className={`w-3.5 h-3.5 ${isSubscribed ? 'fill-emerald-700' : ''}`} />
+              {isSubscribing ? 'Memproses...' : isSubscribed ? 'Mengikuti' : 'Ikuti Notifikasi'}
             </button>
 
             {project.kategori === 'jalan' && (

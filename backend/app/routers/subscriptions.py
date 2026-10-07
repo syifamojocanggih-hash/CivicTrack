@@ -54,6 +54,7 @@ def unsubscribe_project(
 
     return SubscriptionStatusResponse(proyek_id=id, is_subscribed=False)
 
+@router.get("/proyek/{id}/subscribe/status", response_model=SubscriptionStatusResponse)
 @router.get("/proyek/{id}/subscription-status", response_model=SubscriptionStatusResponse)
 def check_subscription_status(
     id: int,
@@ -76,7 +77,7 @@ def get_user_notifications(
     """Mengambil riwayat notifikasi pengguna yang sedang login."""
     notifications = db.query(Notifikasi).filter(
         Notifikasi.user_id == current_user.id
-    ).order_by(Notifikasi.created_at.desc()).limit(50).all()
+    ).order_by(Notifikasi.created_at.desc(), Notifikasi.id.desc()).limit(50).all()
 
     result = []
     for n in notifications:

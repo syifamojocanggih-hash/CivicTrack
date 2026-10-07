@@ -1,6 +1,6 @@
 from typing import List, Optional
 from decimal import Decimal
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from sqlalchemy import func, or_
 from app.core.database import get_db
@@ -12,7 +12,7 @@ from app.schemas.project import (
     ProyekCreate, ProyekUpdate, ProyekResponse, ProyekListItem, PaginatedProyekResponse,
     TahapanCreate, TahapanResponse
 )
-from app.services.notification_service import notify_project_subscribers
+from app.services.notification_service import notify_project_subscribers, send_project_update_notifications
 from app.core.spatial import validate_coordinates_in_wilayah
 
 router = APIRouter(prefix="/proyek", tags=["Proyek Pembangunan"])
@@ -235,6 +235,7 @@ def create_project(
 def update_project(
     id: int,
     req: ProyekUpdate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
@@ -248,6 +249,9 @@ def update_project(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Anda tidak memiliki wewenang untuk mengedit proyek milik dinas lain."
         )
+
+    old_progres = proyek.progres_persen
+    old_status = proyek.status
 
     update_data = req.model_dump(exclude_unset=True)
     catatan_perubahan = update_data.pop("catatan_perubahan", None)
@@ -349,12 +353,24 @@ def update_project(
     db.commit()
     db.refresh(proyek)
 
-    # Notifikasi pembaruan data proyek ke subscriber
-    notify_project_subscribers(
-        db,
-        proyek,
-        f"Pembaruan Data: Proyek '{proyek.nama_proyek}' diperbarui. Status: {proyek.status.value}, Progres: {proyek.progres_persen}%."
-    )
+    # Notifikasi pembaruan data proyek ke subscriber via BackgroundTasks
+    progres_changed = (proyek.progres_persen != old_progres)
+    status_changed = (proyek.status != old_status)
+
+    if progres_changed or status_changed:
+        pesan_parts = []
+        if status_changed:
+            pesan_parts.append(f"Status proyek '{proyek.nama_proyek}' berubah menjadi '{proyek.status.value}'")
+        if progres_changed:
+            pesan_parts.append(f"Progres proyek '{proyek.nama_proyek}' diperbarui: {old_progres}% -> {proyek.progres_persen}%")
+        pesan_notif = ". ".join(pesan_parts) + "."
+
+        background_tasks.add_task(
+            send_project_update_notifications,
+            proyek_id=proyek.id,
+            pesan=pesan_notif,
+            exclude_user_id=current_user.id
+        )
 
     return get_project_detail(proyek.id, db)
 
@@ -362,13 +378,14 @@ def update_project(
 def add_project_stage(
     id: int,
     req: TahapanCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
     """
     Tambah Riwayat Tahapan Linimasa (Timeline) & Perbarui Progres Proyek.
     Progres tidak boleh turun tanpa catatan/keterangan memadai (>= 10 karakter).
-    Memicu notifikasi otomatis ke semua warga yang subscribe.
+    Memicu notifikasi otomatis ke semua warga yang subscribe via BackgroundTasks.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
     if not proyek:
@@ -409,8 +426,14 @@ def add_project_stage(
     db.commit()
     db.refresh(tahap)
 
-    # Pemicu notifikasi otomatis
+    # Pemicu notifikasi otomatis via BackgroundTasks
     pesan_notif = f"Pembaruan Proyek: Tahap '{req.nama_tahap}' dicatat. Progres '{proyek.nama_proyek}' mencapai {req.progres_persen}%."
-    notify_project_subscribers(db, proyek, pesan_notif)
+    background_tasks.add_task(
+        send_project_update_notifications,
+        proyek_id=proyek.id,
+        pesan=pesan_notif,
+        exclude_user_id=current_user.id
+    )
 
     return tahap
+

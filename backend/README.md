@@ -98,6 +98,20 @@ Server akan aktif di:
 
 ---
 
+## Alur Kerja Pengembangan Docker (Development Workflow & Rebuild Rules)
+
+> [!IMPORTANT]
+> **ATURAN WAJIB REBUILD IMAGE DOCKER SAAT DEPENDENSI BERUBAH:**
+> Setiap kali terdapat penambahan atau perubahan pustaka/dependensi pada:
+> - **`backend/requirements.txt`** (misal penambahan `Pillow`, `slowapi`, dll.)
+> - **`frontend/package.json`** (misal penambahan pustaka UI/NPM baru)
+> 
+> Pengembang **WAJIB** menjalankan perintah build dari root direktori proyek:
+> ```bash
+> docker compose up -d --build
+> ```
+> **PENTING: Jangan hanya menjalankan `docker compose restart`.** Perintah `restart` hanya mengulang container yang sudah ada tanpa memperbarui layer image Docker, sehingga dependensi baru tidak akan terpasang di container dan mengakibatkan error fatal saat runtime (`ModuleNotFoundError` / container crash-restart loop).
+
 ## Akun Demo Siap Pakai (dari `seed.sql` & `seed.py`)
 
 Semua akun di bawah memiliki password: **`password123`** (domain demo fiktif `@civictrack.demo`):

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Menu,
   Bell,
@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import type { UserProfile, NotificationItem } from '../../types';
 import { MOCK_DYNAMIC_NOTIFICATIONS } from '../../data/dashboardMockData';
+import { apiService } from '../../services/api';
 
 interface DashboardHeaderProps {
   currentUser: UserProfile;
@@ -27,14 +28,61 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(MOCK_DYNAMIC_NOTIFICATIONS);
 
+  useEffect(() => {
+    if (!currentUser) return;
+    let isCancelled = false;
+
+    const fetchNotifs = () => {
+      apiService.getNotifications().then((res) => {
+        if (!isCancelled && res.length > 0) {
+          const mapped: NotificationItem[] = res.map((n) => {
+            let waktu = 'Baru saja';
+            try {
+              const diff = Math.floor((Date.now() - new Date(n.created_at).getTime()) / 1000);
+              if (diff < 60) waktu = 'Baru saja';
+              else if (diff < 3600) waktu = `${Math.floor(diff / 60)} mnt lalu`;
+              else if (diff < 86400) waktu = `${Math.floor(diff / 3600)} jam lalu`;
+              else waktu = `${Math.floor(diff / 86400)} hari lalu`;
+            } catch {
+              waktu = n.created_at;
+            }
+
+            return {
+              id: n.id,
+              proyek_id: n.proyek_id,
+              nama_proyek: n.nama_proyek || '',
+              judul: n.nama_proyek ? 'Pembaruan Proyek' : 'CivicTrack Info',
+              pesan: n.pesan,
+              kategori: 'progres',
+              waktu,
+              dibaca: n.is_read,
+            };
+          });
+          setNotifications(mapped);
+        }
+      }).catch(() => {});
+    };
+
+    fetchNotifs();
+    const interval = setInterval(fetchNotifs, 30000);
+    return () => {
+      isCancelled = true;
+      clearInterval(interval);
+    };
+  }, [currentUser]);
+
   const unreadCount = notifications.filter((n) => !n.dibaca).length;
 
   const handleMarkAllRead = () => {
+    apiService.markAllNotificationsRead().catch(() => {});
     setNotifications((prev) => prev.map((n) => ({ ...n, dibaca: true })));
   };
 
   const handleNotificationClick = (item: NotificationItem) => {
     // Mark as read
+    if (!item.dibaca) {
+      apiService.markNotificationRead(item.id).catch(() => {});
+    }
     setNotifications((prev) =>
       prev.map((n) => (n.id === item.id ? { ...n, dibaca: true } : n))
     );

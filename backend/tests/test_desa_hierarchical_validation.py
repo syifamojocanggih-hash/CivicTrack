@@ -1,4 +1,7 @@
 import pytest
+import app.models
+from app.models.user import WilayahAdministratif, WilayahLevel
+from tests.conftest import TestingSessionLocal
 
 def test_wilayah_get_filter_by_parent_and_level(client):
     """
@@ -220,3 +223,110 @@ def test_proyek_create_and_update_desa_parent_child_validation(client):
     filter_empty = client.get(f"/api/v1/proyek?desa_id={d_bluluk['id']}")
     assert filter_empty.status_code == 200
     assert len(filter_empty.json()["items"]) == 0
+
+
+def test_get_wilayah_desa_by_parent_id_8_brondong(client):
+    """
+    Test 3: Verifikasi langsung GET /api/v1/wilayah?level=desa&parent_id={kec_id}
+    memastikan seluruh desa/kelurahan Kecamatan Brondong (10 desa) ter-load
+    sempurna dari database via endpoint API tanpa membutuhkan fallback statis di frontend.
+    """
+    # 1. Register Admin
+    admin_payload = {
+        "nama": "Admin Brondong Test",
+        "email": "admin.brondong@civictrack.demo",
+        "password": "password123",
+        "role": "admin_dinas"
+    }
+    reg_res = client.post("/api/v1/auth/register", json=admin_payload)
+    assert reg_res.status_code == 201
+    token = reg_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    # 2. Kabupaten Lamongan
+    kab_res = client.post("/api/v1/wilayah", json={
+        "kode_wilayah": "35.24",
+        "nama_wilayah": "Kabupaten Lamongan",
+        "level": "kabupaten",
+        "parent_id": None
+    }, headers=headers)
+    assert kab_res.status_code == 201
+    kab_id = kab_res.json()["id"]
+
+    # 3. Kecamatan Brondong
+    kec_res = client.post("/api/v1/wilayah", json={
+        "kode_wilayah": "35.24.07",
+        "nama_wilayah": "Kecamatan Brondong",
+        "level": "kecamatan",
+        "parent_id": kab_id
+    }, headers=headers)
+    assert kec_res.status_code == 201
+    kec_id = kec_res.json()["id"]
+
+    # 4. 10 Desa/Kelurahan resmi Brondong sesuai seed.sql & Kemendagri
+    brondong_desas = [
+        ("35.24.07.1010", "Kelurahan Brondong"),
+        ("35.24.07.2001", "Desa Lohgung"),
+        ("35.24.07.2002", "Desa Labuhan"),
+        ("35.24.07.2003", "Desa Sidomukti"),
+        ("35.24.07.2004", "Desa Brengkok"),
+        ("35.24.07.2005", "Desa Tlogoretno"),
+        ("35.24.07.2006", "Desa Sendangharjo"),
+        ("35.24.07.2007", "Desa Lembor"),
+        ("35.24.07.2008", "Desa Sedayulawas"),
+        ("35.24.07.2009", "Desa Sumberagung"),
+    ]
+
+    for kode, nama in brondong_desas:
+        d_res = client.post("/api/v1/wilayah", json={
+            "kode_wilayah": kode,
+            "nama_wilayah": nama,
+            "level": "desa",
+            "parent_id": kec_id
+        }, headers=headers)
+        assert d_res.status_code == 201
+
+    # 5. Tambahkan 1 kecamatan lain & 1 desa lain untuk membuktikan isolasi parent_id
+    kec_lain_res = client.post("/api/v1/wilayah", json={
+        "kode_wilayah": "35.24.08",
+        "nama_wilayah": "Kecamatan Laren",
+        "level": "kecamatan",
+        "parent_id": kab_id
+    }, headers=headers)
+    assert kec_lain_res.status_code == 201
+    kec_lain_id = kec_lain_res.json()["id"]
+
+    client.post("/api/v1/wilayah", json={
+        "kode_wilayah": "35.24.08.2001",
+        "nama_wilayah": "Desa Bulutigo",
+        "level": "desa",
+        "parent_id": kec_lain_id
+    }, headers=headers)
+
+    # 6. Eksekusi GET /api/v1/wilayah?level=desa&parent_id={kec_id}
+    res = client.get(f"/api/v1/wilayah?level=desa&parent_id={kec_id}")
+    assert res.status_code == 200
+    data = res.json()
+
+    # 7. Verifikasi
+    assert len(data) == 10
+    desa_names = [item["nama_wilayah"] for item in data]
+    assert "Kelurahan Brondong" in desa_names
+    assert "Desa Lohgung" in desa_names
+    assert "Desa Labuhan" in desa_names
+    assert "Desa Sidomukti" in desa_names
+    assert "Desa Brengkok" in desa_names
+    assert "Desa Tlogoretno" in desa_names
+    assert "Desa Sendangharjo" in desa_names
+    assert "Desa Lembor" in desa_names
+    assert "Desa Sedayulawas" in desa_names
+    assert "Desa Sumberagung" in desa_names
+
+    # Pastikan desa dari kecamatan lain TIDAK ikut terbawa
+    assert "Desa Bulutigo" not in desa_names
+
+    for item in data:
+        assert item["level"] == "desa"
+        assert item["parent_id"] == kec_id
+
+

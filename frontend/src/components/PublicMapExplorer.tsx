@@ -36,7 +36,6 @@ import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem } from 
 import centennialParkImg from '../assets/centennial_park.jpg';
 import { apiService } from '../services/api';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON } from '../data/geoWilayahData';
-import { KEMENDAGRI_DESA_LIST } from '../data/kemendagriDesaData';
 
 // Bounding box resmi gabungan seluruh 27 Kecamatan di Kab. Lamongan (dihitung dari poligon GeoJSON BPS/BIG)
 const ALL_LAMONGAN_BOUNDS: L.LatLngBoundsExpression = [
@@ -208,6 +207,8 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [selectedDesaId, setSelectedDesaId] = useState<string>('all');
   const [desaOptions, setDesaOptions] = useState<WilayahOptionItem[]>([]);
   const [isLoadingDesa, setIsLoadingDesa] = useState<boolean>(false);
+  const [desaLoadError, setDesaLoadError] = useState<boolean>(false);
+  const [desaRetryCount, setDesaRetryCount] = useState<number>(0);
   const [selectedBudget, setSelectedBudget] = useState<string>('all');
   const [showBoundaryPolygons, setShowBoundaryPolygons] = useState<boolean>(true);
 
@@ -247,11 +248,12 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     });
   }, [projects]);
 
-  // Fetch cascading desa/kelurahan when kecamatan is selected
+  // Fetch cascading desa/kelurahan when kecamatan is selected (pure API-driven)
   useEffect(() => {
     if (selectedKecamatan === 'all') {
       setDesaOptions([]);
       setSelectedDesaId('all');
+      setDesaLoadError(false);
       return;
     }
 
@@ -274,28 +276,29 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       }
     }
 
-    // 1. Immediately provide synchronous fallback from KEMENDAGRI_DESA_LIST (zero latency)
-    if (kecId) {
-      const initialOptions = KEMENDAGRI_DESA_LIST.filter((d) => d.parent_id === kecId);
-      setDesaOptions(initialOptions);
-    } else {
+    if (!kecId) {
       setDesaOptions([]);
+      return;
     }
 
-    if (!kecId) return;
-
-    // 2. Fetch latest data from backend API
     let isCancelled = false;
     setIsLoadingDesa(true);
+    setDesaLoadError(false);
+
     apiService
       .getWilayah('desa', kecId)
       .then((res) => {
-        if (!isCancelled && Array.isArray(res) && res.length > 0) {
-          setDesaOptions(res);
+        if (!isCancelled) {
+          setDesaOptions(Array.isArray(res) ? res : []);
+          setDesaLoadError(false);
         }
       })
       .catch((err) => {
-        console.warn('API getWilayah desa error, keeping fallback:', err);
+        if (!isCancelled) {
+          console.warn('Gagal memuat daftar desa dari backend API:', err);
+          setDesaLoadError(true);
+          setDesaOptions([]);
+        }
       })
       .finally(() => {
         if (!isCancelled) {
@@ -306,7 +309,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [selectedKecamatan]);
+  }, [selectedKecamatan, desaRetryCount]);
 
   // Leaflet refs
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
@@ -1293,21 +1296,35 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                     </span>
                   )}
                 </div>
-                <div className="relative">
-                  <select
-                    value={selectedDesaId}
-                    onChange={(e) => setSelectedDesaId(e.target.value)}
-                    className="w-full appearance-none bg-blue-50/50 hover:bg-blue-50 border border-blue-200 rounded-2xl px-3.5 py-2 text-xs font-semibold text-slate-800 outline-none cursor-pointer pr-9"
-                  >
-                    <option value="all">Semua Desa / Kelurahan</option>
-                    {desaOptions.map((desa) => (
-                      <option key={desa.id} value={String(desa.id)}>
-                        {desa.nama_wilayah}
-                      </option>
-                    ))}
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
+                {desaLoadError ? (
+                  <div className="p-2.5 bg-rose-50 border border-rose-200 rounded-2xl flex items-center justify-between text-xs text-rose-700">
+                    <span className="font-medium text-[11px]">Gagal memuat daftar desa</span>
+                    <button
+                      type="button"
+                      onClick={() => setDesaRetryCount((c) => c + 1)}
+                      className="px-2 py-1 bg-white hover:bg-rose-100/60 border border-rose-300 rounded-lg text-[11px] font-bold text-rose-700 flex items-center gap-1 cursor-pointer transition-colors"
+                    >
+                      <RefreshCw className="w-3 h-3" /> Coba Lagi
+                    </button>
+                  </div>
+                ) : (
+                  <div className="relative">
+                    <select
+                      value={selectedDesaId}
+                      onChange={(e) => setSelectedDesaId(e.target.value)}
+                      disabled={isLoadingDesa}
+                      className="w-full appearance-none bg-blue-50/50 hover:bg-blue-50 border border-blue-200 rounded-2xl px-3.5 py-2 text-xs font-semibold text-slate-800 outline-none cursor-pointer pr-9 disabled:opacity-60"
+                    >
+                      <option value="all">Semua Desa / Kelurahan</option>
+                      {desaOptions.map((desa) => (
+                        <option key={desa.id} value={String(desa.id)}>
+                          {desa.nama_wilayah}
+                        </option>
+                      ))}
+                    </select>
+                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  </div>
+                )}
               </div>
             )}
 
