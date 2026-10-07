@@ -1,5 +1,5 @@
 import json
-from typing import Optional, List
+from typing import Optional, List, Union, Any
 from datetime import datetime
 from pydantic import BaseModel, Field, ConfigDict, field_validator
 try:
@@ -11,6 +11,50 @@ except ImportError:
     shape = None
     explain_validity = None
 from app.models.user import WilayahLevel
+
+def parse_geojson_to_shape(geom_boundary: Union[str, dict, Any]):
+    """
+    Mengurai GeoJSON (string JSON atau dict Polygon, MultiPolygon, Feature, atau FeatureCollection)
+    menjadi objek Shapely geometry. Mengembalikan None jika input kosong, tidak valid, atau jika Shapely tidak terpasang.
+    """
+    if not HAS_SHAPELY or not shape or not geom_boundary:
+        return None
+
+    if isinstance(geom_boundary, str):
+        try:
+            geom_data = json.loads(geom_boundary)
+        except Exception:
+            return None
+    elif isinstance(geom_boundary, dict):
+        geom_data = geom_boundary
+    else:
+        return None
+
+    if not isinstance(geom_data, dict):
+        return None
+
+    gtype = geom_data.get("type")
+    target_geom = geom_data
+    if gtype == "Feature":
+        target_geom = geom_data.get("geometry", {})
+    elif gtype == "FeatureCollection":
+        features = geom_data.get("features", [])
+        if not features:
+            return None
+        if len(features) == 1:
+            target_geom = features[0].get("geometry", {})
+        else:
+            try:
+                from shapely.ops import unary_union
+                shapes = [shape(f.get("geometry", {})) for f in features if f.get("geometry")]
+                return unary_union(shapes)
+            except Exception:
+                target_geom = features[0].get("geometry", {})
+
+    try:
+        return shape(target_geom)
+    except Exception:
+        return None
 
 def _segments_intersect(p1, p2, p3, p4):
     def ccw(a, b, c):
@@ -72,17 +116,8 @@ class WilayahCreate(WilayahBase):
 
         if HAS_SHAPELY and shape:
             try:
-                target_geom = geom_data
-                if gtype == "Feature":
-                    target_geom = geom_data.get("geometry", {})
-                elif gtype == "FeatureCollection":
-                    features = geom_data.get("features", [])
-                    if not features:
-                        raise ValueError("FeatureCollection tidak boleh kosong.")
-                    target_geom = features[0].get("geometry", {})
-                
-                s = shape(target_geom)
-                if s.is_empty:
+                s = parse_geojson_to_shape(geom_data)
+                if s is None or s.is_empty:
                     raise ValueError("Geometri poligon tidak boleh kosong.")
                 if not s.is_valid:
                     raise ValueError(f"Geometri poligon tidak valid: {explain_validity(s)}")

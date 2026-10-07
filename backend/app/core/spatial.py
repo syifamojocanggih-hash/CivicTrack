@@ -1,10 +1,66 @@
 import json
 import logging
+import math
 from typing import List, Tuple, Optional, Union, Any
 from sqlalchemy.orm import Session
 from app.models.user import WilayahAdministratif
+from app.schemas.wilayah import HAS_SHAPELY, parse_geojson_to_shape
+
+if HAS_SHAPELY:
+    from shapely.geometry import Point
+    from shapely.ops import nearest_points
 
 logger = logging.getLogger(__name__)
+
+def haversine_distance_meters(lat1: float, lon1: float, lat2: float, lon2: float) -> float:
+    """
+    Menghitung jarak geodetik (great-circle) antara dua koordinat (lat, lon)
+    dalam satuan meter menggunakan rumus Haversine.
+    """
+    R = 6371000.0  # Jari-jari bumi rata-rata dalam meter
+    phi1, phi2 = math.radians(lat1), math.radians(lat2)
+    dphi = math.radians(lat2 - lat1)
+    dlambda = math.radians(lon2 - lon1)
+    a = math.sin(dphi / 2.0) ** 2 + math.cos(phi1) * math.cos(phi2) * math.sin(dlambda / 2.0) ** 2
+    c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
+    return R * c
+
+def calculate_distance_to_boundary_meters(geom_shape, latitude: float, longitude: float) -> float:
+    """
+    Menghitung jarak terpendek dari titik koordinat (latitude, longitude)
+    ke batas terluar poligon wilayah dalam meter.
+    """
+    if not HAS_SHAPELY or geom_shape is None:
+        return 0.0
+
+    try:
+        pt = Point(longitude, latitude)
+        nearest_poly_pt, _ = nearest_points(geom_shape, pt)
+        return haversine_distance_meters(latitude, longitude, nearest_poly_pt.y, nearest_poly_pt.x)
+    except Exception as e:
+        logger.warning(f"Gagal menghitung nearest_points dengan shapely: {e}")
+        try:
+            pt = Point(longitude, latitude)
+            dist_deg = geom_shape.distance(pt)
+            return dist_deg * 111320.0
+        except Exception:
+            return 0.0
+
+def is_point_in_shapely_geometry(geom_shape, latitude: float, longitude: float) -> bool:
+    """
+    Mengecek apakah titik (longitude, latitude) berada di dalam atau pada tepi poligon
+    menggunakan Shapely dan toleransi batas .buffer(0).
+    """
+    if not HAS_SHAPELY or geom_shape is None:
+        return False
+
+    try:
+        pt = Point(longitude, latitude)
+        poly_clean = geom_shape.buffer(0) if hasattr(geom_shape, "buffer") else geom_shape
+        return bool(poly_clean.contains(pt) or poly_clean.covers(pt))
+    except Exception as e:
+        logger.warning(f"Gagal validasi is_point_in_shapely_geometry: {e}")
+        return False
 
 def point_in_ring(x: float, y: float, ring: List[Any]) -> bool:
     """
@@ -96,9 +152,16 @@ def is_point_in_geojson(latitude: float, longitude: float, geom_boundary: Union[
     """
     Mem-parse string atau dictionary GeoJSON (Geometry, Feature, atau FeatureCollection)
     dan memverifikasi apakah titik (latitude, longitude) berada di dalam batas poligon.
+    Memprioritaskan Shapely jika terpasang, dengan fallback algoritma ray-casting.
     """
     if not geom_boundary:
         return True
+
+    # Gunakan Shapely jika tersedia
+    if HAS_SHAPELY:
+        shape_geom = parse_geojson_to_shape(geom_boundary)
+        if shape_geom is not None:
+            return is_point_in_shapely_geometry(shape_geom, latitude, longitude)
 
     try:
         data = json.loads(geom_boundary) if isinstance(geom_boundary, str) else geom_boundary
@@ -135,8 +198,11 @@ def validate_coordinates_in_wilayah(
     """
     Validasi Spasial Point-in-Polygon (PRD 10.1 & PRD 10.4):
     Memastikan koordinat (latitude, longitude) proyek berada di dalam poligon
-    wilayah administratif yang dipilih. Jika wilayah belum memiliki batas spesifik,
-    pemeriksaan akan menelusuri wilayah induk (hierarki kecamatan/kabupaten).
+    wilayah administratif yang dipilih menggunakan Shapely (.buffer(0).contains() / .covers()).
+    
+    Jika titik berada di luar batas wilayah, mengembalikan pesan jelas beserta
+    jarak terdekat ke batas poligon dalam meter (seperti pola error generate_seed.py).
+    Jika wilayah belum memiliki batas spesifik, pemeriksaan akan menelusuri wilayah induk.
     """
     wilayah = db.query(WilayahAdministratif).filter(WilayahAdministratif.id == wilayah_id).first()
     if not wilayah:
@@ -149,6 +215,24 @@ def validate_coordinates_in_wilayah(
     while current:
         if current.geom_boundary:
             checked_wilayah_name = current.nama_wilayah
+
+            # Validasi berbasis Shapely (reusable dari schemas/wilayah)
+            if HAS_SHAPELY:
+                shape_geom = parse_geojson_to_shape(current.geom_boundary)
+                if shape_geom is not None:
+                    is_inside = is_point_in_shapely_geometry(shape_geom, latitude, longitude)
+                    if not is_inside:
+                        dist_meters = calculate_distance_to_boundary_meters(shape_geom, latitude, longitude)
+                        return (
+                            False,
+                            f"Koordinat ({latitude:.6f}, {longitude:.6f}) berada di luar batas poligon "
+                            f"wilayah administratif '{checked_wilayah_name}' "
+                            f"(jarak ke batas terdekat: ~{dist_meters:.1f} meter). "
+                            f"Koordinat proyek harus berada di dalam batas wilayah yang terdaftar (point-in-polygon)."
+                        )
+                    return True, None
+
+            # Fallback ray-casting jika Shapely tidak tersedia
             is_inside = is_point_in_geojson(
                 latitude=latitude,
                 longitude=longitude,
@@ -157,7 +241,7 @@ def validate_coordinates_in_wilayah(
             if not is_inside:
                 return (
                     False,
-                    f"Titik koordinat ({latitude:.6f}, {longitude:.6f}) berada di luar batas poligon "
+                    f"Koordinat ({latitude:.6f}, {longitude:.6f}) berada di luar batas poligon "
                     f"wilayah administratif '{checked_wilayah_name}'. "
                     f"Koordinat proyek harus berada di dalam batas wilayah yang terdaftar (point-in-polygon)."
                 )

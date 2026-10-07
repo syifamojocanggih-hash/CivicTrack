@@ -145,3 +145,14 @@ vite.config.ts.timestamp-*
 # Diagnostic scripts (not to be committed)
 scripts/diagnostic_*.py
 scripts/test_geom_*.py
+
+# Uploads directory
+uploads/
+backend/uploads/
+
+# Python cache & venv
+__pycache__/
+*.py[cod]
+*$py.class
+backend/venv/
+.pytest_cache/

@@ -156,7 +156,7 @@ def create_project(
         wilayah_id=req.wilayah_id
     )
     if not is_valid_coords:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=coord_err)
+        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=coord_err)
 
     # Jika admin dinas, pastikan dinas sesuai dengan instansinya jika terikat
     if current_user.role == UserRole.admin_dinas and current_user.dinas_id and current_user.dinas_id != req.dinas_id:
@@ -223,11 +223,25 @@ def update_project(
     # Validasi aturan PRD 10.1: Progres tidak boleh menurun tanpa keterangan
     if "progres_persen" in update_data and update_data["progres_persen"] is not None:
         new_progres = update_data["progres_persen"]
-        if new_progres < proyek.progres_persen and not catatan_perubahan:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Penurunan persentase progres wajib menyertakan alasan keterangan (catatan_perubahan), misal revisi teknis atau penghentian sementara."
+        if new_progres < proyek.progres_persen:
+            clean_alasan = catatan_perubahan.strip() if catatan_perubahan else ""
+            if len(clean_alasan) < 10:
+                raise HTTPException(
+                    status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                    detail=(
+                        f"Progres tidak boleh diturunkan dari {proyek.progres_persen}% ke {new_progres}% tanpa keterangan. "
+                        f"Isi kolom catatan dengan alasan (contoh: revisi anggaran, proyek dihentikan sementara)."
+                    )
+                )
+            # Catat entri histori ke tahapan_progres (audit trail linimasa)
+            histori_tahap = TahapanProgres(
+                proyek_id=proyek.id,
+                nama_tahap=f"Penyesuaian Progres ({proyek.progres_persen}% -> {new_progres}%)",
+                progres_persen=new_progres,
+                catatan=clean_alasan,
+                dicatat_oleh=current_user.id
             )
+            db.add(histori_tahap)
 
     # Validasi Spasial PRD 10.1 jika koordinat atau wilayah diubah (Point-in-Polygon)
     if any(k in update_data for k in ["latitude", "longitude", "wilayah_id"]):
@@ -242,7 +256,7 @@ def update_project(
             wilayah_id=check_wil_id
         )
         if not is_valid_coords:
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=coord_err)
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=coord_err)
 
     for field, value in update_data.items():
         setattr(proyek, field, value)
@@ -272,7 +286,7 @@ def add_project_stage(
 ):
     """
     Tambah Riwayat Tahapan Linimasa (Timeline) & Perbarui Progres Proyek.
-    Progres tidak boleh turun tanpa catatan/keterangan.
+    Progres tidak boleh turun tanpa catatan/keterangan memadai (>= 10 karakter).
     Memicu notifikasi otomatis ke semua warga yang subscribe.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
@@ -285,18 +299,23 @@ def add_project_stage(
             detail="Hanya dinas penanggung jawab yang berwenang menambahkan tahapan progres proyek ini."
         )
 
-    # Validasi aturan PRD 10.1: Penurunan progres wajib memiliki catatan
-    if req.progres_persen < proyek.progres_persen and not req.catatan:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Penurunan persentase progres tidak diizinkan tanpa catatan/keterangan resmi (misal: revisi spesifikasi)."
-        )
+    # Validasi aturan PRD 10.1: Penurunan progres wajib memiliki catatan memadai (>= 10 karakter)
+    if req.progres_persen < proyek.progres_persen:
+        clean_catatan = req.catatan.strip() if req.catatan else ""
+        if len(clean_catatan) < 10:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=(
+                    f"Progres tidak boleh diturunkan dari {proyek.progres_persen}% ke {req.progres_persen}% tanpa keterangan. "
+                    f"Isi kolom catatan dengan alasan (contoh: revisi anggaran, proyek dihentikan sementara)."
+                )
+            )
 
     tahap = TahapanProgres(
         proyek_id=proyek.id,
         nama_tahap=req.nama_tahap,
         progres_persen=req.progres_persen,
-        catatan=req.catatan,
+        catatan=req.catatan.strip() if req.catatan else None,
         dicatat_oleh=current_user.id
     )
     db.add(tahap)

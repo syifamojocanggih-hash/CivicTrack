@@ -23,7 +23,9 @@ class Settings(BaseSettings):
     # Penyimpanan Berkas Media
     UPLOAD_DIR: str = "uploads"
     MAX_FILE_SIZE_MB: int = 25
-    ALLOWED_EXTENSIONS: str = "jpg,jpeg,png,webp,mp4,mov"
+    MAX_IMAGE_SIZE_MB: int = 10
+    MAX_VIDEO_SIZE_MB: int = 30
+    ALLOWED_EXTENSIONS: str = "jpg,jpeg,png,webp,mp4,mov,avi,webm"
 
     @property
     def allowed_extensions_list(self) -> List[str]:

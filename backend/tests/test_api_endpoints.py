@@ -87,7 +87,7 @@ def test_full_civictrack_features_flow(client):
         "catatan": None
     }
     fail_res = client.post(f"/api/v1/proyek/{proyek_id}/tahapan", json=tahap_turun_tanpa_catatan, headers=admin_headers)
-    assert fail_res.status_code == 400
+    assert fail_res.status_code == 422
 
     # 9. Cek Notifikasi Warga setelah update tahapan (Fitur 6)
     notif_res = client.get("/api/v1/notifikasi", headers=warga_headers)

@@ -136,3 +136,27 @@ Hasil uji:
 - `test_profanity_detector`: Filter deteksi kata-kata tidak pantas
 - `test_profanity_sanitizer`: Sensor otomatis teks aduan masyarakat
 - `test_password_hash_and_verify`: Validasi keamanan hash bcrypt kata sandi
+- `test_point_in_polygon_algorithm` & `test_api_point_in_polygon_rejection`: Validasi geospasial koordinat terhadap poligon batas wilayah (Point-in-Polygon)
+- `test_progres_persen_validation`: Validasi integritas persentase progres dan audit trail penurunan progres
+- `test_media_upload_security_validation`: Validasi integritas biner, pencegahan file executable/spoofing, dan pembatasan ukuran media
+
+---
+
+## Keamanan Unggahan Berkas Media (Security & File Integrity)
+
+Sesuai ketentuan **PRD Bagian 10.1**, berkas dokumentasi fisik dan bukti evaluasi diproteksi dengan mekanisme validasi biner mendalam (*in-process integrity check*):
+
+1. **Pemeriksaan Signature Biner (*Magic Bytes*)**:
+   - Memeriksa header biner berkas asli (JPEG: `\xFF\xD8\xFF`, PNG: `\x89PNG`, WebP: `RIFF...WEBP`, MP4/MOV: `...ftyp`, WebM: `\x1A\x45\xDF\xA3`, AVI: `RIFF...AVI`).
+   - Mencegah teknik *masquerading* (file executable Windows `MZ`, ELF Linux, skrip PHP/HTML/Shell, atau arsip ZIP/RAR yang di-rename menjadi `.jpg` atau `.mp4`).
+2. **Pillow Deep Verification**:
+   - Berkas citra diverifikasi menggunakan library `Pillow` (`Image.open().verify()`) sebelum disimpan ke media storage guna memastikan chunk file tidak rusak (*corrupted*) dan mencegah eksploitasi *polyglot file*.
+3. **Batas Ukuran Berkas Spesifik**:
+   - Berkas Foto: Maksimal **10 MB**.
+   - Berkas Video: Maksimal **30 MB**.
+4. **Pencegahan Berkas Sampah (*Zero-Garbage Pre-Write*)**:
+   - Seluruh validasi dilakukan di memory stream sebelum file ditulis ke disk/volume. Jika ditolak (HTTP 422), tidak ada file sementara yang tersisa di storage.
+
+> **Catatan Arsitektur Keamanan**:
+> Validasi ini menjamin integritas struktural dan signature format berkas (bukan pemindaian virus universal dengan database malware signature).
+> **Roadmap Skala Enterprise (Pengembangan Lanjutan)**: Untuk deployment produksi skala besar dengan volume publik masif, arsitektur dapat ditingkatkan dengan menambahkan service kontainer **ClamAV Antivirus Daemon** (`clamav/clamav:latest` via socket `pyclamd` port 3310) pada `docker-compose.yml` untuk pemindaian signature malware sebelum berkas diteruskan ke object storage (S3/MinIO).

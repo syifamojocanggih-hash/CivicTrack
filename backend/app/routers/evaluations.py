@@ -175,6 +175,8 @@ def verify_evaluation(
 
     return get_evaluation_detail(eval_id, db)
 
+from app.core.file_security import validate_and_process_media_upload
+
 @router.post("/evaluasi/{eval_id}/dokumentasi", response_model=DokumentasiEvaluasiResponse, status_code=status.HTTP_201_CREATED)
 def upload_evaluation_proof(
     eval_id: int,
@@ -182,21 +184,16 @@ def upload_evaluation_proof(
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
-    """Mengunggah foto atau video bukti kerusakan fisik pasca-proyek."""
+    """
+    Mengunggah foto atau video bukti kerusakan fisik pasca-proyek.
+    Dilengkapi validasi keamanan biner (magic bytes), batas ukuran foto/video, dan integritas Pillow.
+    """
     evaluasi = db.query(EvaluasiPembangunan).filter(EvaluasiPembangunan.id == eval_id).first()
     if not evaluasi:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluasi tidak ditemukan.")
 
-    original_filename = file.filename or ""
-    ext = original_filename.rsplit(".", 1)[-1].lower() if "." in original_filename else ""
-    if ext not in settings.allowed_extensions_list:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Format file tidak didukung. Ekstensi yang diizinkan: {settings.ALLOWED_EXTENSIONS}"
-        )
-
-    video_exts = ["mp4", "mov", "avi", "webm"]
-    tipe_media = MediaType.video if ext in video_exts else MediaType.foto
+    # Validasi keamanan mendalam (ekstensi, MIME warning, magic bytes, Pillow verify, ukuran spesifik)
+    tipe_media, content, ext, size_kb = validate_and_process_media_upload(file)
 
     upload_dir = os.path.join(os.getcwd(), settings.UPLOAD_DIR)
     os.makedirs(upload_dir, exist_ok=True)
@@ -204,18 +201,32 @@ def upload_evaluation_proof(
     unique_name = f"eval_{eval_id}_{uuid.uuid4().hex[:10]}.{ext}"
     target_path = os.path.join(upload_dir, unique_name)
 
-    with open(target_path, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    try:
+        with open(target_path, "wb") as buffer:
+            buffer.write(content)
+    except Exception as e:
+        if os.path.exists(target_path):
+            os.remove(target_path)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Gagal menyimpan berkas ke media storage: {str(e)}"
+        )
 
     file_url = f"/uploads/{unique_name}"
 
-    dok = DokumentasiEvaluasi(
-        evaluasi_id=eval_id,
-        tipe_media=tipe_media,
-        url_file=file_url
-    )
-    db.add(dok)
-    db.commit()
-    db.refresh(dok)
+    try:
+        dok = DokumentasiEvaluasi(
+            evaluasi_id=eval_id,
+            tipe_media=tipe_media,
+            url_file=file_url
+        )
+        db.add(dok)
+        db.commit()
+        db.refresh(dok)
+    except Exception:
+        db.rollback()
+        if os.path.exists(target_path):
+            os.remove(target_path)
+        raise
 
     return dok

@@ -192,7 +192,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
 
   // UX & Visual states (Legenda peta & Responsivitas Mobile)
-  const [isLegendOpen, setIsLegendOpen] = useState(true);
+  const [isLegendOpen, setIsLegendOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Right Detail Drawer Tabs & Citizen Report form
@@ -415,16 +415,19 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
     // Inisialisasi Peta Leaflet dengan Pembatasan Wilayah Kabupaten Lamongan
+    const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
+    const responsiveMinZoom = isMobile ? 9 : 10;
+
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
-      minZoom: 10,
+      minZoom: responsiveMinZoom,
       maxBounds: LAMONGAN_MAX_BOUNDS,
       maxBoundsViscosity: 1.0,
     });
 
     // Inisialisasi awal: langsung sesuaikan batas pandang ke seluruh 27 kecamatan Lamongan
     map.fitBounds(ALL_LAMONGAN_BOUNDS, {
-      padding: [30, 30],
+      padding: isMobile ? [15, 15] : [30, 30],
       maxZoom: 12,
     });
 
@@ -927,33 +930,128 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           className="w-full h-full z-0 outline-none"
         />
 
-        {/* ── FLOATING ACTIVE DISTRICT BANNER (Google Maps Style) ── */}
-        {selectedKecamatan !== 'all' && (
-          <div
-            className={`absolute top-4 z-20 flex items-center gap-2.5 bg-white/95 backdrop-blur-md border border-blue-200/90 shadow-xl rounded-2xl px-4 py-2 text-xs font-semibold text-slate-800 transition-all duration-300 animate-fade-in ${
-              isDetailPanelOpen
-                ? 'left-4 sm:left-[210px]'
-                : isSidebarCollapsed
-                  ? 'left-4 sm:left-[170px]'
-                  : 'left-4 sm:left-[410px] xl:left-[440px]'
-            }`}
-          >
-            <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse"></span>
-            <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block -mb-0.5">Batas Wilayah Terpilih</span>
-              <strong className="text-[#184C78] font-bold text-xs">{selectedKecamatan}</strong>
+        {/* ── TOP-LEFT MAP OVERLAYS: ACTIVE DISTRICT BANNER & LEGENDA PETA ── */}
+        <div
+          className={`absolute top-4 z-20 flex flex-wrap items-center gap-2.5 transition-all duration-300 ${
+            isDetailPanelOpen
+              ? 'left-4 sm:left-[210px]'
+              : isSidebarCollapsed
+                ? 'left-4 sm:left-[70px]'
+                : 'left-4 sm:left-[410px] xl:left-[440px]'
+          }`}
+        >
+          {/* Active District Banner if selected */}
+          {selectedKecamatan !== 'all' && (
+            <div className="flex items-center gap-2.5 bg-white/95 backdrop-blur-md border border-blue-200/90 shadow-xl rounded-2xl px-3.5 py-2 text-xs font-semibold text-slate-800 animate-fade-in">
+              <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse shrink-0"></span>
+              <div>
+                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block -mb-0.5">Batas Wilayah Terpilih</span>
+                <strong className="text-[#184C78] font-bold text-xs">{selectedKecamatan}</strong>
+              </div>
+              <span className="h-4 w-px bg-slate-200" />
+              <span className="text-slate-600 text-[11px] font-bold">{filteredProjects.length} Proyek</span>
+              <button
+                onClick={handleFitAllLamongan}
+                className="ml-0.5 p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                title="Kembali ke Seluruh Kabupaten Lamongan"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
             </div>
-            <span className="h-4 w-px bg-slate-200" />
-            <span className="text-slate-600 text-[11px] font-bold">{filteredProjects.length} Proyek</span>
+          )}
+
+          {/* Legenda Peta Dropdown Button in Top-Left */}
+          <div className="relative">
             <button
-              onClick={handleFitAllLamongan}
-              className="ml-1 p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-              title="Kembali ke Seluruh Kabupaten Lamongan"
+              onClick={() => setIsLegendOpen(!isLegendOpen)}
+              className={`bg-white/95 backdrop-blur-md hover:bg-white border shadow-md rounded-2xl px-3 py-2 text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer hover:shadow-lg transition-all ${
+                isLegendOpen ? 'border-blue-400 ring-2 ring-blue-100 text-blue-700' : 'border-slate-200/90'
+              }`}
+              title={isLegendOpen ? 'Tutup Legenda Peta' : 'Buka Legenda Peta'}
             >
-              <X className="w-3.5 h-3.5" />
+              <Info className="w-3.5 h-3.5 text-blue-600" />
+              <span>Legenda</span>
+              <ChevronDown className={`w-3.5 h-3.5 text-slate-400 transition-transform duration-200 ${isLegendOpen ? 'rotate-180' : ''}`} />
             </button>
+
+            {/* Legenda Popover Card */}
+            {isLegendOpen && (
+              <div className="absolute top-full mt-2 left-0 bg-white/98 backdrop-blur-md border border-slate-200/90 shadow-2xl rounded-2xl p-3.5 w-64 animate-fade-in text-xs space-y-2.5 z-30">
+                <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
+                  <span className="font-['DM_Sans'] font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                    <Info className="w-3.5 h-3.5 text-blue-600" />
+                    Legenda Peta
+                  </span>
+                  <button
+                    onClick={() => setIsLegendOpen(false)}
+                    className="p-0.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+                    title="Tutup Legenda"
+                  >
+                    <X className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+
+                {/* Kategori Ikon */}
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    Kategori Proyek
+                  </span>
+                  <div className="grid grid-cols-2 gap-1.5 text-[11px] font-medium text-slate-700">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-md bg-[#2563EB] shrink-0"></span>
+                      <span>Jalan</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-md bg-[#059669] shrink-0"></span>
+                      <span>Taman</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-md bg-[#0891B2] shrink-0"></span>
+                      <span>Drainase</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-md bg-[#7C3AED] shrink-0"></span>
+                      <span>Fasilitas</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Status Progres */}
+                <div>
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                    Status Progres Pin
+                  </span>
+                  <div className="space-y-1 text-[11px] font-medium text-slate-700">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
+                      <span>&lt; 30% (Tahap Awal)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
+                      <span>30% - 70% (Konstruksi)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
+                      <span>&gt; 70% (Finishing / Siap)</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Batas Kecamatan */}
+                <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 font-medium">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-0.5 bg-[#0369A1] shrink-0"></span>
+                    <span>27 Kecamatan</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-3.5 h-0.5 bg-[#1D4ED8] ring-1 ring-blue-300 shrink-0"></span>
+                    <span>Terpilih</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
 
         {/* ── FLOATING REOPEN SEARCH BUTTON (When Detail is Open) ── */}
         {isDetailPanelOpen && (
@@ -1924,100 +2022,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               <Minus className="w-4 h-4" />
             </button>
           </div>
-        </div>
-
-        {/* ── FLOATING INTERACTIVE MAP LEGEND (Langkah 3) ── */}
-        <div className={`absolute bottom-5 z-20 transition-all duration-300 ${
-          isDetailPanelOpen
-            ? 'left-4 sm:left-[210px]'
-            : isSidebarCollapsed
-              ? 'left-4'
-              : 'left-4 sm:left-[410px] xl:left-[440px]'
-        }`}>
-          {isLegendOpen ? (
-            <div className="bg-white/95 backdrop-blur-md border border-slate-200/90 shadow-xl rounded-2xl p-3.5 max-w-[280px] animate-fade-in text-xs space-y-2.5">
-              <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                <span className="font-['DM_Sans'] font-bold text-slate-800 text-xs flex items-center gap-1.5">
-                  <Info className="w-3.5 h-3.5 text-blue-600" />
-                  Legenda Peta
-                </span>
-                <button
-                  onClick={() => setIsLegendOpen(false)}
-                  className="p-0.5 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
-                  title="Tutup Legenda"
-                >
-                  <X className="w-3.5 h-3.5" />
-                </button>
-              </div>
-
-              {/* Kategori Ikon */}
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                  Kategori Proyek
-                </span>
-                <div className="grid grid-cols-2 gap-1 text-[11px] font-medium text-slate-700">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-md bg-[#2563EB] shrink-0"></span>
-                    <span>Jalan</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-md bg-[#059669] shrink-0"></span>
-                    <span>Taman</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-md bg-[#0891B2] shrink-0"></span>
-                    <span>Drainase</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2.5 h-2.5 rounded-md bg-[#7C3AED] shrink-0"></span>
-                    <span>Fasilitas</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Status Progres */}
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                  Status Progres Pin
-                </span>
-                <div className="space-y-1 text-[11px] font-medium text-slate-700">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
-                    <span>&lt; 30% (Tahap Awal)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0"></span>
-                    <span>30% - 70% (Konstruksi)</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0"></span>
-                    <span>&gt; 70% (Finishing / Siap)</span>
-                  </div>
-                </div>
-              </div>
-
-              {/* Batas Kecamatan */}
-              <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 font-medium">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-4 h-0.5 bg-[#0369A1] shrink-0"></span>
-                  <span>Batas 27 Kecamatan</span>
-                </div>
-                <div className="flex items-center gap-1.5">
-                  <span className="w-4 h-0.5 bg-[#1D4ED8] ring-1 ring-blue-300 shrink-0"></span>
-                  <span>Terpilih</span>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <button
-              onClick={() => setIsLegendOpen(true)}
-              className="bg-white/95 backdrop-blur-md hover:bg-white border border-slate-200/90 shadow-md rounded-2xl px-3 py-2 text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer hover:scale-105 active:scale-95 transition-all"
-              title="Buka Legenda Peta"
-            >
-              <Info className="w-3.5 h-3.5 text-blue-600" />
-              <span>Legenda</span>
-            </button>
-          )}
         </div>
       </div>
     </div>
