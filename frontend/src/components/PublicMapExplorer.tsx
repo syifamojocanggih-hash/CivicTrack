@@ -36,6 +36,7 @@ import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem } from 
 import centennialParkImg from '../assets/centennial_park.jpg';
 import { apiService } from '../services/api';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON } from '../data/geoWilayahData';
+import { KEMENDAGRI_DESA_LIST } from '../data/kemendagriDesaData';
 
 // Bounding box resmi gabungan seluruh 27 Kecamatan di Kab. Lamongan (dihitung dari poligon GeoJSON BPS/BIG)
 const ALL_LAMONGAN_BOUNDS: L.LatLngBoundsExpression = [
@@ -249,30 +250,54 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   // Fetch cascading desa/kelurahan when kecamatan is selected
   useEffect(() => {
     if (selectedKecamatan === 'all') {
+      setDesaOptions([]);
+      setSelectedDesaId('all');
       return;
     }
 
-    const feat = LAMONGAN_KECAMATAN_GEOJSON?.features?.find(
-      (f: any) => f.properties?.nama === selectedKecamatan || f.properties?.kecamatan === selectedKecamatan
-    );
-    if (!feat) return;
+    const cleanKec = selectedKecamatan.toLowerCase().replace('kecamatan ', '').trim();
+    const feat = LAMONGAN_KECAMATAN_GEOJSON?.features?.find((f: any) => {
+      const fNama = (f.properties?.nama || '').toLowerCase().replace('kecamatan ', '').trim();
+      const fKec = (f.properties?.kecamatan || '').toLowerCase().trim();
+      return fNama === cleanKec || fKec === cleanKec;
+    });
 
-    // Kode kecamatan "35.24.XX" -> id = XX + 1 (Sukorame 01 -> ID 2, dsb)
-    const kecCode = feat.properties.id;
-    const kecNum = parseInt(kecCode.split('.')[2], 10);
-    const kecId = kecNum + 1;
+    // Kode kecamatan "35.24.XX" -> id = XX + 1 (Sukorame 01 -> ID 2, Brondong 07 -> ID 8, dsb)
+    let kecId: number | null = null;
+    if (feat?.properties?.id) {
+      const parts = feat.properties.id.split('.');
+      if (parts.length >= 3) {
+        const kecNum = parseInt(parts[2], 10);
+        if (!isNaN(kecNum)) {
+          kecId = kecNum + 1;
+        }
+      }
+    }
 
+    // 1. Immediately provide synchronous fallback from KEMENDAGRI_DESA_LIST (zero latency)
+    if (kecId) {
+      const initialOptions = KEMENDAGRI_DESA_LIST.filter((d) => d.parent_id === kecId);
+      setDesaOptions(initialOptions);
+    } else {
+      setDesaOptions([]);
+    }
+
+    if (!kecId) return;
+
+    // 2. Fetch latest data from backend API
     let isCancelled = false;
     setIsLoadingDesa(true);
     apiService
       .getWilayah('desa', kecId)
       .then((res) => {
-        if (!isCancelled) {
+        if (!isCancelled && Array.isArray(res) && res.length > 0) {
           setDesaOptions(res);
-          setIsLoadingDesa(false);
         }
       })
-      .catch(() => {
+      .catch((err) => {
+        console.warn('API getWilayah desa error, keeping fallback:', err);
+      })
+      .finally(() => {
         if (!isCancelled) {
           setIsLoadingDesa(false);
         }

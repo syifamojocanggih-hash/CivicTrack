@@ -1,5 +1,6 @@
 import type { ProyekItem, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem, WilayahOptionItem } from '../types';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
+import { KEMENDAGRI_DESA_LIST } from '../data/kemendagriDesaData';
 
 const BASE_URL = '/api/v1';
 
@@ -135,9 +136,19 @@ export const apiService = {
       const url = `${BASE_URL}/wilayah${params.toString() ? '?' + params.toString() : ''}`;
       const res = await fetch(url, { headers: { Accept: 'application/json' } });
       if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-      return await res.json();
+      const data = await res.json();
+      if (Array.isArray(data) && data.length > 0) {
+        return data;
+      }
+      if (level === 'desa' && parentId !== undefined) {
+        return KEMENDAGRI_DESA_LIST.filter((d) => d.parent_id === parentId);
+      }
+      return data || [];
     } catch (err) {
-      console.warn('Backend API /wilayah fetch failed:', err);
+      console.warn('Backend API /wilayah fetch failed, using Kemendagri fallback:', err);
+      if (level === 'desa' && parentId !== undefined) {
+        return KEMENDAGRI_DESA_LIST.filter((d) => d.parent_id === parentId);
+      }
       return [];
     }
   },
