@@ -1,4 +1,4 @@
-export type ProyekStatus = 'berjalan' | 'selesai' | 'ditangguhkan';
+export type ProyekStatus = 'berjalan' | 'selesai' | 'ditangguhkan' | 'dalam_peninjauan_ulang';
 
 export type ProyekKategori = 'jalan' | 'taman' | 'drainase' | 'fasilitas';
 

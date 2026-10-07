@@ -2,7 +2,7 @@ import os
 import uuid
 import shutil
 from typing import List, Optional
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
@@ -16,6 +16,10 @@ from app.schemas.evaluation import (
 )
 from app.schemas.auth import UserBrief
 from app.services.gemini_service import analyze_evaluation_with_ai
+from app.services.evaluation_status_service import (
+    sync_project_status_on_new_evaluation,
+    sync_project_status_on_evaluation_verification
+)
 
 router = APIRouter(tags=["Evaluasi Pasca-Proyek"])
 
@@ -23,6 +27,7 @@ router = APIRouter(tags=["Evaluasi Pasca-Proyek"])
 def submit_post_project_evaluation(
     id: int,
     req: EvaluasiCreate,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ):
@@ -30,16 +35,17 @@ def submit_post_project_evaluation(
     Mekanisme pengajuan laporan atas proyek berstatus 'Selesai' yang terindikasi
     cacat/tidak sesuai spesifikasi.
     Dilengkapi analisis otomatis Gemini AI untuk skor urgensi (1-5) dan ringkasan teknis.
+    Jika skor urgensi >= 4, proyek otomatis berubah ke 'dalam_peninjauan_ulang'.
     Mencatat entri awal ke log audit trail.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
     if not proyek:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyek tidak ditemukan.")
 
-    if proyek.status != ProyekStatus.selesai:
+    if proyek.status not in [ProyekStatus.selesai, ProyekStatus.dalam_peninjauan_ulang]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Evaluasi cacat pembangunan hanya dapat diajukan untuk proyek yang telah berstatus 'Selesai'."
+            detail="Evaluasi cacat pembangunan hanya dapat diajukan untuk proyek yang telah berstatus 'Selesai' atau 'Dalam Peninjauan Ulang'."
         )
 
     # Analisis otomatis dengan AI (Google Gemini)
@@ -73,6 +79,14 @@ def submit_post_project_evaluation(
     )
     db.add(log_entry)
     db.commit()
+
+    # Sinkronisasi status proyek otomatis (Aturan 1: skor_urgensi_ai >= 4)
+    sync_project_status_on_new_evaluation(
+        db=db,
+        evaluasi=evaluasi,
+        current_user_id=current_user.id,
+        background_tasks=background_tasks
+    )
 
     return get_evaluation_detail(evaluasi.id, db)
 
@@ -146,12 +160,14 @@ def get_evaluation_detail(eval_id: int, db: Session = Depends(get_db)):
 def verify_evaluation(
     eval_id: int,
     req: EvaluasiVerifikasiRequest,
+    background_tasks: BackgroundTasks,
     db: Session = Depends(get_db),
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
     """
     Verifikasi dan tindak lanjut laporan evaluasi oleh admin dinas/pimpinan.
     Mencatat jejak audit trail lengkap ke tabel evaluasi_status_log.
+    Otomatis menyelaraskan proyek.status ('dalam_peninjauan_ulang' atau kembali ke 'selesai').
     """
     evaluasi = db.query(EvaluasiPembangunan).filter(EvaluasiPembangunan.id == eval_id).first()
     if not evaluasi:
@@ -172,6 +188,16 @@ def verify_evaluation(
     db.add(log)
     db.commit()
     db.refresh(evaluasi)
+
+    # Sinkronisasi status proyek otomatis (Aturan 2 & Aturan 3)
+    sync_project_status_on_evaluation_verification(
+        db=db,
+        evaluasi=evaluasi,
+        status_baru=req.status,
+        admin_user=current_user,
+        catatan_admin=req.catatan,
+        background_tasks=background_tasks
+    )
 
     return get_evaluation_detail(eval_id, db)
 

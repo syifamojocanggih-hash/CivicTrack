@@ -135,11 +135,19 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
               project.status === 'selesai'
                 ? 'bg-[#E6F7F1] text-[#1A9E6E]'
+                : project.status === 'dalam_peninjauan_ulang'
+                ? 'bg-amber-100 text-amber-800 border border-amber-300'
                 : project.status === 'ditangguhkan'
                 ? 'bg-slate-200 text-slate-700'
                 : 'bg-[#FEF3E7] text-[#E67E22]'
             }`}>
-              {project.status === 'berjalan' ? 'Sedang Berjalan' : project.status === 'selesai' ? 'Selesai' : 'Ditangguhkan'}
+              {project.status === 'berjalan'
+                ? 'Sedang Berjalan'
+                : project.status === 'selesai'
+                ? 'Selesai'
+                : project.status === 'dalam_peninjauan_ulang'
+                ? 'Dalam Peninjauan Ulang'
+                : 'Ditangguhkan'}
             </span>
             <span className="text-xs text-white/70">ID #{project.id.toString().padStart(4, '0')}</span>
           </div>
