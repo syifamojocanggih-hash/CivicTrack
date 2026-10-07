@@ -160,3 +160,22 @@ Sesuai ketentuan **PRD Bagian 10.1**, berkas dokumentasi fisik dan bukti evaluas
 > **Catatan Arsitektur Keamanan**:
 > Validasi ini menjamin integritas struktural dan signature format berkas (bukan pemindaian virus universal dengan database malware signature).
 > **Roadmap Skala Enterprise (Pengembangan Lanjutan)**: Untuk deployment produksi skala besar dengan volume publik masif, arsitektur dapat ditingkatkan dengan menambahkan service kontainer **ClamAV Antivirus Daemon** (`clamav/clamav:latest` via socket `pyclamd` port 3310) pada `docker-compose.yml` untuk pemindaian signature malware sebelum berkas diteruskan ke object storage (S3/MinIO).
+
+---
+
+## Proteksi Anti-Spam & Rate Limiting Laporan Masyarakat (PRD Bagian 10.2)
+
+Untuk mencegah spam otomatis, bot flooding, dan input asal-asalan pada kanal laporan masyarakat:
+
+1. **Validasi Panjang Teks Wajar**:
+   - `isi_laporan` divalidasi dengan sanitasi `.strip()`. Teks tidak boleh kosong atau hanya berisi spasi.
+   - Panjang teks minimal **10 karakter non-spasi** dan maksimal **2000 karakter**.
+   - Dilengkapi penyaringan kata kasar otomatis (*profanity filter*).
+2. **Rate Limiting (SlowAPI)**:
+   - Dibatasi maksimal **5 laporan per 10 menit** (`5/10minute`) per pengguna (`user_id` dari JWT, fallback ke IP remote client).
+   - Pengiriman yang melebihi batas langsung ditolak dengan status **HTTP 429 Too Many Requests** beserta header `Retry-After`.
+
+> **Catatan Arsitektur & Known Limitation**:
+> Rate limiting in-memory (`slowapi` dengan `MemoryStorage`) ini bekerja akurat untuk lingkungan *single-process / single-worker* (sebagaimana `docker-compose.yml` saat ini yang menjalankan 1 kontainer backend).
+> Jika di masa mendatang sistem di-scale ke multiple workers (misal Gunicorn multi-worker) atau multiple replica containers di Kubernetes/Docker Swarm, penyimpanan in-memory tidak lagi tersinkronisasi antar-worker. Pada skala multi-worker tersebut, storage limiter perlu dialihkan ke **Redis Storage** (`storage_uri="redis://redis:6379/1"`).
+

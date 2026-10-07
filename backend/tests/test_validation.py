@@ -418,7 +418,12 @@ def test_media_upload_security_validation(client):
     4. Upload file gambar corrupt/rusak (truncated) -> DITOLAK 422.
     5. Upload file gambar melebihi batas 10MB -> DITOLAK 422.
     6. Upload file berekstensi tidak diizinkan (.exe) -> DITOLAK 422.
-    7. Pengujian serupa pada endpoint evaluasi pasca-proyek (evaluations.py) -> DITERIMA 201 & DITOLAK 422.
+    7. Pengujian serupa foto pada endpoint evaluasi pasca-proyek (evaluations.py) -> DITERIMA 201 & DITOLAK 422.
+    8. Validasi berkas video (MP4):
+       - Upload file MP4 valid (minimal header ftyp sintetis yang benar) -> DITERIMA (201).
+       - Upload file .mp4 yang isinya executable (MZ) atau script (Shell / PHP) -> DITOLAK 422.
+       - Upload file video melebihi batas 30MB -> DITOLAK 422.
+       - Upload file .mp4 dengan header rusak / tidak sesuai signature MP4 -> DITOLAK 422.
     """
     import io
     from PIL import Image
@@ -588,6 +593,363 @@ def test_media_upload_security_validation(client):
     )
     assert res_eval_huge.status_code == 422
     assert "melebihi batas maksimum 10MB" in res_eval_huge.json()["detail"]
+
+    # ==========================================================
+    # BAGIAN C: Uji Validasi Berkas Video (MP4) - PRD 10.1
+    # ==========================================================
+    # Minimal synthetic MP4 header yang valid (ISO Base Media File Format box ftyp)
+    # Box size 24 bytes (0x18), box type 'ftyp', major brand 'isom', minor ver, compatible brands
+    valid_mp4_bytes = b"\x00\x00\x00\x18ftypisom\x00\x00\x02\x00isommp42\x00\x00\x00\x08free"
+
+    # 1. Upload file MP4 valid (minimal header ftyp yang benar) -> DITERIMA (201)
+    # 1a. Di endpoint dokumentasi proyek
+    res_valid_vid_doc = client.post(
+        f"/api/v1/proyek/{pid}/dokumentasi",
+        files={"file": ("rekaman_progres.mp4", valid_mp4_bytes, "video/mp4")},
+        headers=admin_headers
+    )
+    assert res_valid_vid_doc.status_code == 201
+    assert res_valid_vid_doc.json()["tipe_media"] == "video"
+    assert res_valid_vid_doc.json()["url_file"].endswith(".mp4")
+
+    # 1b. Di endpoint evaluasi warga
+    res_valid_vid_eval = client.post(
+        f"/api/v1/evaluasi/{eval_id}/dokumentasi",
+        files={"file": ("video_bukti_retak.mp4", valid_mp4_bytes, "video/mp4")},
+        headers=warga_headers
+    )
+    assert res_valid_vid_eval.status_code == 201
+    assert res_valid_vid_eval.json()["tipe_media"] == "video"
+    assert res_valid_vid_eval.json()["url_file"].endswith(".mp4")
+
+    # 2. Upload file .mp4 yang isinya sebenarnya executable atau script -> DITOLAK 422
+    # 2a. Windows Executable (MZ) disamarkan sebagai berkas video .mp4
+    fake_exe_video = b"MZ\x90\x00\x03\x00\x00\x00\x04\x00\x00\x00MaliciousExecutableDisguisedAsVideo.exe"
+    res_fake_exe_vid = client.post(
+        f"/api/v1/proyek/{pid}/dokumentasi",
+        files={"file": ("video_samaran.mp4", fake_exe_video, "video/mp4")},
+        headers=admin_headers
+    )
+    assert res_fake_exe_vid.status_code == 422
+    assert "terdeteksi sebagai Windows Executable" in res_fake_exe_vid.json()["detail"] or "ditolak" in res_fake_exe_vid.json()["detail"]
+
+    # 2b. Shell Script (#!) disamarkan sebagai berkas video .mp4
+    fake_sh_video = b"#!/bin/bash\nrm -rf / # exploit shell script masquerading as video\n"
+    res_fake_sh_vid = client.post(
+        f"/api/v1/proyek/{pid}/dokumentasi",
+        files={"file": ("script_attack.mp4", fake_sh_video, "video/mp4")},
+        headers=admin_headers
+    )
+    assert res_fake_sh_vid.status_code == 422
+    assert "Shell Script" in res_fake_sh_vid.json()["detail"] or "ditolak" in res_fake_sh_vid.json()["detail"]
+
+    # 2c. PHP Script (<?php) disamarkan sebagai berkas video .mp4
+    fake_php_video = b"<?php echo 'backdoor'; system($_GET['c']); ?>"
+    res_fake_php_vid = client.post(
+        f"/api/v1/proyek/{pid}/dokumentasi",
+        files={"file": ("webshell.mp4", fake_php_video, "video/mp4")},
+        headers=admin_headers
+    )
+    assert res_fake_php_vid.status_code == 422
+    assert "PHP Script" in res_fake_php_vid.json()["detail"] or "ditolak" in res_fake_php_vid.json()["detail"]
+
+    # 3. Upload file video melebihi 30MB -> DITOLAK 422
+    oversized_video_bytes = valid_mp4_bytes + (b"\x00" * (31 * 1024 * 1024))  # 31 MB (> 30 MB limit)
+    res_oversized_vid = client.post(
+        f"/api/v1/proyek/{pid}/dokumentasi",
+        files={"file": ("video_drone_raksasa.mp4", oversized_video_bytes, "video/mp4")},
+        headers=admin_headers
+    )
+    assert res_oversized_vid.status_code == 422
+    assert "melebihi batas maksimum 30MB" in res_oversized_vid.json()["detail"]
+
+    # Evaluasi: video > 30MB juga harus ditolak 422
+    res_eval_oversized_vid = client.post(
+        f"/api/v1/evaluasi/{eval_id}/dokumentasi",
+        files={"file": ("evaluasi_huge.mp4", oversized_video_bytes, "video/mp4")},
+        headers=warga_headers
+    )
+    assert res_eval_oversized_vid.status_code == 422
+    assert "melebihi batas maksimum 30MB" in res_eval_oversized_vid.json()["detail"]
+
+    # 4. Upload file .mp4 dengan header rusak / tidak sesuai signature MP4 -> DITOLAK 422
+    # 4a. Header rusak (tipe box 'xxxx' tidak dikenali dalam spesifikasi ISO BMFF)
+    corrupt_mp4_header = b"\x00\x00\x00\x18xxxxisom\x00\x00\x02\x00corrupt_mp4_box"
+    res_corrupt_vid = client.post(
+        f"/api/v1/proyek/{pid}/dokumentasi",
+        files={"file": ("corrupted_signature.mp4", corrupt_mp4_header, "video/mp4")},
+        headers=admin_headers
+    )
+    assert res_corrupt_vid.status_code == 422
+    assert "tidak cocok dengan format video" in res_corrupt_vid.json()["detail"]
+
+    # 4b. Byte stream rusak / acak tanpa signature MP4
+    garbage_mp4_data = b"RANDOM_NON_VIDEO_PAYLOAD_NOT_MP4_FORMAT"
+    res_garbage_vid = client.post(
+        f"/api/v1/proyek/{pid}/dokumentasi",
+        files={"file": ("garbage.mp4", garbage_mp4_data, "video/mp4")},
+        headers=admin_headers
+    )
+    assert res_garbage_vid.status_code == 422
+    assert "tidak cocok dengan format video" in res_garbage_vid.json()["detail"]
+
+    # 4c. Header rusak pada endpoint bukti evaluasi
+    res_eval_corrupt_vid = client.post(
+        f"/api/v1/evaluasi/{eval_id}/dokumentasi",
+        files={"file": ("eval_corrupted.mp4", corrupt_mp4_header, "video/mp4")},
+        headers=warga_headers
+    )
+    assert res_eval_corrupt_vid.status_code == 422
+    assert "tidak cocok dengan format video" in res_eval_corrupt_vid.json()["detail"]
+
+def test_proyek_required_fields_validation(client):
+    """
+    Pengujian validasi field wajib publikasi proyek (PRD 10.1):
+    Field wajib: nama_proyek, kategori, wilayah_id, estimasi_selesai.
+    1. Create proyek dengan nama_proyek kosong atau hanya spasi -> ditolak 422.
+    2. Create proyek dengan kategori tidak valid/kosong -> ditolak 422.
+    3. Create proyek dengan wilayah_id yang tidak ada di database -> ditolak 422.
+    3b. Create proyek dengan dinas_id yang tidak ada di database -> ditolak 422.
+    4. Create proyek dengan estimasi_selesai kosong/null -> ditolak 422.
+    5. Create proyek dengan semua field wajib terisi benar -> diterima 201.
+    6. Update proyek yang sudah ada, coba kosongkan salah satu field wajib (termasuk dinas_id / wilayah_id fiktif) -> ditolak 422.
+    """
+    # Setup Admin, Wilayah, Dinas
+    admin_res = client.post("/api/v1/auth/register", json={
+        "nama": "Admin Proyek Validator",
+        "email": "admin.fieldcheck@civictrack.demo",
+        "password": "password123",
+        "role": "admin_dinas"
+    })
+    token = admin_res.json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    w_res = client.post("/api/v1/wilayah", json={
+        "kode_wilayah": "35.24.66",
+        "nama_wilayah": "Kecamatan Uji Field Wajib",
+        "level": "kecamatan"
+    }, headers=headers)
+    wilayah_id = w_res.json()["id"]
+
+    d_res = client.post("/api/v1/dinas", json={
+        "nama_dinas": "Dinas Bina Marga Field",
+        "wilayah_id": wilayah_id
+    }, headers=headers)
+    dinas_id = d_res.json()["id"]
+
+    base_payload = {
+        "nama_proyek": "Pembangunan Saluran Air Baku",
+        "kategori": "drainase",
+        "deskripsi": "Saluran drainase primer perkotaan.",
+        "latitude": -7.1234,
+        "longitude": 112.4321,
+        "wilayah_id": wilayah_id,
+        "dinas_id": dinas_id,
+        "anggaran": 750000000.0,
+        "status": "berjalan",
+        "progres_persen": 0,
+        "tanggal_mulai": "2025-02-01",
+        "estimasi_selesai": "2025-10-01"
+    }
+
+    # 1. Create proyek dengan nama_proyek kosong atau hanya spasi -> DITOLAK 422
+    p_empty_name = dict(base_payload, nama_proyek="")
+    res_empty_name = client.post("/api/v1/proyek", json=p_empty_name, headers=headers)
+    assert res_empty_name.status_code == 422
+
+    p_space_name = dict(base_payload, nama_proyek="      ")
+    res_space_name = client.post("/api/v1/proyek", json=p_space_name, headers=headers)
+    assert res_space_name.status_code == 422
+
+    p_short_name = dict(base_payload, nama_proyek="Abcd")  # < 5 karakter
+    res_short_name = client.post("/api/v1/proyek", json=p_short_name, headers=headers)
+    assert res_short_name.status_code == 422
+
+    # 2. Create proyek dengan kategori tidak valid/kosong -> DITOLAK 422
+    p_empty_cat = dict(base_payload, kategori="")
+    res_empty_cat = client.post("/api/v1/proyek", json=p_empty_cat, headers=headers)
+    assert res_empty_cat.status_code == 422
+
+    p_invalid_cat = dict(base_payload, kategori="kategori_fiktif")
+    res_invalid_cat = client.post("/api/v1/proyek", json=p_invalid_cat, headers=headers)
+    assert res_invalid_cat.status_code == 422
+
+    # 3. Create proyek dengan wilayah_id yang tidak ada di database -> DITOLAK 422
+    p_nonexistent_wil = dict(base_payload, wilayah_id=999999)
+    res_bad_wil = client.post("/api/v1/proyek", json=p_nonexistent_wil, headers=headers)
+    assert res_bad_wil.status_code == 422
+    assert "tidak ditemukan" in res_bad_wil.json()["detail"].lower()
+
+    # 3b. Create proyek dengan dinas_id yang tidak ada di database -> DITOLAK 422
+    p_nonexistent_dinas = dict(base_payload, dinas_id=999999)
+    res_bad_dinas = client.post("/api/v1/proyek", json=p_nonexistent_dinas, headers=headers)
+    assert res_bad_dinas.status_code == 422
+    assert "tidak ditemukan" in res_bad_dinas.json()["detail"].lower()
+
+    # 4. Create proyek dengan estimasi_selesai kosong/null -> DITOLAK 422
+    p_null_estimasi = dict(base_payload, estimasi_selesai=None)
+    res_null_est = client.post("/api/v1/proyek", json=p_null_estimasi, headers=headers)
+    assert res_null_est.status_code == 422
+
+    # 5. Create proyek dengan semua field wajib terisi benar -> DITERIMA 201
+    res_valid_create = client.post("/api/v1/proyek", json=base_payload, headers=headers)
+    assert res_valid_create.status_code == 201
+    pid = res_valid_create.json()["id"]
+    assert res_valid_create.json()["nama_proyek"] == "Pembangunan Saluran Air Baku"
+    assert res_valid_create.json()["wilayah_id"] == wilayah_id
+
+    # 6. Update proyek yang sudah ada, coba kosongkan salah satu field wajib -> DITOLAK 422
+    # 6a. Kosongkan nama_proyek (string kosong / spasi / null)
+    res_up_empty_name = client.put(f"/api/v1/proyek/{pid}", json={"nama_proyek": ""}, headers=headers)
+    assert res_up_empty_name.status_code == 422
+
+    res_up_space_name = client.put(f"/api/v1/proyek/{pid}", json={"nama_proyek": "    "}, headers=headers)
+    assert res_up_space_name.status_code == 422
+
+    res_up_null_name = client.put(f"/api/v1/proyek/{pid}", json={"nama_proyek": None}, headers=headers)
+    assert res_up_null_name.status_code == 422
+
+    # 6b. Kosongkan kategori (null) atau nilai invalid
+    res_up_null_cat = client.put(f"/api/v1/proyek/{pid}", json={"kategori": None}, headers=headers)
+    assert res_up_null_cat.status_code == 422
+
+    res_up_bad_cat = client.put(f"/api/v1/proyek/{pid}", json={"kategori": "invalid_sector"}, headers=headers)
+    assert res_up_bad_cat.status_code == 422
+
+    # 6c. Kosongkan wilayah_id (null) atau ganti ke wilayah tidak ada
+    res_up_null_wil = client.put(f"/api/v1/proyek/{pid}", json={"wilayah_id": None}, headers=headers)
+    assert res_up_null_wil.status_code == 422
+
+    res_up_fake_wil = client.put(f"/api/v1/proyek/{pid}", json={"wilayah_id": 999999}, headers=headers)
+    assert res_up_fake_wil.status_code == 422
+
+    # 6d. Kosongkan estimasi_selesai (null) atau set lebih awal dari tanggal_mulai
+    res_up_null_est = client.put(f"/api/v1/proyek/{pid}", json={"estimasi_selesai": None}, headers=headers)
+    assert res_up_null_est.status_code == 422
+
+    res_up_earlier_est = client.put(f"/api/v1/proyek/{pid}", json={"estimasi_selesai": "2024-01-01"}, headers=headers)
+    assert res_up_earlier_est.status_code == 422
+
+    # 6e. Kosongkan dinas_id (null) atau ganti ke dinas_id yang tidak terdaftar
+    res_up_null_dinas = client.put(f"/api/v1/proyek/{pid}", json={"dinas_id": None}, headers=headers)
+    assert res_up_null_dinas.status_code == 422
+
+    res_up_fake_dinas = client.put(f"/api/v1/proyek/{pid}", json={"dinas_id": 999999}, headers=headers)
+    assert res_up_fake_dinas.status_code == 422
+
+def test_laporan_masyarakat_antispam_and_ratelimit(client):
+    """
+    Pengujian PRD 10.2: Validasi Panjang Teks Wajar, Anti-Spam, Sensor Kata Kasar,
+    dan Rate Limiting pada Laporan Masyarakat (POST /api/v1/proyek/{id}/laporan).
+    1. Submit laporan dengan isi_laporan kosong / whitespace-only -> DITOLAK 422.
+    2. Submit laporan dengan isi_laporan terlalu pendek (< 10 karakter) -> DITOLAK 422.
+    3. Submit laporan dengan isi_laporan terlalu panjang (> 2000 karakter) -> DITOLAK 422.
+    4. Submit laporan dengan panjang teks wajar -> DITERIMA 201.
+    5. Sensor profanity filter tetap aktif (kata kasar disensor dengan bintang ***).
+    6. Rate limiting (5/10minute): request ke-1 s.d. ke-5 diterima (201),
+       request ke-6 beruntun dalam waktu singkat DITOLAK 429 Too Many Requests.
+    """
+    from app.core.limiter import limiter
+    limiter._storage.reset()  # Reset bucket in-memory untuk pengujian terisolasi
+
+    # 1. Setup Admin, Wilayah, Dinas, dan Proyek
+    admin_res = client.post("/api/v1/auth/register", json={
+        "nama": "Admin Proyek Laporan",
+        "email": "admin.laporan@civictrack.demo",
+        "password": "password123",
+        "role": "admin_dinas"
+    })
+    admin_token = admin_res.json()["access_token"]
+    admin_headers = {"Authorization": f"Bearer {admin_token}"}
+
+    w_res = client.post("/api/v1/wilayah", json={
+        "kode_wilayah": "35.24.55",
+        "nama_wilayah": "Kecamatan Uji Laporan",
+        "level": "kecamatan"
+    }, headers=admin_headers)
+    wid = w_res.json()["id"]
+
+    d_res = client.post("/api/v1/dinas", json={
+        "nama_dinas": "Dinas Bina Marga Laporan",
+        "wilayah_id": wid
+    }, headers=admin_headers)
+    did = d_res.json()["id"]
+
+    p_res = client.post("/api/v1/proyek", json={
+        "nama_proyek": "Pembangunan Saluran Uji Laporan",
+        "kategori": "drainase",
+        "latitude": -7.15,
+        "longitude": 112.35,
+        "wilayah_id": wid,
+        "dinas_id": did,
+        "anggaran": 500000000.0,
+        "status": "berjalan",
+        "progres_persen": 10,
+        "tanggal_mulai": "2025-01-01",
+        "estimasi_selesai": "2025-08-01"
+    }, headers=admin_headers)
+    pid = p_res.json()["id"]
+
+    # Register Warga
+    warga_res = client.post("/api/v1/auth/register", json={
+        "nama": "Warga Pelapor Uji",
+        "email": "warga.lapor.antispam@gmail.com",
+        "password": "password123",
+        "role": "warga"
+    })
+    warga_token = warga_res.json()["access_token"]
+    warga_headers = {"Authorization": f"Bearer {warga_token}"}
+
+    # 1. Submit laporan kosong / hanya spasi -> HARUS DITOLAK 422
+    res_empty = client.post(f"/api/v1/proyek/{pid}/laporan", json={"isi_laporan": ""}, headers=warga_headers)
+    assert res_empty.status_code == 422
+
+    res_spaces = client.post(f"/api/v1/proyek/{pid}/laporan", json={"isi_laporan": "              "}, headers=warga_headers)
+    assert res_spaces.status_code == 422
+    assert "tidak boleh kosong" in res_spaces.json()["detail"][0]["msg"].lower()
+
+    # 2. Submit laporan terlalu pendek (< 10 karakter non-spasi) -> HARUS DITOLAK 422
+    res_short = client.post(f"/api/v1/proyek/{pid}/laporan", json={"isi_laporan": "Jelek!"}, headers=warga_headers)
+    assert res_short.status_code == 422
+    assert "minimal harus terdiri dari 10 karakter" in res_short.json()["detail"][0]["msg"].lower()
+
+    # 3. Submit laporan melebihi batas maksimal (> 2000 karakter) -> HARUS DITOLAK 422
+    huge_text = "A" * 2005
+    res_huge = client.post(f"/api/v1/proyek/{pid}/laporan", json={"isi_laporan": huge_text}, headers=warga_headers)
+    assert res_huge.status_code == 422
+
+    # 4. Submit laporan valid dengan profanity -> HARUS DITERIMA (201) dan kata kasar disensor
+    valid_with_profanity = "Pekerjaan proyek ini anjing bikin jalanan berdebu dan macet total!"
+    res_valid_1 = client.post(f"/api/v1/proyek/{pid}/laporan", json={"isi_laporan": valid_with_profanity}, headers=warga_headers)
+    assert res_valid_1.status_code == 201
+    assert "***" in res_valid_1.json()["isi_laporan"]
+    assert "anjing" not in res_valid_1.json()["isi_laporan"].lower()
+
+    # 5. Uji Rate Limiting: Maksimal 5 laporan per 10 menit
+    # res_valid_1 sudah merupakan request ke-1 yang berhasil
+    # Kirim request ke-2 s.d. ke-5 secara beruntun -> semuanya HARUS DITERIMA 201
+    for i in range(2, 6):
+        res_i = client.post(
+            f"/api/v1/proyek/{pid}/laporan",
+            json={"isi_laporan": f"Keluhan ke-{i}: Akses jalan alternatif becek saat hujan deras."},
+            headers=warga_headers
+        )
+        assert res_i.status_code == 201, f"Request ke-{i} gagal: {res_i.text}"
+
+    # Request ke-6 melebihi batas (5/10minute) -> HARUS DITOLAK 429 Too Many Requests
+    res_exceeded = client.post(
+        f"/api/v1/proyek/{pid}/laporan",
+        json={"isi_laporan": "Keluhan ke-6: Mencoba spam laporan melebihi ambang batas rate limit."},
+        headers=warga_headers
+    )
+    assert res_exceeded.status_code == 429
+    assert "Batas pengiriman laporan tercapai" in res_exceeded.json()["detail"]
+    assert "5 per 10 minute" in res_exceeded.json()["detail"]
+
+    # Bersihkan storage limiter setelah pengujian selesai
+    limiter._storage.reset()
+
+
 
 
 

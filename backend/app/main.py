@@ -8,6 +8,8 @@ from app.routers import (
     reports, subscriptions, stats, open_data, ratings,
     ai_routes, evaluations
 )
+from slowapi.errors import RateLimitExceeded
+from app.core.limiter import limiter, rate_limit_exceeded_handler
 
 # Inisialisasi Aplikasi FastAPI
 app = FastAPI(
@@ -22,6 +24,10 @@ Open Data API, dan Google Gemini AI untuk analisis dampak pengalihan rute serta 
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+# Integrasi Rate Limiter (SlowAPI)
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
 
 # Konfigurasi CORS Middleware
 app.add_middleware(

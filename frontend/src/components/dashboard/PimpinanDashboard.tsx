@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Award,
   TrendingUp,
@@ -10,11 +10,13 @@ import {
   Sparkles,
   MapPin,
   Clock,
+  Search,
+  RefreshCw,
 } from 'lucide-react';
-import type { UserProfile, ProyekItem, DinasKinerjaItem } from '../../types';
+import type { UserProfile, ProyekItem, DinasKinerjaItem, WilayahStatItem, RingkasanKabupatenItem } from '../../types';
 import { MOCK_DINAS_KINERJA, MOCK_EXECUTIVE_ALERTS } from '../../data/dashboardMockData';
-import { WILAYAH_DATA } from '../../data/geoWilayahData';
 import { MiniMapOverview } from './MiniMapOverview';
+import { apiService } from '../../services/api';
 
 interface PimpinanDashboardProps {
   currentUser: UserProfile;
@@ -36,10 +38,74 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
   const [dinasList] = useState<DinasKinerjaItem[]>(MOCK_DINAS_KINERJA);
   const [alertsList] = useState(MOCK_EXECUTIVE_ALERTS);
 
-  // Aggregate stats across all agencies
+  // Live stats from API
+  const [wilayahStats, setWilayahStats] = useState<WilayahStatItem[]>([]);
+  const [ringkasanKabupaten, setRingkasanKabupaten] = useState<RingkasanKabupatenItem | null>(null);
+  const [isLoadingStats, setIsLoadingStats] = useState<boolean>(true);
+  const [searchKecamatan, setSearchKecamatan] = useState<string>('');
+  const [filterHanyaAdaProyek, setFilterHanyaAdaProyek] = useState<boolean>(false);
+
+  // Fetch real statistics from backend
+  const fetchLiveStats = () => {
+    setIsLoadingStats(true);
+    Promise.all([
+      apiService.getWilayahStats(),
+      apiService.getRingkasanStats(),
+    ])
+      .then(([wStats, rStats]) => {
+        if (wStats && wStats.length > 0) {
+          setWilayahStats(wStats);
+        }
+        if (rStats) {
+          setRingkasanKabupaten(rStats);
+        }
+      })
+      .catch((err) => {
+        console.warn('Gagal memuat statistik live:', err);
+      })
+      .finally(() => {
+        setIsLoadingStats(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchLiveStats();
+  }, []);
+
+  // Filtered kecamatan for Tab Sebaran Wilayah
+  const displayedKecamatan = useMemo(() => {
+    let list = wilayahStats;
+    if (searchKecamatan.trim()) {
+      const q = searchKecamatan.toLowerCase();
+      list = list.filter(
+        (w) =>
+          w.nama_wilayah.toLowerCase().includes(q) ||
+          (w.kode_wilayah && w.kode_wilayah.toLowerCase().includes(q))
+      );
+    }
+    if (filterHanyaAdaProyek) {
+      list = list.filter((w) => w.total_proyek > 0);
+    }
+    return list;
+  }, [wilayahStats, searchKecamatan, filterHanyaAdaProyek]);
+
+  // Aggregate stats across all agencies (fallback)
   const totalPaguDaerah = dinasList.reduce((acc, d) => acc + d.total_anggaran, 0);
   const totalRealisasiDaerah = dinasList.reduce((acc, d) => acc + d.realisasi_anggaran, 0);
   const realisasiPersen = ((totalRealisasiDaerah / totalPaguDaerah) * 100).toFixed(1);
+
+  // Real statistics from ringkasan kabupaten
+  const displayTotalPagu = ringkasanKabupaten
+    ? (Number(ringkasanKabupaten.total_anggaran) / 1000000000).toFixed(1)
+    : (totalPaguDaerah / 1000000000).toFixed(1);
+
+  const displayRealisasi = ringkasanKabupaten
+    ? (Number(ringkasanKabupaten.estimasi_penyerapan_anggaran) / 1000000000).toFixed(1)
+    : (totalRealisasiDaerah / 1000000000).toFixed(1);
+
+  const displayRealisasiPersen = ringkasanKabupaten
+    ? ringkasanKabupaten.rasio_penyerapan_persen.toFixed(1)
+    : realisasiPersen;
 
   const totalAduanDaerah = dinasList.reduce((acc, d) => acc + d.aduan_total, 0);
   const totalAduanSelesai = dinasList.reduce((acc, d) => acc + d.aduan_selesai, 0);
@@ -90,7 +156,10 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
             <div className="flex flex-wrap items-center gap-4 text-xs text-white/70 mt-3 font-mono">
               <span>Periode Tahun Anggaran 2024 / 2025</span>
               <span>•</span>
-              <span>Cakupan: 5 Dinas Teknis, 48 Proyek Fisik</span>
+              <span>
+                Cakupan: {wilayahStats.length > 0 ? `${wilayahStats.length} Kecamatan` : '27 Kecamatan'},{' '}
+                {ringkasanKabupaten ? `${ringkasanKabupaten.total_proyek} Proyek Fisik` : `${projects.length} Proyek Fisik`}
+              </span>
             </div>
           </div>
 
@@ -132,11 +201,11 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
             <DollarSign className="w-4 h-4 text-[#184C78]" />
           </div>
           <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#184C78] mt-1.5">
-            Rp {(totalPaguDaerah / 1000000000).toFixed(1)} M
+            Rp {displayTotalPagu} M
           </div>
           <div className="text-[11px] text-[#1A9E6E] font-semibold mt-1 flex items-center gap-1">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>Realisasi: Rp {(totalRealisasiDaerah / 1000000000).toFixed(1)} M ({realisasiPersen}%)</span>
+            <span>Est. Serapan: Rp {displayRealisasi} M ({displayRealisasiPersen}%)</span>
           </div>
         </div>
 
@@ -336,10 +405,10 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
                   <span>Rekapitulasi Agregat Proyek per Wilayah Kecamatan (Kabupaten Lamongan)</span>
                 </h3>
                 <p className="text-xs text-[#6C757D] mt-0.5">
-                  Distribusi sebaran proyek fisik, status pengerjaan, dan alokasi dana APBD di 6 kecamatan utama.
+                  Distribusi sebaran proyek fisik, status pengerjaan, dan alokasi dana APBD di 27 kecamatan Kabupaten Lamongan.
                 </p>
               </div>
-              <div className="flex items-center gap-3 text-xs">
+              <div className="flex flex-wrap items-center gap-3 text-xs">
                 <span className="flex items-center gap-1 text-[#2980B9] font-bold">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#2980B9]" /> Berjalan
                 </span>
@@ -349,70 +418,141 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
                 <span className="flex items-center gap-1 text-[#E74C3C] font-bold">
                   <span className="w-2.5 h-2.5 rounded-full bg-[#E74C3C]" /> Tertunda
                 </span>
+                <span className="flex items-center gap-1 text-[#E67E22] font-bold">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#E67E22]" /> Tinjau Ulang
+                </span>
               </div>
             </div>
 
-            {/* Visual Bar Charts per Subdistrict */}
-            <div className="space-y-4">
-              {WILAYAH_DATA.kecamatanList.map((kec, idx) => {
-                const totalProyekKec = kec.proyekBerjalan + kec.proyekSelesai + kec.proyekTertunda;
-                const berjalanPct = totalProyekKec > 0 ? ((kec.proyekBerjalan / totalProyekKec) * 100).toFixed(0) : '0';
-                const selesaiPct = totalProyekKec > 0 ? ((kec.proyekSelesai / totalProyekKec) * 100).toFixed(0) : '0';
-                const tertundaPct = totalProyekKec > 0 ? ((kec.proyekTertunda / totalProyekKec) * 100).toFixed(0) : '0';
+            {/* Filter and Search Bar for 27 Kecamatan */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-[#F8FAFC] rounded-xl border border-[#DCE0E6]">
+              <div className="relative flex-1 max-w-sm">
+                <Search className="w-4 h-4 text-[#6C757D] absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  placeholder="Cari kecamatan (mis. Babat, Lamongan Kota)..."
+                  value={searchKecamatan}
+                  onChange={(e) => setSearchKecamatan(e.target.value)}
+                  className="w-full pl-9 pr-3 py-1.5 text-xs bg-white border border-[#DCE0E6] rounded-lg focus:outline-none focus:ring-1 focus:ring-[#184C78]"
+                />
+              </div>
+              <div className="flex items-center gap-3">
+                <label className="flex items-center gap-1.5 text-xs text-[#495057] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={filterHanyaAdaProyek}
+                    onChange={(e) => setFilterHanyaAdaProyek(e.target.checked)}
+                    className="rounded border-[#DCE0E6] text-[#184C78] focus:ring-0"
+                  />
+                  <span>
+                    Hanya dengan proyek ({wilayahStats.filter((w) => w.total_proyek > 0).length})
+                  </span>
+                </label>
+                <button
+                  onClick={fetchLiveStats}
+                  title="Segarkan data dari server"
+                  className="p-1.5 text-[#184C78] hover:bg-slate-200/60 rounded-lg transition-colors cursor-pointer"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${isLoadingStats ? 'animate-spin' : ''}`} />
+                </button>
+              </div>
+            </div>
 
-                return (
-                  <div key={idx} className="p-4 bg-[#F8FAFC] rounded-xl border border-[#DCE0E6] space-y-2.5">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
-                      <div>
-                        <strong className="text-sm font-bold text-[#184C78]">{kec.nama}</strong>
-                        <span className="text-[#6C757D] text-[11px] ml-2">
-                          ({kec.desaList.length - 1} Desa / Kelurahan)
+            {isLoadingStats ? (
+              <div className="p-8 text-center text-xs text-slate-500 flex items-center justify-center gap-2">
+                <div className="w-4 h-4 border-2 border-[#184C78] border-t-transparent rounded-full animate-spin" />
+                <span>Memuat data agregat 27 kecamatan dari server...</span>
+              </div>
+            ) : displayedKecamatan.length === 0 ? (
+              <div className="p-8 text-center text-xs text-slate-500 bg-[#F8FAFC] rounded-xl border border-dashed border-[#DCE0E6]">
+                Tidak ada kecamatan yang cocok dengan kriteria pencarian/filter.
+              </div>
+            ) : (
+              /* Visual Bar Charts per Subdistrict (Real Live API Data) */
+              <div className="space-y-4">
+                {displayedKecamatan.map((kec) => {
+                  const totalProyekKec = kec.total_proyek;
+                  const berjalanPct = totalProyekKec > 0 ? ((kec.jumlah_berjalan / totalProyekKec) * 100).toFixed(0) : '0';
+                  const selesaiPct = totalProyekKec > 0 ? ((kec.jumlah_selesai / totalProyekKec) * 100).toFixed(0) : '0';
+                  const tertundaPct = totalProyekKec > 0 ? ((kec.jumlah_tertunda / totalProyekKec) * 100).toFixed(0) : '0';
+                  const tinjauPct = totalProyekKec > 0 ? ((kec.jumlah_dalam_peninjauan_ulang / totalProyekKec) * 100).toFixed(0) : '0';
+                  const totalAnggaranMiliar = (Number(kec.total_anggaran) / 1000000000).toFixed(2);
+                  const penyerapanMiliar = (Number(kec.estimasi_penyerapan_anggaran) / 1000000000).toFixed(2);
+
+                  return (
+                    <div key={kec.wilayah_id} className="p-4 bg-[#F8FAFC] rounded-xl border border-[#DCE0E6] space-y-2.5">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1 text-xs">
+                        <div>
+                          <strong className="text-sm font-bold text-[#184C78]">{kec.nama_wilayah}</strong>
+                          {kec.kode_wilayah && (
+                            <span className="text-[#6C757D] text-[11px] ml-2 font-mono bg-slate-100 px-1.5 py-0.5 rounded">
+                              {kec.kode_wilayah}
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex flex-wrap items-center gap-3 font-semibold text-xs">
+                          <span className="text-slate-700">Total: <strong>{totalProyekKec} Proyek</strong></span>
+                          <span className="text-[#184C78]">Pagu: <strong>Rp {totalAnggaranMiliar} M</strong></span>
+                          <span className="text-emerald-700">Est. Serapan: <strong>Rp {penyerapanMiliar} M</strong></span>
+                          <span className="text-amber-700">Avg Progres: <strong>{kec.rata_rata_progres}%</strong></span>
+                        </div>
+                      </div>
+
+                      {/* Stacked Percentage Bar Chart */}
+                      {totalProyekKec > 0 ? (
+                        <div className="w-full bg-[#E2E8F0] h-3.5 rounded-full overflow-hidden flex shadow-inner">
+                          {kec.jumlah_berjalan > 0 && (
+                            <div
+                              style={{ width: `${berjalanPct}%` }}
+                              className="bg-[#2980B9] h-full transition-all"
+                              title={`Berjalan: ${kec.jumlah_berjalan} Proyek (${berjalanPct}%)`}
+                            />
+                          )}
+                          {kec.jumlah_selesai > 0 && (
+                            <div
+                              style={{ width: `${selesaiPct}%` }}
+                              className="bg-[#1A9E6E] h-full transition-all"
+                              title={`Selesai: ${kec.jumlah_selesai} Proyek (${selesaiPct}%)`}
+                            />
+                          )}
+                          {kec.jumlah_tertunda > 0 && (
+                            <div
+                              style={{ width: `${tertundaPct}%` }}
+                              className="bg-[#E74C3C] h-full transition-all"
+                              title={`Tertunda: ${kec.jumlah_tertunda} Proyek (${tertundaPct}%)`}
+                            />
+                          )}
+                          {kec.jumlah_dalam_peninjauan_ulang > 0 && (
+                            <div
+                              style={{ width: `${tinjauPct}%` }}
+                              className="bg-[#E67E22] h-full transition-all"
+                              title={`Peninjauan Ulang: ${kec.jumlah_dalam_peninjauan_ulang} Proyek (${tinjauPct}%)`}
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="w-full bg-slate-200/60 h-2.5 rounded-full" title="Belum ada proyek" />
+                      )}
+
+                      {/* Numeric breakdown badges */}
+                      <div className="flex flex-wrap items-center justify-between text-[11px] text-[#6C757D] pt-1 border-t border-slate-200/60 gap-2">
+                        <div className="flex flex-wrap items-center gap-3">
+                          <span>Sedang Berjalan: <strong className="text-[#2980B9] font-bold">{kec.jumlah_berjalan}</strong></span>
+                          <span>Selesai (FHO): <strong className="text-[#1A9E6E] font-bold">{kec.jumlah_selesai}</strong></span>
+                          <span>Tertunda: <strong className={kec.jumlah_tertunda > 0 ? "text-[#E74C3C] font-bold" : "text-slate-500"}>{kec.jumlah_tertunda}</strong></span>
+                          {kec.jumlah_dalam_peninjauan_ulang > 0 && (
+                            <span>Tinjau Ulang: <strong className="text-[#E67E22] font-bold">{kec.jumlah_dalam_peninjauan_ulang}</strong></span>
+                          )}
+                        </div>
+                        <span className="text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200 font-mono text-slate-600">
+                          ID Wilayah: {kec.wilayah_id}
                         </span>
                       </div>
-                      <div className="flex items-center gap-3 font-semibold text-xs">
-                        <span className="text-slate-700">Total: <strong>{totalProyekKec} Proyek</strong></span>
-                        <span className="text-emerald-700">Alokasi: <strong>Rp {(kec.anggaranTotal / 1000000000).toFixed(1)} Miliar</strong></span>
-                      </div>
                     </div>
-
-                    {/* Stacked Percentage Bar Chart */}
-                    <div className="w-full bg-[#E2E8F0] h-3 rounded-full overflow-hidden flex shadow-inner">
-                      <div
-                        style={{ width: `${berjalanPct}%` }}
-                        className="bg-[#2980B9] h-full transition-all"
-                        title={`Berjalan: ${kec.proyekBerjalan} Proyek (${berjalanPct}%)`}
-                      />
-                      <div
-                        style={{ width: `${selesaiPct}%` }}
-                        className="bg-[#1A9E6E] h-full transition-all"
-                        title={`Selesai: ${kec.proyekSelesai} Proyek (${selesaiPct}%)`}
-                      />
-                      <div
-                        style={{ width: `${tertundaPct}%` }}
-                        className="bg-[#E74C3C] h-full transition-all"
-                        title={`Tertunda: ${kec.proyekTertunda} Proyek (${tertundaPct}%)`}
-                      />
-                    </div>
-
-                    {/* Numeric breakdown badges */}
-                    <div className="flex items-center justify-between text-[11px] text-[#6C757D] pt-1 border-t border-slate-200/60">
-                      <div className="flex items-center gap-4">
-                        <span>Sedang Berjalan: <strong className="text-[#2980B9] font-bold">{kec.proyekBerjalan}</strong></span>
-                        <span>Selesai (FHO): <strong className="text-[#1A9E6E] font-bold">{kec.proyekSelesai}</strong></span>
-                        {kec.proyekTertunda > 0 ? (
-                          <span>Tertunda/Revisi: <strong className="text-[#E74C3C] font-bold">{kec.proyekTertunda}</strong></span>
-                        ) : (
-                          <span className="text-emerald-600">✓ Nol Kendala Tertunda</span>
-                        )}
-                      </div>
-                      <span className="text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">
-                        Desa Utama: {kec.desaList[1]}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* Strategic Executive Recommendations */}

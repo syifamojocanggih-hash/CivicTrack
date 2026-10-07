@@ -1,4 +1,4 @@
-import type { ProyekItem, UserProfile, StatSummary } from '../types';
+import type { ProyekItem, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem } from '../types';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
 
 const BASE_URL = '/api/v1';
@@ -91,6 +91,34 @@ export const apiService = {
     } catch (err) {
       console.warn('Backend API /stats/dashboard not reached, using fallback mock data:', err);
       return STATS_DATA;
+    }
+  },
+
+  // Fetch wilayah aggregate stats
+  async getWilayahStats(): Promise<WilayahStatItem[]> {
+    try {
+      const res = await fetch(`${BASE_URL}/stats/wilayah`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.warn('Backend API /stats/wilayah not reached:', err);
+      return [];
+    }
+  },
+
+  // Fetch kabupaten executive summary stats
+  async getRingkasanStats(): Promise<RingkasanKabupatenItem | null> {
+    try {
+      const res = await fetch(`${BASE_URL}/stats/ringkasan`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+      return await res.json();
+    } catch (err) {
+      console.warn('Backend API /stats/ringkasan not reached:', err);
+      return null;
     }
   },
 

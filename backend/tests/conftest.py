@@ -28,6 +28,20 @@ def setup_and_teardown_tables():
     yield
     Base.metadata.drop_all(bind=engine)
 
+@pytest.fixture(autouse=True)
+def reset_rate_limiter_state():
+    """
+    Memastikan state in-memory rate limiter direset sebelum dan sesudah
+    setiap test function dieksekusi guna mencegah kebocoran kuota request
+    antar-pengujian yang menggunakan user_id yang sama (mis. user:2).
+    """
+    from app.core.limiter import limiter
+    if hasattr(limiter, "_storage") and hasattr(limiter._storage, "reset"):
+        limiter._storage.reset()
+    yield
+    if hasattr(limiter, "_storage") and hasattr(limiter._storage, "reset"):
+        limiter._storage.reset()
+
 @pytest.fixture
 def client():
     def override_get_db():

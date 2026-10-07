@@ -143,18 +143,18 @@ def validate_and_process_media_upload(file: UploadFile) -> Tuple[MediaType, byte
 
     elif ext in VIDEO_EXTENSIONS:
         tipe_media = MediaType.video
-        if not check_video_magic_bytes(header, ext):
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
-                detail=f"Signature biner berkas tidak cocok dengan format video '.{ext}'."
-            )
-
-        # 6. Batas Ukuran Video (30 MB)
+        # Batas Ukuran Video (30 MB)
         max_video_bytes = settings.MAX_VIDEO_SIZE_MB * 1024 * 1024
         if file_size > max_video_bytes:
             raise HTTPException(
                 status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
                 detail=f"Ukuran berkas video ({file_size / (1024 * 1024):.2f}MB) melebihi batas maksimum {settings.MAX_VIDEO_SIZE_MB}MB."
+            )
+
+        if not check_video_magic_bytes(header, ext):
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Signature biner berkas tidak cocok dengan format video '.{ext}'."
             )
     else:
         raise HTTPException(

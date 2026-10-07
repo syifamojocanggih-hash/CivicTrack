@@ -1,9 +1,10 @@
 from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import get_current_user, require_roles
 from app.core.profanity import contains_profanity, sanitize_profanity
+from app.core.limiter import limiter
 from app.models.user import User, UserRole
 from app.models.project import Proyek
 from app.models.report import LaporanMasyarakat, LaporanStatus
@@ -12,7 +13,9 @@ from app.schemas.report import LaporanCreate, LaporanTanggapi, LaporanResponse
 router = APIRouter(tags=["Laporan Masyarakat"])
 
 @router.post("/proyek/{id}/laporan", response_model=LaporanResponse, status_code=status.HTTP_201_CREATED)
+@limiter.limit("5/10minute")
 def submit_report(
+    request: Request,
     id: int,
     req: LaporanCreate,
     db: Session = Depends(get_db),
@@ -20,7 +23,8 @@ def submit_report(
 ):
     """
     Formulir interaktif bagi warga untuk mengirim keluhan/masukan proyek.
-    Memvalidasi panjang teks dan menyaring kata-kata tidak pantas secara otomatis.
+    Memvalidasi panjang teks (10-2000 karakter non-spasi), menyaring kata kasar,
+    serta menerapkan rate limiting (maksimal 5 laporan per 10 menit per user/IP).
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
     if not proyek:

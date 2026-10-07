@@ -198,3 +198,34 @@ export interface SubscribedProject {
   pesan_update: string;
 }
 
+export interface StatusCountItem {
+  berjalan: number;
+  selesai: number;
+  tertunda: number;
+  dalam_peninjauan_ulang: number;
+}
+
+export interface WilayahStatItem {
+  wilayah_id: number;
+  kode_wilayah?: string;
+  nama_wilayah: string;
+  jumlah_berjalan: number;
+  jumlah_selesai: number;
+  jumlah_tertunda: number;
+  jumlah_dalam_peninjauan_ulang: number;
+  status_proyek: StatusCountItem;
+  total_proyek: number;
+  total_anggaran: number;
+  estimasi_penyerapan_anggaran: number;
+  rata_rata_progres: number;
+}
+
+export interface RingkasanKabupatenItem {
+  total_proyek: number;
+  status_proyek: StatusCountItem;
+  total_anggaran: number;
+  estimasi_penyerapan_anggaran: number;
+  rasio_penyerapan_persen: number;
+  rata_rata_progres: number;
+}
+

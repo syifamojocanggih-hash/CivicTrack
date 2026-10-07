@@ -138,15 +138,21 @@ def create_project(
     Dashboard Pemerintah - Tambah Proyek Baru oleh Admin Dinas / Pimpinan.
     Memvalidasi koordinat spasial, wilayah terdaftar, dan dinas penanggung jawab.
     """
-    # Verifikasi wilayah
+    # Verifikasi wilayah (PRD 10.1: foreign key wilayah_id harus terdaftar di database)
     wilayah = db.query(WilayahAdministratif).filter(WilayahAdministratif.id == req.wilayah_id).first()
     if not wilayah:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Wilayah administratif tidak valid.")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Wilayah administratif dengan ID tersebut tidak ditemukan di database."
+        )
 
-    # Verifikasi dinas
+    # Verifikasi dinas penanggung jawab
     dinas = db.query(Dinas).filter(Dinas.id == req.dinas_id).first()
     if not dinas:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Dinas penanggung jawab tidak valid.")
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="Dinas penanggung jawab dengan ID tersebut tidak ditemukan di database."
+        )
 
     # Validasi Spasial PRD 10.1: Koordinat harus berada di dalam batas poligon wilayah (Point-in-Polygon)
     is_valid_coords, coord_err = validate_coordinates_in_wilayah(
@@ -242,6 +248,33 @@ def update_project(
                 dicatat_oleh=current_user.id
             )
             db.add(histori_tahap)
+
+    # Validasi konsistensi rentang tanggal pengerjaan jika diperbarui
+    check_mulai = update_data.get("tanggal_mulai", proyek.tanggal_mulai)
+    check_selesai = update_data.get("estimasi_selesai", proyek.estimasi_selesai)
+    if check_selesai and check_mulai and check_selesai < check_mulai:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="estimasi_selesai tidak boleh lebih awal dari tanggal_mulai proyek."
+        )
+
+    # Validasi keberadaan wilayah jika wilayah_id diperbarui
+    if "wilayah_id" in update_data:
+        target_wilayah = db.query(WilayahAdministratif).filter(WilayahAdministratif.id == update_data["wilayah_id"]).first()
+        if not target_wilayah:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Wilayah administratif dengan ID tersebut tidak ditemukan di database."
+            )
+
+    # Validasi keberadaan dinas jika dinas_id diperbarui
+    if "dinas_id" in update_data:
+        target_dinas = db.query(Dinas).filter(Dinas.id == update_data["dinas_id"]).first()
+        if not target_dinas:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="Dinas penanggung jawab dengan ID tersebut tidak ditemukan di database."
+            )
 
     # Validasi Spasial PRD 10.1 jika koordinat atau wilayah diubah (Point-in-Polygon)
     if any(k in update_data for k in ["latitude", "longitude", "wilayah_id"]):
