@@ -43,6 +43,12 @@ const ALL_LAMONGAN_BOUNDS: L.LatLngBoundsExpression = [
   [-6.861185, 112.552381]
 ];
 
+// Bounding box batas wilayah dengan buffer ~8% (~4.5 km) untuk membatasi navigasi/panning liar ke luar kabupaten
+const LAMONGAN_MAX_BOUNDS: L.LatLngBoundsExpression = [
+  [-7.426712, 112.034182],
+  [-6.819294, 112.590767]
+];
+
 interface PublicMapExplorerProps {
   currentUser: UserProfile | null;
   projects: ProyekItem[];
@@ -408,11 +414,18 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   useEffect(() => {
     if (!mapContainerRef.current || mapInstanceRef.current) return;
 
-    // Centered at Kabupaten Lamongan
+    // Inisialisasi Peta Leaflet dengan Pembatasan Wilayah Kabupaten Lamongan
     const map = L.map(mapContainerRef.current, {
-      center: [-7.1230, 112.3125],
-      zoom: 11,
       zoomControl: false,
+      minZoom: 10,
+      maxBounds: LAMONGAN_MAX_BOUNDS,
+      maxBoundsViscosity: 1.0,
+    });
+
+    // Inisialisasi awal: langsung sesuaikan batas pandang ke seluruh 27 kecamatan Lamongan
+    map.fitBounds(ALL_LAMONGAN_BOUNDS, {
+      padding: [30, 30],
+      maxZoom: 12,
     });
 
     // OpenStreetMap HOT tiles
