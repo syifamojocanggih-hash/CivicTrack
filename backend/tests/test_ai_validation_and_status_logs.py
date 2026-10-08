@@ -141,7 +141,7 @@ def test_ai_route_validation_and_public_filtering(client, db_session):
     """
     # 1. Uji unit validator fungsi validate_ai_route
     valid_route, _ = validate_ai_route({
-        "nama_rute": "Jl. Basuki Rahmat - Jl. Sunan Giri",
+        "nama_rute": "Jl. Basuki Rahmat  Jl. Sunan Giri",
         "prioritas": "utama",
         "estimasi_jarak_km": 3.5,
         "estimasi_waktu_menit": 10,
