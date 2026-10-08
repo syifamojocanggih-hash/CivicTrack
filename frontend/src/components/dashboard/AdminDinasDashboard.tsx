@@ -75,6 +75,21 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     tahap_terkini: 'Pembersihan & Pengukuran Lahan',
   });
 
+  // Edit project state
+  const [editingProject, setEditingProject] = useState<ProyekItem | null>(null);
+  const [editForm, setEditForm] = useState({
+    nama_proyek: '',
+    kategori: 'jalan' as ProyekKategori,
+    anggaran: 0,
+    tanggal_mulai: '',
+    estimasi_selesai: '',
+    progres_persen: 0,
+    status: 'berjalan' as ProyekStatus,
+    catatan_perubahan: '',
+  });
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+
   // Validasi real-time Point-in-Polygon terhadap wilayah terpilih
   const spatialValidation = useMemo(() => {
     return validateCoordinatesInKecamatan(
@@ -173,6 +188,72 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       nama_dinas: 'Dinas Pekerjaan Umum dan Penataan Ruang',
       tahap_terkini: 'Pembersihan & Pengukuran Lahan',
     });
+  };
+
+  // Handle open edit project modal
+  const handleOpenEditModal = (p: ProyekItem) => {
+    setEditingProject(p);
+    setEditForm({
+      nama_proyek: p.nama_proyek,
+      kategori: p.kategori,
+      anggaran: p.anggaran,
+      tanggal_mulai: p.tanggal_mulai || '2024-01-01',
+      estimasi_selesai: p.estimasi_selesai || '2024-12-31',
+      progres_persen: p.progres_persen,
+      status: p.status,
+      catatan_perubahan: '',
+    });
+    setEditError(null);
+  };
+
+  // Handle submit edit project
+  const handleUpdateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingProject) return;
+
+    const oldProgres = editingProject.progres_persen;
+    const newProgres = Number(editForm.progres_persen);
+    const isDecreased = newProgres < oldProgres;
+
+    if (isDecreased) {
+      const cleanCatatan = editForm.catatan_perubahan.trim();
+      if (cleanCatatan.length < 10) {
+        setEditError(
+          `Penurunan progres dari ${oldProgres}% ke ${newProgres}% wajib menyertakan alasan minimal 10 karakter (Aturan PRD 10.1).`
+        );
+        return;
+      }
+    }
+
+    if (editForm.estimasi_selesai && editForm.tanggal_mulai && editForm.estimasi_selesai < editForm.tanggal_mulai) {
+      setEditError('Estimasi tanggal selesai tidak boleh lebih awal dari tanggal mulai pengerjaan.');
+      return;
+    }
+
+    setIsSubmittingEdit(true);
+    setEditError(null);
+
+    try {
+      const updated = await apiService.updateProject(editingProject.id, {
+        nama_proyek: editForm.nama_proyek,
+        kategori: editForm.kategori,
+        anggaran: Number(editForm.anggaran),
+        tanggal_mulai: editForm.tanggal_mulai,
+        estimasi_selesai: editForm.estimasi_selesai,
+        progres_persen: newProgres,
+        status: editForm.status,
+        catatan_perubahan: editForm.catatan_perubahan.trim() || undefined,
+      });
+
+      setProjectList((prev) =>
+        prev.map((item) => (item.id === editingProject.id ? { ...item, ...updated } : item))
+      );
+      setEditingProject(null);
+    } catch (err: any) {
+      setEditError(err.message || 'Gagal memperbarui data proyek.');
+    } finally {
+      setIsSubmittingEdit(false);
+    }
   };
 
   // Handle add new timeline stage
@@ -511,6 +592,13 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                         <td className="p-3.5 text-right">
                           <div className="flex items-center justify-end gap-1.5">
                             <button
+                              onClick={() => handleOpenEditModal(p)}
+                              className="px-2.5 py-1.5 bg-[#EBF4FB] hover:bg-[#d8eaf7] text-[#184C78] font-semibold rounded-lg border border-[#c5def2] transition-colors cursor-pointer"
+                              title="Sunting Data Proyek"
+                            >
+                              Edit
+                            </button>
+                            <button
                               onClick={() => onOpenProjectDetail(p)}
                               className="px-2.5 py-1.5 bg-[#F5F7FA] hover:bg-[#EBF4FB] text-[#184C78] font-semibold rounded-lg border border-[#DCE0E6] transition-colors cursor-pointer"
                               title="Lihat Detail Proyek"
@@ -840,6 +928,190 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 )}
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: EDIT PROYEK ── */}
+      {editingProject && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div role="dialog" aria-modal="true" className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6] relative">
+            <div className="bg-[#184C78] text-white p-5">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="font-['DM_Sans'] text-lg font-bold">Sunting Data Proyek</h3>
+                  <p className="text-xs text-white/75 mt-0.5">
+                    Perbarui spesifikasi, status, jadwal, dan persentase progres fisik proyek.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingProject(null)}
+                  className="text-white/70 hover:text-white text-lg font-bold p-1 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            <form onSubmit={handleUpdateProject} className="p-6 space-y-3.5 text-xs max-h-[80vh] overflow-y-auto">
+              {editError && (
+                <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-semibold">Validasi Gagal</strong>
+                    <span>{editError}</span>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="edit_nama_proyek" className="block font-semibold text-[#184C78] mb-1">Nama Proyek</label>
+                <input
+                  id="edit_nama_proyek"
+                  type="text"
+                  required
+                  value={editForm.nama_proyek}
+                  onChange={(e) => setEditForm({ ...editForm, nama_proyek: e.target.value })}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="edit_kategori" className="block font-semibold text-[#184C78] mb-1">Kategori Sektor</label>
+                  <select
+                    id="edit_kategori"
+                    value={editForm.kategori}
+                    onChange={(e) => setEditForm({ ...editForm, kategori: e.target.value as ProyekKategori })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                  >
+                    <option value="jalan">Jalan & Jembatan</option>
+                    <option value="taman">Taman & Lanskap</option>
+                    <option value="drainase">Drainase & Saluran Air</option>
+                    <option value="fasilitas">Fasilitas Publik</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="edit_anggaran" className="block font-semibold text-[#184C78] mb-1">Pagu Anggaran (Rp)</label>
+                  <input
+                    id="edit_anggaran"
+                    type="number"
+                    required
+                    min={0}
+                    value={editForm.anggaran}
+                    onChange={(e) => setEditForm({ ...editForm, anggaran: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="edit_tanggal_mulai" className="block font-semibold text-[#184C78] mb-1">Tanggal Mulai</label>
+                  <input
+                    id="edit_tanggal_mulai"
+                    type="date"
+                    required
+                    value={editForm.tanggal_mulai}
+                    onChange={(e) => setEditForm({ ...editForm, tanggal_mulai: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="edit_estimasi_selesai" className="block font-semibold text-[#184C78] mb-1">Estimasi Selesai</label>
+                  <input
+                    id="edit_estimasi_selesai"
+                    type="date"
+                    required
+                    value={editForm.estimasi_selesai}
+                    onChange={(e) => setEditForm({ ...editForm, estimasi_selesai: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="edit_progres_persen" className="block font-semibold text-[#184C78] mb-1">
+                    Progres Fisik (%)
+                    <span className="text-[10px] text-slate-500 font-normal ml-1">
+                      (Saat ini: {editingProject.progres_persen}%)
+                    </span>
+                  </label>
+                  <input
+                    id="edit_progres_persen"
+                    type="number"
+                    min={0}
+                    max={100}
+                    required
+                    value={editForm.progres_persen}
+                    onChange={(e) => setEditForm({ ...editForm, progres_persen: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="edit_status" className="block font-semibold text-[#184C78] mb-1">Status Proyek</label>
+                  <select
+                    id="edit_status"
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value as ProyekStatus })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                  >
+                    <option value="berjalan">Sedang Berjalan</option>
+                    <option value="selesai">Selesai (FHO)</option>
+                    <option value="ditangguhkan">Ditangguhkan / Tertunda</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Peringatan & Field Wajib jika Progres Menurun (Aturan PRD 10.1) */}
+              {editForm.progres_persen < editingProject.progres_persen && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-800 text-[11px]">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Perhatian: Penurunan Progres Fisik Terdeteksi ({editingProject.progres_persen}% ➔ {editForm.progres_persen}%)</span>
+                  </div>
+                  <p className="text-[10.5px] text-amber-900 leading-snug">
+                    Sesuai ketentuan PRD Bagian 10.1, penurunan persentase progres wajib menyertakan keterangan/alasan minimal 10 karakter untuk dicatat ke riwayat audit trail.
+                  </p>
+                  <div>
+                    <label htmlFor="edit_catatan_perubahan" className="block font-semibold text-amber-900 mb-1">
+                      Alasan / Keterangan Penurunan Progres <span className="text-red-600">*</span>
+                    </label>
+                    <textarea
+                      id="edit_catatan_perubahan"
+                      rows={2}
+                      required
+                      placeholder="Contoh: Revisi volume lapangan, perbaikan struktur cor beton yang retak..."
+                      value={editForm.catatan_perubahan}
+                      onChange={(e) => setEditForm({ ...editForm, catatan_perubahan: e.target.value })}
+                      className="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none focus:border-amber-500 text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-[#DCE0E6] flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingProject(null)}
+                  className="px-4 py-2 border border-[#DCE0E6] text-[#6C757D] font-semibold rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingEdit}
+                  className="px-4 py-2 bg-[#184C78] hover:bg-[#0f3252] disabled:opacity-70 text-white font-bold rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
+                >
+                  {isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

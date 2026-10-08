@@ -1,4 +1,4 @@
-import type { ProyekItem, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem, WilayahOptionItem, ApiNotificationItem, SubscriptionStatus, ApiEvaluationStatusLog } from '../types';
+import type { ProyekItem, ProyekUpdatePayload, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem, WilayahOptionItem, ApiNotificationItem, SubscriptionStatus, ApiEvaluationStatusLog } from '../types';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
 
 const BASE_URL = '/api/v1';
@@ -328,5 +328,34 @@ export const apiService = {
     } catch {
       return [];
     }
+  },
+
+  async updateProject(id: number, data: ProyekUpdatePayload): Promise<ProyekItem> {
+    const token = localStorage.getItem('civictrack_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    const res = await fetch(`${BASE_URL}/proyek/${id}`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      const errData = await res.json().catch(() => ({}));
+      let msg = 'Gagal memperbarui data proyek.';
+      if (errData.detail) {
+        msg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail);
+      }
+      throw new Error(msg);
+    }
+
+    const updated = await res.json();
+    return mapBackendToProyekItem(updated);
   }
 };

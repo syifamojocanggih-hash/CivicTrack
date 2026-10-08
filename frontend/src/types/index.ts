@@ -25,6 +25,18 @@ export interface ProyekItem {
   tahap_terkini?: string;
 }
 
+export interface ProyekUpdatePayload {
+  nama_proyek?: string;
+  kategori?: ProyekKategori;
+  deskripsi?: string;
+  anggaran?: number;
+  status?: ProyekStatus;
+  progres_persen?: number;
+  tanggal_mulai?: string;
+  estimasi_selesai?: string;
+  catatan_perubahan?: string;
+}
+
 export interface WilayahOptionItem {
   id: number;
   kode_wilayah: string;
