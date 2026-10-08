@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Lock, Mail, User, AlertCircle, Loader2, Check, Rocket } from 'lucide-react';
+import { X, AlertCircle, Loader2, Check, Rocket } from 'lucide-react';
 import type { UserProfile } from '../types';
 import { apiService } from '../services/api';
 
@@ -52,98 +52,85 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   return (
     <div className="fixed inset-0 z-[2200] flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-md animate-fade-in overflow-y-auto">
-      <div className="bg-white rounded-3xl w-full max-w-4xl shadow-2xl border border-slate-100 overflow-hidden relative flex flex-col md:flex-row my-auto max-h-[92vh]">
+      {/* ── CARD WRAPPER WITH PRECISE PROPORTIONS (NOT GEPENG) ── */}
+      <div className="bg-white rounded-[32px] w-full max-w-[820px] md:h-[500px] shadow-2xl overflow-hidden relative flex flex-col md:flex-row my-auto transition-all">
         {/* Close Button */}
         <button
           onClick={onClose}
           aria-label="Tutup dialog"
-          className="absolute top-4 right-4 z-30 w-8 h-8 rounded-full bg-slate-100/80 hover:bg-slate-200/90 text-slate-600 hover:text-slate-900 flex items-center justify-center transition-all cursor-pointer shadow-xs"
+          className="absolute top-4 right-4 z-40 w-8 h-8 rounded-full bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer shadow-xs"
         >
           <X className="w-4 h-4" />
         </button>
 
-        {/* ── LEFT PANEL: DESKTOP BRANDING WITH CLOUD SCALLOPED EDGE ── */}
-        <div className="hidden md:flex flex-col justify-between w-[40%] bg-gradient-to-br from-[#0b63c5] via-[#1272d7] to-[#1e85eb] text-white p-8 relative overflow-hidden shrink-0 select-none">
-          {/* Decorative ambient bubbles */}
-          <div className="absolute -top-12 -left-12 w-44 h-44 rounded-full bg-white/10 blur-xl pointer-events-none" />
-          <div className="absolute bottom-16 -left-10 w-36 h-36 rounded-full bg-blue-300/15 blur-lg pointer-events-none" />
+        {/* ── 1. DESKTOP LEFT PANEL: BLUE WITH VOLUMINOUS CLOUD BORDER ── */}
+        <div className="hidden md:flex flex-col justify-between w-[42%] bg-gradient-to-br from-[#0b5ec2] via-[#1272d7] to-[#258bf4] text-white p-9 relative overflow-hidden shrink-0 select-none">
+          {/* Subtle background ambient blur */}
+          <div className="absolute -top-10 -left-10 w-36 h-36 rounded-full bg-white/10 blur-xl pointer-events-none" />
+          <div className="absolute bottom-10 -left-6 w-32 h-32 rounded-full bg-sky-300/15 blur-lg pointer-events-none" />
 
-          {/* Top branding content */}
-          <div className="relative z-10 space-y-4 my-auto">
-            <div className="text-sm font-semibold tracking-wide text-white/90">
+          {/* Top Brand Content */}
+          <div className="relative z-10 space-y-3.5 my-auto pr-6">
+            <span className="text-sm font-medium tracking-wide text-white/90">
               Welcome to
-            </div>
+            </span>
 
             {/* Circular Logo Badge */}
-            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl p-3 mx-0 ring-4 ring-white/20 transition-transform hover:scale-105">
+            <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center shadow-xl p-3 ring-4 ring-white/20 transition-transform hover:scale-105">
               <img
                 src="/civictrack-icon.png"
                 alt="CivicTrack"
                 className="w-full h-full object-contain"
                 onError={(e) => {
-                  // Fallback if image not rendered
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
-              <Rocket className="w-8 h-8 text-[#0b63c5] hidden only:block" />
+              <Rocket className="w-9 h-9 text-[#0b63c5] hidden only:block" />
             </div>
 
             <div>
-              <h2 className="text-3xl font-extrabold tracking-tight font-['DM_Sans']">
+              <h2 className="text-3xl font-extrabold tracking-tight font-['DM_Sans'] text-white">
                 CivicTrack
               </h2>
-              <p className="text-xs text-white/80 leading-relaxed mt-2.5 max-w-xs font-normal">
-                Platform resmi transparansi, partisipasi warga, dan akuntabilitas pembangunan infrastruktur Kabupaten Lamongan.
+              <p className="text-xs text-white/80 leading-relaxed mt-2.5 max-w-[210px]">
+                Sistem transparansi dan pemantauan proyek daerah secara akuntabel, inklusif, dan real-time.
               </p>
             </div>
-
-            {/* Feature Highlights Pills */}
-            <div className="pt-2 space-y-1.5 text-[11px] text-white/90 font-medium">
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-300" />
-                <span>Peta Interaktif 27 Kecamatan</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="w-1.5 h-1.5 rounded-full bg-amber-300" />
-                <span>Rekomendasi Rute AI &amp; Aduan Real-Time</span>
-              </div>
-            </div>
           </div>
 
-          {/* Bottom badge */}
-          <div className="relative z-10 pt-6 border-t border-white/15 flex items-center justify-between text-[10px] text-white/70 font-mono">
-            <span>KABUPATEN LAMONGAN</span>
-            <span>PROYEK APBD 2026</span>
+          {/* Bottom Left Footer */}
+          <div className="relative z-10 text-[9.5px] text-white/60 tracking-wider font-mono uppercase">
+            CIVICTRACK &bull; KABUPATEN LAMONGAN
           </div>
 
-          {/* Fluffy Vertical Cloud Scallop SVG (matches user reference image) */}
+          {/* Fluffy Voluminous Vertical Cloud Border (3-Tier Layered Scallops) */}
           <svg
-            className="absolute right-0 top-0 bottom-0 h-full w-9 pointer-events-none z-10"
-            viewBox="0 0 36 400"
+            className="absolute -right-0.5 top-0 bottom-0 h-full w-20 pointer-events-none z-20"
+            viewBox="0 0 80 480"
             preserveAspectRatio="none"
           >
-            {/* Darker translucent blue cloud layer */}
+            {/* Layer 1: Outermost Translucent Sky Blue Cloud */}
             <path
-              d="M36,0 L20,0 C8,25 12,50 24,70 C10,95 12,130 26,150 C8,175 10,210 24,230 C8,255 12,295 26,315 C10,335 12,370 26,385 L36,400 Z"
-              fill="rgba(255,255,255,0.2)"
+              d="M80,0 L20,0 C5,25 0,65 15,95 C2,125 5,165 25,195 C0,225 2,275 22,305 C2,335 0,385 18,415 C5,445 15,470 30,480 L80,480 Z"
+              fill="rgba(147, 197, 253, 0.4)"
             />
-            {/* Lighter translucent cloud layer */}
+            {/* Layer 2: Middle Soft Cloud */}
             <path
-              d="M36,0 L26,0 C14,25 18,50 30,70 C16,95 18,130 32,150 C14,175 16,210 30,230 C14,255 18,295 32,315 C16,335 18,370 32,385 L36,400 Z"
-              fill="rgba(255,255,255,0.4)"
+              d="M80,0 L35,0 C20,25 15,65 30,95 C18,125 20,165 40,195 C15,225 18,275 38,305 C18,335 15,385 32,415 C20,445 28,470 45,480 L80,480 Z"
+              fill="rgba(219, 234, 254, 0.65)"
             />
-            {/* Solid White cloud scallop cutting into the blue background */}
+            {/* Layer 3: Foreground Solid White Cloud */}
             <path
-              d="M36,0 L32,0 C20,25 24,50 34,70 C22,95 24,130 35,150 C20,175 22,210 34,230 C20,255 24,295 35,315 C22,335 24,370 35,385 L36,400 Z"
+              d="M80,0 L50,0 C35,25 30,65 45,95 C32,125 35,165 55,195 C30,225 32,275 52,305 C32,335 30,385 48,415 C35,445 42,470 60,480 L80,480 Z"
               fill="#ffffff"
             />
           </svg>
         </div>
 
-        {/* ── TOP BANNER: MOBILE VIEW WITH CLOUD SCALLOPED BOTTOM EDGE ── */}
-        <div className="md:hidden relative bg-gradient-to-br from-[#0b63c5] via-[#1272d7] to-[#1e85eb] text-white p-5 pb-9 text-center overflow-hidden shrink-0 select-none">
+        {/* ── 2. MOBILE TOP HEADER WITH HORIZONTAL CLOUD BORDER ── */}
+        <div className="md:hidden relative bg-gradient-to-br from-[#0b5ec2] via-[#1272d7] to-[#258bf4] text-white p-6 pb-12 text-center overflow-hidden shrink-0 select-none">
           <div className="relative z-10 flex flex-col items-center">
-            <span className="text-[11px] font-medium text-white/80 mb-1">
+            <span className="text-xs font-medium text-white/80 mb-1">
               Welcome to
             </span>
             <div className="w-14 h-14 bg-white rounded-full flex items-center justify-center shadow-lg p-2.5 my-1 ring-3 ring-white/20">
@@ -157,177 +144,159 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               CivicTrack
             </h2>
             <p className="text-[11px] text-white/80 max-w-xs mt-0.5">
-              Transparansi &amp; Akuntabilitas Pembangunan Daerah
+              Sistem Transparansi Pembangunan Daerah
             </p>
           </div>
 
-          {/* Fluffy Horizontal Cloud Scallop SVG on Mobile Bottom */}
+          {/* Fluffy Horizontal Cloud Bottom Edge */}
           <svg
-            className="absolute bottom-0 left-0 right-0 w-full h-6 pointer-events-none z-10"
-            viewBox="0 0 375 24"
+            className="absolute left-0 right-0 -bottom-0.5 w-full h-11 pointer-events-none z-20"
+            viewBox="0 0 400 50"
             preserveAspectRatio="none"
           >
-            {/* Layer 1: translucent */}
             <path
-              d="M0,24 L0,12 C25,2 50,4 75,14 C100,2 135,4 160,14 C185,2 220,4 245,13 C270,2 305,4 330,13 C350,4 365,6 375,12 L375,24 Z"
-              fill="rgba(255,255,255,0.25)"
+              d="M0,50 L0,30 C25,12 65,10 95,25 C125,5 165,8 195,28 C225,5 275,8 305,25 C335,10 375,12 400,28 L400,50 Z"
+              fill="rgba(147, 197, 253, 0.4)"
             />
-            {/* Layer 2: translucent */}
             <path
-              d="M0,24 L0,16 C30,6 55,8 80,18 C105,6 140,8 165,18 C190,5 225,8 250,17 C275,6 310,8 335,17 C355,7 368,9 375,15 L375,24 Z"
-              fill="rgba(255,255,255,0.45)"
+              d="M0,50 L0,38 C25,20 65,18 95,33 C125,15 165,18 195,36 C225,15 275,18 305,33 C335,20 375,22 400,36 L400,50 Z"
+              fill="rgba(219, 234, 254, 0.65)"
             />
-            {/* Layer 3: Solid white merging into form */}
             <path
-              d="M0,24 L0,20 C35,10 60,12 85,21 C110,10 145,12 170,21 C195,9 230,12 255,20 C280,10 315,12 340,20 C360,11 370,12 375,18 L375,24 Z"
+              d="M0,50 L0,44 C25,28 65,26 95,41 C125,23 165,26 195,44 C225,23 275,26 305,41 C335,28 375,30 400,44 L400,50 Z"
               fill="#ffffff"
             />
           </svg>
         </div>
 
-        {/* ── RIGHT PANEL: FORM CONTENT ── */}
-        <div className="flex-1 p-6 sm:p-8 flex flex-col justify-between overflow-y-auto">
-          <div>
-            {/* Notice Banner */}
-            {notice && (
-              <div className="mb-4 bg-sky-50 border border-sky-200 px-4 py-2 rounded-xl flex items-center gap-2 text-xs font-semibold text-[#0b63c5] animate-fade-in">
-                <span className="w-2 h-2 rounded-full bg-[#1272d7] animate-ping" />
-                <span>{notice}</span>
-              </div>
-            )}
-
-            {/* Header Titles */}
-            <div className="mb-5">
-              <h3 className="font-['DM_Sans'] text-2xl font-bold text-slate-800 tracking-tight">
-                {mode === 'login' ? 'Masuk ke Akun Anda' : 'Buat Akun Baru'}
+        {/* ── 3. RIGHT PANEL: ELEGANT MINIMALIST FORM (UNDERLINE STYLE) ── */}
+        <div className="flex-1 bg-white p-7 sm:p-10 flex flex-col justify-center overflow-y-auto">
+          <div className="max-w-md w-full mx-auto">
+            {/* Title */}
+            <div className="mb-6">
+              <h3 className="text-2xl sm:text-[26px] font-bold text-slate-800 tracking-tight font-['DM_Sans']">
+                {mode === 'login' ? 'Masuk ke Akun' : 'Create your account'}
               </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                {mode === 'login'
-                  ? 'Masukkan email dan kata sandi Anda untuk mengakses portal CivicTrack.'
-                  : 'Daftarkan data Anda untuk berpartisipasi dan memantau proyek pembangunan.'}
-              </p>
+              {notice && (
+                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-200 rounded-lg p-2 mt-2">
+                  {notice}
+                </p>
+              )}
             </div>
 
-            {/* Error Message Alert */}
-            {errorMsg && (
-              <div role="alert" className="mb-4 p-3 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2.5 animate-shake">
-                <AlertCircle className="w-4 h-4 shrink-0 text-red-500" />
-                <span className="font-medium">{errorMsg}</span>
-              </div>
-            )}
-
-            {/* The Form */}
-            <form onSubmit={handleSubmit} className="space-y-3.5">
-              {/* Field: Name (Register only) */}
+            {/* Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Name (Register Only) */}
               {mode === 'register' && (
                 <div>
-                  <label htmlFor="name" className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="name" className="block text-xs font-bold text-slate-700 mb-1">
                     Nama Lengkap
                   </label>
                   <div className="relative">
-                    <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                     <input
                       id="name"
                       type="text"
                       required
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      placeholder="Contoh: Budi Santoso"
-                      className="w-full pl-9 pr-9 py-2.5 text-xs sm:text-sm border-b-2 border-slate-200 focus:border-[#1272d7] bg-slate-50/50 hover:bg-slate-50 focus:bg-white rounded-t-lg transition-colors outline-none"
+                      placeholder="Masukkan nama lengkap"
+                      className="w-full bg-transparent border-0 border-b-2 border-sky-200 focus:border-[#0b63c5] pb-2 pt-1 text-sm text-slate-800 placeholder:text-slate-300 outline-none transition-colors pr-7"
                     />
-                    {name.length >= 3 && (
-                      <Check className="w-4 h-4 text-emerald-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                    )}
+                    <Check className="w-4 h-4 text-sky-400 absolute right-1 bottom-2.5 opacity-80" />
                   </div>
                 </div>
               )}
 
-              {/* Field: Email */}
+              {/* Email */}
               <div>
-                <label htmlFor="email" className="block text-xs font-semibold text-slate-700 mb-1">
+                <label htmlFor="email" className="block text-xs font-bold text-slate-700 mb-1">
                   Alamat Email
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     id="email"
                     type="email"
                     required
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    placeholder="nama@email.com"
-                    className="w-full pl-9 pr-9 py-2.5 text-xs sm:text-sm border-b-2 border-slate-200 focus:border-[#1272d7] bg-slate-50/50 hover:bg-slate-50 focus:bg-white rounded-t-lg transition-colors outline-none"
+                    placeholder="contoh@civictrack.id"
+                    className="w-full bg-transparent border-0 border-b-2 border-sky-200 focus:border-[#0b63c5] pb-2 pt-1 text-sm text-slate-800 placeholder:text-slate-300 outline-none transition-colors pr-7"
                   />
-                  {email.includes('@') && email.includes('.') && (
-                    <Check className="w-4 h-4 text-emerald-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  )}
+                  <Check className="w-4 h-4 text-sky-400 absolute right-1 bottom-2.5 opacity-80" />
                 </div>
               </div>
 
-              {/* Field: Password */}
+              {/* Password */}
               <div>
-                <label htmlFor="password" className="block text-xs font-semibold text-slate-700 mb-1">
+                <label htmlFor="password" className="block text-xs font-bold text-slate-700 mb-1">
                   Kata Sandi
                 </label>
                 <div className="relative">
-                  <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                   <input
                     id="password"
                     type="password"
                     required
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="••••••••"
-                    className="w-full pl-9 pr-9 py-2.5 text-xs sm:text-sm border-b-2 border-slate-200 focus:border-[#1272d7] bg-slate-50/50 hover:bg-slate-50 focus:bg-white rounded-t-lg transition-colors outline-none"
+                    placeholder="Masukkan kata sandi"
+                    className="w-full bg-transparent border-0 border-b-2 border-sky-200 focus:border-[#0b63c5] pb-2 pt-1 text-sm text-slate-800 placeholder:text-slate-300 outline-none transition-colors pr-7"
                   />
-                  {password.length >= 6 && (
-                    <Check className="w-4 h-4 text-emerald-500 absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
-                  )}
+                  <Check className="w-4 h-4 text-sky-400 absolute right-1 bottom-2.5 opacity-80" />
                 </div>
               </div>
 
-              {/* Field: Role (Register only) */}
+              {/* Role Selection (Register Only) */}
               {mode === 'register' && (
                 <div>
-                  <label htmlFor="role" className="block text-xs font-semibold text-slate-700 mb-1">
+                  <label htmlFor="role" className="block text-xs font-bold text-slate-700 mb-1">
                     Peran Akun
                   </label>
-                  <select
-                    id="role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as any)}
-                    className="w-full px-3 py-2.5 text-xs sm:text-sm border border-slate-200 rounded-xl focus:border-[#1272d7] outline-none bg-white text-slate-800"
-                  >
-                    <option value="warga">1. Warga Masyarakat (Partisipasi, Pantau &amp; Lapor)</option>
-                    <option value="aparatur_pemerintah">2. Aparatur Pemerintah (Monitoring Eksekutif &amp; Wilayah)</option>
-                    <option value="penanggung_jawab">3. Penanggung Jawab Proyek (Kelola Proyek &amp; Tanggapi Aduan)</option>
-                  </select>
+                  <div className="relative">
+                    <select
+                      id="role"
+                      value={role}
+                      onChange={(e) => setRole(e.target.value as any)}
+                      className="w-full bg-transparent border-0 border-b-2 border-sky-200 focus:border-[#0b63c5] pb-2 pt-1 text-xs sm:text-sm text-slate-800 outline-none transition-colors cursor-pointer pr-7"
+                    >
+                      <option value="warga">1. Warga Masyarakat (Partisipasi, Pantau &amp; Lapor)</option>
+                      <option value="aparatur_pemerintah">2. Aparatur Pemerintah (Monitoring Eksekutif &amp; Wilayah)</option>
+                      <option value="penanggung_jawab">3. Penanggung Jawab Proyek (Kelola Proyek &amp; Tanggapi Aduan)</option>
+                    </select>
+                  </div>
                 </div>
               )}
 
-              {/* Checkbox: Terms & Conditions (as shown in reference image) */}
-              <div className="flex items-center gap-2 pt-1 text-xs text-slate-600">
+              {/* Error Alert */}
+              {errorMsg && (
+                <div className="p-2.5 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-xs flex items-center gap-2 animate-fade-in">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-rose-500" />
+                  <span>{errorMsg}</span>
+                </div>
+              )}
+
+              {/* Terms Checkbox */}
+              <div className="flex items-center gap-2 pt-1.5">
                 <input
-                  id="terms"
                   type="checkbox"
+                  id="terms"
                   checked={agreeTerms}
                   onChange={(e) => setAgreeTerms(e.target.checked)}
-                  className="w-4 h-4 rounded text-[#1272d7] border-slate-300 focus:ring-[#1272d7] cursor-pointer"
+                  className="w-4 h-4 rounded text-[#0b63c5] border-slate-300 focus:ring-[#0b63c5] cursor-pointer"
                 />
                 <label htmlFor="terms" className="cursor-pointer select-none text-[11px] sm:text-xs text-slate-600">
                   Saya menyetujui <span className="text-[#0b63c5] font-semibold hover:underline">Ketentuan &amp; Kebijakan Privasi</span>
                 </label>
               </div>
 
-              {/* Action Buttons: Pill Sign Up / Sign In (matches reference) */}
-              <div className="pt-2 flex flex-col sm:flex-row items-center gap-3">
+              {/* Action Buttons: Pill Sign Up / Sign In */}
+              <div className="pt-3 flex flex-row items-center gap-3">
                 <button
                   type="submit"
                   disabled={isLoading || !agreeTerms}
-                  className="w-full sm:w-auto flex-1 py-2.5 px-6 rounded-full bg-gradient-to-r from-[#0b63c5] to-[#1e85eb] hover:from-[#0952a5] hover:to-[#176fc6] text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2"
+                  className="px-7 py-2.5 rounded-full bg-gradient-to-r from-[#0b63c5] to-[#1e85eb] hover:from-[#0952a5] hover:to-[#176fc6] text-white font-bold text-xs sm:text-sm shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-60 cursor-pointer flex items-center justify-center gap-2"
                 >
                   {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-                  <span>{mode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}</span>
+                  <span>{mode === 'login' ? 'Masuk Sekarang' : 'Sign Up'}</span>
                 </button>
 
                 <button
@@ -336,9 +305,9 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setMode(mode === 'login' ? 'register' : 'login');
                     setErrorMsg(null);
                   }}
-                  className="w-full sm:w-auto py-2.5 px-6 rounded-full border border-[#0b63c5] text-[#0b63c5] hover:bg-[#EBF4FB] font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer text-center"
+                  className="px-7 py-2.5 rounded-full border border-slate-300 hover:border-[#0b63c5] text-slate-600 hover:text-[#0b63c5] hover:bg-slate-50 font-semibold text-xs sm:text-sm transition-all duration-200 cursor-pointer text-center"
                 >
-                  {mode === 'login' ? 'Daftar Akun Baru' : 'Masuk ke Akun'}
+                  {mode === 'login' ? 'Sign Up' : 'Sign In'}
                 </button>
               </div>
             </form>
