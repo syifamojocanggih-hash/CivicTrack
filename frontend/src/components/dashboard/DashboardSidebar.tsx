@@ -18,7 +18,7 @@ import {
   MapPin,
   X,
 } from 'lucide-react';
-import type { UserProfile, UserRole } from '../../types';
+import type { UserProile, UserRole } from '../../types';
 import iconSrc from '../../assets/civictrack-icon.png';
 
 interface DashboardSidebarProps {
@@ -100,9 +100,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
 
       {/* ── MINIMALIST SAAS SIDEBAR CONTAINER ── */}
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-50 bg-[#F1F3F6] text-slate-800 flex flex-col border-r border-[#E2E6EB] transition-all duration-300 shadow-sm ${
-          isCollapsed ? 'w-20' : 'w-72'
-        } ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
+        className={`fixed top-0 bottom-0 left-0 z-50 bg-[#F1F3F6] text-slate-800 flex flex-col border-r border-[#E2E6EB] transition-all duration-300 shadow-sm ${isCollapsed ? 'w-20' : 'w-72'
+          } ${isMobileOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}
       >
         {/* ── 1. HEADER (CIRCULAR BRAND & SEARCH) ── */}
         <div className="h-16 px-4 flex items-center justify-between border-b border-slate-200/70 shrink-0">
@@ -129,9 +128,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             <div className="flex items-center gap-1.5">
               <button
                 onClick={() => setIsSearching(!isSearching)}
-                className={`w-8 h-8 rounded-full border flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors shadow-2xs cursor-pointer ${
-                  isSearching ? 'bg-[#184C78] text-white border-[#184C78]' : 'bg-white/80 border-slate-200/90 hover:bg-white'
-                }`}
+                className={`w-8 h-8 rounded-full border flex items-center justify-center text-slate-500 hover:text-slate-800 transition-colors shadow-2xs cursor-pointer ${isSearching ? 'bg-[#184C78] text-white border-[#184C78]' : 'bg-white/80 border-slate-200/90 hover:bg-white'
+                  }`}
                 title="Cari Menu"
               >
                 {isSearching ? <X className="w-3.5 h-3.5" /> : <Search className="w-3.5 h-3.5" />}
@@ -181,18 +179,16 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
               onSelectNavSection('overview');
               if (isMobileOpen) onCloseMobile();
             }}
-            className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-[13px] transition-all cursor-pointer group ${
-              isOverviewActive
+            className={`w-full flex items-center justify-between px-3.5 py-3 rounded-2xl text-[13px] transition-all cursor-pointer group ${isOverviewActive
                 ? 'bg-white shadow-xs border border-slate-200/60 text-slate-900 font-bold'
                 : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 font-medium'
-            }`}
+              }`}
             title={isCollapsed ? 'Dashboard' : undefined}
           >
             <div className="flex items-center gap-3 min-w-0">
               <LayoutDashboard
-                className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${
-                  isOverviewActive ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-800'
-                }`}
+                className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${isOverviewActive ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-800'
+                  }`}
               />
               {!isCollapsed && (
                 <span className="truncate leading-tight">Dashboard</span>
@@ -216,18 +212,16 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                   onSelectNavSection(item.id);
                   if (isMobileOpen) onCloseMobile();
                 }}
-                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-[13px] transition-all cursor-pointer group ${
-                  isActive
+                className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-2xl text-[13px] transition-all cursor-pointer group ${isActive
                     ? 'bg-white shadow-xs border border-slate-200/60 text-slate-900 font-bold'
                     : 'text-slate-600 hover:text-slate-900 hover:bg-white/60 font-medium'
-                }`}
+                  }`}
                 title={isCollapsed ? item.label : undefined}
               >
                 <div className="flex items-center gap-3 min-w-0">
                   <Icon
-                    className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${
-                      isActive ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-800'
-                    }`}
+                    className={`w-4 h-4 shrink-0 transition-transform group-hover:scale-105 ${isActive ? 'text-slate-900' : 'text-slate-500 group-hover:text-slate-800'
+                      }`}
                   />
                   {!isCollapsed && (
                     <span className="truncate leading-tight">{item.label}</span>
