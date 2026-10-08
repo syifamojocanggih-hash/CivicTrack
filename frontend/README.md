@@ -1,32 +1,38 @@
-# React + TypeScript + Vite
+# Frontend Testing Guide (CivicTrack)
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+Proyek ini menggunakan [Vitest](https://vitest.dev/) dan [React Testing Library](https://testing-library.com/) untuk pengujian komponen UI dan utilitas frontend.
 
-Currently, two official plugins are available:
+## Menjalankan Test
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Karena frontend CivicTrack dijalankan dalam ekosistem Docker, Anda **diwajibkan** menjalankan seluruh test suite melalui container Docker (atau mode interaktif `exec`) agar mendapatkan environment Node.js yang sesuai dengan dependensi proyek.
 
-## React Compiler
+Gunakan command berikut dari *root directory* proyek (lokasi `docker-compose.yml` berada):
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+docker compose exec frontend npm test -- --run
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+**Catatan Flag:**
+- `docker compose exec frontend`: Mengeksekusi command secara langsung di dalam container service `frontend`.
+- `npm test`: Menjalankan script test yang telah disiapkan di `package.json` (memanggil framework `vitest`).
+- `-- --run`: Memerintahkan Vitest berjalan dalam mode *single-run* (tidak berada dalam *watch mode* interaktif), sehingga eksekusi akan langsung selesai setelah semua test di-run. (Gunakan tanpa flag ini jika ingin Vitest re-run otomatis saat file berubah).
+
+### Menjalankan File Spesifik
+Untuk mengisolasi debugging dengan menjalankan satu file test tertentu saja, tambahkan sebagian atau seluruh nama file di akhir command:
+```bash
+docker compose exec frontend npm test -- --run src/components/AuthModal.test.tsx
+```
+
+## Struktur Test Saat Ini (Cakupan Kritis)
+Saat ini terdapat **18 test cases terisolasi** yang dikhususkan untuk menjaga *functional behavior* aplikasi tanpa menguji perubahan styling (CSS):
+
+- **`spatial.test.ts` (7 Test)**: Utilitas geospasial (`isPointInPolygon` manual dan fungsi validasi letak koordinat kecamatan beserta fallbacks).
+- **`AuthModal.test.tsx` (3 Test)**: Logika interaksi autentikasi, memblokir pengiriman API apabila *field* wajib kosong, hingga menangani error UI ketika menerima respons kredensial yang tidak valid dari backend (`401/400`).
+- **`AdminDinasDashboard.test.tsx` (3 Test)**: Validasi form penambahan proyek (memastikan submission tertahan apabila pengisian form kosong sama sekali atau hanya sebagian).
+- **`PimpinanDashboard.test.tsx` (2 Test)**: Rendering visual data statistik ringkasan dan *edge case handling* yang aman (menghindari crash UI seperti NaN) saat API backend tidak mengembalikan data proyek di suatu kecamatan (`total_proyek=0`).
+- **`PublicMapExplorer.test.tsx` (3 Test)**: Interaksi UI terisolasi untuk filter hierarki (cascading dropdown) berjenjang antar wilayah, memvalidasi perbandingan ID, hingga me-reset nilai kembali ke filter atas (status Semua Desa).
+
+## Menambahkan Test Baru
+1. Buat file baru dengan ekstensi yang sama menggunakan akhiran `.test.ts` atau `.test.tsx` di direktori (bersebelahan) dengan komponen sumber yang bersangkutan.
+2. Gunakan fungsionalitas `vi.mock()` yang disediakan oleh Vitest untuk melakukan stub/meniru kembalian fungsi eksternal (`apiService` API response).
+3. **Penting:** Modul berbasis peta dan spasial (seperti `react-leaflet`) tidak secara native didukung oleh engine simulasi DOM (`JSDOM`). Komponen ini telah dibuatkan *mock definition* secara global pada konfigurasi `src/setupTests.tsx` agar framework frontend tetap berjalan mulus. Pastikan mengecek file tersebut jika terdapat error elemen UI dari peta.
