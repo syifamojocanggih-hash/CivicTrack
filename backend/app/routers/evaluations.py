@@ -59,8 +59,12 @@ def submit_post_project_evaluation(
         kategori_proyek=proyek.kategori.value
     )
 
-    # Sisipkan raw_response_ai ke dalam ringkasan_analisis_ai agar persisten di database
-    # tanpa perlu merubah skema kolom tabel evaluasi_pembangunan.
+    # TODO (Known Issue / Temporary Design):
+    # Tabel evaluasi_pembangunan saat ini belum memiliki kolom terpisah `raw_response_ai` (seperti pada rekomendasi_rute).
+    # Untuk sementara, raw_response_ai disisipkan dengan prefix [RAW_AI_DEBUG] di dalam ringkasan_analisis_ai
+    # agar persisten di database tanpa melanggar batasan migrasi skema saat ini.
+    # PENTING: Field ini TIDAK BOLEH dirender mentah ke UI frontend mana pun!
+    # Solusi jangka panjang: Migrasi skema database untuk menambahkan kolom `raw_response_ai` atau tabel log terpisah.
     ringkasan_dasar = ai_result.get("ringkasan_analisis_ai", "")
     raw_ai_data = ai_result.get("raw_response_ai", {})
     raw_ai_str = json.dumps(raw_ai_data, ensure_ascii=False) if raw_ai_data else "{}"

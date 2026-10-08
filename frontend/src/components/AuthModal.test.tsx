@@ -19,7 +19,7 @@ describe('AuthModal', () => {
     render(<AuthModal isOpen={true} onClose={() => {}} onLoginSuccess={() => {}} initialMode="login" />);
     
     const user = userEvent.setup();
-    const loginBtn = screen.getByRole('button', { name: /Masuk/i });
+    const loginBtn = screen.getByRole('button', { name: /Masuk Sekarang/i });
     
     await user.click(loginBtn);
     

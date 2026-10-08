@@ -29,7 +29,6 @@ import {
   MOCK_EVALUASI_CACAT,
   MOCK_LINIMASA_TAHAP,
   MOCK_DOKUMENTASI_PROYEK,
-  MOCK_AUDIT_TRAIL_LOGS,
 } from '../../data/dashboardMockData';
 import { apiService } from '../../services/api';
 import { MiniMapOverview } from './MiniMapOverview';
@@ -123,14 +122,14 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
   React.useEffect(() => {
     if (selectedEvalToVerify) {
-      apiService.getEvaluationStatusLogs(selectedEvalToVerify.id).then((logs) => {
-        if (logs && logs.length > 0) {
-          setEvalStatusLogs(logs);
-        } else {
-          const fallback = MOCK_AUDIT_TRAIL_LOGS[selectedEvalToVerify.id] || [];
-          setEvalStatusLogs(fallback);
-        }
-      });
+      apiService
+        .getEvaluationStatusLogs(selectedEvalToVerify.id)
+        .then((logs) => {
+          setEvalStatusLogs(logs || []);
+        })
+        .catch(() => {
+          setEvalStatusLogs([]);
+        });
     } else {
       setEvalStatusLogs([]);
     }
@@ -848,7 +847,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       {/* ── MODAL: INPUT PROYEK BARU ── */}
       {isNewProjectModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6] relative">
+          <div role="dialog" aria-modal="true" className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6] relative">
             <div className="bg-[#184C78] text-white p-5">
               <h3 className="font-['DM_Sans'] text-lg font-bold">Input Data Proyek Pembangunan Baru</h3>
               <p className="text-xs text-white/75 mt-0.5">
@@ -1328,7 +1327,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                       </div>
                     ))
                   ) : (
-                    <p className="text-[11px] text-slate-400 italic">Belum ada riwayat status tercatat.</p>
+                    <p className="text-[11px] text-slate-400 italic">Belum ada riwayat perubahan status</p>
                   )}
                 </div>
               </div>

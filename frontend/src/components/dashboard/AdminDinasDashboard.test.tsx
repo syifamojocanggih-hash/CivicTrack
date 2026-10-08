@@ -19,6 +19,8 @@ vi.mock('../../services/api', () => ({
   apiService: {
     getProjects: vi.fn(),
     getWilayah: vi.fn(),
+    getWilayahStats: vi.fn(),
+    getEvaluationStatusLogs: vi.fn(),
   },
 }));
 

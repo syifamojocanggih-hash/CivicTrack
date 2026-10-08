@@ -31,8 +31,8 @@ import {
   MOCK_LAPORAN_WARGA,
   MOCK_EVALUASI_CACAT,
   MOCK_RATING_ULASAN,
-  MOCK_AUDIT_TRAIL_LOGS,
 } from '../../data/dashboardMockData';
+import { apiService } from '../../services/api';
 import { MiniMapOverview } from './MiniMapOverview';
 
 interface WargaDashboardProps {
@@ -55,6 +55,31 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   onOpenMapExplorer,
 }) => {
   const [activeAuditTrailId, setActiveAuditTrailId] = useState<number | null>(null);
+  const [evalStatusLogsMap, setEvalStatusLogsMap] = useState<Record<number, any[]>>({});
+  const [isLoadingLogs, setIsLoadingLogs] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (activeAuditTrailId) {
+      setIsLoadingLogs(true);
+      apiService
+        .getEvaluationStatusLogs(activeAuditTrailId)
+        .then((logs) => {
+          setEvalStatusLogsMap((prev) => ({
+            ...prev,
+            [activeAuditTrailId]: logs || [],
+          }));
+        })
+        .catch(() => {
+          setEvalStatusLogsMap((prev) => ({
+            ...prev,
+            [activeAuditTrailId]: [],
+          }));
+        })
+        .finally(() => {
+          setIsLoadingLogs(false);
+        });
+    }
+  }, [activeAuditTrailId]);
 
   const activeTab = (activeSection as any) || 'overview';
 
@@ -972,56 +997,41 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                       <span>Jejak Audit Status Evaluasi Pembangunan (Transparansi Publik)</span>
                     </div>
 
-                    <div className="relative pl-6 border-l-2 border-[#2980B9] ml-2 space-y-4 pt-1">
-                      {(MOCK_AUDIT_TRAIL_LOGS[item.id] || [
-                        {
-                          id: 1,
-                          evaluasi_id: item.id,
-                          status_baru: 'Laporan Dikirim Warga',
-                          diubah_oleh: item.nama_pelapor,
-                          role_pengubah: 'Warga Masyarakat',
-                          catatan: item.deskripsi,
-                          waktu: item.tanggal_lapor,
-                        },
-                        {
-                          id: 2,
-                          evaluasi_id: item.id,
-                          status_sebelumnya: 'Laporan Dikirim Warga',
-                          status_baru: 'Analisis AI (Gemini)',
-                          diubah_oleh: 'CivicTrack Gemini AI',
-                          role_pengubah: 'Sistem Otomatis',
-                          catatan: `Skor Urgensi AI: ${item.skor_urgensi_ai}/5. ${item.analisis_ai.split('\n\n[RAW_AI_DEBUG]:')[0]}`,
-                          waktu: item.tanggal_lapor,
-                        },
-                        {
-                          id: 3,
-                          evaluasi_id: item.id,
-                          status_sebelumnya: 'Analisis AI (Gemini)',
-                          status_baru: item.status_verifikasi.replace('_', ' '),
-                          diubah_oleh: 'Penanggung Jawab Proyek (Dinas)',
-                          role_pengubah: 'Penanggung Jawab Proyek',
-                          catatan: item.catatan_dinas || 'Verifikasi dokumen dan konfirmasi tim teknis lapangan.',
-                          waktu: item.tanggal_tindakan || item.tanggal_lapor,
-                        },
-                      ]).map((log, lIdx) => (
-                        <div key={lIdx} className="relative">
-                          <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[#184C78] border-2 border-white ring-2 ring-[#2980B9]/30 flex items-center justify-center">
-                            <span className="w-1.5 h-1.5 bg-white rounded-full" />
-                          </div>
-                          <div>
-                            <div className="flex items-center justify-between">
-                              <strong className="text-[#184C78] font-bold text-xs">{log.status_baru}</strong>
-                              <span className="text-[10px] text-[#6C757D] font-mono">{log.waktu}</span>
+                    <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                      {isLoadingLogs ? (
+                        <p className="text-[11px] text-slate-400 italic">Memuat jejak audit status...</p>
+                      ) : (evalStatusLogsMap[item.id] && evalStatusLogsMap[item.id].length > 0) ? (
+                        <div className="relative pl-6 border-l-2 border-[#2980B9] ml-2 space-y-4 pt-1">
+                          {evalStatusLogsMap[item.id].map((log, lIdx) => (
+                            <div key={lIdx} className="relative">
+                              <div className="absolute -left-[31px] top-0 w-4 h-4 rounded-full bg-[#184C78] border-2 border-white ring-2 ring-[#2980B9]/30 flex items-center justify-center">
+                                <span className="w-1.5 h-1.5 bg-white rounded-full" />
+                              </div>
+                              <div>
+                                <div className="flex items-center justify-between">
+                                  <strong className="text-[#184C78] font-bold text-xs">{log.status_baru}</strong>
+                                  <span className="text-[10px] text-[#6C757D] font-mono">
+                                    {log.created_at
+                                      ? new Date(log.created_at).toLocaleDateString('id-ID', {
+                                          hour: '2-digit',
+                                          minute: '2-digit',
+                                        })
+                                      : log.waktu || ''}
+                                  </span>
+                                </div>
+                                <div className="text-[11px] text-[#2980B9] font-medium">
+                                  Oleh: {log.nama_pengubah || log.diubah_oleh || 'Sistem'} ({log.role_pengubah || 'Sistem'})
+                                </div>
+                                <p className="text-[11px] text-slate-600 mt-0.5 bg-white p-2 rounded-lg border border-slate-200">
+                                  {log.catatan || '-'}
+                                </p>
+                              </div>
                             </div>
-                            <div className="text-[11px] text-[#2980B9] font-medium">
-                              Oleh: {log.diubah_oleh} ({log.role_pengubah})
-                            </div>
-                            <p className="text-[11px] text-slate-600 mt-0.5 bg-white p-2 rounded-lg border border-slate-200">
-                              {log.catatan}
-                            </p>
-                          </div>
+                          ))}
                         </div>
-                      ))}
+                      ) : (
+                        <p className="text-[11px] text-slate-400 italic">Belum ada riwayat perubahan status</p>
+                      )}
                     </div>
                   </div>
                 )}

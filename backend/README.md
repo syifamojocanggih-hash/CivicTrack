@@ -193,3 +193,14 @@ Untuk mencegah spam otomatis, bot flooding, dan input asal-asalan pada kanal lap
 > Rate limiting in-memory (`slowapi` dengan `MemoryStorage`) ini bekerja akurat untuk lingkungan *single-process / single-worker* (sebagaimana `docker-compose.yml` saat ini yang menjalankan 1 kontainer backend).
 > Jika di masa mendatang sistem di-scale ke multiple workers (misal Gunicorn multi-worker) atau multiple replica containers di Kubernetes/Docker Swarm, penyimpanan in-memory tidak lagi tersinkronisasi antar-worker. Pada skala multi-worker tersebut, storage limiter perlu dialihkan ke **Redis Storage** (`storage_uri="redis://redis:6379/1"`).
 
+---
+
+## Known Issues & Arsitektur TODO
+
+1. **Penyimpanan Mentah `[RAW_AI_DEBUG]` pada `ringkasan_analisis_ai` (Tabel `evaluasi_pembangunan`)**:
+   - **Konteks**: Berbeda dengan tabel `rekomendasi_rute` yang telah memiliki kolom mandiri `raw_response_ai`, skema tabel `evaluasi_pembangunan` belum memiliki kolom khusus tersebut.
+   - **Status Sementara**: Untuk persistensi audit tanpa merubah skema migrasi tabel yang sedang berjalan, respons mentah AI saat ini disisipkan dengan separator `\n\n[RAW_AI_DEBUG]:` di ujung kolom `ringkasan_analisis_ai`.
+   - **Aturan Frontend**: Seluruh frontend dilarang keras merender teks setelah tanda `[RAW_AI_DEBUG]:` secara mentah ke antarmuka pengguna (UI).
+   - **TODO Solusi Permanen**: Penambahan kolom `raw_response_ai TEXT` pada tabel `evaluasi_pembangunan` atau tabel audit log terpisah melalui migrasi basis data terjadwal berikutnya.
+
+
