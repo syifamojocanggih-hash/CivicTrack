@@ -143,16 +143,35 @@ Format JSON wajib:
             response = model.generate_content(prompt, request_options={"timeout": 5.0})
             clean_text = _clean_json_markdown(response.text)
             parsed = json.loads(clean_text)
-            score = int(parsed.get("skor_urgensi_ai", 3))
+
+            if not isinstance(parsed, dict):
+                raise ValueError(f"Output AI bukan format dictionary JSON valid: {type(parsed)}")
+
+            raw_score = parsed.get("skor_urgensi_ai")
+            if raw_score is None:
+                raise ValueError("Key 'skor_urgensi_ai' hilang dari keluaran JSON AI")
+
+            try:
+                score = int(raw_score)
+            except (ValueError, TypeError):
+                raise ValueError(f"Nilai 'skor_urgensi_ai' bukan angka integer: {raw_score}")
+
             score = max(1, min(5, score))
+
+            summary = str(parsed.get("ringkasan_analisis_ai", "")).strip()
+            invalid_placeholders = ["", "null", "none", "undefined", "n/a", "-", "..."]
+            if not summary or len(summary) < 5 or summary.lower() in invalid_placeholders:
+                raise ValueError(f"Ringkasan analisis AI kosong atau berupa placeholder: '{summary}'")
+
             return {
                 "skor_urgensi_ai": score,
-                "ringkasan_analisis_ai": str(parsed.get("ringkasan_analisis_ai", "Analisis awal selesai."))
+                "ringkasan_analisis_ai": summary,
+                "raw_response_ai": parsed
             }
         except Exception as e:
-            logger.warning(f"Gagal memanggil Gemini API untuk evaluasi: {e}. Menggunakan fallback analisis.")
+            logger.warning(f"Validasi output Gemini AI gagal atau format tidak terduga: {e}. Mengalihkan ke fallback heuristik aman.")
 
-    # Rule-based fallback jika Gemini belum dikonfigurasi
+    # Rule-based fallback jika Gemini belum dikonfigurasi atau respons tidak valid
     desc_lower = deskripsi.lower() + " " + kategori_masalah.lower()
     urgent_keywords = ["ambles", "runtuh", "retak besar", "patah", "banjir parah", "bahaya", "korban", "longsor", "lubang dalam"]
     medium_keywords = ["genangan", "retak rambut", "paving lepas", "cat terkelupas", "tersumbat", "gelombang"]
@@ -167,7 +186,14 @@ Format JSON wajib:
         skor = 2
         summary = "Laporan cacat non-struktural minor. Dapat dijadwalkan dalam agenda pemeliharaan rutin dinas terkait."
 
+    fallback_payload = {
+        "skor_urgensi_ai": skor,
+        "ringkasan_analisis_ai": summary,
+        "source": "heuristic_fallback"
+    }
+
     return {
         "skor_urgensi_ai": skor,
-        "ringkasan_analisis_ai": summary
+        "ringkasan_analisis_ai": summary,
+        "raw_response_ai": fallback_payload
     }

@@ -193,10 +193,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           )}
 
           <div>
-            <label className="block text-xs font-semibold text-[#184C78] mb-1.5">Alamat Email</label>
+            <label htmlFor="email" className="block text-xs font-semibold text-[#184C78] mb-1.5">Alamat Email</label>
             <div className="relative">
               <Mail className="w-4 h-4 text-[#6C757D] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
+                id="email"
                 type="email"
                 required
                 value={email}
@@ -208,10 +209,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           </div>
 
           <div>
-            <label className="block text-xs font-semibold text-[#184C78] mb-1.5">Kata Sandi</label>
+            <label htmlFor="password" className="block text-xs font-semibold text-[#184C78] mb-1.5">Kata Sandi</label>
             <div className="relative">
               <Lock className="w-4 h-4 text-[#6C757D] absolute left-3 top-1/2 -translate-y-1/2" />
               <input
+                id="password"
                 type="password"
                 required
                 value={password}

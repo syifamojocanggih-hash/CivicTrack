@@ -12,6 +12,7 @@ import {
   Sparkles,
   Check,
   AlertTriangle,
+  Clock,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -28,7 +29,9 @@ import {
   MOCK_EVALUASI_CACAT,
   MOCK_LINIMASA_TAHAP,
   MOCK_DOKUMENTASI_PROYEK,
+  MOCK_AUDIT_TRAIL_LOGS,
 } from '../../data/dashboardMockData';
+import { apiService } from '../../services/api';
 import { MiniMapOverview } from './MiniMapOverview';
 import { WILAYAH_DATA } from '../../data/geoWilayahData';
 import { validateCoordinatesInKecamatan } from '../../utils/spatial';
@@ -116,6 +119,22 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   const [evaluasiList, setEvaluasiList] = useState<EvaluasiCacatItem[]>(MOCK_EVALUASI_CACAT);
   const [selectedEvalToVerify, setSelectedEvalToVerify] = useState<EvaluasiCacatItem | null>(null);
   const [tindakanDinasText, setTindakanDinasText] = useState('');
+  const [evalStatusLogs, setEvalStatusLogs] = useState<any[]>([]);
+
+  React.useEffect(() => {
+    if (selectedEvalToVerify) {
+      apiService.getEvaluationStatusLogs(selectedEvalToVerify.id).then((logs) => {
+        if (logs && logs.length > 0) {
+          setEvalStatusLogs(logs);
+        } else {
+          const fallback = MOCK_AUDIT_TRAIL_LOGS[selectedEvalToVerify.id] || [];
+          setEvalStatusLogs(fallback);
+        }
+      });
+    } else {
+      setEvalStatusLogs([]);
+    }
+  }, [selectedEvalToVerify]);
 
   // Handle create new project
   const handleCreateProject = (e: React.FormEvent) => {
@@ -798,7 +817,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
                 <div className="p-3 bg-[#f4f9fd] rounded-xl border-l-3 border-[#2980B9] text-xs">
                   <div className="font-bold text-[#184C78]">Rekomendasi Analisis AI:</div>
-                  <p className="text-[#495057] text-[11px] mt-0.5">{item.analisis_ai}</p>
+                  <p className="text-[#495057] text-[11px] mt-0.5">{item.analisis_ai.split('\n\n[RAW_AI_DEBUG]:')[0]}</p>
                 </div>
 
                 {item.catatan_dinas ? (
@@ -839,8 +858,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
             <form onSubmit={handleCreateProject} className="p-6 space-y-3.5 text-xs max-h-[80vh] overflow-y-auto">
               <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Nama Proyek</label>
+                <label htmlFor="nama_proyek" className="block font-semibold text-[#184C78] mb-1">Nama Proyek</label>
                 <input
+                  id="nama_proyek"
                   type="text"
                   required
                   placeholder="Contoh: Peningkatan Jalan Raya Arjuno KM 1–3"
@@ -852,8 +872,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-[#184C78] mb-1">Kategori Sektor</label>
+                  <label htmlFor="kategori" className="block font-semibold text-[#184C78] mb-1">Kategori Sektor</label>
                   <select
+                    id="kategori"
                     value={newProjectForm.kategori}
                     onChange={(e) => setNewProjectForm({ ...newProjectForm, kategori: e.target.value as any })}
                     className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
@@ -866,8 +887,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-[#184C78] mb-1">Pagu Anggaran (Rp)</label>
+                  <label htmlFor="anggaran" className="block font-semibold text-[#184C78] mb-1">Pagu Anggaran (Rp)</label>
                   <input
+                    id="anggaran"
                     type="number"
                     required
                     min={10000000}
@@ -909,10 +931,11 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
               {/* Koordinat Lintang & Bujur (Point-in-Polygon Validation) */}
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block font-semibold text-[#184C78] mb-1">
+                  <label htmlFor="latitude" className="block font-semibold text-[#184C78] mb-1">
                     Latitude (Lintang)
                   </label>
                   <input
+                    id="latitude"
                     type="number"
                     step="0.0001"
                     required
@@ -927,10 +950,11 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="block font-semibold text-[#184C78] mb-1">
+                  <label htmlFor="longitude" className="block font-semibold text-[#184C78] mb-1">
                     Longitude (Bujur)
                   </label>
                   <input
+                    id="longitude"
                     type="number"
                     step="0.0001"
                     required
@@ -989,8 +1013,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Uraian / Deskripsi Pekerjaan</label>
+                <label htmlFor="deskripsi" className="block font-semibold text-[#184C78] mb-1">Uraian / Deskripsi Pekerjaan</label>
                 <textarea
+                  id="deskripsi"
                   rows={3}
                   required
                   placeholder="Jelaskan ruang lingkup pengerjaan konstruksi..."
@@ -1261,9 +1286,15 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       {/* ── MODAL: VERIFIKASI CACAT ── */}
       {selectedEvalToVerify && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6]">
-            <div className="bg-[#184C78] text-white p-5">
-              <h3 className="font-['DM_Sans'] text-base font-bold">Verifikasi Tindakan Perbaikan FHO</h3>
+          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl border border-[#DCE0E6]">
+            <div className="bg-[#184C78] text-white p-5 sticky top-0 z-10 flex items-center justify-between">
+              <div>
+                <h3 className="font-['DM_Sans'] text-base font-bold">Verifikasi Tindakan Perbaikan FHO</h3>
+                <p className="text-[11px] text-white/70">Tinjauan mutu &amp; jejak audit laporan evaluasi</p>
+              </div>
+              <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/15 text-white font-mono">
+                #{selectedEvalToVerify.id}
+              </span>
             </div>
             <form onSubmit={handleVerifyDefect} className="p-5 space-y-3 text-xs">
               <div className="p-3 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6]/60">
@@ -1272,10 +1303,40 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 <p className="text-[#495057] mt-1 italic">"{selectedEvalToVerify.deskripsi}"</p>
               </div>
 
+              {/* Riwayat Jejak Audit Status (Audit Trail) */}
+              <div className="p-3 bg-[#f8fafc] rounded-xl border border-slate-200 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-[#184C78]">
+                  <Clock className="w-3.5 h-3.5 text-[#2980B9]" />
+                  <span>Riwayat Jejak Audit Status (Linimasa Log)</span>
+                </div>
+                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
+                  {evalStatusLogs.length > 0 ? (
+                    evalStatusLogs.map((log: any, idx: number) => (
+                      <div key={idx} className="bg-white p-2 rounded-lg border border-slate-200 text-[11px] space-y-0.5">
+                        <div className="flex items-center justify-between font-semibold text-[#184C78]">
+                          <span>
+                            {log.status_sebelumnya ? `${log.status_sebelumnya} ➔ ` : ''}
+                            <span className="text-emerald-700 font-bold">{log.status_baru}</span>
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {log.created_at ? new Date(log.created_at).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' }) : log.waktu || ''}
+                          </span>
+                        </div>
+                        <p className="text-slate-600 text-[10.5px]">
+                          <strong className="text-slate-700">{log.nama_pengubah || log.diubah_oleh}:</strong> {log.catatan || '-'}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic">Belum ada riwayat status tercatat.</p>
+                  )}
+                </div>
+              </div>
+
               <div>
                 <label className="block font-semibold text-[#184C78] mb-1">Catatan Tindakan Tim Lapangan</label>
                 <textarea
-                  rows={4}
+                  rows={3}
                   required
                   value={tindakanDinasText}
                   onChange={(e) => setTindakanDinasText(e.target.value)}

@@ -1,4 +1,4 @@
-import type { ProyekItem, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem, WilayahOptionItem, ApiNotificationItem, SubscriptionStatus } from '../types';
+import type { ProyekItem, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem, WilayahOptionItem, ApiNotificationItem, SubscriptionStatus, ApiEvaluationStatusLog } from '../types';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
 
 const BASE_URL = '/api/v1';
@@ -312,6 +312,21 @@ export const apiService = {
       return res.ok;
     } catch {
       return false;
+    }
+  },
+
+  async getEvaluationStatusLogs(evalId: number): Promise<ApiEvaluationStatusLog[]> {
+    try {
+      const res = await fetch(`${BASE_URL}/evaluasi/${evalId}/status-log`, {
+        headers: {
+          Accept: 'application/json',
+        },
+      });
+      if (!res.ok) return [];
+      const data = await res.json();
+      return Array.isArray(data) ? data : [];
+    } catch {
+      return [];
     }
   }
 };

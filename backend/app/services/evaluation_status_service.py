@@ -4,7 +4,7 @@ from fastapi import BackgroundTasks
 from sqlalchemy.orm import Session
 from app.models.user import User
 from app.models.project import Proyek, ProyekStatus, TahapanProgres
-from app.models.evaluation import EvaluasiPembangunan, EvaluasiStatus
+from app.models.evaluation import EvaluasiPembangunan, EvaluasiStatus, EvaluasiStatusLog
 from app.services.notification_service import send_project_update_notifications
 
 logger = logging.getLogger(__name__)
@@ -51,6 +51,26 @@ def sync_project_status_on_new_evaluation(
             dicatat_oleh=current_user_id
         )
         db.add(histori)
+
+        # Catat audit trail status log evaluasi untuk kejadian transisi otomatis AI.
+        # CATATAN DESAIN ARSITEKTUR:
+        # Nilai status_sebelumnya dan status_baru di sini sengaja diisi nilai yang sama
+        # (keduanya 'menunggu_verifikasi') karena status record evaluasi ITU SENDIRI BELUM BERUBAH
+        # (masih menunggu verifikasi resmi oleh admin dinas). Entri log ini dicatat sebagai jejak
+        # audit linimasa untuk membuktikan efek samping otomatis ke sistem: bahwa evaluasi ini
+        # telah memicu peninjauan ulang proyek (proyek.status -> 'dalam_peninjauan_ulang')
+        # karena skor urgensi analisis AI bernilai tinggi (skor >= 4).
+        eval_log = EvaluasiStatusLog(
+            evaluasi_id=evaluasi.id,
+            status_sebelumnya=EvaluasiStatus.menunggu_verifikasi.value,
+            status_baru=evaluasi.status.value,
+            diubah_oleh=current_user_id,
+            catatan=(
+                f"Analisis Otomatis AI (skor urgensi {evaluasi.skor_urgensi_ai}/5): "
+                f"Status proyek #{proyek.id} otomatis ditransisikan ke 'dalam_peninjauan_ulang'."
+            )
+        )
+        db.add(eval_log)
         db.commit()
         db.refresh(proyek)
 

@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+import app.models
 from app.core.database import Base, get_db
 from app.main import app
 
@@ -43,13 +44,21 @@ def reset_rate_limiter_state():
         limiter._storage.reset()
 
 @pytest.fixture
-def client():
+def db_session():
+    """
+    Fixture untuk menyediakan sesi database pengujian yang terikat
+    ke in-memory SQLite test engine.
+    """
+    db = TestingSessionLocal()
+    try:
+        yield db
+    finally:
+        db.close()
+
+@pytest.fixture
+def client(db_session):
     def override_get_db():
-        db = TestingSessionLocal()
-        try:
-            yield db
-        finally:
-            db.close()
+        yield db_session
 
     app.dependency_overrides[get_db] = override_get_db
     with TestClient(app) as test_client:

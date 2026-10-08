@@ -1,6 +1,7 @@
 import os
 import uuid
-import shutil
+import json
+import logging
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
@@ -20,6 +21,8 @@ from app.services.evaluation_status_service import (
     sync_project_status_on_new_evaluation,
     sync_project_status_on_evaluation_verification
 )
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Evaluasi Pasca-Proyek"])
 
@@ -56,19 +59,25 @@ def submit_post_project_evaluation(
         kategori_proyek=proyek.kategori.value
     )
 
+    # Sisipkan raw_response_ai ke dalam ringkasan_analisis_ai agar persisten di database
+    # tanpa perlu merubah skema kolom tabel evaluasi_pembangunan.
+    ringkasan_dasar = ai_result.get("ringkasan_analisis_ai", "")
+    raw_ai_data = ai_result.get("raw_response_ai", {})
+    raw_ai_str = json.dumps(raw_ai_data, ensure_ascii=False) if raw_ai_data else "{}"
+    ringkasan_gabungan = f"{ringkasan_dasar}\n\n[RAW_AI_DEBUG]: {raw_ai_str}"
+
     evaluasi = EvaluasiPembangunan(
         proyek_id=id,
         user_id=current_user.id,
         kategori_masalah=req.kategori_masalah,
         deskripsi=req.deskripsi,
         skor_urgensi_ai=ai_result.get("skor_urgensi_ai", 3),
-        ringkasan_analisis_ai=ai_result.get("ringkasan_analisis_ai", ""),
+        ringkasan_analisis_ai=ringkasan_gabungan,
         status=EvaluasiStatus.menunggu_verifikasi
     )
     db.add(evaluasi)
     db.commit()
     db.refresh(evaluasi)
-
     # Catat audit trail pertama kali
     log_entry = EvaluasiStatusLog(
         evaluasi_id=evaluasi.id,
@@ -155,6 +164,31 @@ def get_evaluation_detail(eval_id: int, db: Session = Depends(get_db)):
         ]
     )
     return res
+
+@router.get("/evaluasi/{eval_id}/status-log", response_model=List[EvaluasiStatusLogResponse])
+def get_evaluation_status_logs(eval_id: int, db: Session = Depends(get_db)):
+    """Mengambil riwayat lengkap audit trail log status atas suatu evaluasi pembangunan."""
+    evaluasi = db.query(EvaluasiPembangunan).filter(EvaluasiPembangunan.id == eval_id).first()
+    if not evaluasi:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Evaluasi tidak ditemukan.")
+
+    logs = db.query(EvaluasiStatusLog).filter(
+        EvaluasiStatusLog.evaluasi_id == eval_id
+    ).order_by(EvaluasiStatusLog.created_at.asc(), EvaluasiStatusLog.id.asc()).all()
+
+    return [
+        EvaluasiStatusLogResponse(
+            id=log.id,
+            evaluasi_id=log.evaluasi_id,
+            status_sebelumnya=log.status_sebelumnya,
+            status_baru=log.status_baru,
+            diubah_oleh=log.diubah_oleh,
+            catatan=log.catatan,
+            created_at=log.created_at,
+            nama_pengubah=log.pengubah.nama if log.pengubah else "Sistem"
+        )
+        for log in logs
+    ]
 
 @router.patch("/evaluasi/{eval_id}/verifikasi", response_model=EvaluasiResponse)
 def verify_evaluation(

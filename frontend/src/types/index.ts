@@ -153,6 +153,17 @@ export interface EvaluasiCacatItem {
   tanggal_tindakan?: string;
 }
 
+export interface ApiEvaluationStatusLog {
+  id: number;
+  evaluasi_id: number;
+  status_sebelumnya?: string | null;
+  status_baru: string;
+  diubah_oleh: number;
+  catatan?: string | null;
+  created_at: string;
+  nama_pengubah: string;
+}
+
 export interface RatingUlasanItem {
   id: number;
   proyek_id: number;

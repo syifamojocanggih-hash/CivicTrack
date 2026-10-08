@@ -931,7 +931,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                     <span>Analisis Cerdas AI (Civic Gemini Engine):</span>
                   </div>
                   <p className="text-[#495057] text-[11px] leading-relaxed">
-                    {item.analisis_ai}
+                    {item.analisis_ai.split('\n\n[RAW_AI_DEBUG]:')[0]}
                   </p>
                 </div>
 
@@ -990,7 +990,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                           status_baru: 'Analisis AI (Gemini)',
                           diubah_oleh: 'CivicTrack Gemini AI',
                           role_pengubah: 'Sistem Otomatis',
-                          catatan: `Skor Urgensi AI: ${item.skor_urgensi_ai}/5. ${item.analisis_ai}`,
+                          catatan: `Skor Urgensi AI: ${item.skor_urgensi_ai}/5. ${item.analisis_ai.split('\n\n[RAW_AI_DEBUG]:')[0]}`,
                           waktu: item.tanggal_lapor,
                         },
                         {
