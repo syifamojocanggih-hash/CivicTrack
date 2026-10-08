@@ -44,74 +44,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onClose();
       }
     } catch (err: any) {
-      console.warn('Backend login warning, falling back to local session:', err.message);
-      if (err.message && (err.message.includes('tidak valid') || err.message.includes('terdaftar'))) {
-        setErrorMsg(err.message);
-      } else {
-        // Fallback for seamless demo
-        const loggedUser: UserProfile = {
-          id: Math.floor(Math.random() * 1000) + 1,
-          nama: name || (email.split('@')[0] || 'Pengguna'),
-          email: email || 'user@civictrack.id',
-          role: role,
-        };
-        onLoginSuccess(loggedUser);
-        onClose();
-      }
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleQuickLogin = async (demoRole: 'warga' | 'aparatur_pemerintah' | 'penanggung_jawab') => {
-    setIsLoading(true);
-    setErrorMsg(null);
-    let targetEmail = 'budi.santoso@civictrack.demo';
-    if (demoRole === 'penanggung_jawab') targetEmail = 'admin.pu@civictrack.demo';
-    if (demoRole === 'aparatur_pemerintah') targetEmail = 'pimpinan.pu@civictrack.demo';
-
-    try {
-      const res = await apiService.login(targetEmail, 'password123');
-      onLoginSuccess(res.user);
-      onClose();
-    } catch (err) {
-      console.warn('Quick login fallback:', err);
-      let demoUser: UserProfile;
-      switch (demoRole) {
-        case 'penanggung_jawab':
-          demoUser = {
-            id: 1,
-            nama: 'Bambang Suryono, S.T.',
-            email: 'admin.pu@civictrack.demo',
-            role: 'penanggung_jawab',
-            nama_dinas: 'Dinas PU Bina Marga Lamongan',
-            nip: '19780412 200312 1 004',
-            dinas_id: 1,
-          };
-          break;
-        case 'aparatur_pemerintah':
-          demoUser = {
-            id: 2,
-            nama: 'Drs. Joko Prasetyo, M.Si',
-            email: 'pimpinan.pu@civictrack.demo',
-            role: 'aparatur_pemerintah',
-            nama_dinas: 'Sekretariat Daerah & Bappeda Lamongan',
-            nip: '19690815 199403 1 002',
-          };
-          break;
-        case 'warga':
-        default:
-          demoUser = {
-            id: 3,
-            nama: 'Budi Santoso',
-            email: 'budi.santoso@civictrack.demo',
-            role: 'warga',
-            telepon: '081234567890',
-          };
-          break;
-      }
-      onLoginSuccess(demoUser);
-      onClose();
+      setErrorMsg(err.message || 'Terjadi kesalahan saat memproses permintaan.');
     } finally {
       setIsLoading(false);
     }
@@ -409,56 +342,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </button>
               </div>
             </form>
-          </div>
-
-          {/* Quick Demo Login Preset (3 Roles) */}
-          <div className="mt-5 pt-3.5 border-t border-slate-100">
-            <div className="text-[10.5px] font-bold text-slate-400 uppercase tracking-wider mb-2 flex items-center gap-1">
-              <span>⚡ Quick Demo Login (3 Role):</span>
-            </div>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('warga')}
-                className="px-3 py-2 bg-slate-50 hover:bg-[#EBF4FB] border border-slate-200/80 hover:border-[#1272d7] rounded-xl text-left transition-all duration-150 cursor-pointer shadow-2xs group"
-              >
-                <div className="text-xs font-semibold text-slate-800 group-hover:text-[#0b63c5] flex items-center gap-1.5">
-                  <span>👤</span>
-                  <span>Warga</span>
-                </div>
-                <div className="text-[10px] text-slate-500 font-normal truncate mt-0.5">
-                  Budi Santoso
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('aparatur_pemerintah')}
-                className="px-3 py-2 bg-slate-50 hover:bg-[#EBF4FB] border border-slate-200/80 hover:border-[#1272d7] rounded-xl text-left transition-all duration-150 cursor-pointer shadow-2xs group"
-              >
-                <div className="text-xs font-semibold text-slate-800 group-hover:text-[#0b63c5] flex items-center gap-1.5">
-                  <span>🏛️</span>
-                  <span>Aparatur Pemda</span>
-                </div>
-                <div className="text-[10px] text-slate-500 font-normal truncate mt-0.5">
-                  Eksekutif / Bappeda
-                </div>
-              </button>
-
-              <button
-                type="button"
-                onClick={() => handleQuickLogin('penanggung_jawab')}
-                className="px-3 py-2 bg-slate-50 hover:bg-[#EBF4FB] border border-slate-200/80 hover:border-[#1272d7] rounded-xl text-left transition-all duration-150 cursor-pointer shadow-2xs group"
-              >
-                <div className="text-xs font-semibold text-slate-800 group-hover:text-[#0b63c5] flex items-center gap-1.5">
-                  <span>👷</span>
-                  <span>Penanggung Jawab</span>
-                </div>
-                <div className="text-[10px] text-slate-500 font-normal truncate mt-0.5">
-                  Dinas PUPR / Pelaksana
-                </div>
-              </button>
-            </div>
           </div>
         </div>
       </div>

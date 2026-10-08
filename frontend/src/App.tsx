@@ -38,8 +38,22 @@ export function App() {
   const [authNotice, setAuthNotice] = useState<string>('');
   const [postLoginRedirect, setPostLoginRedirect] = useState<'dashboard' | 'map-explorer' | null>(null);
 
-  // Sync projects and stats from backend on mount
+  // Sync projects and stats from backend on mount, plus restore database user session
   useEffect(() => {
+    // 0. Check real authenticated user session from database
+    const token = localStorage.getItem('civictrack_token');
+    if (token) {
+      apiService.getCurrentUser().then((user) => {
+        if (user) {
+          setCurrentUser(user);
+        } else {
+          localStorage.removeItem('civictrack_token');
+        }
+      }).catch(() => {
+        localStorage.removeItem('civictrack_token');
+      });
+    }
+
     // 1. Fetch live projects from backend
     apiService.getProjects().then((res) => {
       if (res.isFromBackend && res.projects.length > 0) {
@@ -151,39 +165,16 @@ export function App() {
   };
 
   const handleLogout = () => {
+    localStorage.removeItem('civictrack_token');
     setCurrentUser(null);
     setCurrentView('landing');
     setPostLoginRedirect(null);
     setAuthNotice('');
   };
 
-  const handleSwitchRole = (newRole: UserRole) => {
-    if (!currentUser) return;
-    let newName = currentUser.nama;
-    let newEmail = currentUser.email;
-    let newDinas = currentUser.nama_dinas;
-
-    if (newRole === 'penanggung_jawab' || newRole === 'admin_dinas' || newRole === 'pemerintah') {
-      newName = 'Bambang Suryono, S.T.';
-      newEmail = 'admin.pu@civictrack.demo';
-      newDinas = 'Dinas PU Bina Marga Lamongan';
-    } else if (newRole === 'aparatur_pemerintah' || newRole === 'pimpinan_instansi') {
-      newName = 'Drs. Joko Prasetyo, M.Si';
-      newEmail = 'pimpinan.pu@civictrack.demo';
-      newDinas = 'Sekretariat Daerah & Bappeda Lamongan';
-    } else {
-      newName = 'Budi Santoso';
-      newEmail = 'budi.santoso@civictrack.demo';
-      newDinas = undefined;
-    }
-
-    setCurrentUser({
-      ...currentUser,
-      nama: newName,
-      email: newEmail,
-      role: newRole,
-      nama_dinas: newDinas,
-    });
+  const handleSwitchRole = (_newRole: UserRole) => {
+    // In database-driven mode, role is fixed to the authenticated account in the DB.
+    // To switch role, user logs in with their actual account for that role.
   };
 
   const handleOpenFeature = (featureId: string) => {

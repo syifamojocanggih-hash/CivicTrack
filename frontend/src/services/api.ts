@@ -209,6 +209,41 @@ export const apiService = {
     return { user, token };
   },
 
+  // Get current authenticated user profile from backend database
+  async getCurrentUser(): Promise<UserProfile | null> {
+    const token = localStorage.getItem('civictrack_token');
+    if (!token) return null;
+    try {
+      const res = await fetch(`${BASE_URL}/auth/me`, {
+        headers: {
+          Accept: 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      if (!res.ok) {
+        localStorage.removeItem('civictrack_token');
+        return null;
+      }
+      const data = await res.json();
+      let role: UserProfile['role'] = 'warga';
+      if (data.role === 'pimpinan_instansi' || data.role === 'aparatur_pemerintah') {
+        role = 'aparatur_pemerintah';
+      } else if (data.role === 'admin_dinas' || data.role === 'penanggung_jawab' || data.role === 'pemerintah') {
+        role = 'penanggung_jawab';
+      }
+      return {
+        id: data.id,
+        nama: data.nama,
+        email: data.email,
+        role: role,
+        dinas_id: data.dinas_id,
+        nama_dinas: data.dinas?.nama_dinas,
+      };
+    } catch {
+      return null;
+    }
+  },
+
   // ── Subscription & Notifikasi ──
 
   async checkSubscriptionStatus(projectId: number): Promise<SubscriptionStatus> {
