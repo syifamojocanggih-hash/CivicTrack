@@ -12,4 +12,18 @@ CivicTrack adalah platform transparansi pembangunan infrastruktur publik Kabupat
 > docker compose up -d --build
 > ```
 > **Jangan hanya menjalankan `docker compose restart`**, agar container selalu memiliki paket dependensi terbaru dan terhindar dari `ModuleNotFoundError` saat container dijalankan.
+## Cara Menjalankan dengan Docker
 
+1. **Jalankan Aplikasi:**
+   ```bash
+   docker compose up -d --build
+   ```
+   *Atau cukup klik dua kali file:* [`scripts/start_project.bat`](file:///c:/Project_wpf/CivicTrack/scripts/start_project.bat)
+
+2. **Akses Platform:**
+   - **Frontend Web:** http://localhost:5173
+   - **Backend API (Swagger Docs):** http://localhost:8000/docs
+   - **MySQL Database:** `localhost:3306` (Database: `civictrack_db`, User: `root`, Password: `root`)
+
+3. **Jika Docker Desktop Gagal Memulai (WSL / Virtualization error di Windows):**
+   - Jalankan script perbaikan Administrator: [`scripts/fix_docker_wsl.bat`](file:///c:/Project_wpf/CivicTrack/scripts/fix_docker_wsl.bat) (klik kanan -> Run as administrator) lalu restart laptop.
