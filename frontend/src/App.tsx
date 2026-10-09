@@ -76,11 +76,25 @@ export function App() {
   });
   const [selectedProject, setSelectedProject] = useState<ProyekItem | null>(null);
   const [isNearbyModalOpen, setIsNearbyModalOpen] = useState<boolean>(false);
-  const [aiRouteModal, setAIRouteModal] = useState<{ isOpen: boolean; projectName: string }>({
+  const [aiRouteModal, setAIRouteModal] = useState<{
+    isOpen: boolean;
+    projectName: string;
+    project?: ProyekItem | null;
+  }>({
     isOpen: false,
     projectName: '',
+    project: null,
   });
   const [isOpenDataModalOpen, setIsOpenDataModalOpen] = useState<boolean>(false);
+
+  const handleOpenAIRoute = (name: string, proj?: ProyekItem | null) => {
+    const matchedProject = proj || projects.find((p) => p.nama_proyek === name) || null;
+    setAIRouteModal({
+      isOpen: true,
+      projectName: name,
+      project: matchedProject,
+    });
+  };
 
   // Filtered projects
   const filteredProjects = useMemo(() => {
@@ -243,7 +257,7 @@ export function App() {
           onBackToLanding={() => setCurrentView('landing')}
           onOpenDashboard={() => setCurrentView('dashboard')}
           onOpenProjectDetail={(proj) => setSelectedProject(proj)}
-          onOpenAIRoute={(name) => setAIRouteModal({ isOpen: true, projectName: name })}
+          onOpenAIRoute={(name) => handleOpenAIRoute(name)}
           onOpenAuth={(mode) => handleOpenAuth(mode)}
         />
       ) : currentView === 'dashboard' && currentUser ? (
@@ -256,7 +270,7 @@ export function App() {
           onOpenProjectDetail={(proj) => setSelectedProject(proj)}
           onOpenAIRoute={(name) => {
             setCurrentView('map-explorer');
-            setAIRouteModal({ isOpen: true, projectName: name });
+            handleOpenAIRoute(name);
           }}
           onOpenOpenDataModal={() => setIsOpenDataModalOpen(true)}
         />
@@ -343,7 +357,7 @@ export function App() {
         onClose={() => setIsNearbyModalOpen(false)}
         projects={projects}
         onSelectProject={(proj) => setSelectedProject(proj)}
-        onOpenAIRoute={(name) => setAIRouteModal({ isOpen: true, projectName: name })}
+        onOpenAIRoute={(name) => handleOpenAIRoute(name)}
       />
 
       <AuthModal
@@ -362,14 +376,15 @@ export function App() {
         isOpen={!!selectedProject && currentView !== 'map-explorer'}
         onClose={() => setSelectedProject(null)}
         currentUser={currentUser}
-        onOpenAIRoute={(name) => setAIRouteModal({ isOpen: true, projectName: name })}
+        onOpenAIRoute={(name) => handleOpenAIRoute(name, selectedProject)}
         onOpenAuth={() => handleOpenAuth('login')}
       />
 
       <AIRouteModal
         isOpen={aiRouteModal.isOpen}
         projectName={aiRouteModal.projectName}
-        onClose={() => setAIRouteModal({ isOpen: false, projectName: '' })}
+        project={aiRouteModal.project}
+        onClose={() => setAIRouteModal({ isOpen: false, projectName: '', project: null })}
       />
 
       <OpenDataModal

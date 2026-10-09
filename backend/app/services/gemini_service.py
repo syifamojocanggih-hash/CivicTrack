@@ -82,7 +82,55 @@ Keluarkan output HANYA berupa JSON valid dengan format persis seperti ini:
         except Exception as e:
             logger.warning(f"Gagal memanggil Gemini API untuk rute: {e}. Menggunakan fallback cerdas.")
 
-    # Heuristic fallback jika API key kosong atau kuota habis
+    # Heuristic fallback adaptif jika API key kosong atau kuota Google habis (429)
+    origin_name = None
+    dest_name = None
+    if catatan_penutupan:
+        m1 = re.search(
+            r"(?:rute\s+)?dari\s+(.+?)\s+(?:menuju|ke)\s+(.+?)(?:\s+(?:melintasi|melewati|lewat|sekitar)\b|$)",
+            catatan_penutupan,
+            re.IGNORECASE
+        )
+        if m1:
+            origin_name = m1.group(1).strip()
+            dest_name = m1.group(2).strip()
+        else:
+            m2 = re.search(
+                r"^(.+?)\s*(?:->|ke|menuju)\s*(.+?)(?:\s+(?:melintasi|melewati|lewat)\b|$)",
+                catatan_penutupan,
+                re.IGNORECASE
+            )
+            if m2:
+                origin_name = m2.group(1).strip()
+                dest_name = m2.group(2).strip()
+
+    if origin_name and dest_name:
+        orig_disp = origin_name.title() if origin_name.islower() else origin_name
+        dest_disp = dest_name.title() if dest_name.islower() else dest_name
+        return [
+            {
+                "nama_rute": f"Jalur Arteri {orig_disp} ➔ Bypass ➔ {dest_disp}",
+                "prioritas": "utama",
+                "estimasi_jarak_km": 3.8,
+                "estimasi_waktu_menit": 11,
+                "alasan_rekomendasi": f"Jalur arteri beraspal lebar menghindari penutupan proyek {nama_proyek}, menghubungkan {orig_disp} menuju {dest_disp} untuk semua jenis kendaraan."
+            },
+            {
+                "nama_rute": f"Jalan Lingkar ({orig_disp} ➔ Lingkar Luar ➔ {dest_disp})",
+                "prioritas": "kedua",
+                "estimasi_jarak_km": 5.2,
+                "estimasi_waktu_menit": 15,
+                "alasan_rekomendasi": f"Jalur lingkar sekunder pengurai kepadatan jam sibuk rute {orig_disp} - {dest_disp} via lingkar luar {nama_wilayah}."
+            },
+            {
+                "nama_rute": f"Jalur Pemukiman ({orig_disp} ➔ Gang Warga ➔ {dest_disp})",
+                "prioritas": "tambahan",
+                "estimasi_jarak_km": 2.5,
+                "estimasi_waktu_menit": 7,
+                "alasan_rekomendasi": f"Rute pintas pemukiman berkecepatan rendah dari {orig_disp} menuju {dest_disp} khusus bagi pengendara sepeda motor."
+            }
+        ]
+
     return [
         {
             "nama_rute": f"Jalur Arteri Utama Penghubung {nama_wilayah}",
