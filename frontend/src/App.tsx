@@ -173,6 +173,14 @@ export function App() {
   };
 
   const handleSwitchRole = (newRole: UserRole) => {
+    if (currentUser && !currentUser.email.includes('@civictrack.demo')) {
+      setCurrentUser({
+        ...currentUser,
+        role: newRole,
+      });
+      return;
+    }
+
     let newName = 'Budi Santoso';
     let newEmail = 'budi.santoso@civictrack.demo';
     let newDinas: string | undefined = undefined;
