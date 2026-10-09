@@ -24,11 +24,11 @@ docker compose exec frontend npm test -- --run src/components/AuthModal.test.tsx
 ```
 
 ## Struktur Test Saat Ini (Cakupan Kritis)
-Saat ini terdapat **18 test cases terisolasi** yang dikhususkan untuk menjaga *functional behavior* aplikasi tanpa menguji perubahan styling (CSS):
+Saat ini terdapat **22 test cases terisolasi** yang dikhususkan untuk menjaga *functional behavior* aplikasi tanpa menguji perubahan styling (CSS):
 
 - **`spatial.test.ts` (7 Test)**: Utilitas geospasial (`isPointInPolygon` manual dan fungsi validasi letak koordinat kecamatan beserta fallbacks).
-- **`AuthModal.test.tsx` (3 Test)**: Logika interaksi autentikasi, memblokir pengiriman API apabila *field* wajib kosong, hingga menangani error UI ketika menerima respons kredensial yang tidak valid dari backend (`401/400`).
-- **`AdminDinasDashboard.test.tsx` (3 Test)**: Validasi form penambahan proyek (memastikan submission tertahan apabila pengisian form kosong sama sekali atau hanya sebagian).
+- **`AuthModal.test.tsx` (4 Test)**: Logika interaksi autentikasi, memblokir pengiriman API apabila *field* wajib kosong, menangani respons error kredensial dari backend (`401/400`), dan memverifikasi fungsi tombol Quick Demo Login (3 peran).
+- **`AdminDinasDashboard.test.tsx` (6 Test)**: Validasi form penambahan proyek (kosong/parsial/valid) dan validasi modal edit proyek (penurunan progres wajib alasan minimal 10 karakter sesuai PRD 10.1).
 - **`PimpinanDashboard.test.tsx` (2 Test)**: Rendering visual data statistik ringkasan dan *edge case handling* yang aman (menghindari crash UI seperti NaN) saat API backend tidak mengembalikan data proyek di suatu kecamatan (`total_proyek=0`).
 - **`PublicMapExplorer.test.tsx` (3 Test)**: Interaksi UI terisolasi untuk filter hierarki (cascading dropdown) berjenjang antar wilayah, memvalidasi perbandingan ID, hingga me-reset nilai kembali ke filter atas (status Semua Desa).
 

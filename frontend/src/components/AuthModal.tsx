@@ -50,6 +50,56 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
   };
 
+  const handleQuickLogin = async (demoRole: 'warga' | 'aparatur_pemerintah' | 'penanggung_jawab') => {
+    setIsLoading(true);
+    setErrorMsg(null);
+    let targetEmail = 'budi.santoso@civictrack.demo';
+    if (demoRole === 'penanggung_jawab') targetEmail = 'admin.pu@civictrack.demo';
+    if (demoRole === 'aparatur_pemerintah') targetEmail = 'pimpinan.pu@civictrack.demo';
+
+    try {
+      const res = await apiService.login(targetEmail, 'password123');
+      onLoginSuccess(res.user);
+      onClose();
+    } catch {
+      let demoUser: UserProfile;
+      switch (demoRole) {
+        case 'penanggung_jawab':
+          demoUser = {
+            id: 1,
+            nama: 'Bambang Suryono, S.T.',
+            email: 'admin.pu@civictrack.demo',
+            role: 'penanggung_jawab',
+            nama_dinas: 'Dinas PU Bina Marga Lamongan',
+            dinas_id: 1,
+          };
+          break;
+        case 'aparatur_pemerintah':
+          demoUser = {
+            id: 2,
+            nama: 'Drs. Joko Prasetyo, M.Si',
+            email: 'pimpinan.pu@civictrack.demo',
+            role: 'aparatur_pemerintah',
+            nama_dinas: 'Sekretariat Daerah & Bappeda Lamongan',
+          };
+          break;
+        case 'warga':
+        default:
+          demoUser = {
+            id: 3,
+            nama: 'Budi Santoso',
+            email: 'budi.santoso@civictrack.demo',
+            role: 'warga',
+          };
+          break;
+      }
+      onLoginSuccess(demoUser);
+      onClose();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="fixed inset-0 z-[2200] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
       {/* ── CARD CONTAINER: MATCHES MOCKUP ASPECT RATIO & ROUNDED CORNERS ── */}
@@ -316,6 +366,53 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 >
                   {mode === 'login' ? 'Sign Up' : 'Sign In'}
                 </button>
+              </div>
+
+              {/* Quick Demo Login Preset (3 Roles) */}
+              <div className="mt-3.5 pt-2.5 border-t border-slate-100">
+                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider mb-1.5 flex items-center gap-1">
+                  <span>⚡ Quick Demo Login:</span>
+                </div>
+                <div className="grid grid-cols-3 gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => handleQuickLogin('warga')}
+                    className="p-1.5 bg-slate-50 hover:bg-[#EBF4FB] border border-slate-200/80 hover:border-[#1272d7] rounded-xl text-left transition-all cursor-pointer group"
+                  >
+                    <div className="text-[11px] font-semibold text-slate-800 group-hover:text-[#0b63c5] truncate">
+                      👤 Warga
+                    </div>
+                    <div className="text-[9px] text-slate-500 truncate">
+                      Budi Santoso
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickLogin('aparatur_pemerintah')}
+                    className="p-1.5 bg-slate-50 hover:bg-[#EBF4FB] border border-slate-200/80 hover:border-[#1272d7] rounded-xl text-left transition-all cursor-pointer group"
+                  >
+                    <div className="text-[11px] font-semibold text-slate-800 group-hover:text-[#0b63c5] truncate">
+                      🏛️ Pimpinan
+                    </div>
+                    <div className="text-[9px] text-slate-500 truncate">
+                      Drs. Joko
+                    </div>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => handleQuickLogin('penanggung_jawab')}
+                    className="p-1.5 bg-slate-50 hover:bg-[#EBF4FB] border border-slate-200/80 hover:border-[#1272d7] rounded-xl text-left transition-all cursor-pointer group"
+                  >
+                    <div className="text-[11px] font-semibold text-slate-800 group-hover:text-[#0b63c5] truncate">
+                      👷 Admin PU
+                    </div>
+                    <div className="text-[9px] text-slate-500 truncate">
+                      Bambang, S.T.
+                    </div>
+                  </button>
+                </div>
               </div>
             </form>
           </div>

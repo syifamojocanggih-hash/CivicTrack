@@ -78,4 +78,68 @@ describe('AuthModal', () => {
     // onLoginSuccess should NOT be called
     expect(onLoginMock).not.toHaveBeenCalled();
   });
+
+  it('renders Quick Demo Login buttons and triggers login for all 3 demo roles (Warga, Pimpinan, Admin PU)', async () => {
+    vi.mocked(apiService.login).mockImplementation(async (email, _pass) => {
+      if (email === 'admin.pu@civictrack.demo') {
+        return {
+          token: 'token-admin',
+          user: { id: 1, email, role: 'penanggung_jawab', nama: 'Bambang Suryono, S.T.' },
+        };
+      }
+      if (email === 'pimpinan.pu@civictrack.demo') {
+        return {
+          token: 'token-pimpinan',
+          user: { id: 2, email, role: 'aparatur_pemerintah', nama: 'Drs. Joko Prasetyo, M.Si' },
+        };
+      }
+      return {
+        token: 'token-warga',
+        user: { id: 3, email, role: 'warga', nama: 'Budi Santoso' },
+      };
+    });
+
+    const onLoginMock = vi.fn();
+    const onCloseMock = vi.fn();
+    render(<AuthModal isOpen={true} onClose={onCloseMock} onLoginSuccess={onLoginMock} initialMode="login" />);
+
+    // Pastikan kontainer Quick Demo Login ada
+    expect(screen.getByText(/Quick Demo Login/i)).toBeInTheDocument();
+
+    const user = userEvent.setup();
+
+    // 1. Verifikasi tombol Warga (Budi Santoso)
+    const wargaText = screen.getByText('Budi Santoso');
+    const wargaBtn = wargaText.closest('button');
+    expect(wargaBtn).toBeInTheDocument();
+    await user.click(wargaBtn!);
+
+    await waitFor(() => {
+      expect(apiService.login).toHaveBeenCalledWith('budi.santoso@civictrack.demo', 'password123');
+      expect(onLoginMock).toHaveBeenCalledWith(expect.objectContaining({ email: 'budi.santoso@civictrack.demo' }));
+      expect(onCloseMock).toHaveBeenCalled();
+    });
+
+    // 2. Verifikasi tombol Pimpinan (Drs. Joko)
+    const pimpinanText = screen.getByText('Drs. Joko');
+    const pimpinanBtn = pimpinanText.closest('button');
+    expect(pimpinanBtn).toBeInTheDocument();
+    await user.click(pimpinanBtn!);
+
+    await waitFor(() => {
+      expect(apiService.login).toHaveBeenCalledWith('pimpinan.pu@civictrack.demo', 'password123');
+      expect(onLoginMock).toHaveBeenCalledWith(expect.objectContaining({ email: 'pimpinan.pu@civictrack.demo' }));
+    });
+
+    // 3. Verifikasi tombol Admin PU (Bambang, S.T.)
+    const adminText = screen.getByText('Bambang, S.T.');
+    const adminBtn = adminText.closest('button');
+    expect(adminBtn).toBeInTheDocument();
+    await user.click(adminBtn!);
+
+    await waitFor(() => {
+      expect(apiService.login).toHaveBeenCalledWith('admin.pu@civictrack.demo', 'password123');
+      expect(onLoginMock).toHaveBeenCalledWith(expect.objectContaining({ email: 'admin.pu@civictrack.demo' }));
+    });
+  });
 });

@@ -1,0 +1,223 @@
+{
+  "1a. Register Akun Warga Baru": {
+    "status": "PASS",
+    "detail": "Status: 201",
+    "response": {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsImVtYWlsIjoid2FyZ2EuZnJlc2guMGFmOTMzQHRlc3RjaXZpYy5pZCIsInJvbGUiOiJ3YXJnYSIsImV4cCI6MTc5MTQ2Mjg3OSwidHlwZSI6ImFjY2VzcyJ9.gMbiAXgphc9kTrb_D66Ko_-uKOuWzngqGWmDoZ26ilg",
+      "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMyIsImVtYWlsIjoid2FyZ2EuZnJlc2guMGFmOTMzQHRlc3RjaXZpYy5pZCIsInJvbGUiOiJ3YXJnYSIsImV4cCI6MTc5MjA2MDQ3OSwidHlwZSI6InJlZnJlc2gifQ.R-iHZBYcTyImG33Gxusr1ZkkvA7jOyjxBGF5VKXPUXs",
+      "token_type": "bearer",
+      "user": {
+        "id": 13,
+        "nama": "Warga Uji 0af933",
+        "email": "warga.fresh.0af933@testcivic.id",
+        "role": "warga",
+        "dinas_id": null
+      }
+    }
+  },
+  "1b. Register Akun Admin Dinas Baru": {
+    "status": "PASS",
+    "detail": "Status: 201",
+    "response": {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNCIsImVtYWlsIjoiYWRtaW4uZnJlc2guMGFmOTMzQHRlc3RjaXZpYy5pZCIsInJvbGUiOiJhZG1pbl9kaW5hcyIsImV4cCI6MTc5MTQ2Mjg3OSwidHlwZSI6ImFjY2VzcyJ9.Eic7VqmppIH8RJg9Yj6aW4N5kqNTVFc-9w42yoiRb7k",
+      "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNCIsImVtYWlsIjoiYWRtaW4uZnJlc2guMGFmOTMzQHRlc3RjaXZpYy5pZCIsInJvbGUiOiJhZG1pbl9kaW5hcyIsImV4cCI6MTc5MjA2MDQ3OSwidHlwZSI6InJlZnJlc2gifQ.8PbmW_lhaZPzKT0mOeXuolG_tai7ttHha1KDgnvFV0Q",
+      "token_type": "bearer",
+      "user": {
+        "id": 14,
+        "nama": "Admin Dinas Uji 0af933",
+        "email": "admin.fresh.0af933@testcivic.id",
+        "role": "admin_dinas",
+        "dinas_id": 1
+      }
+    }
+  },
+  "1c. Register Akun Pimpinan Instansi Baru": {
+    "status": "PASS",
+    "detail": "Status: 201",
+    "response": {
+      "access_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNSIsImVtYWlsIjoicGltcGluYW4uZnJlc2guMGFmOTMzQHRlc3RjaXZpYy5pZCIsInJvbGUiOiJwaW1waW5hbl9pbnN0YW5zaSIsImV4cCI6MTc5MTQ2Mjg4MCwidHlwZSI6ImFjY2VzcyJ9.Bh5SmOCkq-uUH2RdN3qpXF5IqWuwjD7o7HAEK3u63fU",
+      "refresh_token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxNSIsImVtYWlsIjoicGltcGluYW4uZnJlc2guMGFmOTMzQHRlc3RjaXZpYy5pZCIsInJvbGUiOiJwaW1waW5hbl9pbnN0YW5zaSIsImV4cCI6MTc5MjA2MDQ4MCwidHlwZSI6InJlZnJlc2gifQ.sdmvKp-gIugI0-ad4UzfFv---zGvuJWngmt-o-SLKck",
+      "token_type": "bearer",
+      "user": {
+        "id": 15,
+        "nama": "Pimpinan Instansi Uji 0af933",
+        "email": "pimpinan.fresh.0af933@testcivic.id",
+        "role": "pimpinan_instansi",
+        "dinas_id": 1
+      }
+    }
+  },
+  "2. Login Akun Baru (Dapatkan Token Asli)": {
+    "status": "PASS",
+    "detail": "Status: 200",
+    "response": {
+      "user": {
+        "id": 13,
+        "nama": "Warga Uji 0af933",
+        "email": "warga.fresh.0af933@testcivic.id",
+        "role": "warga",
+        "dinas_id": null
+      },
+      "token_type": "bearer"
+    }
+  },
+  "3a. GET /api/v1/wilayah (Kecamatan Brondong)": {
+    "status": "PASS",
+    "detail": "Total Desa Ditemukan: 10",
+    "response": [
+      "Kelurahan Brondong",
+      "Desa Lohgung",
+      "Desa Labuhan",
+      "Desa Sidomukti",
+      "Desa Brengkok",
+      "Desa Tlogoretno",
+      "Desa Sendangharjo",
+      "Desa Lembor",
+      "Desa Sedayulawas",
+      "Desa Sumberagung"
+    ]
+  },
+  "3b-1. POST /proyek dengan desa_id valid": {
+    "status": "PASS",
+    "detail": "Status: 201, Proyek ID: 30",
+    "response": {
+      "id": 30,
+      "nama_proyek": "Pembangunan Saluran Drainase Brondong 0af933",
+      "wilayah_id": 8,
+      "desa_id": 129
+    }
+  },
+  "3b-2. POST /proyek dengan desa_id lintas kecamatan (Ditolak 422)": {
+    "status": "PASS",
+    "detail": "Status: 422",
+    "response": {
+      "detail": "Desa 'Desa Primpen' bukan merupakan bagian dari kecamatan terpilih (wilayah_id 8)."
+    }
+  },
+  "3c. GET /stats/wilayah & /stats/ringkasan": {
+    "status": "PASS",
+    "detail": "Total Kecamatan: 27, Status: 200",
+    "response": {
+      "ringkasan": {
+        "total_proyek": 30,
+        "status_proyek": {
+          "berjalan": 25,
+          "selesai": 4,
+          "tertunda": 0,
+          "dalam_peninjauan_ulang": 1
+        },
+        "total_anggaran": "241050000000.00",
+        "estimasi_penyerapan_anggaran": "148572500000.000000",
+        "rasio_penyerapan_persen": 61.64,
+        "rata_rata_progres": 61.33
+      },
+      "contoh_wilayah": {
+        "wilayah_id": 2,
+        "kode_wilayah": "35.24.01",
+        "nama_wilayah": "Kecamatan Sukorame",
+        "jumlah_berjalan": 0,
+        "jumlah_selesai": 1,
+        "jumlah_tertunda": 0,
+        "jumlah_dalam_peninjauan_ulang": 0,
+        "status_proyek": {
+          "berjalan": 0,
+          "selesai": 1,
+          "tertunda": 0,
+          "dalam_peninjauan_ulang": 0
+        },
+        "total_proyek": 1,
+        "total_anggaran": "3400000000.00",
+        "estimasi_penyerapan_anggaran": "3400000000.000000",
+        "rata_rata_progres": 100.0
+      },
+      "kecamatan_nol_proyek": 0
+    }
+  },
+  "3d. Subscribe Warga -> Update Proyek -> Notifikasi Masuk": {
+    "status": "PASS",
+    "detail": "Status Sub: 200, Status Update: 200, Notifikasi Diterima: 1",
+    "response": {
+      "id": 5,
+      "user_id": 13,
+      "proyek_id": 30,
+      "pesan": "Progres proyek 'Pembangunan Saluran Drainase Brondong 0af933' diperbarui: 25% -> 40%.",
+      "is_read": false,
+      "created_at": "2026-10-08T10:34:40",
+      "nama_proyek": "Pembangunan Saluran Drainase Brondong 0af933"
+    }
+  },
+  "3e. Evaluasi Kerusakan Berat 'ambles/runtuh' -> Auto Trigger 'dalam_peninjauan_ulang'": {
+    "status": "PASS",
+    "detail": "Status Evaluasi: 201, Status Proyek Berubah Menjadi: dalam_peninjauan_ulang",
+    "response": {
+      "proyek_id": 31,
+      "status_proyek": "dalam_peninjauan_ulang",
+      "evaluasi": {
+        "id": 3,
+        "proyek_id": 31,
+        "nama_proyek": "Pembangunan Jembatan Pesisir 0af933",
+        "user_id": 13,
+        "kategori_masalah": "kerusakan_struktur",
+        "deskripsi": "Aspal jalan ambles sedalam 50cm dan abutmen jembatan runtuh parah membahayakan keselamatan pengendara jalan.",
+        "skor_urgensi_ai": 5,
+        "ringkasan_analisis_ai": "Indikasi kerusakan struktural kritis yang berpotensi membahayakan keselamatan pengguna. Perlu inspeksi darurat tim teknis dalam 1x24 jam.\n\n[RAW_AI_DEBUG]: {\"skor_urgensi_ai\": 5, \"ringkasan_analisis_ai\": \"Indikasi kerusakan struktural kritis yang berpotensi membahayakan keselamatan pengguna. Perlu inspeksi darurat tim teknis dalam 1x24 jam.\", \"source\": \"heuristic_fallback\"}",
+        "status": "menunggu_verifikasi",
+        "ditinjau_oleh": null,
+        "created_at": "2026-10-08T10:34:40",
+        "updated_at": "2026-10-08T10:34:40",
+        "pelapor": {
+          "id": 13,
+          "nama": "Warga Uji 0af933",
+          "email": "warga.fresh.0af933@testcivic.id",
+          "role": "warga",
+          "dinas_id": null
+        },
+        "peninjau": null,
+        "dokumentasi_list": [],
+        "status_logs": [
+          {
+            "id": 4,
+            "evaluasi_id": 3,
+            "status_sebelumnya": null,
+            "status_baru": "menunggu_verifikasi",
+            "diubah_oleh": 13,
+            "catatan": "Laporan evaluasi fisik pasca-proyek diajukan oleh pengguna.",
+            "created_at": "2026-10-08T10:34:40",
+            "nama_pengubah": "Warga Uji 0af933"
+          },
+          {
+            "id": 5,
+            "evaluasi_id": 3,
+            "status_sebelumnya": "menunggu_verifikasi",
+            "status_baru": "menunggu_verifikasi",
+            "diubah_oleh": 13,
+            "catatan": "Analisis Otomatis AI (skor urgensi 5/5): Status proyek #31 otomatis ditransisikan ke 'dalam_peninjauan_ulang'.",
+            "created_at": "2026-10-08T10:34:40",
+            "nama_pengubah": "Warga Uji 0af933"
+          }
+        ]
+      }
+    }
+  },
+  "3f. Validasi Penurunan Progres Fisik (PRD 10.1)": {
+    "status": "PASS",
+    "detail": "Tanpa Catatan: 422 (Harus 422), Dengan Catatan: 200 (Harus 200)",
+    "response": {
+      "response_tanpa_catatan": {
+        "detail": "Progres tidak boleh diturunkan dari 40% ke 30% tanpa keterangan. Isi kolom catatan dengan alasan (contoh: revisi anggaran, proyek dihentikan sementara)."
+      },
+      "response_dengan_catatan": {
+        "id": 30,
+        "progres_persen": 30,
+        "catatan": "Diterima"
+      }
+    }
+  },
+  "3g. Upload Berkas executable/script .jpg (PRD 10.1 Magic Bytes Security)": {
+    "status": "PASS",
+    "detail": "Status: 422 (Harus 422 Ditolak)",
+    "response": {
+      "detail": "Berkas ditolak: isi berkas terdeteksi sebagai Windows Executable/DLL (PE), tidak sesuai dengan klaim ekstensi '.jpg'."
+    }
+  }
+}

@@ -28,7 +28,8 @@ interface DashboardSidebarProps {
   currentUser: UserProfile;
   activeNavSection: string;
   onSelectNavSection: (section: string) => void;
-  onBackToLanding: () => void;
+  onBackToLanding?: () => void;
+  onOpenMapExplorer?: () => void;
   onLogout: () => void;
   onSwitchRole: (role: UserRole) => void;
   onOpenOpenDataModal: () => void;
@@ -43,6 +44,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   activeNavSection,
   onSelectNavSection,
   onBackToLanding,
+  onOpenMapExplorer,
   onLogout,
   onSwitchRole,
   onOpenOpenDataModal,
@@ -318,7 +320,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
             <div className="space-y-1">
               {/* Back to Public Interactive Map */}
               <button
-                onClick={onBackToLanding}
+                onClick={onOpenMapExplorer || onBackToLanding}
                 className="w-full flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-medium text-slate-300 hover:bg-white/10 hover:text-white transition-all cursor-pointer group"
                 title={isCollapsed ? 'Jelajah Peta Publik' : undefined}
               >
