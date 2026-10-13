@@ -10,6 +10,7 @@ interface ProjectDetailModalProps {
   currentUser: UserProfile | null;
   onOpenAIRoute: (projectName: string) => void;
   onOpenAuth: () => void;
+  onProjectUpdated?: (project: ProyekItem) => void;
 }
 
 export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
@@ -19,6 +20,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   currentUser,
   onOpenAIRoute,
   onOpenAuth,
+  onProjectUpdated,
 }) => {
   const [activeTab, setActiveTab] = useState<'timeline' | 'gallery' | 'report' | 'rating'>('timeline');
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -68,11 +70,15 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const [reportTitle, setReportTitle] = useState('');
   const [reportDesc, setReportDesc] = useState('');
   const [reportSubmitted, setReportSubmitted] = useState(false);
+  const [reportSubmitting, setReportSubmitting] = useState(false);
+  const [reportError, setReportError] = useState<string | null>(null);
 
   // Rating state
   const [userRating, setUserRating] = useState(5);
   const [ratingComment, setRatingComment] = useState('');
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState<string | null>(null);
 
   if (!isOpen || !project) return null;
 
@@ -84,31 +90,70 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
     }).format(val);
   };
 
-  const handleReportSubmit = (e: React.FormEvent) => {
+  const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
       onOpenAuth();
       return;
     }
-    setReportSubmitted(true);
-    setTimeout(() => {
-      setReportSubmitted(false);
-      setReportTitle('');
-      setReportDesc('');
-    }, 4000);
+    const content = reportDesc.trim();
+    if (content.length < 10) {
+      setReportError('Isi laporan minimal harus terdiri dari 10 karakter.');
+      return;
+    }
+
+    setReportSubmitting(true);
+    setReportError(null);
+    try {
+      const fullContent = reportTitle.trim() ? `${reportTitle.trim()}: ${content}` : content;
+      await apiService.submitLaporan(project.id, {
+        isi_laporan: fullContent,
+      });
+
+      setReportSubmitted(true);
+      setTimeout(() => {
+        setReportSubmitted(false);
+        setReportTitle('');
+        setReportDesc('');
+      }, 4000);
+    } catch (err: any) {
+      setReportError(err.message || 'Gagal mengirimkan laporan pengaduan.');
+    } finally {
+      setReportSubmitting(false);
+    }
   };
 
-  const handleRatingSubmit = (e: React.FormEvent) => {
+  const handleRatingSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
       onOpenAuth();
       return;
     }
-    setRatingSubmitted(true);
-    setTimeout(() => {
-      setRatingSubmitted(false);
-      setRatingComment('');
-    }, 4000);
+
+    setRatingSubmitting(true);
+    setRatingError(null);
+    try {
+      await apiService.submitRating(project.id, {
+        skor: userRating,
+        komentar: ratingComment.trim() || undefined,
+      });
+
+      setRatingSubmitted(true);
+      setTimeout(() => {
+        setRatingSubmitted(false);
+        setRatingComment('');
+      }, 4000);
+
+      if (onProjectUpdated) {
+        apiService.getProjectDetail(project.id).then((updated) => {
+          onProjectUpdated(updated);
+        }).catch(() => {});
+      }
+    } catch (err: any) {
+      setRatingError(err.message || 'Gagal mengirimkan penilaian.');
+    } finally {
+      setRatingSubmitting(false);
+    }
   };
 
   const timelineSteps = [
@@ -405,17 +450,24 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                       required
                       value={reportDesc}
                       onChange={(e) => setReportDesc(e.target.value)}
-                      placeholder="Jelaskan kondisi lapangan secara objektif..."
+                      placeholder="Jelaskan kondisi lapangan secara objektif (minimal 10 karakter)..."
                       className="w-full px-3 py-2 text-xs border border-[#DCE0E6] rounded-lg focus:border-[#2980B9] outline-none"
                     />
                   </div>
 
+                  {reportError && (
+                    <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-800 text-xs">
+                      {reportError}
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    className="w-full py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                    disabled={reportSubmitting}
+                    className="w-full py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-bold rounded-lg text-xs transition-colors flex items-center justify-center gap-2 cursor-pointer shadow-sm disabled:opacity-50"
                   >
                     <Send className="w-3.5 h-3.5" />
-                    Kirim Laporan ke Dinas
+                    {reportSubmitting ? 'Mengirimkan ke Database...' : 'Kirim Laporan ke Dinas'}
                   </button>
                 </form>
               )}
@@ -480,11 +532,18 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                     />
                   </div>
 
+                  {ratingError && (
+                    <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-800 text-xs">
+                      {ratingError}
+                    </div>
+                  )}
+
                   <button
                     type="submit"
-                    className="w-full py-2 bg-[#2980B9] hover:bg-[#1a6fa8] text-white font-bold rounded-lg text-xs transition-colors cursor-pointer"
+                    disabled={ratingSubmitting}
+                    className="w-full py-2 bg-[#2980B9] hover:bg-[#1a6fa8] text-white font-bold rounded-lg text-xs transition-colors cursor-pointer disabled:opacity-50"
                   >
-                    Kirim Penilaian
+                    {ratingSubmitting ? 'Menyimpan Penilaian...' : 'Kirim Penilaian'}
                   </button>
                 </form>
               )}

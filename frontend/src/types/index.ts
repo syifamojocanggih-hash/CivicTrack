@@ -37,6 +37,131 @@ export interface ProyekUpdatePayload {
   catatan_perubahan?: string;
 }
 
+export interface ProyekCreatePayload {
+  nama_proyek: string;
+  kategori: ProyekKategori | string;
+  deskripsi?: string;
+  latitude: number;
+  longitude: number;
+  wilayah_id: number;
+  desa_id?: number | null;
+  dinas_id: number;
+  anggaran?: number;
+  status?: ProyekStatus | string;
+  progres_persen?: number;
+  tanggal_mulai: string;
+  estimasi_selesai: string;
+}
+
+export interface TahapanCreatePayload {
+  nama_tahap: string;
+  progres_persen: number;
+  catatan?: string;
+}
+
+export interface TahapanResponseItem {
+  id: number;
+  proyek_id: number;
+  nama_tahap: string;
+  progres_persen: number;
+  catatan?: string | null;
+  dicatat_oleh: number;
+  tanggal_pencatatan: string;
+}
+
+export interface LaporanCreatePayload {
+  isi_laporan: string;
+}
+
+export interface LaporanTanggapiPayload {
+  status_tindak_lanjut: 'baru' | 'diproses' | 'ditanggapi' | 'ditolak';
+  tanggapan_dinas: string;
+}
+
+export interface LaporanResponseItem {
+  id: number;
+  proyek_id: number;
+  user_id: number;
+  isi_laporan: string;
+  status_tindak_lanjut: 'baru' | 'diproses' | 'ditanggapi' | 'ditolak';
+  tanggapan_dinas?: string | null;
+  ditanggapi_oleh?: number | null;
+  created_at: string;
+  pelapor?: {
+    id: number;
+    nama: string;
+    email: string;
+    role: string;
+  } | null;
+  penanggap?: {
+    id: number;
+    nama: string;
+    email: string;
+    role: string;
+  } | null;
+}
+
+export interface RatingCreatePayload {
+  skor: number;
+  komentar?: string;
+}
+
+export interface RatingResponseItem {
+  id: number;
+  proyek_id: number;
+  user_id: number;
+  skor: number;
+  komentar?: string | null;
+  created_at: string;
+  nama_user: string;
+}
+
+export interface RatingSummaryResponseItem {
+  proyek_id: number;
+  rata_rata: number;
+  total_ulasan: number;
+  sebaran: Record<string, number>;
+}
+
+export interface EvaluasiCreatePayload {
+  kategori_masalah: string;
+  deskripsi: string;
+}
+
+export interface EvaluasiVerifikasiPayload {
+  status: 'menunggu_verifikasi' | 'dalam_penanganan' | 'selesai_diperbaiki' | 'ditolak';
+  catatan?: string;
+}
+
+export interface EvaluasiResponseItem {
+  id: number;
+  proyek_id: number;
+  nama_proyek: string;
+  user_id: number;
+  kategori_masalah: string;
+  deskripsi: string;
+  skor_urgensi_ai?: number | null;
+  ringkasan_analisis_ai?: string | null;
+  status: 'menunggu_verifikasi' | 'dalam_penanganan' | 'selesai_diperbaiki' | 'ditolak';
+  ditinjau_oleh?: number | null;
+  created_at: string;
+  updated_at: string;
+  pelapor?: {
+    id: number;
+    nama: string;
+    email: string;
+    role: string;
+  } | null;
+  peninjau?: {
+    id: number;
+    nama: string;
+    email: string;
+    role: string;
+  } | null;
+  status_logs?: ApiEvaluationStatusLog[];
+}
+
+
 export interface WilayahOptionItem {
   id: number;
   kode_wilayah: string;

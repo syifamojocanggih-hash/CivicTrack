@@ -462,18 +462,33 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     );
   };
 
-  const handleReportSubmit = (e: React.FormEvent) => {
+  const handleReportSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!currentUser) {
       onOpenAuth('login');
       return;
     }
-    setReportSent(true);
-    setTimeout(() => {
-      setReportSent(false);
-      setReportTitle('');
-      setReportDesc('');
-    }, 4000);
+    const content = reportDesc.trim();
+    if (content.length < 10) {
+      alert('Isi laporan minimal harus terdiri dari 10 karakter.');
+      return;
+    }
+
+    try {
+      const fullText = reportTitle.trim() ? `${reportTitle.trim()}: ${content}` : content;
+      await apiService.submitLaporan(selectedProjectId, {
+        isi_laporan: fullText,
+      });
+
+      setReportSent(true);
+      setTimeout(() => {
+        setReportSent(false);
+        setReportTitle('');
+        setReportDesc('');
+      }, 4000);
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengirimkan laporan pengaduan.');
+    }
   };
 
   // 3. Initialize Leaflet Map

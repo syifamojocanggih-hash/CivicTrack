@@ -96,6 +96,25 @@ export function App() {
     });
   };
 
+  // Real-time synchronization callbacks for created/updated projects
+  const handleProjectCreated = (newProject: ProyekItem) => {
+    setProjects((prev) => {
+      if (prev.some((p) => p.id === newProject.id)) return prev;
+      return [newProject, ...prev];
+    });
+    apiService.getStats().then((resStats) => setStats(resStats)).catch(() => {});
+  };
+
+  const handleProjectUpdated = (updatedProject: ProyekItem) => {
+    setProjects((prev) =>
+      prev.map((p) => (p.id === updatedProject.id ? { ...p, ...updatedProject } : p))
+    );
+    if (selectedProject && selectedProject.id === updatedProject.id) {
+      setSelectedProject((prev) => (prev ? { ...prev, ...updatedProject } : null));
+    }
+    apiService.getStats().then((resStats) => setStats(resStats)).catch(() => {});
+  };
+
   // Filtered projects
   const filteredProjects = useMemo(() => {
     return projects.filter((p) => {
@@ -273,6 +292,8 @@ export function App() {
             handleOpenAIRoute(name);
           }}
           onOpenOpenDataModal={() => setIsOpenDataModalOpen(true)}
+          onProjectCreated={handleProjectCreated}
+          onProjectUpdated={handleProjectUpdated}
         />
       ) : (
         <>
@@ -378,6 +399,7 @@ export function App() {
         currentUser={currentUser}
         onOpenAIRoute={(name) => handleOpenAIRoute(name, selectedProject)}
         onOpenAuth={() => handleOpenAuth('login')}
+        onProjectUpdated={handleProjectUpdated}
       />
 
       <AIRouteModal

@@ -1,37 +1,96 @@
-import type { ProyekItem, ProyekUpdatePayload, UserProfile, StatSummary, WilayahStatItem, RingkasanKabupatenItem, WilayahOptionItem, ApiNotificationItem, SubscriptionStatus, ApiEvaluationStatusLog } from '../types';
+import type {
+  ProyekItem,
+  ProyekUpdatePayload,
+  ProyekCreatePayload,
+  TahapanCreatePayload,
+  TahapanResponseItem,
+  LaporanCreatePayload,
+  LaporanTanggapiPayload,
+  LaporanResponseItem,
+  RatingCreatePayload,
+  RatingResponseItem,
+  RatingSummaryResponseItem,
+  EvaluasiCreatePayload,
+  EvaluasiVerifikasiPayload,
+  EvaluasiResponseItem,
+  UserProfile,
+  StatSummary,
+  WilayahStatItem,
+  RingkasanKabupatenItem,
+  WilayahOptionItem,
+  ApiNotificationItem,
+  SubscriptionStatus,
+  ApiEvaluationStatusLog,
+} from '../types';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
 
 const BASE_URL = '/api/v1';
+
+export function getAuthHeaders(): Record<string, string> {
+  const token = localStorage.getItem('civictrack_token');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+    Accept: 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+}
+
+export async function handleApiError(res: Response, defaultMessage: string): Promise<never> {
+  const errData = await res.json().catch(() => ({}));
+  let msg = defaultMessage;
+  if (errData && errData.detail) {
+    if (typeof errData.detail === 'string') {
+      msg = errData.detail;
+    } else if (Array.isArray(errData.detail)) {
+      msg = errData.detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
+    } else {
+      msg = JSON.stringify(errData.detail);
+    }
+  }
+  throw new Error(msg);
+}
 
 export interface BackendProjectItem {
   id: number;
   nama_proyek: string;
   kategori: string;
-  deskripsi: string;
+  deskripsi?: string;
   latitude: string | number;
   longitude: string | number;
   wilayah_id?: number;
   desa_id?: number | null;
   dinas_id?: number;
-  anggaran: string | number;
+  anggaran?: string | number | null;
   status: string;
   progres_persen: number;
   tanggal_mulai?: string;
   estimasi_selesai?: string;
   nama_wilayah?: string;
-  nama_desa?: string;
+  nama_desa?: string | null;
   nama_dinas?: string;
+  wilayah?: { id: number; nama_wilayah: string };
+  desa?: { id: number; nama_wilayah: string } | null;
+  dinas?: { id: number; nama_dinas: string };
   rata_rata_rating?: number | null;
   jumlah_rating?: number;
   tahap_terkini?: string;
+  tahapan_list?: Array<{ nama_tahap: string; progres_persen: number }>;
 }
 
 // Convert backend project schema to frontend ProyekItem
 export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
-  let cat = p.kategori.toLowerCase();
+  let cat = (p.kategori || 'jalan').toLowerCase();
   if (cat === 'jembatan') cat = 'jalan';
   if (cat === 'gedung_publik') cat = 'fasilitas';
-  
+
+  let tahap = p.tahap_terkini;
+  if (!tahap && p.tahapan_list && p.tahapan_list.length > 0) {
+    tahap = p.tahapan_list[p.tahapan_list.length - 1].nama_tahap;
+  }
+
   return {
     id: p.id,
     nama_proyek: p.nama_proyek,
@@ -39,22 +98,23 @@ export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
     deskripsi: p.deskripsi || '',
     latitude: Number(p.latitude) || -7.1195,
     longitude: Number(p.longitude) || 112.4154,
-    wilayah_id: p.wilayah_id || 1,
-    desa_id: p.desa_id ?? null,
-    dinas_id: p.dinas_id || 1,
+    wilayah_id: p.wilayah_id || (p.wilayah ? p.wilayah.id : 1),
+    desa_id: p.desa_id !== undefined ? p.desa_id : (p.desa ? p.desa.id : null),
+    dinas_id: p.dinas_id || (p.dinas ? p.dinas.id : 1),
     anggaran: Number(p.anggaran) || 0,
     status: (p.status === 'tertunda' ? 'ditangguhkan' : p.status) as any,
     progres_persen: p.progres_persen || 0,
-    tanggal_mulai: p.tanggal_mulai || '2024-01-01',
-    estimasi_selesai: p.estimasi_selesai || '2024-12-31',
-    nama_wilayah: p.nama_wilayah || 'Kabupaten Lamongan',
-    nama_desa: p.nama_desa,
-    nama_dinas: p.nama_dinas || 'Dinas Pekerjaan Umum Kab. Lamongan',
-    rata_rata_rating: p.rata_rata_rating || 4.5,
-    jumlah_rating: p.jumlah_rating || 10,
-    tahap_terkini: p.tahap_terkini || 'Pekerjaan konstruksi lapangan',
+    tanggal_mulai: p.tanggal_mulai ? String(p.tanggal_mulai).split('T')[0] : '2024-01-01',
+    estimasi_selesai: p.estimasi_selesai ? String(p.estimasi_selesai).split('T')[0] : '2024-12-31',
+    nama_wilayah: p.nama_wilayah || p.wilayah?.nama_wilayah || 'Kabupaten Lamongan',
+    nama_desa: p.nama_desa || p.desa?.nama_wilayah || undefined,
+    nama_dinas: p.nama_dinas || p.dinas?.nama_dinas || 'Dinas Pekerjaan Umum Kab. Lamongan',
+    rata_rata_rating: p.rata_rata_rating !== null && p.rata_rata_rating !== undefined ? Number(p.rata_rata_rating) : 4.5,
+    jumlah_rating: p.jumlah_rating || 0,
+    tahap_terkini: tahap || 'Pekerjaan konstruksi lapangan',
   };
 }
+
 
 export const apiService = {
   // Fetch projects from backend
@@ -366,15 +426,7 @@ export const apiService = {
   },
 
   async updateProject(id: number, data: ProyekUpdatePayload): Promise<ProyekItem> {
-    const token = localStorage.getItem('civictrack_token');
-    const headers: Record<string, string> = {
-      'Content-Type': 'application/json',
-      Accept: 'application/json',
-    };
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
+    const headers = getAuthHeaders();
     const res = await fetch(`${BASE_URL}/proyek/${id}`, {
       method: 'PUT',
       headers,
@@ -382,15 +434,242 @@ export const apiService = {
     });
 
     if (!res.ok) {
-      const errData = await res.json().catch(() => ({}));
-      let msg = 'Gagal memperbarui data proyek.';
-      if (errData.detail) {
-        msg = typeof errData.detail === 'string' ? errData.detail : JSON.stringify(errData.detail);
-      }
-      throw new Error(msg);
+      await handleApiError(res, 'Gagal memperbarui data proyek.');
     }
 
     const updated = await res.json();
     return mapBackendToProyekItem(updated);
+  },
+
+  // ── Manajemen Proyek & Linimasa ──
+
+  async createProject(data: ProyekCreatePayload): Promise<ProyekItem> {
+    const headers = getAuthHeaders();
+    if (!headers['Authorization']) {
+      throw new Error('Anda harus login terlebih dahulu untuk membuat proyek baru.');
+    }
+
+    let backendKategori = data.kategori;
+    if (backendKategori === 'fasilitas') backendKategori = 'gedung_publik';
+
+    const payload = {
+      ...data,
+      kategori: backendKategori,
+      anggaran: data.anggaran !== undefined ? Number(data.anggaran) : 0,
+      progres_persen: data.progres_persen !== undefined ? Number(data.progres_persen) : 0,
+      desa_id: data.desa_id || null,
+      status: data.status || 'berjalan',
+    };
+
+    const res = await fetch(`${BASE_URL}/proyek`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(payload),
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal membuat proyek baru.');
+    }
+
+    const created = await res.json();
+    return mapBackendToProyekItem(created);
+  },
+
+  async getProjectDetail(id: number): Promise<ProyekItem> {
+    const res = await fetch(`${BASE_URL}/proyek/${id}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) {
+      await handleApiError(res, `Gagal mengambil data proyek #${id}.`);
+    }
+    const item = await res.json();
+    return mapBackendToProyekItem(item);
+  },
+
+  async createTimelineStage(projectId: number, data: TahapanCreatePayload): Promise<TahapanResponseItem> {
+    const headers = getAuthHeaders();
+    if (!headers['Authorization']) {
+      throw new Error('Anda harus login untuk menambahkan tahapan proyek.');
+    }
+
+    const res = await fetch(`${BASE_URL}/proyek/${projectId}/tahapan`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal menambahkan tahapan linimasa.');
+    }
+
+    return await res.json();
+  },
+
+  // ── Laporan & Pengaduan Warga ──
+
+  async submitLaporan(projectId: number, data: LaporanCreatePayload): Promise<LaporanResponseItem> {
+    const headers = getAuthHeaders();
+    if (!headers['Authorization']) {
+      throw new Error('Harap masuk terlebih dahulu untuk mengirimkan aduan.');
+    }
+
+    const res = await fetch(`${BASE_URL}/proyek/${projectId}/laporan`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal mengirimkan laporan pengaduan.');
+    }
+
+    return await res.json();
+  },
+
+  async getProjectReports(projectId: number): Promise<LaporanResponseItem[]> {
+    const res = await fetch(`${BASE_URL}/proyek/${projectId}/laporan`, {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal memuat daftar laporan proyek.');
+    }
+
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  },
+
+  async replyAduan(reportId: number, data: LaporanTanggapiPayload): Promise<LaporanResponseItem> {
+    const headers = getAuthHeaders();
+    if (!headers['Authorization']) {
+      throw new Error('Anda harus login untuk menanggapi laporan.');
+    }
+
+    const res = await fetch(`${BASE_URL}/laporan/${reportId}/tanggapi`, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal menanggapi aduan masyarakat.');
+    }
+
+    return await res.json();
+  },
+
+  // ── Rating & Ulasan Warga ──
+
+  async submitRating(projectId: number, data: RatingCreatePayload): Promise<RatingResponseItem> {
+    const headers = getAuthHeaders();
+    if (!headers['Authorization']) {
+      throw new Error('Harap masuk terlebih dahulu untuk memberikan penilaian.');
+    }
+
+    const res = await fetch(`${BASE_URL}/proyek/${projectId}/rating`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal mengirimkan penilaian kepuasan.');
+    }
+
+    return await res.json();
+  },
+
+  async getProjectRatingSummary(projectId: number): Promise<RatingSummaryResponseItem> {
+    const res = await fetch(`${BASE_URL}/proyek/${projectId}/rating`, {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal memuat ringkasan rating.');
+    }
+
+    return await res.json();
+  },
+
+  async getProjectReviews(projectId: number): Promise<RatingResponseItem[]> {
+    const res = await fetch(`${BASE_URL}/proyek/${projectId}/ulasan`, {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal memuat ulasan warga.');
+    }
+
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  },
+
+  // ── Evaluasi Cacat Pembangunan Pasca-Proyek ──
+
+  async submitEvaluasi(projectId: number, data: EvaluasiCreatePayload): Promise<EvaluasiResponseItem> {
+    const headers = getAuthHeaders();
+    if (!headers['Authorization']) {
+      throw new Error('Harap masuk terlebih dahulu untuk mengajukan evaluasi proyek.');
+    }
+
+    const res = await fetch(`${BASE_URL}/proyek/${projectId}/evaluasi`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal mengajukan evaluasi cacat pembangunan.');
+    }
+
+    return await res.json();
+  },
+
+  async getEvaluations(filters?: { status?: string; proyek_id?: number; min_urgensi?: number }): Promise<EvaluasiResponseItem[]> {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.proyek_id !== undefined) params.append('proyek_id', String(filters.proyek_id));
+    if (filters?.min_urgensi !== undefined) params.append('min_urgensi', String(filters.min_urgensi));
+
+    const url = `${BASE_URL}/evaluasi${params.toString() ? '?' + params.toString() : ''}`;
+    const res = await fetch(url, { headers: { Accept: 'application/json' } });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal memuat daftar evaluasi.');
+    }
+
+    const data = await res.json();
+    return Array.isArray(data) ? data : [];
+  },
+
+  async getEvaluationDetail(evalId: number): Promise<EvaluasiResponseItem> {
+    const res = await fetch(`${BASE_URL}/evaluasi/${evalId}`, {
+      headers: { Accept: 'application/json' },
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, `Gagal memuat detail evaluasi #${evalId}.`);
+    }
+
+    return await res.json();
+  },
+
+  async verifyEvaluation(evalId: number, data: EvaluasiVerifikasiPayload): Promise<EvaluasiResponseItem> {
+    const headers = getAuthHeaders();
+    if (!headers['Authorization']) {
+      throw new Error('Anda harus login untuk memverifikasi evaluasi.');
+    }
+
+    const res = await fetch(`${BASE_URL}/evaluasi/${evalId}/verifikasi`, {
+      method: 'PATCH',
+      headers,
+      body: JSON.stringify(data),
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal memverifikasi evaluasi.');
+    }
+
+    return await res.json();
   }
 };

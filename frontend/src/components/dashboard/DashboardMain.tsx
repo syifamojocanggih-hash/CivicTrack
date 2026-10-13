@@ -15,6 +15,8 @@ interface DashboardMainProps {
   onOpenProjectDetail: (project: ProyekItem) => void;
   onOpenAIRoute: (projectName: string) => void;
   onOpenOpenDataModal: () => void;
+  onProjectCreated?: (project: ProyekItem) => void;
+  onProjectUpdated?: (project: ProyekItem) => void;
 }
 
 export const DashboardMain: React.FC<DashboardMainProps> = ({
@@ -26,6 +28,8 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
   onOpenProjectDetail,
   onOpenAIRoute,
   onOpenOpenDataModal,
+  onProjectCreated,
+  onProjectUpdated,
 }) => {
   // Sidebar state
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
@@ -127,6 +131,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
               activeSection={activeNavSection}
               onSelectSection={(sec) => setActiveNavSection(sec)}
               onOpenMapExplorer={onOpenMapExplorer}
+              onProjectUpdated={onProjectUpdated}
             />
           )}
 
@@ -151,6 +156,8 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
               activeSection={activeNavSection}
               onSelectSection={(sec) => setActiveNavSection(sec)}
               onOpenMapExplorer={onOpenMapExplorer}
+              onProjectCreated={onProjectCreated}
+              onProjectUpdated={onProjectUpdated}
             />
           )}
         </main>

@@ -43,6 +43,7 @@ interface WargaDashboardProps {
   activeSection?: string;
   onSelectSection?: (section: string) => void;
   onOpenMapExplorer?: () => void;
+  onProjectUpdated?: (project: ProyekItem) => void;
 }
 
 export const WargaDashboard: React.FC<WargaDashboardProps> = ({
@@ -53,6 +54,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   activeSection,
   onSelectSection,
   onOpenMapExplorer,
+  onProjectUpdated,
 }) => {
   const [activeAuditTrailId, setActiveAuditTrailId] = useState<number | null>(null);
   const [evalStatusLogsMap, setEvalStatusLogsMap] = useState<Record<number, any[]>>({});
@@ -128,108 +130,167 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     );
   };
 
+  // Sync real evaluations from database on mount
+  React.useEffect(() => {
+    apiService
+      .getEvaluations()
+      .then((apiEvals) => {
+        if (apiEvals && apiEvals.length > 0) {
+          const mapped: EvaluasiCacatItem[] = apiEvals.map((e) => ({
+            id: e.id,
+            proyek_id: e.proyek_id,
+            nama_proyek: e.nama_proyek,
+            user_id: e.user_id,
+            nama_pelapor: e.pelapor?.nama || 'Warga Masyarakat',
+            deskripsi: e.deskripsi,
+            lokasi_titik: 'Lokasi Proyek',
+            skor_urgensi_ai: e.skor_urgensi_ai || 3,
+            analisis_ai: e.ringkasan_analisis_ai || 'Analisis AI Groq',
+            kategori_cacat: e.kategori_masalah,
+            status_verifikasi: e.status,
+            catatan_dinas: e.status_logs?.[0]?.catatan || undefined,
+            tanggal_lapor: String(e.created_at).split('T')[0],
+          }));
+          setEvaluasiList(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   // Handle submit report
-  const handleSubmitReport = (e: React.FormEvent) => {
+  const handleSubmitReport = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!reportForm.judul || !reportForm.isi_laporan) return;
+    if (!reportForm.isi_laporan.trim()) return;
 
-    const selectedProj = projects.find((p) => p.id === Number(reportForm.proyek_id));
+    const pId = Number(reportForm.proyek_id);
+    const selectedProj = projects.find((p) => p.id === pId);
 
-    const newLaporan: LaporanAduan = {
-      id: Date.now(),
-      proyek_id: Number(reportForm.proyek_id),
-      nama_proyek: selectedProj?.nama_proyek || 'Proyek Kota',
-      user_id: currentUser.id,
-      nama_pelapor: currentUser.nama,
-      email_pelapor: currentUser.email,
-      judul: reportForm.judul,
-      isi_laporan: reportForm.isi_laporan,
-      kategori_aduan: reportForm.kategori_aduan,
-      status: 'menunggu',
-      tanggal_lapor: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
-    };
+    try {
+      const fullText = reportForm.judul.trim()
+        ? `${reportForm.judul.trim()}: ${reportForm.isi_laporan.trim()}`
+        : reportForm.isi_laporan.trim();
 
-    setLaporanList([newLaporan, ...laporanList]);
-    setIsNewReportModalOpen(false);
-    setReportForm({
-      proyek_id: projects[0]?.id || 1,
-      judul: '',
-      isi_laporan: '',
-      kategori_aduan: 'Dampak Lingkungan & Keselamatan',
-    });
+      const resLaporan = await apiService.submitLaporan(pId, {
+        isi_laporan: fullText,
+      });
+
+      const newLaporan: LaporanAduan = {
+        id: resLaporan.id,
+        proyek_id: pId,
+        nama_proyek: selectedProj?.nama_proyek || 'Proyek Kota',
+        user_id: currentUser.id,
+        nama_pelapor: currentUser.nama,
+        email_pelapor: currentUser.email,
+        judul: reportForm.judul || 'Aduan Warga',
+        isi_laporan: reportForm.isi_laporan,
+        kategori_aduan: reportForm.kategori_aduan,
+        status: 'menunggu',
+        tanggal_lapor: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+      };
+
+      setLaporanList([newLaporan, ...laporanList]);
+      setIsNewReportModalOpen(false);
+      setReportForm({
+        proyek_id: projects[0]?.id || 1,
+        judul: '',
+        isi_laporan: '',
+        kategori_aduan: 'Dampak Lingkungan & Keselamatan',
+      });
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengirimkan laporan pengaduan.');
+    }
   };
 
   // Handle submit rating
-  const handleSubmitRating = (e: React.FormEvent) => {
+  const handleSubmitRating = async (e: React.FormEvent) => {
     e.preventDefault();
-    const selProj = projects.find((p) => p.id === Number(ratingForm.proyek_id));
-    const newRating: RatingUlasanItem = {
-      id: Date.now(),
-      proyek_id: Number(ratingForm.proyek_id),
-      nama_proyek: selProj?.nama_proyek || 'Proyek Selesai',
-      user_id: currentUser.id,
-      nama_warga: currentUser.nama,
-      bintang: ratingForm.bintang,
-      komentar: ratingForm.komentar,
-      aspek_kualitas: ratingForm.aspek_kualitas,
-      aspek_ketepatan_waktu: ratingForm.aspek_ketepatan_waktu,
-      aspek_manfaat: ratingForm.aspek_manfaat,
-      tanggal: new Date().toISOString().split('T')[0],
-    };
+    const pId = Number(ratingForm.proyek_id);
+    const selProj = projects.find((p) => p.id === pId);
 
-    setRatingList([newRating, ...ratingList]);
-    setRatingSuccessMessage('Penilaian Anda berhasil disimpan! Terima kasih atas partisipasi aktif Anda.');
-    setTimeout(() => setRatingSuccessMessage(''), 4000);
-    setRatingForm({
-      proyek_id: projects.find((p) => p.status === 'selesai')?.id || 3,
-      bintang: 5,
-      aspek_kualitas: 5,
-      aspek_ketepatan_waktu: 5,
-      aspek_manfaat: 5,
-      komentar: '',
-    });
+    try {
+      const resRating = await apiService.submitRating(pId, {
+        skor: ratingForm.bintang,
+        komentar: ratingForm.komentar.trim() || undefined,
+      });
+
+      const newRating: RatingUlasanItem = {
+        id: resRating.id,
+        proyek_id: pId,
+        nama_proyek: selProj?.nama_proyek || 'Proyek Selesai',
+        user_id: currentUser.id,
+        nama_warga: currentUser.nama,
+        bintang: resRating.skor,
+        komentar: resRating.komentar || '',
+        aspek_kualitas: ratingForm.aspek_kualitas,
+        aspek_ketepatan_waktu: ratingForm.aspek_ketepatan_waktu,
+        aspek_manfaat: ratingForm.aspek_manfaat,
+        tanggal: new Date().toISOString().split('T')[0],
+      };
+
+      setRatingList([newRating, ...ratingList]);
+      setRatingSuccessMessage('Penilaian Anda berhasil disimpan ke database! Terima kasih atas partisipasi aktif Anda.');
+      setTimeout(() => setRatingSuccessMessage(''), 4000);
+      setRatingForm({
+        proyek_id: projects.find((p) => p.status === 'selesai')?.id || 3,
+        bintang: 5,
+        aspek_kualitas: 5,
+        aspek_ketepatan_waktu: 5,
+        aspek_manfaat: 5,
+        komentar: '',
+      });
+
+      if (onProjectUpdated) {
+        apiService.getProjectDetail(pId).then((updated) => onProjectUpdated(updated)).catch(() => {});
+      }
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengirimkan penilaian kepuasan.');
+    }
   };
 
-  // Handle submit evaluasi cacat with simulated AI analysis
-  const handleSubmitEvaluasi = (e: React.FormEvent) => {
+  // Handle submit evaluasi cacat with real Groq AI on backend
+  const handleSubmitEvaluasi = async (e: React.FormEvent) => {
     e.preventDefault();
-    const selProj = projects.find((p) => p.id === Number(evaluasiForm.proyek_id));
+    if (!evaluasiForm.deskripsi.trim()) return;
 
-    // Simulated Groq AI urgency calculation based on keywords
-    let score = 3;
-    let analysis = 'Tingkat Urgensi SEDANG (Skor 3/5). Memerlukan inspeksi visual berkala oleh penilik jalan dinas.';
-    const textLower = evaluasiForm.deskripsi.toLowerCase();
-    if (textLower.includes('ambles') || textLower.includes('retak besar') || textLower.includes('bahaya') || textLower.includes('patah')) {
-      score = 5;
-      analysis = 'Tingkat Urgensi SANGAT TINGGI (Skor 5/5 - AI Flagged). Kerusakan struktural kritis berisiko membahayakan keselamatan jiwa pejalan kaki atau lalu lintas. Rekomendasi: Tindakan segera < 24 Jam.';
-    } else if (textLower.includes('retak') || textLower.includes('bocor') || textLower.includes('longsor')) {
-      score = 4;
-      analysis = 'Tingkat Urgensi TINGGI (Skor 4/5). Diperlukan pemasangan rambu pengaman barikade dan perbaikan segera pada masa garansi.';
+    const pId = Number(evaluasiForm.proyek_id);
+    const selProj = projects.find((p) => p.id === pId);
+
+    try {
+      const evalRes = await apiService.submitEvaluasi(pId, {
+        kategori_masalah: evaluasiForm.kategori_cacat,
+        deskripsi: evaluasiForm.deskripsi.trim(),
+      });
+
+      const newEval: EvaluasiCacatItem = {
+        id: evalRes.id,
+        proyek_id: pId,
+        nama_proyek: selProj?.nama_proyek || evalRes.nama_proyek || 'Proyek Fisik Selesai',
+        user_id: currentUser.id,
+        nama_pelapor: currentUser.nama,
+        deskripsi: evalRes.deskripsi,
+        lokasi_titik: evaluasiForm.lokasi_titik || 'Lokasi Proyek',
+        skor_urgensi_ai: evalRes.skor_urgensi_ai || 3,
+        analisis_ai: evalRes.ringkasan_analisis_ai || 'Telah dianalisis oleh AI CivicTrack.',
+        kategori_cacat: evalRes.kategori_masalah,
+        status_verifikasi: evalRes.status,
+        tanggal_lapor: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+      };
+
+      setEvaluasiList([newEval, ...evaluasiList]);
+      setIsEvaluasiModalOpen(false);
+      setEvaluasiForm({
+        proyek_id: 3,
+        deskripsi: '',
+        lokasi_titik: '',
+        kategori_cacat: 'Struktur Beton / Retak',
+      });
+
+      if (onProjectUpdated) {
+        apiService.getProjectDetail(pId).then((updated) => onProjectUpdated(updated)).catch(() => {});
+      }
+    } catch (err: any) {
+      alert(err.message || 'Gagal mengajukan evaluasi cacat pembangunan.');
     }
-
-    const newEval: EvaluasiCacatItem = {
-      id: Date.now(),
-      proyek_id: Number(evaluasiForm.proyek_id),
-      nama_proyek: selProj?.nama_proyek || 'Proyek Fisik Selesai',
-      user_id: currentUser.id,
-      nama_pelapor: currentUser.nama,
-      deskripsi: evaluasiForm.deskripsi,
-      lokasi_titik: evaluasiForm.lokasi_titik,
-      skor_urgensi_ai: score,
-      analisis_ai: analysis,
-      kategori_cacat: evaluasiForm.kategori_cacat,
-      status_verifikasi: 'menunggu_verifikasi',
-      tanggal_lapor: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
-    };
-
-    setEvaluasiList([newEval, ...evaluasiList]);
-    setIsEvaluasiModalOpen(false);
-    setEvaluasiForm({
-      proyek_id: 3,
-      deskripsi: '',
-      lokasi_titik: '',
-      kategori_cacat: 'Struktur Beton / Retak',
-    });
   };
 
   const filteredLaporan = laporanList.filter((item) => {

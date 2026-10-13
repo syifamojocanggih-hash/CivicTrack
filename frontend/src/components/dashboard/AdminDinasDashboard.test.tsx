@@ -22,6 +22,12 @@ vi.mock('../../services/api', () => ({
     getWilayahStats: vi.fn(),
     getEvaluationStatusLogs: vi.fn(),
     updateProject: vi.fn(),
+    createProject: vi.fn(),
+    createTimelineStage: vi.fn(),
+    getEvaluations: vi.fn(),
+    getEvaluationDetail: vi.fn(),
+    verifyEvaluation: vi.fn(),
+    replyAduan: vi.fn(),
   },
 }));
 
@@ -30,6 +36,23 @@ describe('AdminDinasDashboard Form Validation', () => {
     vi.clearAllMocks();
     vi.mocked(apiService.getProjects).mockResolvedValue({ projects: [], isFromBackend: true });
     vi.mocked(apiService.getWilayahStats).mockResolvedValue([]);
+    vi.mocked(apiService.getEvaluations).mockResolvedValue([]);
+    vi.mocked(apiService.createProject).mockImplementation(async (data: any) => ({
+      id: 999,
+      nama_proyek: data.nama_proyek,
+      kategori: data.kategori,
+      deskripsi: data.deskripsi || '',
+      latitude: data.latitude,
+      longitude: data.longitude,
+      anggaran: data.anggaran,
+      status: data.status || 'berjalan',
+      progres_persen: data.progres_persen || 0,
+      nama_wilayah: 'Kecamatan Lamongan (Kota)',
+      nama_dinas: 'Dinas Pekerjaan Umum',
+      tahap_terkini: 'Pembersihan & Pengukuran Lahan',
+      rata_rata_rating: null,
+      jumlah_rating: 0,
+    }));
     vi.mocked(apiService.getWilayah).mockResolvedValue([
       { id: 1, nama_wilayah: 'Kecamatan Banyuwangi', level: 'kecamatan' }
     ] as any);
@@ -116,6 +139,7 @@ describe('AdminDinasDashboard Project Edit Validation', () => {
     vi.clearAllMocks();
     vi.mocked(apiService.getProjects).mockResolvedValue({ projects: [dummyProject], isFromBackend: true });
     vi.mocked(apiService.getWilayahStats).mockResolvedValue([]);
+    vi.mocked(apiService.getEvaluations).mockResolvedValue([]);
     vi.mocked(apiService.getWilayah).mockResolvedValue([]);
   });
 

@@ -35,6 +35,36 @@ import { MiniMapOverview } from './MiniMapOverview';
 import { WILAYAH_DATA } from '../../data/geoWilayahData';
 import { validateCoordinatesInKecamatan } from '../../utils/spatial';
 
+const KECAMATAN_ID_MAP: Record<string, number> = {
+  'Kecamatan Sukorame': 2,
+  'Kecamatan Bluluk': 3,
+  'Kecamatan Modo': 4,
+  'Kecamatan Ngimbang': 5,
+  'Kecamatan Babat': 6,
+  'Kecamatan Kedungpring': 7,
+  'Kecamatan Brondong': 8,
+  'Kecamatan Laren': 9,
+  'Kecamatan Sekaran': 10,
+  'Kecamatan Maduran': 11,
+  'Kecamatan Sambeng': 12,
+  'Kecamatan Sugio': 13,
+  'Kecamatan Pucuk': 14,
+  'Kecamatan Paciran': 15,
+  'Kecamatan Solokuro': 16,
+  'Kecamatan Mantup': 17,
+  'Kecamatan Sukodadi': 18,
+  'Kecamatan Karanggeneng': 19,
+  'Kecamatan Kembangbahu': 20,
+  'Kecamatan Kalitengah': 21,
+  'Kecamatan Turi': 22,
+  'Kecamatan Lamongan (Kota)': 23,
+  'Kecamatan Tikung': 24,
+  'Kecamatan Karangbinangun': 25,
+  'Kecamatan Deket': 26,
+  'Kecamatan Glagah': 27,
+  'Kecamatan Sarirejo': 28,
+};
+
 interface AdminDinasDashboardProps {
   currentUser: UserProfile;
   projects: ProyekItem[];
@@ -42,6 +72,8 @@ interface AdminDinasDashboardProps {
   activeSection?: string;
   onSelectSection?: (section: string) => void;
   onOpenMapExplorer?: () => void;
+  onProjectCreated?: (project: ProyekItem) => void;
+  onProjectUpdated?: (project: ProyekItem) => void;
 }
 
 export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
@@ -51,6 +83,8 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   activeSection,
   onSelectSection,
   onOpenMapExplorer,
+  onProjectCreated,
+  onProjectUpdated,
 }) => {
   const activeTab = (activeSection as any) || 'proyek';
 
@@ -59,8 +93,14 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   const [searchProj, setSearchProj] = useState('');
   const [filterStatus, setFilterStatus] = useState<string>('semua');
 
+  React.useEffect(() => {
+    setProjectList(projects);
+  }, [projects]);
+
   // Modal new project
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
+  const [isSubmittingNewProj, setIsSubmittingNewProj] = useState(false);
+  const [createProjError, setCreateProjError] = useState<string | null>(null);
   const [newProjectForm, setNewProjectForm] = useState({
     nama_proyek: '',
     kategori: 'jalan' as ProyekKategori,
@@ -71,7 +111,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     nama_wilayah: 'Kecamatan Lamongan (Kota)',
     latitude: -7.1197,
     longitude: 112.4150,
-    nama_dinas: 'Dinas Pekerjaan Umum dan Penataan Ruang',
+    nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum dan Penataan Ruang',
     tahap_terkini: 'Pembersihan & Pengukuran Lahan',
   });
 
@@ -136,6 +176,33 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   const [evalStatusLogs, setEvalStatusLogs] = useState<any[]>([]);
 
   React.useEffect(() => {
+    // Load real evaluations from database
+    apiService
+      .getEvaluations()
+      .then((apiEvals) => {
+        if (apiEvals && apiEvals.length > 0) {
+          const mapped: EvaluasiCacatItem[] = apiEvals.map((e) => ({
+            id: e.id,
+            proyek_id: e.proyek_id,
+            nama_proyek: e.nama_proyek,
+            user_id: e.user_id,
+            nama_pelapor: e.pelapor?.nama || 'Warga Masyarakat',
+            deskripsi: e.deskripsi,
+            lokasi_titik: 'Lokasi Proyek',
+            skor_urgensi_ai: e.skor_urgensi_ai || 3,
+            analisis_ai: e.ringkasan_analisis_ai || 'Analisis AI Groq',
+            kategori_cacat: e.kategori_masalah,
+            status_verifikasi: e.status,
+            catatan_dinas: e.status_logs?.[0]?.catatan || undefined,
+            tanggal_lapor: String(e.created_at).split('T')[0],
+          }));
+          setEvaluasiList(mapped);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  React.useEffect(() => {
     if (selectedEvalToVerify) {
       apiService
         .getEvaluationStatusLogs(selectedEvalToVerify.id)
@@ -150,44 +217,60 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     }
   }, [selectedEvalToVerify]);
 
-  // Handle create new project
-  const handleCreateProject = (e: React.FormEvent) => {
+  // Handle create new project via backend API
+  const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!spatialValidation.isValid) {
       alert(`Validasi Koordinat Gagal (Point-in-Polygon):\n${spatialValidation.message}`);
       return;
     }
-    const newProj: ProyekItem = {
-      id: Date.now(),
-      nama_proyek: newProjectForm.nama_proyek,
-      kategori: newProjectForm.kategori,
-      deskripsi: newProjectForm.deskripsi,
-      latitude: Number(newProjectForm.latitude),
-      longitude: Number(newProjectForm.longitude),
-      anggaran: Number(newProjectForm.anggaran),
-      status: newProjectForm.status,
-      progres_persen: Number(newProjectForm.progres_persen),
-      nama_wilayah: newProjectForm.nama_wilayah,
-      nama_dinas: newProjectForm.nama_dinas,
-      tahap_terkini: newProjectForm.tahap_terkini,
-      rata_rata_rating: null,
-      jumlah_rating: 0,
-    };
-    setProjectList([newProj, ...projectList]);
-    setIsNewProjectModalOpen(false);
-    setNewProjectForm({
-      nama_proyek: '',
-      kategori: 'jalan',
-      deskripsi: '',
-      anggaran: 5000000000,
-      status: 'berjalan',
-      progres_persen: 0,
-      nama_wilayah: 'Kecamatan Lamongan (Kota)',
-      latitude: -7.1197,
-      longitude: 112.4150,
-      nama_dinas: 'Dinas Pekerjaan Umum dan Penataan Ruang',
-      tahap_terkini: 'Pembersihan & Pengukuran Lahan',
-    });
+
+    setIsSubmittingNewProj(true);
+    setCreateProjError(null);
+
+    try {
+      const wilayahId = KECAMATAN_ID_MAP[newProjectForm.nama_wilayah] || 23;
+      const dinasId = currentUser.dinas_id || 1;
+
+      const created = await apiService.createProject({
+        nama_proyek: newProjectForm.nama_proyek.trim(),
+        kategori: newProjectForm.kategori,
+        deskripsi: newProjectForm.deskripsi.trim() || undefined,
+        latitude: Number(newProjectForm.latitude),
+        longitude: Number(newProjectForm.longitude),
+        wilayah_id: wilayahId,
+        dinas_id: dinasId,
+        anggaran: Number(newProjectForm.anggaran),
+        status: newProjectForm.status,
+        progres_persen: Number(newProjectForm.progres_persen),
+        tanggal_mulai: new Date().toISOString().split('T')[0],
+        estimasi_selesai: new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
+      });
+
+      setProjectList((prev) => [created, ...prev]);
+      if (onProjectCreated) {
+        onProjectCreated(created);
+      }
+
+      setIsNewProjectModalOpen(false);
+      setNewProjectForm({
+        nama_proyek: '',
+        kategori: 'jalan',
+        deskripsi: '',
+        anggaran: 5000000000,
+        status: 'berjalan',
+        progres_persen: 0,
+        nama_wilayah: 'Kecamatan Lamongan (Kota)',
+        latitude: -7.1197,
+        longitude: 112.4150,
+        nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum dan Penataan Ruang',
+        tahap_terkini: 'Pembersihan & Pengukuran Lahan',
+      });
+    } catch (err: any) {
+      setCreateProjError(err.message || 'Gagal menambahkan proyek baru.');
+    } finally {
+      setIsSubmittingNewProj(false);
+    }
   };
 
   // Handle open edit project modal
@@ -248,6 +331,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       setProjectList((prev) =>
         prev.map((item) => (item.id === editingProject.id ? { ...item, ...updated } : item))
       );
+      if (onProjectUpdated) {
+        onProjectUpdated(updated);
+      }
       setEditingProject(null);
     } catch (err: any) {
       setEditError(err.message || 'Gagal memperbarui data proyek.');
@@ -257,29 +343,55 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   };
 
   // Handle add new timeline stage
-  const handleAddTimelineStage = (e: React.FormEvent) => {
+  const handleAddTimelineStage = async (e: React.FormEvent) => {
     e.preventDefault();
-    const newStage: LinimasaTahap = {
-      id: Date.now(),
-      proyek_id: selectedProjectForTimeline,
-      nomor_tahap: timelineStages.length + 1,
-      nama_tahap: newStageForm.nama_tahap,
-      deskripsi: newStageForm.deskripsi,
-      target_mulai: newStageForm.target_mulai,
-      target_selesai: newStageForm.target_selesai,
-      persentase_bobot: Number(newStageForm.persentase_bobot),
-      status: 'sedang_berjalan',
-      catatan_lapangan: 'Tahap baru ditambahkan oleh pengawas teknis.',
-    };
-    setTimelineStages([...timelineStages, newStage]);
-    setIsNewStageModalOpen(false);
-    setNewStageForm({
-      nama_tahap: '',
-      deskripsi: '',
-      target_mulai: '2024-04-01',
-      target_selesai: '2024-06-30',
-      persentase_bobot: 15,
-    });
+    if (!selectedProjectForTimeline) return;
+
+    try {
+      const stageRes = await apiService.createTimelineStage(selectedProjectForTimeline, {
+        nama_tahap: newStageForm.nama_tahap.trim(),
+        progres_persen: Number(newStageForm.persentase_bobot),
+        catatan: newStageForm.deskripsi.trim() || undefined,
+      });
+
+      const newStage: LinimasaTahap = {
+        id: stageRes.id,
+        proyek_id: selectedProjectForTimeline,
+        nomor_tahap: timelineStages.length + 1,
+        nama_tahap: stageRes.nama_tahap,
+        deskripsi: newStageForm.deskripsi,
+        target_mulai: newStageForm.target_mulai,
+        target_selesai: newStageForm.target_selesai,
+        persentase_bobot: stageRes.progres_persen,
+        status: 'sedang_berjalan',
+        catatan_lapangan: stageRes.catatan || 'Tahap baru ditambahkan oleh pengawas teknis.',
+      };
+      setTimelineStages((prev) => [...prev, newStage]);
+
+      const projToUpdate = projectList.find((p) => p.id === selectedProjectForTimeline);
+      if (projToUpdate) {
+        const updatedProj: ProyekItem = {
+          ...projToUpdate,
+          progres_persen: stageRes.progres_persen,
+          tahap_terkini: stageRes.nama_tahap,
+        };
+        setProjectList((prev) => prev.map((p) => (p.id === updatedProj.id ? updatedProj : p)));
+        if (onProjectUpdated) {
+          onProjectUpdated(updatedProj);
+        }
+      }
+
+      setIsNewStageModalOpen(false);
+      setNewStageForm({
+        nama_tahap: '',
+        deskripsi: '',
+        target_mulai: '2024-04-01',
+        target_selesai: '2024-06-30',
+        persentase_bobot: 15,
+      });
+    } catch (err: any) {
+      alert(err.message || 'Gagal menambahkan tahapan linimasa.');
+    }
   };
 
   // Handle submit documentation
@@ -311,46 +423,71 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   };
 
   // Handle reply citizen report
-  const handleSendAduanReply = (e: React.FormEvent) => {
+  const handleSendAduanReply = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedAduanToReply || !replyText) return;
+    if (!selectedAduanToReply || !replyText.trim()) return;
 
-    setAduanList((prev) =>
-      prev.map((item) =>
-        item.id === selectedAduanToReply.id
-          ? {
-              ...item,
-              tanggapan_dinas: replyText,
-              status: replyNewStatus,
-              tanggal_tanggapan: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
-              petugas_penjawab: `${currentUser.nama} (${currentUser.role.replace('_', ' ').toUpperCase()})`,
-            }
-          : item
-      )
-    );
-    setSelectedAduanToReply(null);
-    setReplyText('');
+    try {
+      await apiService.replyAduan(selectedAduanToReply.id, {
+        status_tindak_lanjut: replyNewStatus === 'selesai' ? 'ditanggapi' : 'diproses',
+        tanggapan_dinas: replyText.trim(),
+      });
+
+      setAduanList((prev) =>
+        prev.map((item) =>
+          item.id === selectedAduanToReply.id
+            ? {
+                ...item,
+                tanggapan_dinas: replyText,
+                status: replyNewStatus,
+                tanggal_tanggapan: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+                petugas_penjawab: `${currentUser.nama} (${currentUser.role.replace('_', ' ').toUpperCase()})`,
+              }
+            : item
+        )
+      );
+      setSelectedAduanToReply(null);
+      setReplyText('');
+    } catch (err: any) {
+      alert(err.message || 'Gagal menanggapi aduan masyarakat.');
+    }
   };
 
   // Handle verify defect
-  const handleVerifyDefect = (e: React.FormEvent) => {
+  const handleVerifyDefect = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedEvalToVerify || !tindakanDinasText) return;
+    if (!selectedEvalToVerify || !tindakanDinasText.trim()) return;
 
-    setEvaluasiList((prev) =>
-      prev.map((item) =>
-        item.id === selectedEvalToVerify.id
-          ? {
-              ...item,
-              status_verifikasi: 'dalam_penanganan',
-              catatan_dinas: tindakanDinasText,
-              tanggal_tindakan: new Date().toLocaleDateString('id-ID'),
-            }
-          : item
-      )
-    );
-    setSelectedEvalToVerify(null);
-    setTindakanDinasText('');
+    try {
+      await apiService.verifyEvaluation(selectedEvalToVerify.id, {
+        status: 'dalam_penanganan',
+        catatan: tindakanDinasText.trim(),
+      });
+
+      setEvaluasiList((prev) =>
+        prev.map((item) =>
+          item.id === selectedEvalToVerify.id
+            ? {
+                ...item,
+                status_verifikasi: 'dalam_penanganan',
+                catatan_dinas: tindakanDinasText,
+                tanggal_tindakan: new Date().toLocaleDateString('id-ID'),
+              }
+            : item
+        )
+      );
+
+      if (onProjectUpdated) {
+        apiService.getProjectDetail(selectedEvalToVerify.proyek_id).then((p) => {
+          onProjectUpdated(p);
+        }).catch(() => {});
+      }
+
+      setSelectedEvalToVerify(null);
+      setTindakanDinasText('');
+    } catch (err: any) {
+      alert(err.message || 'Gagal memverifikasi evaluasi.');
+    }
   };
 
   // Quick stats calculation
@@ -1323,19 +1460,30 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
               </div>
 
+              {createProjError && (
+                <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-800 text-xs">
+                  <p className="font-semibold">{createProjError}</p>
+                </div>
+              )}
+
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
                 <button
                   type="button"
-                  onClick={() => setIsNewProjectModalOpen(false)}
+                  onClick={() => {
+                    setIsNewProjectModalOpen(false);
+                    setCreateProjError(null);
+                  }}
                   className="btn-ghost"
+                  disabled={isSubmittingNewProj}
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
+                  disabled={isSubmittingNewProj}
                   className="btn-primary"
                 >
-                  Simpan &amp; Publikasikan
+                  {isSubmittingNewProj ? 'Menyimpan ke Database...' : 'Simpan & Publikasikan'}
                 </button>
               </div>
             </form>
