@@ -63,6 +63,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
         return [
           { id: 'kinerja_dinas', label: 'Matriks Kinerja OPD', icon: BarChart3, desc: 'Evaluasi kinerja 5 dinas teknis' },
           { id: 'sebaran_wilayah', label: 'Sebaran Wilayah & Agregat', icon: MapPin, desc: 'Bagan rekapitulasi per kecamatan' },
+          { id: 'proyek', label: 'Kelola & Input Proyek', icon: FolderKanban, desc: 'Input proyek baru & status pengerjaan' },
+          { id: 'aduan', label: 'Tanggapan Aduan Warga', icon: MessageSquarePlus, desc: 'Respon tiket & aspirasi publik' },
           { id: 'sentimen_ai', label: 'Analisis Aspirasi (AI)', icon: Sparkles, desc: 'AI sentimen kepuasan warga' },
           { id: 'laporan_eksekutif', label: 'Unduh Laporan Eksekutif', icon: FileSpreadsheet, desc: 'Ekspor data CSV dan cetak PDF' },
         ];
@@ -228,8 +230,8 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                       >
                         <Building2 className="w-4 h-4 text-[#184C78] shrink-0" />
                         <div>
-                          <div className="font-bold">2. Aparatur Pemerintah</div>
-                          <div className="text-[10px] text-slate-500">Monitoring wilayah &amp; eksekutif</div>
+                          <div className="font-bold">2. Pimpinan &amp; Aparatur Pemerintah</div>
+                          <div className="text-[10px] text-slate-500">Monitoring eksekutif &amp; kelola/input proyek daerah</div>
                         </div>
                       </button>
 

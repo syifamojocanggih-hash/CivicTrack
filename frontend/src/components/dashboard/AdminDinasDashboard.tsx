@@ -13,6 +13,7 @@ import {
   Check,
   AlertTriangle,
   Clock,
+  BarChart3,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -518,22 +519,37 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
           <div className="max-w-2xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/20 text-amber-200 border border-amber-400/30 rounded-full text-xs font-semibold tracking-wide mb-3">
               <Building2 className="w-4 h-4 text-amber-300" />
-              <span>Portal Penanggung Jawab Proyek (Dinas Pelaksana &amp; Rekanan)</span>
+              <span>
+                {currentUser.role === 'pimpinan_instansi' || currentUser.role === 'aparatur_pemerintah'
+                  ? 'Portal Pimpinan & Pengelola Pembangunan Daerah'
+                  : 'Portal Penanggung Jawab Proyek (Dinas Pelaksana & Rekanan)'}
+              </span>
             </div>
             <h1 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold tracking-tight">
               {currentUser.nama}
             </h1>
             <p className="text-white/80 text-xs sm:text-sm mt-1">
-              Pejabat Pembuat Komitmen (PPK) &amp; Tim Pelaksana Teknis — {currentUser.nama_dinas || 'Dinas Pekerjaan Umum & Tim Pelaksana'}
+              {currentUser.role === 'pimpinan_instansi' || currentUser.role === 'aparatur_pemerintah'
+                ? `Pimpinan Daerah & Pengambil Kebijakan — ${currentUser.nama_dinas || 'Pemerintah Kabupaten Lamongan'}`
+                : `Pejabat Pembuat Komitmen (PPK) & Tim Pelaksana Teknis — ${currentUser.nama_dinas || 'Dinas Pekerjaan Umum & Tim Pelaksana'}`}
             </p>
             <div className="flex flex-wrap items-center gap-4 text-xs text-white/70 mt-3 font-mono">
-              <span>{currentUser.nip ? `NIP: ${currentUser.nip}` : 'ID Petugas: PJ-2024-001'}</span>
+              <span>{currentUser.nip ? `NIP: ${currentUser.nip}` : 'Hak Akses: Penuh'}</span>
               <span>•</span>
-              <span>Hak Akses: Input Progres, Unggah Foto/Video, Validasi SPK &amp; Tanggapi Aduan</span>
+              <span>Hak Akses: Pengawasan, Update Linimasa &amp; Tanggapi Aduan</span>
             </div>
           </div>
 
           <div className="flex flex-row md:flex-col gap-2 shrink-0">
+            {(currentUser.role === 'pimpinan_instansi' || currentUser.role === 'aparatur_pemerintah') && (
+              <button
+                onClick={() => onSelectSection?.('kinerja_dinas')}
+                className="px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white font-semibold text-xs rounded-xl backdrop-blur-md flex items-center justify-center gap-2 transition-all cursor-pointer"
+              >
+                <BarChart3 className="w-4 h-4" />
+                <span>Monitoring Eksekutif</span>
+              </button>
+            )}
             <button
               onClick={() => setIsNewProjectModalOpen(true)}
               className="px-4 py-2.5 bg-white text-[#184C78] font-bold text-xs rounded-xl shadow-xs hover:bg-slate-100 flex items-center justify-center gap-2 transition-transform hover:scale-102 cursor-pointer"

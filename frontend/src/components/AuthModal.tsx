@@ -81,6 +81,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             email: 'pimpinan.pu@civictrack.demo',
             role: 'aparatur_pemerintah',
             nama_dinas: 'Sekretariat Daerah & Bappeda Lamongan',
+            dinas_id: 1,
           };
           break;
         case 'warga':

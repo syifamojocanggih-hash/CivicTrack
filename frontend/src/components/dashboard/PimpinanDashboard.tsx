@@ -12,6 +12,7 @@ import {
   Clock,
   Search,
   RefreshCw,
+  FolderKanban,
 } from 'lucide-react';
 import type { UserProfile, ProyekItem, DinasKinerjaItem, WilayahStatItem, RingkasanKabupatenItem } from '../../types';
 import { MOCK_DINAS_KINERJA, MOCK_EXECUTIVE_ALERTS } from '../../data/dashboardMockData';
@@ -31,6 +32,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
   currentUser,
   projects,
   activeSection,
+  onSelectSection,
   onOpenMapExplorer,
 }) => {
   const activeTab = (activeSection as any) || 'kinerja_dinas';
@@ -164,6 +166,13 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
           </div>
 
           <div className="flex flex-row md:flex-col gap-2 shrink-0">
+            <button
+              onClick={() => onSelectSection?.('proyek')}
+              className="px-4 py-2.5 bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-2 transition-transform hover:scale-102 cursor-pointer"
+            >
+              <FolderKanban className="w-4 h-4" />
+              <span>Kelola &amp; Input Proyek</span>
+            </button>
             <button
               onClick={handleExportCSV}
               className="px-4 py-2.5 bg-white text-[#184C78] font-bold text-xs rounded-xl shadow-xs hover:bg-slate-100 flex items-center justify-center gap-2 transition-transform hover:scale-102 cursor-pointer"

@@ -135,16 +135,29 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
             />
           )}
 
-          {/* Role 2: Aparatur Pemerintah (Monitoring Eksekutif, Wilayah & Kinerja) */}
+          {/* Role 2: Aparatur Pemerintah & Pimpinan Instansi (Monitoring Eksekutif & Manajemen Proyek) */}
           {(currentUser.role === 'aparatur_pemerintah' || currentUser.role === 'pimpinan_instansi') && (
-            <PimpinanDashboard
-              currentUser={currentUser}
-              projects={projects}
-              onOpenProjectDetail={onOpenProjectDetail}
-              activeSection={activeNavSection}
-              onSelectSection={(sec) => setActiveNavSection(sec)}
-              onOpenMapExplorer={onOpenMapExplorer}
-            />
+            ['proyek', 'linimasa', 'dokumentasi', 'aduan', 'evaluasi'].includes(activeNavSection) ? (
+              <AdminDinasDashboard
+                currentUser={currentUser}
+                projects={projects}
+                onOpenProjectDetail={onOpenProjectDetail}
+                activeSection={activeNavSection}
+                onSelectSection={(sec) => setActiveNavSection(sec)}
+                onOpenMapExplorer={onOpenMapExplorer}
+                onProjectCreated={onProjectCreated}
+                onProjectUpdated={onProjectUpdated}
+              />
+            ) : (
+              <PimpinanDashboard
+                currentUser={currentUser}
+                projects={projects}
+                onOpenProjectDetail={onOpenProjectDetail}
+                activeSection={activeNavSection}
+                onSelectSection={(sec) => setActiveNavSection(sec)}
+                onOpenMapExplorer={onOpenMapExplorer}
+              />
+            )
           )}
 
           {/* Role 3: Penanggung Jawab Proyek (Kelola Proyek, Update Tahapan, Upload Foto/Video & Respon Aduan) */}
