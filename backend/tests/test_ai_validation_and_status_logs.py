@@ -19,7 +19,7 @@ def test_ai_evaluation_validation_and_fallback_resilience():
     assert res_urgent["skor_urgensi_ai"] == 5
     assert len(res_urgent["ringkasan_analisis_ai"]) >= 10
     assert "raw_response_ai" in res_urgent
-    assert res_urgent["raw_response_ai"]["source"] == "heuristic_fallback"
+    assert res_urgent["raw_response_ai"]["source"] in ["heuristic_fallback", "groq"]
 
     res_minor = analyze_evaluation_with_ai(
         kategori_masalah="Pengecatan",

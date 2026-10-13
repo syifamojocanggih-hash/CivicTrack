@@ -3,17 +3,48 @@ import logging
 import re
 from typing import Dict, Any, List, Optional
 from decimal import Decimal
+import httpx
 from app.core.config import settings
+from app.services.osm_service import get_nearby_osm_streets
 
 logger = logging.getLogger(__name__)
 
 def _clean_json_markdown(text: str) -> str:
-    """Membersihkan markdown codeblock ```json ... ``` jika Gemini mengembalikannya."""
+    """Membersihkan markdown codeblock ```json ... ``` jika LLM mengembalikannya."""
     text = text.strip()
     match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
     if match:
         return match.group(1).strip()
     return text
+
+def _call_groq_chat(prompt: str, system_message: str = "Anda adalah asisten AI tata kota.") -> str:
+    """
+    Memanggil Groq Cloud REST API (OpenAI-compatible) untuk model yang dikonfigurasi.
+    """
+    if not settings.GROQ_API_KEY or not settings.GROQ_API_KEY.strip():
+        raise ValueError("GROQ_API_KEY belum dikonfigurasi.")
+
+    url = "https://api.groq.com/openai/v1/chat/completions"
+    headers = {
+        "Authorization": f"Bearer {settings.GROQ_API_KEY.strip()}",
+        "Content-Type": "application/json"
+    }
+    payload = {
+        "model": settings.GROQ_MODEL or "openai/gpt-oss-20b",
+        "messages": [
+            {"role": "system", "content": system_message},
+            {"role": "user", "content": prompt}
+        ],
+        "temperature": 0.2,
+        "response_format": {"type": "json_object"}
+    }
+
+    with httpx.Client(timeout=10.0) as client:
+        resp = client.post(url, json=payload, headers=headers)
+        if resp.status_code != 200:
+            raise RuntimeError(f"Groq API error HTTP {resp.status_code}: {resp.text}")
+        data = resp.json()
+        return data["choices"][0]["message"]["content"]
 
 def generate_ai_alternative_routes(
     nama_proyek: str,
@@ -24,19 +55,35 @@ def generate_ai_alternative_routes(
     catatan_penutupan: Optional[str] = None
 ) -> List[Dict[str, Any]]:
     """
-    Fitur 11 PRD: Menggunakan Google Gemini API untuk menganalisis dampak penutupan akses jalan
-    akibat proyek pembangunan dan menyajikan rute alternatif terstruktur dalam 3 tingkat prioritas:
+    Fitur 11 PRD: Menghasilkan rekomendasi rute alternatif penutupan akses jalan
+    menggunakan Groq API dengan grounding data jalan asli OpenStreetMap (OSM) dan caching.
+    Menyajikan rute terstruktur dalam 3 tingkat prioritas:
     1. Utama (Jalur utama dengan kapasitas kendaraan besar/umum)
     2. Kedua (Jalur alternatif sekunder / lingkar luar)
     3. Tambahan (Jalur tikus/lingkungan khusus kendaraan roda dua)
     """
-    if settings.GEMINI_API_KEY:
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            model = genai.GenerativeModel(settings.GEMINI_MODEL)
-            
-            prompt = f"""
+    # Ambil data nama-nama jalan asli terverifikasi di sekitar lokasi via Overpass API / Cache
+    nearby_streets = get_nearby_osm_streets(latitude, longitude)
+    is_osm_grounded = bool(nearby_streets and len(nearby_streets) >= 2)
+
+    osm_context_prompt = ""
+    if is_osm_grounded:
+        streets_bullet = "\n".join(f"- {s}" for s in nearby_streets[:35])
+        osm_context_prompt = f"""
+DAFTAR NAMA JALAN ASLI DI SEKITAR PROYEK (Terverifikasi OpenStreetMap):
+{streets_bullet}
+
+INSTRUKSI PENTING GROUNDING GEOGRAFIS:
+1. Anda WAJIB MEMILIH dan MENYUSUN rute alternatif HANYA dari daftar nama jalan asli di atas!
+2. DILARANG KERAS mengarang nama jalan baru yang tidak tercantum dalam daftar di atas!
+3. Format nama_rute harus menyebutkan kombinasi jalan asli dari daftar (misal: "Jalan X ➔ Jalan Y").
+"""
+    else:
+        osm_context_prompt = """
+CATATAN GEOGRAFIS: Data OpenStreetMap tidak tersedia untuk radius ini. Susun rute dengan estimasi rekayasa lalu lintas umum.
+"""
+
+    prompt = f"""
 Anda adalah sistem navigasi cerdas tata kota untuk proyek infrastruktur publik.
 Terdapat proyek pembangunan:
 - Nama Proyek: {nama_proyek}
@@ -44,45 +91,105 @@ Terdapat proyek pembangunan:
 - Wilayah: {nama_wilayah} (Koordinat: {latitude}, {longitude})
 - Info Penutupan/Rekayasa: {catatan_penutupan or 'Penutupan jalan utama sebagian/penuh selama konstruksi'}
 
+{osm_context_prompt}
+
 Buatlah TEPAT 3 rekomendasi rute alternatif untuk mengalihkan lalu lintas masyarakat, terbagi dalam 3 skala prioritas:
 1. 'utama': Rute utama berkapasitas besar untuk semua jenis kendaraan
 2. 'kedua': Rute lingkar atau jalur sekunder pengurai kepadatan
 3. 'tambahan': Rute pintas lingkungan khusus pengendara sepeda motor / jalan alternatif darurat
 
-Keluarkan output HANYA berupa JSON valid dengan format persis seperti ini:
-[
-  {{
-    "nama_rute": "Nama jalan atau urutan simpang jalan",
-    "prioritas": "utama",
-    "estimasi_jarak_km": 3.5,
-    "estimasi_waktu_menit": 10,
-    "alasan_rekomendasi": "Penjelasan ringkas mengapa rute ini diprioritaskan"
-  }},
-  {{
-    "nama_rute": "...",
-    "prioritas": "kedua",
-    "estimasi_jarak_km": 4.8,
-    "estimasi_waktu_menit": 15,
-    "alasan_rekomendasi": "..."
-  }},
-  {{
-    "nama_rute": "...",
-    "prioritas": "tambahan",
-    "estimasi_jarak_km": 2.6,
-    "estimasi_waktu_menit": 7,
-    "alasan_rekomendasi": "..."
-  }}
-]
+Format JSON wajib persis seperti ini:
+{{
+  "rute": [
+    {{
+      "nama_rute": "Nama jalan asli atau urutan simpang jalan",
+      "prioritas": "utama",
+      "estimasi_jarak_km": 3.5,
+      "estimasi_waktu_menit": 10,
+      "alasan_rekomendasi": "Penjelasan ringkas mengapa rute ini diprioritaskan"
+    }},
+    {{
+      "nama_rute": "Nama jalan lingkar",
+      "prioritas": "kedua",
+      "estimasi_jarak_km": 4.8,
+      "estimasi_waktu_menit": 15,
+      "alasan_rekomendasi": "Jalur alternatif sekunder"
+    }},
+    {{
+      "nama_rute": "Nama gang atau jalur lingkungan",
+      "prioritas": "tambahan",
+      "estimasi_jarak_km": 2.6,
+      "estimasi_waktu_menit": 7,
+      "alasan_rekomendasi": "Jalur pintas roda dua"
+    }}
+  ]
+}}
 """
+
+    # 1. Coba Groq API terlebih dahulu
+    if settings.GROQ_API_KEY and settings.GROQ_API_KEY.strip():
+        try:
+            content = _call_groq_chat(prompt, system_message="Anda adalah sistem navigasi cerdas tata kota berbasis data geospasial nyata. Hasilkan format JSON valid.")
+            clean_text = _clean_json_markdown(content)
+            parsed = json.loads(clean_text)
+
+            routes_list = []
+            if isinstance(parsed, list):
+                routes_list = parsed
+            elif isinstance(parsed, dict):
+                for k in ["rute", "routes", "rekomendasi", "data"]:
+                    if isinstance(parsed.get(k), list):
+                        routes_list = parsed[k]
+                        break
+                if not routes_list:
+                    for val in parsed.values():
+                        if isinstance(val, list):
+                            routes_list = val
+                            break
+
+            if isinstance(routes_list, list) and len(routes_list) >= 3:
+                result = []
+                for item in routes_list[:3]:
+                    if isinstance(item, dict):
+                        item["source"] = "groq"
+                        item["geografis_terverifikasi"] = is_osm_grounded
+                        item["osm_streets_context"] = nearby_streets if is_osm_grounded else []
+                        result.append(item)
+                if len(result) == 3:
+                    return result
+        except Exception as e:
+            logger.warning(f"Gagal memanggil Groq API untuk rute: {e}. Mengalihkan ke cadangan...")
+
+    # 2. Coba Gemini API jika dikonfigurasi
+    if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip():
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            model = genai.GenerativeModel(settings.GEMINI_MODEL)
             response = model.generate_content(prompt, request_options={"timeout": 5.0})
             clean_text = _clean_json_markdown(response.text)
             parsed = json.loads(clean_text)
-            if isinstance(parsed, list) and len(parsed) >= 3:
-                return parsed[:3]
+
+            routes_list = []
+            if isinstance(parsed, list):
+                routes_list = parsed
+            elif isinstance(parsed, dict) and "rute" in parsed:
+                routes_list = parsed["rute"]
+
+            if isinstance(routes_list, list) and len(routes_list) >= 3:
+                result = []
+                for item in routes_list[:3]:
+                    if isinstance(item, dict):
+                        item["source"] = "gemini"
+                        item["geografis_terverifikasi"] = is_osm_grounded
+                        item["osm_streets_context"] = nearby_streets if is_osm_grounded else []
+                        result.append(item)
+                if len(result) == 3:
+                    return result
         except Exception as e:
             logger.warning(f"Gagal memanggil Gemini API untuk rute: {e}. Menggunakan fallback cerdas.")
 
-    # Heuristic fallback adaptif jika API key kosong atau kuota Google habis (429)
+    # 3. Heuristic fallback adaptif jika API key kosong atau kuota habis
     origin_name = None
     dest_name = None
     if catatan_penutupan:
@@ -113,21 +220,30 @@ Keluarkan output HANYA berupa JSON valid dengan format persis seperti ini:
                 "prioritas": "utama",
                 "estimasi_jarak_km": 3.8,
                 "estimasi_waktu_menit": 11,
-                "alasan_rekomendasi": f"Jalur arteri beraspal lebar menghindari penutupan proyek {nama_proyek}, menghubungkan {orig_disp} menuju {dest_disp} untuk semua jenis kendaraan."
+                "alasan_rekomendasi": f"Jalur arteri beraspal lebar menghindari penutupan proyek {nama_proyek}, menghubungkan {orig_disp} menuju {dest_disp} untuk semua jenis kendaraan.",
+                "source": "heuristic_fallback",
+                "geografis_terverifikasi": False,
+                "osm_streets_context": []
             },
             {
                 "nama_rute": f"Jalan Lingkar ({orig_disp} ➔ Lingkar Luar ➔ {dest_disp})",
                 "prioritas": "kedua",
                 "estimasi_jarak_km": 5.2,
                 "estimasi_waktu_menit": 15,
-                "alasan_rekomendasi": f"Jalur lingkar sekunder pengurai kepadatan jam sibuk rute {orig_disp} - {dest_disp} via lingkar luar {nama_wilayah}."
+                "alasan_rekomendasi": f"Jalur lingkar sekunder pengurai kepadatan jam sibuk rute {orig_disp} - {dest_disp} via lingkar luar {nama_wilayah}.",
+                "source": "heuristic_fallback",
+                "geografis_terverifikasi": False,
+                "osm_streets_context": []
             },
             {
                 "nama_rute": f"Jalur Pemukiman ({orig_disp} ➔ Gang Warga ➔ {dest_disp})",
                 "prioritas": "tambahan",
                 "estimasi_jarak_km": 2.5,
                 "estimasi_waktu_menit": 7,
-                "alasan_rekomendasi": f"Rute pintas pemukiman berkecepatan rendah dari {orig_disp} menuju {dest_disp} khusus bagi pengendara sepeda motor."
+                "alasan_rekomendasi": f"Rute pintas pemukiman berkecepatan rendah dari {orig_disp} menuju {dest_disp} khusus bagi pengendara sepeda motor.",
+                "source": "heuristic_fallback",
+                "geografis_terverifikasi": False,
+                "osm_streets_context": []
             }
         ]
 
@@ -137,21 +253,30 @@ Keluarkan output HANYA berupa JSON valid dengan format persis seperti ini:
             "prioritas": "utama",
             "estimasi_jarak_km": 3.2,
             "estimasi_waktu_menit": 9,
-            "alasan_rekomendasi": "Jalur lebar beraspal baik dengan penerangan memadai, direkomendasikan untuk kendaraan roda empat dan angkutan umum."
+            "alasan_rekomendasi": "Jalur lebar beraspal baik dengan penerangan memadai, direkomendasikan untuk kendaraan roda empat dan angkutan umum.",
+            "source": "heuristic_fallback",
+            "geografis_terverifikasi": False,
+            "osm_streets_context": []
         },
         {
             "nama_rute": f"Jalan Lingkar Sekunder Sekitar {nama_wilayah}",
             "prioritas": "kedua",
             "estimasi_jarak_km": 4.6,
             "estimasi_waktu_menit": 13,
-            "alasan_rekomendasi": "Menghindari persimpangan padat dan memecah volume kendaraan saat jam sibuk kerja dan sekolah."
+            "alasan_rekomendasi": "Menghindari persimpangan padat dan memecah volume kendaraan saat jam sibuk kerja dan sekolah.",
+            "source": "heuristic_fallback",
+            "geografis_terverifikasi": False,
+            "osm_streets_context": []
         },
         {
             "nama_rute": f"Jalur Pemukiman Warga (Akses Khusus Roda Dua)",
             "prioritas": "tambahan",
             "estimasi_jarak_km": 2.4,
             "estimasi_waktu_menit": 6,
-            "alasan_rekomendasi": "Rute pintas melalui gang perumahan berkecepatan rendah khusus bagi pengendara sepeda motor dan sepeda."
+            "alasan_rekomendasi": "Rute pintas melalui gang perumahan berkecepatan rendah khusus bagi pengendara sepeda motor dan sepeda.",
+            "source": "heuristic_fallback",
+            "geografis_terverifikasi": False,
+            "osm_streets_context": []
         }
     ]
 
@@ -163,16 +288,11 @@ def analyze_evaluation_with_ai(
 ) -> Dict[str, Any]:
     """
     Fitur 12 PRD: Evaluasi Pembangunan Pasca-Proyek.
-    Menggunakan Gemini API untuk menganalisis laporan kerusakan fisik proyek berstatus 'Selesai',
-    menghasilkan skor urgensi (1-5) dan ringkasan indikasi teknis masalah.
+    Menganalisis laporan kerusakan fisik proyek berstatus 'Selesai' menggunakan Groq API (Llama 3.3)
+    sebagai prioritas utama, dengan fallback ke Gemini dan heuristik deterministik.
+    Menghasilkan skor urgensi (1-5) dan ringkasan indikasi teknis masalah.
     """
-    if settings.GEMINI_API_KEY:
-        try:
-            import google.generativeai as genai
-            genai.configure(api_key=settings.GEMINI_API_KEY)
-            model = genai.GenerativeModel(settings.GEMINI_MODEL)
-
-            prompt = f"""
+    prompt = f"""
 Anda adalah insinyur sipil dan pengawas mutu infrastruktur publik pemerintah.
 Lakukan asesmen teknis awal terhadap aduan kerusakan/cacat pasca-proyek dari masyarakat:
 - Nama Proyek Selesai: {nama_proyek} ({kategori_proyek})
@@ -188,42 +308,61 @@ Format JSON wajib:
   "ringkasan_analisis_ai": "Analisis teknis singkat dan rekomendasi aksi dinas terkait"
 }}
 """
+
+    # 1. Coba Groq API (Llama 3.3)
+    if settings.GROQ_API_KEY and settings.GROQ_API_KEY.strip():
+        try:
+            content = _call_groq_chat(prompt, system_message="Anda adalah insinyur sipil pengawas mutu infrastruktur. Hasilkan format JSON valid.")
+            clean_text = _clean_json_markdown(content)
+            parsed = json.loads(clean_text)
+
+            if isinstance(parsed, dict) and "skor_urgensi_ai" in parsed:
+                raw_score = parsed.get("skor_urgensi_ai")
+                score = max(1, min(5, int(raw_score)))
+                summary = str(parsed.get("ringkasan_analisis_ai", "")).strip()
+
+                invalid_placeholders = ["", "null", "none", "undefined", "n/a", "-", "..."]
+                if summary and len(summary) >= 5 and summary.lower() not in invalid_placeholders:
+                    parsed["source"] = "groq"
+                    return {
+                        "skor_urgensi_ai": score,
+                        "ringkasan_analisis_ai": summary,
+                        "raw_response_ai": parsed
+                    }
+        except Exception as e:
+            logger.warning(f"Gagal memanggil Groq API untuk evaluasi: {e}. Mengalihkan ke cadangan...")
+
+    # 2. Coba Gemini API jika dikonfigurasi
+    if settings.GEMINI_API_KEY and settings.GEMINI_API_KEY.strip():
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=settings.GEMINI_API_KEY)
+            model = genai.GenerativeModel(settings.GEMINI_MODEL)
             response = model.generate_content(prompt, request_options={"timeout": 5.0})
             clean_text = _clean_json_markdown(response.text)
             parsed = json.loads(clean_text)
 
-            if not isinstance(parsed, dict):
-                raise ValueError(f"Output AI bukan format dictionary JSON valid: {type(parsed)}")
+            if isinstance(parsed, dict) and "skor_urgensi_ai" in parsed:
+                raw_score = parsed.get("skor_urgensi_ai")
+                score = max(1, min(5, int(raw_score)))
+                summary = str(parsed.get("ringkasan_analisis_ai", "")).strip()
 
-            raw_score = parsed.get("skor_urgensi_ai")
-            if raw_score is None:
-                raise ValueError("Key 'skor_urgensi_ai' hilang dari keluaran JSON AI")
-
-            try:
-                score = int(raw_score)
-            except (ValueError, TypeError):
-                raise ValueError(f"Nilai 'skor_urgensi_ai' bukan angka integer: {raw_score}")
-
-            score = max(1, min(5, score))
-
-            summary = str(parsed.get("ringkasan_analisis_ai", "")).strip()
-            invalid_placeholders = ["", "null", "none", "undefined", "n/a", "-", "..."]
-            if not summary or len(summary) < 5 or summary.lower() in invalid_placeholders:
-                raise ValueError(f"Ringkasan analisis AI kosong atau berupa placeholder: '{summary}'")
-
-            return {
-                "skor_urgensi_ai": score,
-                "ringkasan_analisis_ai": summary,
-                "raw_response_ai": parsed
-            }
+                invalid_placeholders = ["", "null", "none", "undefined", "n/a", "-", "..."]
+                if summary and len(summary) >= 5 and summary.lower() not in invalid_placeholders:
+                    parsed["source"] = "gemini"
+                    return {
+                        "skor_urgensi_ai": score,
+                        "ringkasan_analisis_ai": summary,
+                        "raw_response_ai": parsed
+                    }
         except Exception as e:
-            logger.warning(f"Validasi output Gemini AI gagal atau format tidak terduga: {e}. Mengalihkan ke fallback heuristik aman.")
+            logger.warning(f"Validasi output Gemini AI gagal: {e}. Mengalihkan ke fallback heuristik aman.")
 
-    # Rule-based fallback jika Gemini belum dikonfigurasi atau respons tidak valid
+    # 3. Rule-based fallback deterministik jika AI belum dikonfigurasi atau respons tidak valid
     desc_lower = deskripsi.lower() + " " + kategori_masalah.lower()
     urgent_keywords = ["ambles", "runtuh", "retak besar", "patah", "banjir parah", "bahaya", "korban", "longsor", "lubang dalam"]
     medium_keywords = ["genangan", "retak rambut", "paving lepas", "cat terkelupas", "tersumbat", "gelombang"]
-    
+
     if any(k in desc_lower for k in urgent_keywords):
         skor = 5
         summary = "Indikasi kerusakan struktural kritis yang berpotensi membahayakan keselamatan pengguna. Perlu inspeksi darurat tim teknis dalam 1x24 jam."

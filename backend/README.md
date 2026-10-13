@@ -79,10 +79,24 @@ pip install -r requirements.txt
    ACCESS_TOKEN_EXPIRE_MINUTES=120
    REFRESH_TOKEN_EXPIRE_DAYS=7
 
-   # Opsional: Masukkan API key dari https://aistudio.google.com/
-   # (Jika kosong, sistem akan menggunakan fallback cerdas otomatis tanpa error)
+   # Konfigurasi AI (Groq Llama 3.3 sebagai Provider Utama & Gemini sebagai Cadangan)
+   # Dapatkan API Key Groq gratis tanpa limit ketat di: https://console.groq.com/keys
+   GROQ_API_KEY=
+   GROQ_MODEL=llama-3.3-70b-versatile
+
+   # Opsional: Google Gemini API (Cadangan)
    GEMINI_API_KEY=
+   GEMINI_MODEL=gemini-1.5-flash
    ```
+
+### 4.1. Cara Mendapatkan API Key Groq Gratis (Rekomendasi Utama)
+CivicTrack menggunakan **Groq Cloud API** dengan model **Llama 3.3 70B** untuk menghindari batasan kuota ketat (*rate limit 429*) pada Gemini:
+1. Buka [console.groq.com/keys](https://console.groq.com/keys).
+2. Masuk / Daftar gratis menggunakan akun Google atau GitHub.
+3. Klik tombol **"Create API Key"**, beri nama kunci (misal: `civictrack-dev`).
+4. Salin API key yang dihasilkan (diawali dengan `gsk_...`).
+5. Tempelkan nilai tersebut ke variabel `GROQ_API_KEY` di dalam file `backend/.env`.
+*(Catatan: Jika `GROQ_API_KEY` dikosongkan, sistem otomatis menggunakan fallback cerdas internal tanpa error).*
 
 ### 5. Jalankan Server Pengembangan
 ```bash

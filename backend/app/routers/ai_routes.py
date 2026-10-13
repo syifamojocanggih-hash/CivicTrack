@@ -15,13 +15,14 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/proyek", tags=["Rekomendasi Rute AI"])
 
-def validate_ai_route(item: dict) -> Tuple[bool, str]:
+def validate_ai_route(item: dict, allowed_streets: Optional[List[str]] = None) -> Tuple[bool, str]:
     """
     Validasi output AI rekomendasi rute sebelum disajikan ke publik:
     1. nama_rute tidak boleh kosong/placeholder minimalis (min 5 karakter)
     2. prioritas wajib salah satu dari enum ('utama', 'kedua', 'tambahan')
     3. estimasi_jarak_km dan estimasi_waktu_menit bernilai positif dalam batas wajar
     4. alasan_rekomendasi tidak boleh kosong/placeholder
+    5. Jika allowed_streets tersedia: nama_rute wajib memuat nama jalan asli OpenStreetMap (anti-hallucination)
     """
     nama_rute = str(item.get("nama_rute", "")).strip()
     if not nama_rute or len(nama_rute) < 5:
@@ -56,6 +57,25 @@ def validate_ai_route(item: dict) -> Tuple[bool, str]:
     if not alasan or len(alasan) < 5 or alasan.lower() in invalid_placeholders:
         return False, "alasan_rekomendasi kosong atau berupa placeholder"
 
+    # Validasi Grounding Geografis terhadap OpenStreetMap
+    streets_to_check = allowed_streets or item.get("osm_streets_context")
+    if streets_to_check and isinstance(streets_to_check, list) and len(streets_to_check) > 0:
+        nama_lower = nama_rute.lower()
+        matched = False
+        import re
+        for st in streets_to_check:
+            st_clean = st.lower().strip()
+            if len(st_clean) >= 4 and st_clean in nama_lower:
+                matched = True
+                break
+            stripped_st = re.sub(r"^(jalan|jl\.|jl|gang|gg\.)\s+", "", st_clean).strip()
+            if len(stripped_st) >= 4 and stripped_st in nama_lower:
+                matched = True
+                break
+
+        if not matched:
+            return False, f"nama_rute '{nama_rute}' tidak memuat jalan terverifikasi OpenStreetMap (indikasi halusinasi AI)"
+
     return True, "valid"
 
 @router.post("/{id}/generate-rute", response_model=List[RekomendasiRuteResponse])
@@ -66,12 +86,12 @@ def generate_alternative_routes(
     current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """
-    Menghasilkan rekomendasi rute alternatif penutupan jalan menggunakan Google Gemini API.
+    Menghasilkan rekomendasi rute alternatif penutupan jalan menggunakan Google Gemini API / Groq API.
     Menyajikan rute terstruktur dalam 3 tingkat skala prioritas:
     - 'utama': Jalur pengalihan jalan besar untuk seluruh kendaraan
     - 'kedua': Jalur lingkar sekunder pengurai kepadatan
     - 'tambahan': Rute lingkungan khusus sepeda motor
-    Dilengkapi validasi otomatis integritas keluaran AI (is_valid).
+    Dilengkapi validasi otomatis integritas keluaran AI (is_valid) dan grounding OSM.
     """
     proyek = db.query(Proyek).filter(Proyek.id == id).first()
     if not proyek:
@@ -83,7 +103,7 @@ def generate_alternative_routes(
     db.query(RekomendasiRute).filter(RekomendasiRute.proyek_id == id).delete()
     db.commit()
 
-    # Panggil layanan AI Gemini
+    # Panggil layanan AI
     ai_results = generate_ai_alternative_routes(
         nama_proyek=proyek.nama_proyek,
         kategori=proyek.kategori.value,
@@ -95,7 +115,8 @@ def generate_alternative_routes(
 
     created_routes = []
     for item in ai_results:
-        is_valid, validation_msg = validate_ai_route(item)
+        osm_streets = item.get("osm_streets_context")
+        is_valid, validation_msg = validate_ai_route(item, allowed_streets=osm_streets)
         if not is_valid:
             logger.warning(f"Rute AI untuk proyek #{id} gagal validasi: {validation_msg} | payload: {item}")
 

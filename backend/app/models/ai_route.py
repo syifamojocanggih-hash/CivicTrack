@@ -24,3 +24,10 @@ class RekomendasiRute(Base):
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
 
     proyek = relationship("Proyek", back_populates="rute_alternatif")
+
+    @property
+    def geografis_terverifikasi(self) -> bool:
+        """Menyajikan status verifikasi data jalan terhadap OpenStreetMap dari raw_response_ai."""
+        if self.raw_response_ai and isinstance(self.raw_response_ai, dict):
+            return bool(self.raw_response_ai.get("geografis_terverifikasi", False))
+        return False

@@ -40,6 +40,7 @@ interface RouteItem {
   waypoints?: string[];
   coordinates?: [number, number][];
   isLiveOsrm?: boolean;
+  geografis_terverifikasi?: boolean;
 }
 
 // Database koordinat landmark utama di Kabupaten Lamongan
@@ -266,6 +267,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
           waypoints: [origin, 'Jalur Arteri Bypass', destination],
           coordinates: osrmR1?.coordinates || fallbackR1Coords,
           isLiveOsrm: !!osrmR1,
+          geografis_terverifikasi: r1.geografis_terverifikasi ?? r1.raw_response_ai?.geografis_terverifikasi ?? false,
         },
         {
           nama_rute: r2.nama_rute || `Jalan Lingkar Luar (${origin} ➔ Ring Road ➔ ${destination})`,
@@ -279,6 +281,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
           waypoints: [origin, 'Jalur Lingkar Sekunder', destination],
           coordinates: osrmR2?.coordinates || fallbackR2Coords,
           isLiveOsrm: !!osrmR2,
+          geografis_terverifikasi: r2.geografis_terverifikasi ?? r2.raw_response_ai?.geografis_terverifikasi ?? false,
         },
         {
           nama_rute: r3.nama_rute || `Jalur Pintas Pemukiman (${origin} ➔ Gang Warga ➔ ${destination})`,
@@ -292,6 +295,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
           waypoints: [origin, 'Akses Gang Pemukiman', destination],
           coordinates: osrmR3?.coordinates || fallbackR3Coords,
           isLiveOsrm: !!osrmR3,
+          geografis_terverifikasi: r3.geografis_terverifikasi ?? r3.raw_response_ai?.geografis_terverifikasi ?? false,
         },
       ];
 
@@ -917,12 +921,20 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                         {idx === 2 ? <Bike className="w-3.5 h-3.5 text-amber-600 shrink-0" /> : <Car className="w-3.5 h-3.5 text-blue-600 shrink-0" />}
                         <span>{r.vehicle_type || 'Semua Kendaraan'}</span>
                       </div>
-                      {r.isLiveOsrm && (
-                        <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                          <Globe className="w-2.5 h-2.5" />
-                          Live OSRM Geometry
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {r.geografis_terverifikasi ? (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <ShieldCheck className="w-2.5 h-2.5 text-emerald-600" />
+                            Terverifikasi Peta OSM
+                          </span>
+                        ) : null}
+                        {r.isLiveOsrm && (
+                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
+                            <Globe className="w-2.5 h-2.5" />
+                            Live OSRM Geometry
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     {/* Waypoints Sequence Breadcrumbs */}
@@ -950,6 +962,14 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                     <p className="text-[11px] text-slate-600 mt-2.5 leading-relaxed bg-white/80 p-2.5 rounded-xl border border-slate-200/60">
                       💡 {r.alasan_rekomendasi}
                     </p>
+
+                    {/* Disclaimer jika rute belum diverifikasi terhadap peta nyata */}
+                    {r.geografis_terverifikasi === false && (
+                      <div className="mt-2 p-2 bg-amber-50 border border-amber-300 rounded-xl flex items-start gap-1.5 text-[11px] text-amber-800 leading-tight">
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                        <span>Rute ini dihasilkan AI dan belum diverifikasi terhadap peta nyata — cek kondisi lapangan sebelum digunakan</span>
+                      </div>
+                    )}
 
                     {/* Active indicator bar */}
                     {isSelected && (

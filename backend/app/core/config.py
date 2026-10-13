@@ -19,6 +19,10 @@ class Settings(BaseSettings):
     # Google Gemini AI
     GEMINI_API_KEY: str = ""
     GEMINI_MODEL: str = "gemini-3.8-flash"
+
+    # Groq AI
+    GROQ_API_KEY: str = ""
+    GROQ_MODEL: str = "openai/gpt-oss-20b"
     
     # Penyimpanan Berkas Media
     UPLOAD_DIR: str = "uploads"
