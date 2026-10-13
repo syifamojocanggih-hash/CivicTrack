@@ -5,7 +5,7 @@ import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from app.core.config import settings
-from app.services.gemini_service import (
+from app.services.groq_service import (
     generate_ai_alternative_routes,
     analyze_evaluation_with_ai
 )

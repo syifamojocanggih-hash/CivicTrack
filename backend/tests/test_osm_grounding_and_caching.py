@@ -11,7 +11,7 @@ from app.services.osm_service import (
     _IN_MEMORY_CACHE,
     CACHE_FILE_PATH
 )
-from app.services.gemini_service import generate_ai_alternative_routes
+from app.services.groq_service import generate_ai_alternative_routes
 
 def test_validate_ai_route_osm_grounding():
     """
@@ -70,9 +70,12 @@ def test_osm_caching_mechanism(tmp_path):
     test_lon = 112.1640
     key = _get_cache_key(test_lat, test_lon)
 
-    # Pre-populate cache dengan data jalan uji coba
+    # Pre-populate cache dengan data jalan dan geometri uji coba
     mock_streets = ["Jalan Basuki Rahmad", "Jalan Gotong Royong", "Jalan Raya Babat"]
-    _IN_MEMORY_CACHE[key] = (time.time(), mock_streets)
+    mock_geometries = {
+        "Jalan Basuki Rahmad": [[[-7.1050, 112.1640], [-7.1052, 112.1642]]]
+    }
+    _IN_MEMORY_CACHE[key] = (time.time(), mock_streets, mock_geometries)
 
     # Panggil get_nearby_osm_streets tanpa mock HTTP (harus langsung return dari cache)
     result = get_nearby_osm_streets(test_lat, test_lon)
@@ -81,15 +84,23 @@ def test_osm_caching_mechanism(tmp_path):
 
 def test_generate_routes_grounded_vs_ungrounded():
     """
-    Test 4: Memastikan generate_ai_alternative_routes menghasilkan flag geografis_terverifikasi:
-    - Ketika data jalan OSM tersedia -> geografis_terverifikasi = True
-    - Ketika data jalan OSM kosong (remote/fallback) -> geografis_terverifikasi = False
+    Test 4: Memastikan generate_ai_alternative_routes menghasilkan flag geografis_terverifikasi
+    dan koordinat rute nyata:
+    - Ketika data jalan OSM tersedia -> geografis_terverifikasi = True, koordinat_rute terisi
+    - Ketika data jalan OSM kosong (remote/fallback) -> geografis_terverifikasi = False, koordinat_rute = []
     """
+    mock_streets = ["Jalan Basuki Rahmad", "Jalan Pramuka", "Jalan KH Ahmad Dahlan"]
+    mock_geometries = {
+        "Jalan Basuki Rahmad": [[[-7.1050, 112.1640], [-7.1052, 112.1642]]],
+        "Jalan Pramuka": [[[-7.1052, 112.1642], [-7.1055, 112.1645]]],
+        "Jalan KH Ahmad Dahlan": [[[-7.1055, 112.1645], [-7.1058, 112.1648]]]
+    }
+
     # 1. Simulasi dengan data OSM tersedia (Mocking Groq agar hemat kuota)
-    with patch("app.services.gemini_service.get_nearby_osm_streets") as mock_osm, \
-         patch("app.services.gemini_service._call_groq_chat") as mock_groq:
+    with patch("app.services.groq_service.get_nearby_osm_data") as mock_osm, \
+         patch("app.services.groq_service._call_groq_chat") as mock_groq:
         
-        mock_osm.return_value = ["Jalan Basuki Rahmad", "Jalan Pramuka", "Jalan KH Ahmad Dahlan"]
+        mock_osm.return_value = (mock_streets, mock_geometries)
         mock_groq.return_value = json.dumps({
             "rute": [
                 {
@@ -126,10 +137,12 @@ def test_generate_routes_grounded_vs_ungrounded():
         assert len(routes) == 3
         assert routes[0]["geografis_terverifikasi"] is True
         assert routes[0]["source"] == "groq"
+        assert len(routes[0]["koordinat_rute"]) >= 2
+        assert routes[0]["koordinat_rute"][0] == [-7.1050, 112.1640]
 
     # 2. Simulasi area terpencil tanpa data OSM (Opsi B)
-    with patch("app.services.gemini_service.get_nearby_osm_streets") as mock_osm_empty:
-        mock_osm_empty.return_value = []
+    with patch("app.services.groq_service.get_nearby_osm_data") as mock_osm_empty:
+        mock_osm_empty.return_value = ([], {})
         # Gunakan fallback heuristik
         with patch.object(settings, "GROQ_API_KEY", ""):
             routes_fallback = generate_ai_alternative_routes(
@@ -142,3 +155,51 @@ def test_generate_routes_grounded_vs_ungrounded():
             assert len(routes_fallback) == 3
             assert routes_fallback[0]["geografis_terverifikasi"] is False
             assert routes_fallback[0]["source"] == "heuristic_fallback"
+            assert routes_fallback[0]["koordinat_rute"] == []
+
+def test_nearest_endpoint_chaining_reversed_zigzag():
+    """
+    Test 5: Pengujian Algoritma Nearest Endpoint Chaining dengan Kasus Zigzag / Reverse Orientation:
+    - Ruas 1 (Jl. Basuki Rahmad): Tercatat dari Selatan ke Utara [(-7.100, 112.160) -> (-7.102, 112.160)]
+    - Ruas 2 (Jl. Gotong Royong): Tercatat SENGAJA DIBALIK di OSM [(-7.102, 112.164) -> (-7.102, 112.160)]
+    - Ruas 3 (Jl. Raya Babat): Tercatat normal dari Barat ke Timur [(-7.102, 112.164) -> (-7.105, 112.164)]
+    
+    Verifikasi:
+    1. Algoritma otomatis membalik orientasi Ruas 2 agar menyambung mulus dengan Ruas 1.
+    2. Jarak antar titik berurutan tidak ada yang melompat jauh (jarak step <= 0.002 derajat).
+    3. Urutan titik kontinu dan tidak terjadi backtracking / zigzag.
+    """
+    import math
+    from app.services.osm_service import chain_road_geometries
+
+    mock_geometries = {
+        "Jalan Basuki Rahmad": [
+            [[-7.100, 112.160], [-7.101, 112.160], [-7.102, 112.160]]
+        ],
+        # SENGAJA DIBALIK: titik (-7.102, 112.160) berada di ujung akhir, bukan awal
+        "Jalan Gotong Royong": [
+            [[-7.102, 112.164], [-7.102, 112.162], [-7.102, 112.160]]
+        ],
+        "Jalan Raya Babat": [
+            [[-7.102, 112.164], [-7.103, 112.164], [-7.104, 112.164], [-7.105, 112.164]]
+        ]
+    }
+
+    street_sequence = ["Jalan Basuki Rahmad", "Jalan Gotong Royong", "Jalan Raya Babat"]
+    chained = chain_road_geometries(street_sequence, mock_geometries)
+
+    assert len(chained) >= 7
+    # Titik awal harus awal ruas 1
+    assert chained[0] == [-7.100, 112.160]
+    # Titik akhir harus akhir ruas 3
+    assert chained[-1] == [-7.105, 112.164]
+
+    # Periksa jarak antar titik berurutan: TIDAK BOLEH ADA LOMPATAN ZIGZAG
+    # Tanpa chaining cerdas, lompatan dari Ruas 1 ke Ruas 2 yang terbalik adalah 0.004 derajat (450 meter).
+    # Dengan chaining cerdas, sambungan adalah 0.0 (titik temu persis).
+    for i in range(len(chained) - 1):
+        p1 = chained[i]
+        p2 = chained[i + 1]
+        dist = math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
+        assert dist <= 0.0025, f"Terjadi lompatan tidak wajar antara titik {p1} dan {p2} (dist: {dist})"
+

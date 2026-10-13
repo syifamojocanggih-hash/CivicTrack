@@ -223,15 +223,22 @@ def test_admin_verification_lifecycle_and_recovery(client):
     warga_headers = {"Authorization": f"Bearer {warga_token}"}
 
     # Submit evaluasi dengan urgensi sedang (skor 3 -> tidak langsung auto-trigger status)
-    eval_res = client.post(f"/api/v1/proyek/{proyek_id}/evaluasi", json={
-        "kategori_masalah": "Genangan Air",
-        "deskripsi": "Terdapat genangan air dan saluran tersumbat sampah ranting."
-    }, headers=warga_headers)
-    assert eval_res.status_code == 201
-    eval_id = eval_res.json()["id"]
+    from unittest.mock import patch
+    with patch("app.routers.evaluations.analyze_evaluation_with_ai") as mock_eval_ai:
+        mock_eval_ai.return_value = {
+            "skor_urgensi_ai": 3,
+            "ringkasan_analisis_ai": "Perlu pembersihan rutin saluran dinas.",
+            "raw_response_ai": {"source": "groq", "skor_urgensi_ai": 3}
+        }
+        eval_res = client.post(f"/api/v1/proyek/{proyek_id}/evaluasi", json={
+            "kategori_masalah": "Genangan Air",
+            "deskripsi": "Terdapat genangan air dan saluran tersumbat sampah ranting."
+        }, headers=warga_headers)
+        assert eval_res.status_code == 201
+        eval_id = eval_res.json()["id"]
 
-    # Pastikan awalnya masih 'selesai'
-    assert client.get(f"/api/v1/proyek/{proyek_id}").json()["status"] == "selesai"
+        # Pastikan awalnya masih 'selesai'
+        assert client.get(f"/api/v1/proyek/{proyek_id}").json()["status"] == "selesai"
 
     # --- LANGKAH A: Admin memverifikasi menjadi 'terverifikasi_perlu_tindak_lanjut' ---
     verify_res = client.patch(f"/api/v1/evaluasi/{eval_id}/verifikasi", json={

@@ -39,52 +39,10 @@ interface RouteItem {
   vehicle_type?: string;
   waypoints?: string[];
   coordinates?: [number, number][];
-  isLiveOsrm?: boolean;
   geografis_terverifikasi?: boolean;
 }
 
-// Database koordinat landmark utama di Kabupaten Lamongan
-const LAMONGAN_LANDMARKS: Record<string, [number, number]> = {
-  'pens': [-7.1264, 112.4085],
-  'pens lamongan': [-7.1264, 112.4085],
-  'politeknik elektronika negeri surabaya': [-7.1264, 112.4085],
-  'namira': [-7.1352, 112.4286],
-  'rs namira': [-7.1352, 112.4286],
-  'rs namira lamongan': [-7.1352, 112.4286],
-  'rumah sakit namira': [-7.1352, 112.4286],
-  'alun-alun': [-7.1205, 112.4155],
-  'alun-alun lamongan': [-7.1205, 112.4155],
-  'alun alun lamongan': [-7.1205, 112.4155],
-  'stasiun': [-7.1147, 112.4168],
-  'stasiun lamongan': [-7.1147, 112.4168],
-  'stasiun ka lamongan': [-7.1147, 112.4168],
-  'terminal': [-7.1245, 112.4022],
-  'terminal lamongan': [-7.1245, 112.4022],
-  'unisla': [-7.1285, 112.3980],
-  'universitas islam lamongan': [-7.1285, 112.3980],
-  'soegiri': [-7.1192, 112.4095],
-  'rsud soegiri': [-7.1192, 112.4095],
-  'tikung': [-7.1850, 112.4180],
-  'simpang tikung': [-7.1700, 112.4200],
-  'pasar tikung': [-7.1880, 112.4190],
-  'kembangbahu': [-7.1950, 112.3850],
-  'deket': [-7.1250, 112.4500],
-  'mantup': [-7.2350, 112.3700],
-  'babat': [-7.1120, 112.1640],
-  'brondong': [-6.8912, 112.2815],
-  'paciran': [-6.8785, 112.3420],
-  'sukorame': [-7.2850, 112.1150],
-};
 
-function resolveCoords(name: string, fallbackCoords: [number, number], offsetLat = 0, offsetLng = 0): [number, number] {
-  const clean = name.toLowerCase().trim();
-  for (const [key, coords] of Object.entries(LAMONGAN_LANDMARKS)) {
-    if (clean.includes(key)) {
-      return coords;
-    }
-  }
-  return [fallbackCoords[0] + offsetLat, fallbackCoords[1] + offsetLng];
-}
 
 export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   isOpen,
@@ -98,7 +56,6 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
   const [isSimulating, setIsSimulating] = useState(false);
   const [mobileTab, setMobileTab] = useState<'map' | 'list'>('map');
-  const [osrmStatus, setOsrmStatus] = useState<'connected' | 'loading' | 'offline'>('connected');
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -112,205 +69,123 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     project?.longitude ? Number(project.longitude) : 112.4155,
   ];
 
-  // Helper fetcher OSRM dengan timeout protektif
-  const fetchOsrmRoute = async (
-    start: [number, number],
-    end: [number, number],
-    via?: [number, number]
-  ): Promise<{ distanceKm: number; durationMinutes: number; coordinates: [number, number][] } | null> => {
-    try {
-      let coordsStr = `${start[1]},${start[0]};`;
-      if (via) coordsStr += `${via[1]},${via[0]};`;
-      coordsStr += `${end[1]},${end[0]}`;
-
-      const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson&steps=false`;
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => controller.abort(), 3500);
-
-      const res = await fetch(url, { signal: controller.signal });
-      clearTimeout(timeoutId);
-
-      if (!res.ok) throw new Error(`OSRM error: ${res.status}`);
-      const data = await res.json();
-
-      if (data.code === 'Ok' && data.routes && data.routes.length > 0) {
-        const route = data.routes[0];
-        const latLngs: [number, number][] = route.geometry.coordinates.map(
-          (c: [number, number]) => [c[1], c[0]] as [number, number]
-        );
-        return {
-          distanceKm: Number((route.distance / 1000).toFixed(2)),
-          durationMinutes: Math.max(1, Math.round(route.duration / 60)),
-          coordinates: latLngs,
-        };
-      }
-      return null;
-    } catch (err) {
-      console.warn('OSRM live routing API timeout / error, menggunakan waypoint cerdas:', err);
-      return null;
-    }
-  };
-
-  // State rute rekomendasi (tetap terisi agar UI tidak pernah kosong)
+  // State rute rekomendasi (diambil langsung dari backend AI & Overpass OSM)
   const [routes, setRoutes] = useState<RouteItem[]>([
     {
-      nama_rute: 'Jalur Arteri Utama (PENS Lamongan ➔ Bypass ➔ RS Namira)',
+      nama_rute: 'Jalur Arteri Utama',
       prioritas: 'utama',
-      estimasi_jarak_km: 2.65,
-      estimasi_waktu_menit: 6,
-      alasan_rekomendasi:
-        'Jalan beraspal lebar menghindari penutupan proyek, rute tercepat via koridor arteri dengan penerangan jalan penuh.',
+      estimasi_jarak_km: 3.5,
+      estimasi_waktu_menit: 10,
+      alasan_rekomendasi: 'Memuat rute alternatif dari backend...',
       vehicle_type: 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
-      waypoints: ['PENS Lamongan', 'Jl. Veteran', 'Simpang Bypass', 'RS Namira Lamongan'],
-      isLiveOsrm: true,
+      waypoints: [],
+      coordinates: [],
+      geografis_terverifikasi: false,
     },
     {
-      nama_rute: 'Jalan Lingkar (PENS Lamongan ➔ Lingkar Luar ➔ RS Namira)',
+      nama_rute: 'Jalan Lingkar Luar',
       prioritas: 'kedua',
-      estimasi_jarak_km: 5.2,
-      estimasi_waktu_menit: 13,
-      alasan_rekomendasi:
-        'Jalur lingkar sekunder pengurai kepadatan jam sibuk rute PENS Lamongan - RS Namira via lingkar luar.',
+      estimasi_jarak_km: 4.8,
+      estimasi_waktu_menit: 15,
+      alasan_rekomendasi: 'Memuat rute sekunder dari backend...',
       vehicle_type: 'Mobil Pribadi & Angkutan Ringan',
-      waypoints: ['PENS Lamongan', 'Lingkar Selatan', 'Simpang Tikung', 'RS Namira Lamongan'],
-      isLiveOsrm: true,
+      waypoints: [],
+      coordinates: [],
+      geografis_terverifikasi: false,
     },
     {
-      nama_rute: 'Jalur Pemukiman (PENS Lamongan ➔ Gang Warga ➔ RS Namira)',
+      nama_rute: 'Jalur Pintas Pemukiman',
       prioritas: 'tambahan',
-      estimasi_jarak_km: 2.4,
-      estimasi_waktu_menit: 6,
-      alasan_rekomendasi:
-        'Rute pintas pemukiman berkecepatan rendah khusus bagi pengendara sepeda motor dan ambulans darurat.',
+      estimasi_jarak_km: 2.6,
+      estimasi_waktu_menit: 7,
+      alasan_rekomendasi: 'Memuat rute roda dua dari backend...',
       vehicle_type: 'Khusus Sepeda Motor & Roda Dua',
-      waypoints: ['PENS Lamongan', 'Gang Pemukiman', 'Akses Lingkungan', 'RS Namira Lamongan'],
-      isLiveOsrm: true,
+      waypoints: [],
+      coordinates: [],
+      geografis_terverifikasi: false,
     },
   ]);
 
-  // Fetch / Generate Rute (Sinkronisasi Paralel Backend AI + OSRM Real-Time Maps API)
-  const fetchLiveRoutes = useCallback(async () => {
+  // Fetch / Generate Rute dari Backend AI (OpenStreetMap Grounded via Overpass API)
+  // Helper pemetaan response rute backend ke RouteItem
+  const mapRoutesResponse = (data: any[]): RouteItem[] => {
+    return data.map((item: any, idx: number) => {
+      const rawCoords = (item.koordinat_rute || item.raw_response_ai?.koordinat_rute || []) as [number, number][];
+      const isVerified = Boolean(item.geografis_terverifikasi ?? item.raw_response_ai?.geografis_terverifikasi);
+      const hasRealCoords = isVerified && Array.isArray(rawCoords) && rawCoords.length >= 2;
+
+      return {
+        id: item.id,
+        nama_rute: item.nama_rute || `Rute Prioritas ${idx + 1}`,
+        prioritas: item.prioritas || (idx === 0 ? 'utama' : idx === 1 ? 'kedua' : 'tambahan'),
+        estimasi_jarak_km: Number(item.estimasi_jarak_km || 3.0),
+        estimasi_waktu_menit: Number(item.estimasi_waktu_menit || 10),
+        alasan_rekomendasi: item.alasan_rekomendasi || '',
+        vehicle_type:
+          idx === 2
+            ? 'Khusus Sepeda Motor & Roda Dua'
+            : idx === 1
+            ? 'Mobil Pribadi & Angkutan Ringan'
+            : 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
+        waypoints: item.nama_rute ? item.nama_rute.split('➔').map((s: string) => s.trim()) : [],
+        coordinates: hasRealCoords ? rawCoords : [],
+        geografis_terverifikasi: hasRealCoords,
+      };
+    });
+  };
+
+  // Fetch / Generate Rute dari Backend AI (Memprioritaskan data DB/cache agar hemat panggilan AI)
+  const fetchLiveRoutes = useCallback(async (forceRegenerate = false) => {
     setIsAnalyzing(true);
-    setOsrmStatus('loading');
-
-    const startCoords = resolveCoords(origin, projectCoords, -0.012, -0.014);
-    const endCoords = resolveCoords(destination, projectCoords, 0.014, 0.015);
-
-    // Titik waypoint alternatif untuk rute bypass lingkar dan rute lingkungan
-    const ringViaCoords: [number, number] = [
-      (startCoords[0] + endCoords[0]) / 2 - 0.012,
-      (startCoords[1] + endCoords[1]) / 2 + 0.015,
-    ];
-    const shortcutViaCoords: [number, number] = [
-      (startCoords[0] + endCoords[0]) / 2 + 0.005,
-      (startCoords[1] + endCoords[1]) / 2 - 0.004,
-    ];
 
     try {
       const projectId = project?.id || 1;
 
-      // Panggil Backend AI dan OSRM secara paralel dengan timeout pengaman
-      const bePromise = (async () => {
+      // 1. Coba baca rute yang sudah tersimpan di database jika tidak diminta analisis ulang
+      if (!forceRegenerate) {
         try {
-          const controller = new AbortController();
-          const timeoutId = setTimeout(() => controller.abort(), 3500);
-          const res = await fetch(`/api/v1/proyek/${projectId}/generate-rute`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              catatan_penutupan: `Rute dari ${origin} menuju ${destination} melintasi proyek ${projectName || 'Pelebaran Jalan'}`,
-            }),
-            signal: controller.signal,
-          });
-          clearTimeout(timeoutId);
-          if (res.ok) return await res.json();
+          const getRes = await fetch(`/api/v1/proyek/${projectId}/rute-alternatif`);
+          if (getRes.ok) {
+            const existingData = await getRes.json();
+            if (Array.isArray(existingData) && existingData.length > 0) {
+              const mapped = mapRoutesResponse(existingData);
+              setRoutes(mapped);
+              setIsAnalyzing(false);
+              return;
+            }
+          }
         } catch (e) {
-          console.warn('Backend AI route call handled via local fallback:', e);
+          console.warn('Gagal membaca rute yang sudah ada di database:', e);
         }
-        return [];
-      })();
+      }
 
-      const [aiRoutesData, osrmR1, osrmR2, osrmR3] = await Promise.all([
-        bePromise,
-        fetchOsrmRoute(startCoords, endCoords),
-        fetchOsrmRoute(startCoords, endCoords, ringViaCoords),
-        fetchOsrmRoute(startCoords, endCoords, shortcutViaCoords),
-      ]);
+      // 2. Panggil generate-rute jika belum ada atau saat tombol Analisis Ulang ditekan
+      const res = await fetch(`/api/v1/proyek/${projectId}/generate-rute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          catatan_penutupan: `Rute dari ${origin} menuju ${destination} melintasi proyek ${projectName || 'Pelebaran Jalan'}`,
+        }),
+      });
 
-      const isLiveSuccess = !!(osrmR1 && osrmR1.coordinates.length > 0);
-      setOsrmStatus(isLiveSuccess ? 'connected' : 'offline');
-
-      // Fallback koordinat garis jalan jika koneksi OSRM offline
-      const fallbackR1Coords: [number, number][] = [
-        startCoords,
-        [startCoords[0] + 0.004, startCoords[1] + 0.006],
-        [endCoords[0] - 0.003, endCoords[1] - 0.005],
-        endCoords,
-      ];
-      const fallbackR2Coords: [number, number][] = [startCoords, ringViaCoords, endCoords];
-      const fallbackR3Coords: [number, number][] = [startCoords, shortcutViaCoords, endCoords];
-
-      const r1 = (Array.isArray(aiRoutesData) && aiRoutesData[0]) || {};
-      const r2 = (Array.isArray(aiRoutesData) && aiRoutesData[1]) || {};
-      const r3 = (Array.isArray(aiRoutesData) && aiRoutesData[2]) || {};
-
-      const newRoutes: RouteItem[] = [
-        {
-          nama_rute: r1.nama_rute || `Jalur Arteri Utama (${origin} ➔ Bypass ➔ ${destination})`,
-          prioritas: 'utama',
-          estimasi_jarak_km: osrmR1 ? osrmR1.distanceKm : Number(r1.estimasi_jarak_km || 2.65),
-          estimasi_waktu_menit: osrmR1 ? osrmR1.durationMinutes : Number(r1.estimasi_waktu_menit || 6),
-          alasan_rekomendasi:
-            r1.alasan_rekomendasi ||
-            `Rute utama real-time OSRM menghindari zona penutupan proyek, berkapasitas besar untuk semua jenis kendaraan.`,
-          vehicle_type: 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
-          waypoints: [origin, 'Jalur Arteri Bypass', destination],
-          coordinates: osrmR1?.coordinates || fallbackR1Coords,
-          isLiveOsrm: !!osrmR1,
-          geografis_terverifikasi: r1.geografis_terverifikasi ?? r1.raw_response_ai?.geografis_terverifikasi ?? false,
-        },
-        {
-          nama_rute: r2.nama_rute || `Jalan Lingkar Luar (${origin} ➔ Ring Road ➔ ${destination})`,
-          prioritas: 'kedua',
-          estimasi_jarak_km: osrmR2 ? osrmR2.distanceKm : Number(r2.estimasi_jarak_km || 5.2),
-          estimasi_waktu_menit: osrmR2 ? osrmR2.durationMinutes : Number(r2.estimasi_waktu_menit || 13),
-          alasan_rekomendasi:
-            r2.alasan_rekomendasi ||
-            `Jalur lingkar bypass sekunder pengurai kepadatan jam sibuk rute ${origin} ke ${destination}.`,
-          vehicle_type: 'Mobil Pribadi & Angkutan Ringan',
-          waypoints: [origin, 'Jalur Lingkar Sekunder', destination],
-          coordinates: osrmR2?.coordinates || fallbackR2Coords,
-          isLiveOsrm: !!osrmR2,
-          geografis_terverifikasi: r2.geografis_terverifikasi ?? r2.raw_response_ai?.geografis_terverifikasi ?? false,
-        },
-        {
-          nama_rute: r3.nama_rute || `Jalur Pintas Pemukiman (${origin} ➔ Gang Warga ➔ ${destination})`,
-          prioritas: 'tambahan',
-          estimasi_jarak_km: osrmR3 ? osrmR3.distanceKm : Number(r3.estimasi_jarak_km || 2.4),
-          estimasi_waktu_menit: osrmR3 ? osrmR3.durationMinutes : Number(r3.estimasi_waktu_menit || 6),
-          alasan_rekomendasi:
-            r3.alasan_rekomendasi ||
-            `Rute pintas pemukiman berkecepatan rendah khusus bagi pengendara sepeda motor dan sepeda.`,
-          vehicle_type: 'Khusus Sepeda Motor & Roda Dua',
-          waypoints: [origin, 'Akses Gang Pemukiman', destination],
-          coordinates: osrmR3?.coordinates || fallbackR3Coords,
-          isLiveOsrm: !!osrmR3,
-          geografis_terverifikasi: r3.geografis_terverifikasi ?? r3.raw_response_ai?.geografis_terverifikasi ?? false,
-        },
-      ];
-
-      setRoutes(newRoutes);
+      if (res.ok) {
+        const aiRoutesData = await res.json();
+        if (Array.isArray(aiRoutesData) && aiRoutesData.length > 0) {
+          const mapped = mapRoutesResponse(aiRoutesData);
+          setRoutes(mapped);
+          return;
+        }
+      }
     } catch (err) {
-      console.warn('Fetch live route error:', err);
-      setOsrmStatus('offline');
+      console.warn('Gagal memuat rute alternatif dari backend:', err);
     } finally {
       setIsAnalyzing(false);
     }
-  }, [origin, destination, projectCoords, projectName, project?.id]);
+  }, [origin, destination, projectName, project?.id]);
 
   useEffect(() => {
     if (isOpen) {
-      fetchLiveRoutes();
+      fetchLiveRoutes(false);
     }
   }, [isOpen, fetchLiveRoutes]);
 
@@ -367,9 +242,6 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
     layerGroup.clearLayers();
 
-    const startCoords = resolveCoords(origin, projectCoords, -0.012, -0.014);
-    const endCoords = resolveCoords(destination, projectCoords, 0.014, 0.015);
-
     // 1. Zona Penutupan Proyek Fisik (Penting: Ditampilkan jelas dengan efek bahaya & pulsasi)
     const closureCircle = L.circle(projectCoords, {
       radius: 280,
@@ -406,49 +278,13 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       .bindTooltip(`<div class="text-xs font-bold text-rose-800">🚧 Lokasi Proyek Konstruksi: ${projectName || 'Area Konstruksi'}</div>`)
       .addTo(layerGroup);
 
-    // 2. Marker Start (A) dan Finish (B)
-    const originIcon = L.divIcon({
-      className: 'route-origin-icon',
-      html: `
-        <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-pointer">
-          <div class="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white">
-            A
-          </div>
-          <div class="absolute -bottom-5 bg-emerald-900 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap">
-            START
-          </div>
-        </div>
-      `,
-      iconSize: [0, 0],
-    });
-    L.marker(startCoords, { icon: originIcon })
-      .bindTooltip(`<div class="text-xs font-bold text-emerald-800">📍 Titik Awal: ${origin}</div>`)
-      .addTo(layerGroup);
-
-    const destIcon = L.divIcon({
-      className: 'route-dest-icon',
-      html: `
-        <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-pointer">
-          <div class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white">
-            B
-          </div>
-          <div class="absolute -bottom-5 bg-indigo-900 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap">
-            FINISH
-          </div>
-        </div>
-      `,
-      iconSize: [0, 0],
-    });
-    L.marker(endCoords, { icon: destIcon })
-      .bindTooltip(`<div class="text-xs font-bold text-indigo-800">🏁 Titik Tujuan: ${destination}</div>`)
-      .addTo(layerGroup);
-
-    // 3. Render 3 Polylines Rute
-    const routePolylines: L.Polyline[] = [];
+    // 2. Render Polylines Rute yang Terverifikasi
+    const routePolylines: { index: number; polyline: L.Polyline }[] = [];
 
     routes.forEach((r, idx) => {
       const isSelected = idx === selectedRouteIndex;
-      const coords = r.coordinates || [startCoords, endCoords];
+      const hasRealCoords = Boolean(r.geografis_terverifikasi && r.coordinates && r.coordinates.length >= 2);
+      if (!hasRealCoords || !r.coordinates) return;
 
       let color = '#059669'; // Utama: Hijau Emerald
       let dashArray: string | undefined = undefined;
@@ -461,7 +297,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         dashArray = isSelected ? undefined : '4, 6';
       }
 
-      const polyline = L.polyline(coords, {
+      const polyline = L.polyline(r.coordinates, {
         color,
         weight: isSelected ? 7 : 4,
         opacity: isSelected ? 1.0 : 0.45,
@@ -474,7 +310,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         `<div class="p-1 font-['DM_Sans'] text-xs">
           <strong style="color: ${color}">Rute ${idx + 1}: ${r.nama_rute}</strong><br/>
           <span class="text-slate-600 font-medium">${r.estimasi_waktu_menit} menit • ${r.estimasi_jarak_km} km</span>
-          ${r.isLiveOsrm ? '<br/><span class="text-emerald-600 text-[10px] font-bold">✓ OSRM Live Road Network</span>' : ''}
+          <br/><span class="text-emerald-600 text-[10px] font-bold">✓ Terverifikasi Peta OSM</span>
         </div>`,
         { sticky: true }
       );
@@ -483,20 +319,64 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         setSelectedRouteIndex(idx);
       });
 
-      routePolylines.push(polyline);
+      routePolylines.push({ index: idx, polyline });
     });
 
-    // Auto-fit bounds: Sertakan Titik Awal, Titik Akhir, Polylines, dan Zona Proyek Konstruksi
-    const activePolyline = routePolylines[selectedRouteIndex];
-    if (activePolyline && activePolyline.getLatLngs().length > 0) {
-      activePolyline.bringToFront();
-      const bounds = activePolyline.getBounds();
-      bounds.extend(startCoords);
-      bounds.extend(endCoords);
-      bounds.extend(projectCoords);
-      map.fitBounds(bounds.pad(0.14), { animate: true, duration: 0.5 });
+    // 3. Marker Start (A) dan Finish (B) untuk Rute Terpilih yang Terverifikasi
+    const activeRoute = routes[selectedRouteIndex];
+    if (activeRoute?.geografis_terverifikasi && activeRoute.coordinates && activeRoute.coordinates.length >= 2) {
+      const startPt = activeRoute.coordinates[0];
+      const endPt = activeRoute.coordinates[activeRoute.coordinates.length - 1];
+
+      const originIcon = L.divIcon({
+        className: 'route-origin-icon',
+        html: `
+          <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-pointer">
+            <div class="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white">
+              A
+            </div>
+            <div class="absolute -bottom-5 bg-emerald-900 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap">
+              START
+            </div>
+          </div>
+        `,
+        iconSize: [0, 0],
+      });
+      L.marker(startPt, { icon: originIcon })
+        .bindTooltip(`<div class="text-xs font-bold text-emerald-800">📍 Titik Awal: ${activeRoute.waypoints?.[0] || 'Awal Rute'}</div>`)
+        .addTo(layerGroup);
+
+      const destIcon = L.divIcon({
+        className: 'route-dest-icon',
+        html: `
+          <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-pointer">
+            <div class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white">
+              B
+            </div>
+            <div class="absolute -bottom-5 bg-indigo-900 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap">
+              FINISH
+            </div>
+          </div>
+        `,
+        iconSize: [0, 0],
+      });
+      L.marker(endPt, { icon: destIcon })
+        .bindTooltip(`<div class="text-xs font-bold text-indigo-800">🏁 Titik Akhir: ${activeRoute.waypoints?.[activeRoute.waypoints.length - 1] || 'Tujuan Rute'}</div>`)
+        .addTo(layerGroup);
+
+      // Auto-fit bounds ke rute aktif dan area proyek
+      const activeEntry = routePolylines.find((p) => p.index === selectedRouteIndex);
+      if (activeEntry && activeEntry.polyline.getLatLngs().length > 0) {
+        activeEntry.polyline.bringToFront();
+        const bounds = activeEntry.polyline.getBounds();
+        bounds.extend(projectCoords);
+        map.fitBounds(bounds.pad(0.14), { animate: true, duration: 0.5 });
+      }
+    } else {
+      // Jika rute belum terverifikasi / tanpa koordinat, fokuskan peta ke lokasi proyek
+      map.setView(projectCoords, 15, { animate: true });
     }
-  }, [routes, selectedRouteIndex, isOpen, origin, destination, projectCoords, projectName]);
+  }, [routes, selectedRouteIndex, isOpen, projectCoords, projectName]);
 
   // Simulasi Navigasi Animasi Kendaraan Berjalan
   const handleStartSimulation = () => {
@@ -506,7 +386,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
     const activeRoute = routes[selectedRouteIndex];
     const coords = activeRoute?.coordinates;
-    if (!coords || coords.length < 2) return;
+    if (!coords || coords.length < 2 || !activeRoute.geografis_terverifikasi) return;
 
     if (simulationMarkerRef.current) {
       layerGroup.removeLayer(simulationMarkerRef.current);
@@ -588,7 +468,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
   const handleReanalyze = (e: React.FormEvent) => {
     e.preventDefault();
-    fetchLiveRoutes();
+    fetchLiveRoutes(true);
   };
 
   if (!isOpen) return null;
@@ -609,11 +489,11 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
           <div className="flex flex-wrap items-center gap-2 mb-2">
             <span className="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-300 border border-amber-400/30 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-xs">
               <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-              Google Gemini 3.8 Flash AI Engine
+              Groq AI Route Engine
             </span>
             <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-xs">
               <Globe className="w-3.5 h-3.5 text-emerald-300" />
-              OSRM Real-Time Routing Maps API
+              OpenStreetMap Overpass Geometry
             </span>
             <span className="bg-white/10 text-white/90 px-2.5 py-0.5 rounded-full text-[11px] font-medium border border-white/15">
               Simulasi Mitigasi Rekayasa Lalu Lintas
@@ -664,6 +544,21 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
           >
             {/* Map Container */}
             <div ref={mapContainerRef} className="w-full h-full min-h-[380px] z-10" />
+
+            {/* Overlay Banner saat Geometri Belum Terverifikasi / Tidak Tersedia */}
+            {(!routes[selectedRouteIndex]?.geografis_terverifikasi ||
+              !routes[selectedRouteIndex]?.coordinates ||
+              routes[selectedRouteIndex]?.coordinates!.length < 2) && (
+              <div className="absolute inset-x-4 top-14 z-[450] bg-amber-500/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-xl border border-amber-300/80 flex items-center gap-3 animate-fade-in pointer-events-auto">
+                <AlertTriangle className="w-5 h-5 text-white shrink-0" />
+                <div className="text-left">
+                  <div className="text-xs font-bold leading-tight">Peta Rute Tidak Tersedia</div>
+                  <div className="text-[11px] text-amber-100 leading-normal mt-0.5">
+                    Rute belum terverifikasi terhadap data jalan nyata OpenStreetMap sehingga geometri garis tidak digambar.
+                  </div>
+                </div>
+              </div>
+            )}
 
             {/* Floating Top Controls: Badge Rute Aktif */}
             <div className="absolute top-3 left-3 z-[400] flex flex-col gap-1.5 pointer-events-none">
@@ -821,10 +716,10 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                   <Radio className={`w-3 h-3 ${isAnalyzing ? 'text-amber-500 animate-pulse' : 'text-emerald-500'}`} />
                   <span>
                     {isAnalyzing
-                      ? 'Menghitung rute real-time...'
-                      : osrmStatus === 'connected'
-                      ? 'Jaringan Jalan OSRM Terhubung'
-                      : 'Mode Rute Cerdas'}
+                      ? 'Menghitung rute AI & geometri jalan...'
+                      : routes[selectedRouteIndex]?.geografis_terverifikasi
+                      ? 'Geometri Peta OSM Terverifikasi'
+                      : 'Rute Alternatif Siap'}
                   </span>
                 </div>
                 <button
@@ -854,12 +749,12 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
               </div>
             )}
 
-            {/* List 3 Alternatif Rute Terstruktur (TETAP TAMPIL - Tidak pernah hilang menjadi layar putih kosong) */}
+            {/* List 3 Alternatif Rute Terstruktur */}
             <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
               {isAnalyzing && (
                 <div className="p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-2 text-xs text-indigo-900 font-semibold animate-pulse">
                   <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin shrink-0" />
-                  <span>Sedang memperbarui geometri peta OSRM secara real-time...</span>
+                  <span>Sedang memproses rute AI dan geometri jalan OpenStreetMap...</span>
                 </div>
               )}
 
@@ -928,12 +823,6 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                             Terverifikasi Peta OSM
                           </span>
                         ) : null}
-                        {r.isLiveOsrm && (
-                          <span className="text-[10px] font-bold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-md flex items-center gap-1">
-                            <Globe className="w-2.5 h-2.5" />
-                            Live OSRM Geometry
-                          </span>
-                        )}
                       </div>
                     </div>
 
@@ -992,7 +881,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         <div className="p-4 border-t border-slate-200 bg-white flex flex-wrap items-center justify-between gap-3 shrink-0">
           <div className="flex items-center gap-2 text-xs text-slate-500">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Data Peta: OpenStreetMap contributors &amp; Project-OSRM Routing Service</span>
+            <span>Data Peta &amp; Geometri: OpenStreetMap contributors (Overpass API) • CivicTrack Grounding Engine</span>
           </div>
 
           <div className="flex items-center gap-2">

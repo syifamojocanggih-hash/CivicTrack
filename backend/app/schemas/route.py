@@ -13,6 +13,7 @@ class RekomendasiRuteResponse(BaseModel):
     estimasi_waktu_menit: Optional[int] = None
     alasan_rekomendasi: Optional[str] = None
     geografis_terverifikasi: bool = False
+    koordinat_rute: Optional[list] = None
     raw_response_ai: Optional[dict] = None
     is_valid: bool
     created_at: datetime

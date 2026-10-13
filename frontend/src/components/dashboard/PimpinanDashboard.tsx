@@ -591,7 +591,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-[#2980B9]" />
               <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
-                Analisis Aspirasi Publik &amp; AI Sentimen (Google Gemini Engine)
+                Analisis Aspirasi Publik &amp; AI Sentimen (Groq AI Engine)
               </h3>
             </div>
             <span className="text-xs bg-[#EBF4FB] text-[#184C78] font-bold px-3 py-1 rounded-full">

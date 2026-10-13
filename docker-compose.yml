@@ -35,7 +35,6 @@ services:
       - ENVIRONMENT=development
       - DEBUG=True
       - SECRET_KEY=civictrack-super-secret-key-development-change-in-production-2025
-      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - GROQ_API_KEY=${GROQ_API_KEY:-}
       - GROQ_MODEL=${GROQ_MODEL:-openai/gpt-oss-20b}
       - UPLOAD_DIR=uploads

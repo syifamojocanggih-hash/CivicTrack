@@ -223,7 +223,7 @@ CREATE TABLE rating_kepuasan (
 
 -- ----------------------------------------------------------
 -- 11. Tabel rekomendasi_rute (PRD 9.11)
--- Rute alternatif cerdas hasil analisis Google Gemini AI
+-- Rute alternatif cerdas hasil analisis Groq AI
 -- ----------------------------------------------------------
 CREATE TABLE rekomendasi_rute (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,

@@ -18,7 +18,7 @@ app = FastAPI(
 # CivicTrack Backend REST API
 Platform Transparansi dan Akuntabilitas Proyek Pembangunan Daerah.
 Mengintegrasikan visualisasi linimasa, pelaporan partisipasi warga, sistem notifikasi terpadu,
-Open Data API, dan Google Gemini AI untuk analisis dampak pengalihan rute serta evaluasi mutu infrastruktur.
+Open Data API, dan Groq AI untuk analisis dampak pengalihan rute serta evaluasi mutu infrastruktur.
     """,
     version="1.0.0",
     docs_url="/docs",

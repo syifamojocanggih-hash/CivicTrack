@@ -31,3 +31,11 @@ class RekomendasiRute(Base):
         if self.raw_response_ai and isinstance(self.raw_response_ai, dict):
             return bool(self.raw_response_ai.get("geografis_terverifikasi", False))
         return False
+
+    @property
+    def koordinat_rute(self) -> list:
+        """Menyajikan koordinat garis rute [lat, lon] dari raw_response_ai."""
+        if self.raw_response_ai and isinstance(self.raw_response_ai, dict):
+            return self.raw_response_ai.get("koordinat_rute", [])
+        return []
+

@@ -63,7 +63,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
       case 'sebaran_wilayah':
         return 'Sebaran Wilayah & Rekapitulasi Agregat';
       case 'sentimen_ai':
-        return 'Analisis Aspirasi Publik (Gemini AI)';
+        return 'Analisis Aspirasi Publik (Groq AI)';
       case 'laporan_eksekutif':
         return 'Pusat Unduh Laporan Eksekutif Daerah';
       case 'proyek':

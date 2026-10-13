@@ -16,7 +16,7 @@ from app.schemas.evaluation import (
     DokumentasiEvaluasiResponse, EvaluasiStatusLogResponse
 )
 from app.schemas.auth import UserBrief
-from app.services.gemini_service import analyze_evaluation_with_ai
+from app.services.groq_service import analyze_evaluation_with_ai
 from app.services.evaluation_status_service import (
     sync_project_status_on_new_evaluation,
     sync_project_status_on_evaluation_verification
@@ -37,7 +37,7 @@ def submit_post_project_evaluation(
     """
     Mekanisme pengajuan laporan atas proyek berstatus 'Selesai' yang terindikasi
     cacat/tidak sesuai spesifikasi.
-    Dilengkapi analisis otomatis Gemini AI untuk skor urgensi (1-5) dan ringkasan teknis.
+    Dilengkapi analisis otomatis Groq AI untuk skor urgensi (1-5) dan ringkasan teknis.
     Jika skor urgensi >= 4, proyek otomatis berubah ke 'dalam_peninjauan_ulang'.
     Mencatat entri awal ke log audit trail.
     """
@@ -51,7 +51,7 @@ def submit_post_project_evaluation(
             detail="Evaluasi cacat pembangunan hanya dapat diajukan untuk proyek yang telah berstatus 'Selesai' atau 'Dalam Peninjauan Ulang'."
         )
 
-    # Analisis otomatis dengan AI (Google Gemini)
+    # Analisis otomatis dengan AI (Groq)
     ai_result = analyze_evaluation_with_ai(
         kategori_masalah=req.kategori_masalah,
         deskripsi=req.deskripsi,

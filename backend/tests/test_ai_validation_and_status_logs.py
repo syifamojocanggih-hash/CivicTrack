@@ -1,7 +1,7 @@
 import pytest
 from decimal import Decimal
 from app.models.ai_route import RekomendasiRute, PrioritasRute
-from app.services.gemini_service import analyze_evaluation_with_ai
+from app.services.groq_service import analyze_evaluation_with_ai
 from app.routers.ai_routes import validate_ai_route
 
 def test_ai_evaluation_validation_and_fallback_resilience():
@@ -9,26 +9,31 @@ def test_ai_evaluation_validation_and_fallback_resilience():
     Test 1: Memastikan analyze_evaluation_with_ai memvalidasi skor_urgensi_ai,
     ringkasan_analisis_ai, menghasilkan raw_response_ai, dan tahan terhadap respons rusak.
     """
-    # 1. Analisis normal melalui fallback heuristik deterministik
-    res_urgent = analyze_evaluation_with_ai(
-        kategori_masalah="Kerusakan Jembatan",
-        deskripsi="Pilar jembatan retak besar dan ambles ke dasar sungai.",
-        nama_proyek="Jembatan Babat",
-        kategori_proyek="jembatan"
-    )
-    assert res_urgent["skor_urgensi_ai"] == 5
-    assert len(res_urgent["ringkasan_analisis_ai"]) >= 10
-    assert "raw_response_ai" in res_urgent
-    assert res_urgent["raw_response_ai"]["source"] in ["heuristic_fallback", "groq"]
+    from unittest.mock import patch
+    from app.core.config import settings
 
-    res_minor = analyze_evaluation_with_ai(
-        kategori_masalah="Pengecatan",
-        deskripsi="Warna cat pada trotoar mulai pudar.",
-        nama_proyek="Jalan Veteran",
-        kategori_proyek="jalan"
-    )
-    assert res_minor["skor_urgensi_ai"] == 2
-    assert res_minor["raw_response_ai"] is not None
+    # 1. Analisis normal melalui fallback heuristik deterministik (menghemat kuota AI saat testing)
+    with patch.object(settings, "GROQ_API_KEY", ""):
+        res_urgent = analyze_evaluation_with_ai(
+            kategori_masalah="Kerusakan Jembatan",
+            deskripsi="Pilar jembatan retak besar dan ambles ke dasar sungai.",
+            nama_proyek="Jembatan Babat",
+            kategori_proyek="jembatan"
+        )
+        assert res_urgent["skor_urgensi_ai"] == 5
+        assert len(res_urgent["ringkasan_analisis_ai"]) >= 10
+        assert "raw_response_ai" in res_urgent
+        assert res_urgent["raw_response_ai"]["source"] == "heuristic_fallback"
+
+        res_minor = analyze_evaluation_with_ai(
+            kategori_masalah="Pengecatan",
+            deskripsi="Warna cat pada trotoar mulai pudar.",
+            nama_proyek="Jalan Veteran",
+            kategori_proyek="jalan"
+        )
+        assert res_minor["skor_urgensi_ai"] == 2
+        assert res_minor["raw_response_ai"] is not None
+        assert res_minor["raw_response_ai"]["source"] == "heuristic_fallback"
 
 
 def test_evaluation_status_log_lifecycle_manual_and_automatic(client):

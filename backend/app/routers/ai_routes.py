@@ -9,7 +9,7 @@ from app.models.user import User
 from app.models.project import Proyek
 from app.models.ai_route import RekomendasiRute, PrioritasRute
 from app.schemas.route import RekomendasiRuteResponse, GenerateRuteRequest
-from app.services.gemini_service import generate_ai_alternative_routes
+from app.services.groq_service import generate_ai_alternative_routes
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ def generate_alternative_routes(
     current_user: Optional[User] = Depends(get_optional_current_user)
 ):
     """
-    Menghasilkan rekomendasi rute alternatif penutupan jalan menggunakan Google Gemini API / Groq API.
+    Menghasilkan rekomendasi rute alternatif penutupan jalan menggunakan Groq API dengan grounding data OpenStreetMap.
     Menyajikan rute terstruktur dalam 3 tingkat skala prioritas:
     - 'utama': Jalur pengalihan jalan besar untuk seluruh kendaraan
     - 'kedua': Jalur lingkar sekunder pengurai kepadatan

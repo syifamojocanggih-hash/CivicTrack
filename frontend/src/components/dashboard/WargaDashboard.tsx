@@ -195,7 +195,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     e.preventDefault();
     const selProj = projects.find((p) => p.id === Number(evaluasiForm.proyek_id));
 
-    // Simulated Gemini AI urgency calculation based on keywords
+    // Simulated Groq AI urgency calculation based on keywords
     let score = 3;
     let analysis = 'Tingkat Urgensi SEDANG (Skor 3/5). Memerlukan inspeksi visual berkala oleh penilik jalan dinas.';
     const textLower = evaluasiForm.deskripsi.toLowerCase();
@@ -953,7 +953,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <div className="p-3 bg-[#f4f9fd] rounded-xl border-l-3 border-[#2980B9] text-xs space-y-1">
                   <div className="font-bold text-[#184C78] flex items-center gap-1.5">
                     <Sparkles className="w-3.5 h-3.5 text-[#2980B9]" />
-                    <span>Analisis Cerdas AI (Civic Gemini Engine):</span>
+                    <span>Analisis Cerdas AI (Civic Groq AI Engine):</span>
                   </div>
                   <p className="text-[#495057] text-[11px] leading-relaxed">
                     {item.analisis_ai.split('\n\n[RAW_AI_DEBUG]:')[0]}
@@ -1210,7 +1210,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <h3 className="font-['DM_Sans'] text-lg font-bold">Laporkan Cacat Fisik Pasca-Proyek</h3>
               </div>
               <p className="text-xs text-white/75 mt-0.5">
-                Pengaduan kerusakan fisik proyek selesai dengan analisis urgensi otomatis AI Google Gemini.
+                Pengaduan kerusakan fisik proyek selesai dengan analisis urgensi otomatis Groq AI.
               </p>
             </div>
 
