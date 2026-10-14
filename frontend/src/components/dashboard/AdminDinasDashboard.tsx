@@ -24,6 +24,7 @@ import type {
   DokumentasiProyek,
   ProyekKategori,
   ProyekStatus,
+  EvaluasiStatusType,
 } from '../../types';
 import {
   MOCK_LAPORAN_WARGA,
@@ -108,6 +109,8 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     deskripsi: '',
     anggaran: 5000000000,
     status: 'berjalan' as ProyekStatus,
+    tanggal_mulai: new Date().toISOString().split('T')[0],
+    estimasi_selesai: new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
     progres_persen: 0,
     nama_wilayah: 'Kecamatan Lamongan (Kota)',
     latitude: -7.1197,
@@ -173,6 +176,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   // Evaluasi cacat state
   const [evaluasiList, setEvaluasiList] = useState<EvaluasiCacatItem[]>(MOCK_EVALUASI_CACAT);
   const [selectedEvalToVerify, setSelectedEvalToVerify] = useState<EvaluasiCacatItem | null>(null);
+  const [verifyStatus, setVerifyStatus] = useState<EvaluasiStatusType>('terverifikasi_perlu_tindak_lanjut');
   const [tindakanDinasText, setTindakanDinasText] = useState('');
   const [evalStatusLogs, setEvalStatusLogs] = useState<any[]>([]);
 
@@ -194,7 +198,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             analisis_ai: e.ringkasan_analisis_ai || 'Analisis AI Groq',
             kategori_cacat: e.kategori_masalah,
             status_verifikasi: e.status,
-            catatan_dinas: e.status_logs?.[0]?.catatan || undefined,
+            catatan_dinas: (e.status_logs && e.status_logs.length > 0
+              ? e.status_logs[e.status_logs.length - 1]?.catatan
+              : undefined) || undefined,
             tanggal_lapor: String(e.created_at).split('T')[0],
           }));
           setEvaluasiList(mapped);
@@ -244,8 +250,8 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         anggaran: Number(newProjectForm.anggaran),
         status: newProjectForm.status,
         progres_persen: Number(newProjectForm.progres_persen),
-        tanggal_mulai: new Date().toISOString().split('T')[0],
-        estimasi_selesai: new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
+        tanggal_mulai: newProjectForm.tanggal_mulai,
+        estimasi_selesai: newProjectForm.estimasi_selesai,
       });
 
       setProjectList((prev) => [created, ...prev]);
@@ -260,6 +266,8 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         deskripsi: '',
         anggaran: 5000000000,
         status: 'berjalan',
+        tanggal_mulai: new Date().toISOString().split('T')[0],
+        estimasi_selesai: new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
         progres_persen: 0,
         nama_wilayah: 'Kecamatan Lamongan (Kota)',
         latitude: -7.1197,
@@ -461,7 +469,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
     try {
       await apiService.verifyEvaluation(selectedEvalToVerify.id, {
-        status: 'dalam_penanganan',
+        status: verifyStatus,
         catatan: tindakanDinasText.trim(),
       });
 
@@ -470,7 +478,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
           item.id === selectedEvalToVerify.id
             ? {
                 ...item,
-                status_verifikasi: 'dalam_penanganan',
+                status_verifikasi: verifyStatus,
                 catatan_dinas: tindakanDinasText,
                 tanggal_tindakan: new Date().toLocaleDateString('id-ID'),
               }
@@ -486,6 +494,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
       setSelectedEvalToVerify(null);
       setTindakanDinasText('');
+      setVerifyStatus('terverifikasi_perlu_tindak_lanjut');
     } catch (err: any) {
       alert(err.message || 'Gagal memverifikasi evaluasi.');
     }
@@ -1325,6 +1334,37 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
               </div>
 
+              {/* Periode Pelaksanaan Proyek */}
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="tanggal_mulai" className="block font-semibold text-[#184C78] mb-1">
+                    Tanggal Mulai Pelaksanaan
+                  </label>
+                  <input
+                    id="tanggal_mulai"
+                    type="date"
+                    required
+                    value={newProjectForm.tanggal_mulai}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, tanggal_mulai: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="estimasi_selesai" className="block font-semibold text-[#184C78] mb-1">
+                    Estimasi Selesai (Target Rampung)
+                  </label>
+                  <input
+                    id="estimasi_selesai"
+                    type="date"
+                    required
+                    min={newProjectForm.tanggal_mulai}
+                    value={newProjectForm.estimasi_selesai}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, estimasi_selesai: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+              </div>
+
               {/* Pilihan Wilayah Administratif Berjenjang */}
               <div>
                 <label className="block font-semibold text-[#184C78] mb-1">
@@ -1560,7 +1600,10 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
               </div>
 
               <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Bobot Kemajuan (%)</label>
+                <label className="block font-semibold text-[#184C78] mb-1">Target Capaian Progres Kumulatif (%)</label>
+                <p className="text-[10.5px] text-[#6C757D] mb-1">
+                  Persentase capaian kemajuan fisik kumulatif proyek hingga tahap ini (0–100%)
+                </p>
                 <input
                   type="number"
                   min={1}
@@ -1766,6 +1809,25 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     <p className="text-[11px] text-slate-400 italic">Belum ada riwayat perubahan status</p>
                   )}
                 </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1">Keputusan Status Verifikasi</label>
+                <select
+                  value={verifyStatus}
+                  onChange={(e) => setVerifyStatus(e.target.value as EvaluasiStatusType)}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                >
+                  <option value="terverifikasi_perlu_tindak_lanjut">
+                    Terverifikasi - Perlu Tindak Lanjut (Proyek beralih ke masa peninjauan ulang)
+                  </option>
+                  <option value="selesai_ditindaklanjuti">
+                    Selesai Ditindaklanjuti (Perbaikan tuntas)
+                  </option>
+                  <option value="ditolak_tidak_terbukti">
+                    Ditolak - Tidak Terbukti (Laporan tidak valid)
+                  </option>
+                </select>
               </div>
 
               <div>

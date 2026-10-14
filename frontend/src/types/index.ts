@@ -123,13 +123,23 @@ export interface RatingSummaryResponseItem {
   sebaran: Record<string, number>;
 }
 
+export type EvaluasiStatusType =
+  | 'menunggu_verifikasi'
+  | 'dalam_peninjauan_ulang'
+  | 'terverifikasi_perlu_tindak_lanjut'
+  | 'selesai_ditindaklanjuti'
+  | 'ditolak_tidak_terbukti'
+  | 'dalam_penanganan'
+  | 'selesai_diperbaiki'
+  | 'ditolak';
+
 export interface EvaluasiCreatePayload {
   kategori_masalah: string;
   deskripsi: string;
 }
 
 export interface EvaluasiVerifikasiPayload {
-  status: 'menunggu_verifikasi' | 'dalam_penanganan' | 'selesai_diperbaiki' | 'ditolak';
+  status: EvaluasiStatusType;
   catatan?: string;
 }
 
@@ -142,7 +152,7 @@ export interface EvaluasiResponseItem {
   deskripsi: string;
   skor_urgensi_ai?: number | null;
   ringkasan_analisis_ai?: string | null;
-  status: 'menunggu_verifikasi' | 'dalam_penanganan' | 'selesai_diperbaiki' | 'ditolak';
+  status: EvaluasiStatusType;
   ditinjau_oleh?: number | null;
   created_at: string;
   updated_at: string;
@@ -270,7 +280,7 @@ export interface LaporanAduan {
   petugas_penjawab?: string;
 }
 
-export type StatusVerifikasiEvaluasi = 'menunggu_verifikasi' | 'dalam_penanganan' | 'selesai_diperbaiki' | 'ditolak';
+export type StatusVerifikasiEvaluasi = EvaluasiStatusType;
 
 export interface EvaluasiCacatItem {
   id: number;

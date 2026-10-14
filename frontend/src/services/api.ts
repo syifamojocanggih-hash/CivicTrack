@@ -13,6 +13,7 @@ import type {
   EvaluasiCreatePayload,
   EvaluasiVerifikasiPayload,
   EvaluasiResponseItem,
+  EvaluasiStatusType,
   UserProfile,
   StatSummary,
   WilayahStatItem,
@@ -427,10 +428,19 @@ export const apiService = {
 
   async updateProject(id: number, data: ProyekUpdatePayload): Promise<ProyekItem> {
     const headers = getAuthHeaders();
+
+    const payload: Record<string, any> = { ...data };
+    if (payload.kategori === 'fasilitas') {
+      payload.kategori = 'gedung_publik';
+    }
+    if (payload.status === 'ditangguhkan') {
+      payload.status = 'tertunda';
+    }
+
     const res = await fetch(`${BASE_URL}/proyek/${id}`, {
       method: 'PUT',
       headers,
-      body: JSON.stringify(data),
+      body: JSON.stringify(payload),
     });
 
     if (!res.ok) {
@@ -452,13 +462,16 @@ export const apiService = {
     let backendKategori = data.kategori;
     if (backendKategori === 'fasilitas') backendKategori = 'gedung_publik';
 
+    let backendStatus = data.status || 'berjalan';
+    if (backendStatus === 'ditangguhkan') backendStatus = 'tertunda' as any;
+
     const payload = {
       ...data,
       kategori: backendKategori,
       anggaran: data.anggaran !== undefined ? Number(data.anggaran) : 0,
       progres_persen: data.progres_persen !== undefined ? Number(data.progres_persen) : 0,
       desa_id: data.desa_id || null,
-      status: data.status || 'berjalan',
+      status: backendStatus,
     };
 
     const res = await fetch(`${BASE_URL}/proyek`, {
@@ -660,10 +673,22 @@ export const apiService = {
       throw new Error('Anda harus login untuk memverifikasi evaluasi.');
     }
 
+    let backendStatus: EvaluasiStatusType = data.status;
+    if (backendStatus === 'dalam_penanganan') {
+      backendStatus = 'terverifikasi_perlu_tindak_lanjut';
+    } else if (backendStatus === 'selesai_diperbaiki') {
+      backendStatus = 'selesai_ditindaklanjuti';
+    } else if (backendStatus === 'ditolak') {
+      backendStatus = 'ditolak_tidak_terbukti';
+    }
+
     const res = await fetch(`${BASE_URL}/evaluasi/${evalId}/verifikasi`, {
       method: 'PATCH',
       headers,
-      body: JSON.stringify(data),
+      body: JSON.stringify({
+        status: backendStatus,
+        catatan: data.catatan,
+      }),
     });
 
     if (!res.ok) {

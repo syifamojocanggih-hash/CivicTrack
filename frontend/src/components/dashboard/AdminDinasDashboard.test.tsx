@@ -262,3 +262,76 @@ describe('AdminDinasDashboard Project Edit Validation', () => {
     });
   });
 });
+
+describe('AdminDinasDashboard Defect Evaluation Verification', () => {
+  const dummyEval = {
+    id: 55,
+    proyek_id: 101,
+    nama_proyek: 'Jalan Mantup - Sambeng',
+    user_id: 9,
+    kategori_masalah: 'Retak struktural',
+    deskripsi: 'Aspal amblas sedalam 15cm setelah hujan lebat',
+    skor_urgensi_ai: 5,
+    ringkasan_analisis_ai: 'Tingkat bahaya tinggi.',
+    status: 'menunggu_verifikasi' as const,
+    created_at: '2026-10-10T08:00:00Z',
+    updated_at: '2026-10-10T08:00:00Z',
+    pelapor: { id: 9, nama: 'Budi Warga', email: 'budi@example.com', role: 'warga' },
+    status_logs: [],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(apiService.getProjects).mockResolvedValue({ projects: [], isFromBackend: true });
+    vi.mocked(apiService.getWilayahStats).mockResolvedValue([]);
+    vi.mocked(apiService.getEvaluations).mockResolvedValue([dummyEval]);
+    vi.mocked(apiService.getEvaluationStatusLogs).mockResolvedValue([]);
+    vi.mocked(apiService.verifyEvaluation).mockResolvedValue({
+      ...dummyEval,
+      status: 'terverifikasi_perlu_tindak_lanjut',
+    });
+  });
+
+  it('allows admin to open evaluation modal, select status, and submit verification', async () => {
+    render(
+      <AdminDinasDashboard
+        currentUser={{ id: 2, role: 'admin_dinas', nama: 'Admin PUPR', email: 'admin@banyuwangi.go.id' }}
+        projects={[]}
+        activeSection="evaluasi"
+        onOpenProjectDetail={() => {}}
+      />
+    );
+
+    const user = userEvent.setup();
+
+    // Tunggu evaluasi dari API selesai dirender
+    await screen.findByText(/Jalan Mantup - Sambeng/i);
+
+    const verifyBtn = screen.getByRole('button', { name: /Verifikasi & Jadwalkan Tim Lapangan/i });
+    await user.click(verifyBtn);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Verifikasi Tindakan Perbaikan FHO/i)).toBeInTheDocument();
+    });
+
+    const statusSelect = screen.getByRole('combobox');
+    expect(statusSelect).toHaveValue('terverifikasi_perlu_tindak_lanjut');
+
+    await user.selectOptions(statusSelect, 'selesai_ditindaklanjuti');
+
+    const submitBtn = screen.getByRole('button', { name: /Konfirmasi Penanganan/i });
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(apiService.verifyEvaluation).toHaveBeenCalledWith(55, {
+        status: 'selesai_ditindaklanjuti',
+        catatan: expect.any(String),
+      });
+    });
+
+    await waitFor(() => {
+      expect(screen.queryByText(/Verifikasi Tindakan Perbaikan FHO/i)).not.toBeInTheDocument();
+    });
+  });
+});
+
