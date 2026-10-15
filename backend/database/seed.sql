@@ -520,15 +520,18 @@ INSERT INTO dinas (id, nama_dinas, wilayah_id) VALUES
 (2, 'Dinas Perumahan Rakyat, Kawasan Permukiman dan Cipta Karya Kabupaten Lamongan', 1),
 (3, 'Dinas Lingkungan Hidup Kabupaten Lamongan', 1);
 
--- 3. Data Pengguna (@civictrack.demo, password: password123)
+-- 3. Data Pengguna (password: password123)
 INSERT INTO users (id, nama, email, password_hash, role, dinas_id, is_active) VALUES
-(1, 'Bambang Suryono, S.T. (Admin Dinas PU)', 'admin.pu@civictrack.demo', '$2b$12$m8mdBGlPmxfee5.o0U5buOycugO.lp2od50Veqte6zMbp4y2t5svO', 'admin_dinas', 1, TRUE),
-(2, 'Drs. Joko Prasetyo, M.Si (Kepala Dinas PU)', 'pimpinan.pu@civictrack.demo', '$2b$12$m8mdBGlPmxfee5.o0U5buOycugO.lp2od50Veqte6zMbp4y2t5svO', 'pimpinan_instansi', 1, TRUE),
-(3, 'Budi Santoso', 'budi.santoso@civictrack.demo', '$2b$12$m8mdBGlPmxfee5.o0U5buOycugO.lp2od50Veqte6zMbp4y2t5svO', 'warga', NULL, TRUE),
-(4, 'Siti Nurhaliza', 'siti.nurhaliza@civictrack.demo', '$2b$12$m8mdBGlPmxfee5.o0U5buOycugO.lp2od50Veqte6zMbp4y2t5svO', 'warga', NULL, TRUE),
-(5, 'Dr. Rahmat Hidayat (Pusat Studi Kebijakan Publik)', 'rahmat.peneliti@civictrack.demo', '$2b$12$m8mdBGlPmxfee5.o0U5buOycugO.lp2od50Veqte6zMbp4y2t5svO', 'media_peneliti', NULL, TRUE),
-(6, 'Bambang Suryono, S.T. (Penanggung Jawab Proyek)', 'penanggungjawab.pu@civictrack.demo', '$2b$12$m8mdBGlPmxfee5.o0U5buOycugO.lp2od50Veqte6zMbp4y2t5svO', 'admin_dinas', 1, TRUE),
-(7, 'Drs. Joko Prasetyo, M.Si (Aparatur Pemerintah Daerah)', 'aparatur.pemerintah@civictrack.demo', '$2b$12$m8mdBGlPmxfee5.o0U5buOycugO.lp2od50Veqte6zMbp4y2t5svO', 'pimpinan_instansi', 1, TRUE);
+(1, 'Bambang Suryono, S.T. (Admin Dinas PU)', 'admin.pu@civictrack.demo', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'admin_dinas', 1, TRUE),
+(2, 'Drs. Joko Prasetyo, M.Si (Kepala Dinas PU)', 'pimpinan.pu@civictrack.demo', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'pimpinan_instansi', 1, TRUE),
+(3, 'Budi Santoso', 'budi.santoso@civictrack.demo', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'warga', NULL, TRUE),
+(4, 'Siti Nurhaliza', 'siti.nurhaliza@civictrack.demo', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'warga', NULL, TRUE),
+(5, 'Dr. Rahmat Hidayat (Pusat Studi Kebijakan Publik)', 'rahmat.peneliti@civictrack.demo', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'media_peneliti', NULL, TRUE),
+(6, 'Bambang Suryono, S.T. (Penanggung Jawab Proyek)', 'penanggungjawab.pu@civictrack.demo', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'admin_dinas', 1, TRUE),
+(7, 'Drs. Joko Prasetyo, M.Si (Aparatur Pemerintah Daerah)', 'aparatur.pemerintah@civictrack.demo', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'pimpinan_instansi', 1, TRUE),
+(8, 'Admin CivicTrack', 'admin@civictrack.id', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'admin_dinas', 1, TRUE),
+(9, 'Pimpinan CivicTrack', 'pimpinan@civictrack.id', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'pimpinan_instansi', 1, TRUE),
+(10, 'Warga CivicTrack', 'warga@civictrack.id', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'warga', NULL, TRUE);
 
 -- 4. Data 27 Proyek Infrastruktur Lamongan
 INSERT INTO proyek (id, nama_proyek, kategori, deskripsi, latitude, longitude, wilayah_id, desa_id, dinas_id, anggaran, status, progres_persen, tanggal_mulai, estimasi_selesai, dibuat_oleh) VALUES

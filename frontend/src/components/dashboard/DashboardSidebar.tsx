@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import {
   Shield,
   Compass,
@@ -20,7 +20,6 @@ import {
   FolderKanban,
   ListTodo,
   Camera,
-  ChevronDown,
 } from 'lucide-react';
 import type { UserProfile, UserRole } from '../../types';
 
@@ -31,7 +30,7 @@ interface DashboardSidebarProps {
   onBackToLanding?: () => void;
   onOpenMapExplorer?: () => void;
   onLogout: () => void;
-  onSwitchRole: (role: UserRole) => void;
+  onSwitchRole?: (role: UserRole) => void;
   onOpenOpenDataModal: () => void;
   isCollapsed: boolean;
   onToggleCollapse: () => void;
@@ -46,14 +45,13 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
   onBackToLanding,
   onOpenMapExplorer,
   onLogout,
-  onSwitchRole,
+  onSwitchRole: _onSwitchRole,
   onOpenOpenDataModal,
   isCollapsed,
   onToggleCollapse,
   isMobileOpen,
   onCloseMobile,
 }) => {
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
 
   // Define role specific menu items
   const getNavItems = () => {
@@ -182,78 +180,15 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
                 </div>
               </div>
 
-              {/* Role Indicator with Switcher Menu */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowRoleDropdown(!showRoleDropdown)}
-                  className={`w-full flex items-center justify-between p-2 rounded-xl text-xs font-semibold border transition-all cursor-pointer ${currentBadge.color}`}
-                >
-                  <div className="flex items-center gap-1.5 truncate">
-                    {currentBadge.icon}
-                    <span className="truncate">{currentBadge.label}</span>
-                  </div>
-                  <ChevronDown className="w-3.5 h-3.5 shrink-0 opacity-70" />
-                </button>
-
-                {showRoleDropdown && (
-                  <div className="absolute left-0 right-0 top-full mt-1.5 bg-white text-slate-800 rounded-xl shadow-2xl border border-slate-200 p-1.5 z-50 animate-fade-in">
-                    <div className="text-[10px] font-bold text-slate-500 uppercase px-2.5 py-1 border-b border-slate-100">
-                      Ganti Peran Pengguna (3 Role):
-                    </div>
-                    <div className="space-y-1 mt-1">
-                      <button
-                        onClick={() => {
-                          onSwitchRole('warga');
-                          setShowRoleDropdown(false);
-                        }}
-                        className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-left cursor-pointer transition-colors ${currentUser.role === 'warga'
-                            ? 'bg-[#EBF4FB] text-[#184C78] font-bold'
-                            : 'hover:bg-slate-50 text-slate-700'
-                          }`}
-                      >
-                        <User className="w-4 h-4 text-[#2980B9] shrink-0" />
-                        <div>
-                          <div className="font-bold">1. Warga Masyarakat</div>
-                          <div className="text-[10px] text-slate-500">Pantau proyek &amp; lapor aduan</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          onSwitchRole('aparatur_pemerintah');
-                          setShowRoleDropdown(false);
-                        }}
-                        className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-left cursor-pointer transition-colors ${currentUser.role === 'aparatur_pemerintah' || currentUser.role === 'pimpinan_instansi'
-                            ? 'bg-[#EBF4FB] text-[#184C78] font-bold'
-                            : 'hover:bg-slate-50 text-slate-700'
-                          }`}
-                      >
-                        <Building2 className="w-4 h-4 text-[#184C78] shrink-0" />
-                        <div>
-                          <div className="font-bold">2. Pimpinan &amp; Aparatur Pemerintah</div>
-                          <div className="text-[10px] text-slate-500">Monitoring eksekutif &amp; kelola/input proyek daerah</div>
-                        </div>
-                      </button>
-
-                      <button
-                        onClick={() => {
-                          onSwitchRole('penanggung_jawab');
-                          setShowRoleDropdown(false);
-                        }}
-                        className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg text-xs text-left cursor-pointer transition-colors ${currentUser.role === 'penanggung_jawab' || currentUser.role === 'admin_dinas' || currentUser.role === 'pemerintah'
-                            ? 'bg-[#FEF3E7] text-[#B45309] font-bold'
-                            : 'hover:bg-slate-50 text-slate-700'
-                          }`}
-                      >
-                        <HardHat className="w-4 h-4 text-[#D97706] shrink-0" />
-                        <div>
-                          <div className="font-bold">3. Penanggung Jawab Proyek</div>
-                          <div className="text-[10px] text-slate-500">Input progres &amp; tanggapi aduan</div>
-                        </div>
-                      </button>
-                    </div>
-                  </div>
-                )}
+              {/* Role Indicator Badge (Terkunci sesuai akun pengguna yang sedang login) */}
+              <div
+                className={`w-full flex items-center gap-2 p-2 rounded-xl text-xs font-semibold border ${currentBadge.color}`}
+              >
+                {currentBadge.icon}
+                <div className="flex-1 min-w-0">
+                  <div className="truncate font-bold leading-tight">{currentBadge.label}</div>
+                  <div className="text-[10px] opacity-75 truncate">{currentBadge.tag}</div>
+                </div>
               </div>
             </div>
           ) : (

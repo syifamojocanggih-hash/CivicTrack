@@ -190,7 +190,7 @@ export function App() {
   const handleOpenDashboard = () => {
     if (!currentUser) {
       setPostLoginRedirect('dashboard');
-      setAuthNotice('Silakan masuk ke akun atau pilih peran Anda untuk mengakses Dashboard.');
+      setAuthNotice('Silakan masuk ke akun Anda untuk mengakses Dashboard.');
       handleOpenAuth('login');
       return;
     }
@@ -206,39 +206,12 @@ export function App() {
   };
 
   const handleSwitchRole = (newRole: UserRole) => {
-    if (currentUser && !currentUser.email.includes('@civictrack.demo')) {
+    if (currentUser) {
       setCurrentUser({
         ...currentUser,
         role: newRole,
       });
-      return;
     }
-
-    let newName = 'Budi Santoso';
-    let newEmail = 'budi.santoso@civictrack.demo';
-    let newDinas: string | undefined = undefined;
-
-    if (newRole === 'penanggung_jawab' || newRole === 'admin_dinas') {
-      newName = 'Bambang Suryono, S.T.';
-      newEmail = 'admin.pu@civictrack.demo';
-      newDinas = 'Dinas PU Bina Marga Lamongan';
-    } else if (newRole === 'aparatur_pemerintah' || newRole === 'pimpinan_instansi') {
-      newName = 'Drs. Joko Prasetyo, M.Si';
-      newEmail = 'pimpinan.pu@civictrack.demo';
-      newDinas = 'Sekretariat Daerah & Bappeda Lamongan';
-    } else {
-      newName = 'Budi Santoso';
-      newEmail = 'budi.santoso@civictrack.demo';
-      newDinas = undefined;
-    }
-
-    setCurrentUser({
-      id: currentUser?.id || 1,
-      nama: newName,
-      email: newEmail,
-      role: newRole,
-      nama_dinas: newDinas,
-    });
   };
 
   const handleOpenFeature = (featureId: string) => {

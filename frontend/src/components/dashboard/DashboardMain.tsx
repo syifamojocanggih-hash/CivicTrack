@@ -11,7 +11,7 @@ interface DashboardMainProps {
   projects: ProyekItem[];
   onOpenMapExplorer?: () => void;
   onLogout: () => void;
-  onSwitchRole: (role: UserRole) => void;
+  onSwitchRole?: (role: UserRole) => void;
   onOpenProjectDetail: (project: ProyekItem) => void;
   onOpenAIRoute: (projectName: string) => void;
   onOpenOpenDataModal: () => void;
