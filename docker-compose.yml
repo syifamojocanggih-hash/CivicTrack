@@ -70,6 +70,22 @@ services:
       backend:
         condition: service_healthy
 
+  # 4. Web GUI Database Manager (phpMyAdmin)
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin:latest
+    container_name: civictrack_phpmyadmin
+    restart: unless-stopped
+    ports:
+      - "8081:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: root
+      PMA_PASSWORD: root
+    depends_on:
+      db:
+        condition: service_healthy
+
 volumes:
   mysql_data:
   backend_uploads:
