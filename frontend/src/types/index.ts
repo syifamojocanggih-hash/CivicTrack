@@ -412,3 +412,5 @@ export interface RingkasanKabupatenItem {
   rata_rata_progres: number;
 }
 
+export type CurrentView = 'landing' | 'dashboard' | 'map-explorer' | 'login' | 'register';
+

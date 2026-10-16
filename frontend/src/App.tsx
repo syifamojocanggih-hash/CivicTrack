@@ -8,7 +8,7 @@ import { CategoriesSection } from './components/CategoriesSection';
 import { RecentProjectsSection } from './components/RecentProjectsSection';
 import { CTASection } from './components/CTASection';
 import { Footer } from './components/Footer';
-import { AuthModal } from './components/AuthModal';
+import { LoginPage } from './components/LoginPage';
 import { ProjectDetailModal } from './components/ProjectDetailModal';
 import { AIRouteModal } from './components/AIRouteModal';
 import { OpenDataModal } from './components/OpenDataModal';
@@ -24,9 +24,21 @@ import {
   FEATURES_DATA,
   HOW_IT_WORKS_DATA,
 } from './data/mockData';
-import type { ProyekItem, ProyekKategori, UserProfile, UserRole, StatSummary } from './types';
+import type { ProyekItem, ProyekKategori, UserProfile, UserRole, StatSummary, CurrentView } from './types';
 
 export function App() {
+  // Helper to determine initial view based on browser path/hash
+  const getInitialView = (): CurrentView => {
+    if (typeof window === 'undefined') return 'landing';
+    const path = window.location.pathname.toLowerCase();
+    const hash = window.location.hash.toLowerCase();
+    if (path === '/login' || hash === '#login' || hash === '#/login') return 'login';
+    if (path === '/register' || hash === '#register' || hash === '#/register') return 'register';
+    if (path === '/dashboard' || hash === '#dashboard' || hash === '#/dashboard') return 'dashboard';
+    if (path === '/map' || path === '/peta' || hash === '#map' || hash === '#/map') return 'map-explorer';
+    return 'landing';
+  };
+
   // State
   const [projects, setProjects] = useState<ProyekItem[]>(INITIAL_PROJECTS);
   const [stats, setStats] = useState<StatSummary>(STATS_DATA);
@@ -34,7 +46,7 @@ export function App() {
   const [selectedCategory, setSelectedCategory] = useState<ProyekKategori | null>(null);
   const [activeNav, setActiveNav] = useState<string>('peta');
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
-  const [currentView, setCurrentView] = useState<'landing' | 'dashboard' | 'map-explorer'>('landing');
+  const [currentView, setCurrentView] = useState<CurrentView>(getInitialView);
   const [authNotice, setAuthNotice] = useState<string>('');
   const [postLoginRedirect, setPostLoginRedirect] = useState<'dashboard' | 'map-explorer' | null>(null);
 
@@ -70,10 +82,6 @@ export function App() {
   }, []);
 
   // Modal States
-  const [authModalState, setAuthModalState] = useState<{ isOpen: boolean; mode: 'login' | 'register' }>({
-    isOpen: false,
-    mode: 'login',
-  });
   const [selectedProject, setSelectedProject] = useState<ProyekItem | null>(null);
   const [isNearbyModalOpen, setIsNearbyModalOpen] = useState<boolean>(false);
   const [aiRouteModal, setAIRouteModal] = useState<{
@@ -168,21 +176,58 @@ export function App() {
     }
   };
 
+  const navigateToView = (view: CurrentView) => {
+    setCurrentView(view);
+    const pathMap: Record<CurrentView, string> = {
+      landing: '/',
+      dashboard: '/dashboard',
+      'map-explorer': '/map',
+      login: '/login',
+      register: '/register',
+    };
+    const target = pathMap[view] || '/';
+    if (typeof window !== 'undefined' && window.location.pathname !== target && window.location.pathname !== target + '/') {
+      window.history.pushState({ view }, '', target);
+    }
+  };
+
+  // Synchronize browser history (back/forward buttons) with CurrentView
+  useEffect(() => {
+    const handlePopState = () => {
+      const path = window.location.pathname.toLowerCase();
+      const hash = window.location.hash.toLowerCase();
+      if (path === '/login' || hash === '#login' || hash === '#/login') {
+        setCurrentView('login');
+      } else if (path === '/register' || hash === '#register' || hash === '#/register') {
+        setCurrentView('register');
+      } else if (path === '/dashboard' || hash === '#dashboard' || hash === '#/dashboard') {
+        setCurrentView('dashboard');
+      } else if (path === '/map' || path === '/peta' || hash === '#map' || hash === '#/map') {
+        setCurrentView('map-explorer');
+      } else {
+        setCurrentView('landing');
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   const handleOpenAuth = (mode: 'login' | 'register' = 'login') => {
-    setAuthModalState({ isOpen: true, mode });
+    navigateToView(mode);
   };
 
   const handleCekDisekitarAction = () => {
-    setCurrentView('map-explorer');
+    navigateToView('map-explorer');
   };
 
   const handleLoginSuccess = (user: UserProfile) => {
     setCurrentUser(user);
     if (postLoginRedirect === 'map-explorer') {
-      setCurrentView('map-explorer');
+      navigateToView('map-explorer');
       setPostLoginRedirect(null);
     } else {
-      setCurrentView('dashboard');
+      navigateToView('dashboard');
     }
     setAuthNotice('');
   };
@@ -191,16 +236,16 @@ export function App() {
     if (!currentUser) {
       setPostLoginRedirect('dashboard');
       setAuthNotice('Silakan masuk ke akun Anda untuk mengakses Dashboard.');
-      handleOpenAuth('login');
+      navigateToView('login');
       return;
     }
-    setCurrentView('dashboard');
+    navigateToView('dashboard');
   };
 
   const handleLogout = () => {
     localStorage.removeItem('civictrack_token');
     setCurrentUser(null);
-    setCurrentView('landing');
+    navigateToView('landing');
     setPostLoginRedirect(null);
     setAuthNotice('');
   };
@@ -241,13 +286,23 @@ export function App() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-['Inter'] text-[#212529]">
-      {/* ── CONDITIONAL RENDERING: MAP EXPLORER vs DASHBOARD vs LANDING PAGE ── */}
-      {currentView === 'map-explorer' ? (
+      {/* ── CONDITIONAL RENDERING: LOGIN/REGISTER PAGE vs MAP EXPLORER vs DASHBOARD vs LANDING PAGE ── */}
+      {currentView === 'login' || currentView === 'register' ? (
+        <LoginPage
+          initialMode={currentView === 'register' ? 'register' : 'login'}
+          notice={authNotice}
+          onLoginSuccess={handleLoginSuccess}
+          onBackToHome={() => {
+            setAuthNotice('');
+            navigateToView('landing');
+          }}
+        />
+      ) : currentView === 'map-explorer' ? (
         <PublicMapExplorer
           currentUser={currentUser}
           projects={projects}
-          onBackToLanding={() => setCurrentView('landing')}
-          onOpenDashboard={() => setCurrentView('dashboard')}
+          onBackToLanding={() => navigateToView('landing')}
+          onOpenDashboard={() => navigateToView('dashboard')}
           onOpenProjectDetail={(proj) => setSelectedProject(proj)}
           onOpenAIRoute={(name) => handleOpenAIRoute(name)}
           onOpenAuth={(mode) => handleOpenAuth(mode)}
@@ -256,12 +311,12 @@ export function App() {
         <DashboardMain
           currentUser={currentUser}
           projects={projects}
-          onOpenMapExplorer={() => setCurrentView('map-explorer')}
+          onOpenMapExplorer={() => navigateToView('map-explorer')}
           onLogout={handleLogout}
           onSwitchRole={handleSwitchRole}
           onOpenProjectDetail={(proj) => setSelectedProject(proj)}
           onOpenAIRoute={(name) => {
-            setCurrentView('map-explorer');
+            navigateToView('map-explorer');
             handleOpenAIRoute(name);
           }}
           onOpenOpenDataModal={() => setIsOpenDataModalOpen(true)}
@@ -278,7 +333,7 @@ export function App() {
             activeNav={activeNav}
             setActiveNav={setActiveNav}
             currentView={currentView}
-            onNavigateView={(view) => setCurrentView(view as any)}
+            onNavigateView={(view) => navigateToView(view)}
             onOpenOpenData={() => setIsOpenDataModalOpen(true)}
             onSelectProjectNotification={(proyekId) => {
               const proj = projects.find((p) => p.id === proyekId);
@@ -331,7 +386,7 @@ export function App() {
             selectedCategory={selectedCategory}
             onClearFilters={handleClearFilters}
             searchQuery={searchQuery}
-            onOpenMapExplorer={() => setCurrentView('map-explorer')}
+            onOpenMapExplorer={() => navigateToView('map-explorer')}
           />
 
           {/* ── CTA SECTION ── */}
@@ -352,17 +407,6 @@ export function App() {
         projects={projects}
         onSelectProject={(proj) => setSelectedProject(proj)}
         onOpenAIRoute={(name) => handleOpenAIRoute(name)}
-      />
-
-      <AuthModal
-        isOpen={authModalState.isOpen}
-        initialMode={authModalState.mode}
-        onClose={() => {
-          setAuthModalState({ isOpen: false, mode: 'login' });
-          setAuthNotice('');
-        }}
-        onLoginSuccess={handleLoginSuccess}
-        notice={authNotice}
       />
 
       <ProjectDetailModal

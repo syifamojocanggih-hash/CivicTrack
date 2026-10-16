@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LogOut, Menu, X, Shield, Database, Bell, Check } from 'lucide-react';
-import type { UserProfile, ApiNotificationItem } from '../types';
+import type { UserProfile, ApiNotificationItem, CurrentView } from '../types';
 import { apiService } from '../services/api';
 import { CivicTrackLogo } from './CivicTrackLogo';
 
@@ -11,8 +11,8 @@ interface NavbarProps {
   activeNav: string;
   setActiveNav: (nav: string) => void;
   onFilterCategory?: (cat: string | null) => void;
-  currentView?: 'landing' | 'dashboard' | 'map-explorer';
-  onNavigateView?: (view: 'landing' | 'dashboard' | 'map-explorer') => void;
+  currentView?: CurrentView;
+  onNavigateView?: (view: CurrentView) => void;
   onOpenOpenData?: () => void;
   onSelectProjectNotification?: (proyekId: number) => void;
 }
