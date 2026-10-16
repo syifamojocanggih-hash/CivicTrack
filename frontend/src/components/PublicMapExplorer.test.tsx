@@ -125,4 +125,77 @@ describe('PublicMapExplorer', () => {
     const pA2 = await screen.findAllByText(/Proyek Desa A/i);
     expect(pA2.length).toBeGreaterThan(0);
   });
+
+  it('filters projects by budget preset and updates min-max indicators', async () => {
+    const user = userEvent.setup();
+    render(<PublicMapExplorer projects={mockProjects as any} currentUser={null} onBackToLanding={() => {}} onOpenProjectDetail={() => {}} onOpenAIRoute={() => {}} onOpenAuth={() => {}} />);
+
+    await waitFor(() => {
+      expect(apiService.getProjects).toHaveBeenCalled();
+    });
+
+    // Initial state displays default limits: Rp 100 Jt and Rp 25 M
+    expect(screen.getByText('Rp 100 Jt')).toBeInTheDocument();
+    expect(screen.getByText('Rp 25 M')).toBeInTheDocument();
+
+    // Click medium preset: "Rp 1 Miliar - Rp 5 Miliar (Menengah)"
+    const mediumPreset = screen.getByRole('button', { name: /Rp 1 Miliar - Rp 5 Miliar/i });
+    await user.click(mediumPreset);
+
+    // Indicator boxes should update to Rp 1 M and Rp 5 M
+    expect(screen.getByText('Rp 1 M')).toBeInTheDocument();
+    expect(screen.getByText('Rp 5 M')).toBeInTheDocument();
+
+    // Active chip should be rendered
+    expect(screen.getByText(/Anggaran: Rp 1 M - Rp 5 M/i)).toBeInTheDocument();
+
+    // Click close on budget chip to reset
+    const allXButtons = screen.getAllByRole('button').filter(b => b.querySelector('svg.lucide-x'));
+    if (allXButtons.length > 0) {
+      await user.click(allXButtons[0]);
+      expect(screen.getByText('Rp 100 Jt')).toBeInTheDocument();
+      expect(screen.getByText('Rp 25 M')).toBeInTheDocument();
+    }
+  });
+
+  it('displays active desa banner and allows resetting desa filter back to kecamatan', async () => {
+    const user = userEvent.setup();
+    render(
+      <PublicMapExplorer
+        projects={mockProjects as any}
+        currentUser={null}
+        onBackToLanding={() => {}}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={() => {}}
+        onOpenAuth={() => {}}
+      />
+    );
+
+    await waitFor(() => {
+      expect(apiService.getProjects).toHaveBeenCalled();
+    });
+
+    const selects = screen.getAllByRole('combobox');
+    await user.selectOptions(selects[0], 'Kecamatan Lamongan (Kota)');
+
+    await waitFor(() => {
+      expect(apiService.getWilayah).toHaveBeenCalled();
+    });
+
+    const selectsAgain = await screen.findAllByRole('combobox');
+    await user.selectOptions(selectsAgain[1], '101');
+
+    // Active banner shows Batas Desa Terpilih and Desa Kampung Melayu
+    expect(screen.getByText('Batas Desa Terpilih')).toBeInTheDocument();
+    expect(screen.getAllByText(/Desa Kampung Melayu/i).length).toBeGreaterThanOrEqual(2);
+
+    // Reset button returns to kecamatan
+    const resetDesaBtn = screen.getByTitle('Kembali ke Tampilan Seluruh Kecamatan');
+    await user.click(resetDesaBtn);
+
+    // After reset, all projects in kecamatan are restored
+    await waitFor(() => {
+      expect(screen.queryByText(/Batas Desa Terpilih/i)).not.toBeInTheDocument();
+    });
+  });
 });

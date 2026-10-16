@@ -1,6 +1,7 @@
 // Data spasial batas wilayah administratif dan struktur hierarkis wilayah Kabupaten Lamongan
 // Sumber batas poligon: Badan Pusat Statistik (BPS) Indonesia & Badan Informasi Geospasial (BIG) / UN OCHA HDX (CC BY-IGO / CC BY 4.0)
 export { LAMONGAN_KECAMATAN_GEOJSON } from './lamonganKecamatanGeoJSON';
+export { LAMONGAN_DESA_GEOJSON } from './lamonganDesaGeoJSON';
 
 export interface WilayahHierarchy {
   kabupaten: string;

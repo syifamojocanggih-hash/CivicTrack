@@ -23,6 +23,7 @@ import type {
   SubscriptionStatus,
   ApiEvaluationStatusLog,
 } from '../types';
+import { LAMONGAN_DESA_GEOJSON } from '../data/lamonganDesaGeoJSON';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
 
 const BASE_URL = '/api/v1';
@@ -187,16 +188,39 @@ export const apiService = {
     }
   },
 
-  // Fetch sub-wilayah / desa by level and parent_id (pure API-driven)
+  // Fetch sub-wilayah / desa by level and parent_id (API-driven with GeoJSON fallback)
   async getWilayah(level?: string, parentId?: number): Promise<WilayahOptionItem[]> {
-    const params = new URLSearchParams();
-    if (level) params.append('level', level);
-    if (parentId !== undefined) params.append('parent_id', String(parentId));
-    const url = `${BASE_URL}/wilayah${params.toString() ? '?' + params.toString() : ''}`;
-    const res = await fetch(url, { headers: { Accept: 'application/json' } });
-    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-    const data = await res.json();
-    return Array.isArray(data) ? data : [];
+    try {
+      const params = new URLSearchParams();
+      if (level) params.append('level', level);
+      if (parentId !== undefined) params.append('parent_id', String(parentId));
+      const url = `${BASE_URL}/wilayah${params.toString() ? '?' + params.toString() : ''}`;
+      const res = await fetch(url, { headers: { Accept: 'application/json' } });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data) && data.length > 0) {
+          return data;
+        }
+      }
+    } catch (err) {
+      console.warn('Backend /wilayah tidak terhubung, menggunakan dataset batas spasial desa:', err);
+    }
+
+    // Fallback dari dataset spasial LAMONGAN_DESA_GEOJSON
+    if (level === 'desa' && parentId !== undefined && LAMONGAN_DESA_GEOJSON?.features) {
+      const filtered = LAMONGAN_DESA_GEOJSON.features
+        .filter((f: any) => f.properties?.kecamatan_id === parentId)
+        .map((f: any) => ({
+          id: f.properties.id,
+          kode_wilayah: f.properties.kode_wilayah,
+          nama_wilayah: f.properties.nama_wilayah,
+          level: 'desa',
+          parent_id: parentId,
+          geom_boundary: JSON.stringify(f.geometry),
+        }));
+      if (filtered.length > 0) return filtered;
+    }
+    return [];
   },
 
   // Login with backend

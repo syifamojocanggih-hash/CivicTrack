@@ -27,6 +27,13 @@ vi.mock('leaflet', () => ({
     layerGroup: vi.fn(() => ({ addTo: vi.fn(), clearLayers: vi.fn() })),
     markerClusterGroup: vi.fn(() => ({ addTo: vi.fn(), clearLayers: vi.fn(), addLayer: vi.fn() })),
     divIcon: vi.fn(),
+    latLngBounds: vi.fn((b: any) => b),
+    geoJSON: vi.fn(() => ({
+      getBounds: () => ({ isValid: () => true }),
+      addTo: vi.fn(),
+      clearLayers: vi.fn(),
+      resetStyle: vi.fn(),
+    })),
     marker: vi.fn(() => {
       const m: any = {};
       m.bindPopup = vi.fn(() => m);

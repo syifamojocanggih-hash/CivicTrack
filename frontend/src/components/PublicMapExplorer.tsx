@@ -35,18 +35,12 @@ import {
 import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem } from '../types';
 import centennialParkImg from '../assets/centennial_park.jpg';
 import { apiService } from '../services/api';
-import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON } from '../data/geoWilayahData';
+import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON, LAMONGAN_DESA_GEOJSON } from '../data/geoWilayahData';
 
 // Bounding box resmi gabungan seluruh 27 Kecamatan di Kab. Lamongan (dihitung dari poligon GeoJSON BPS/BIG)
 const ALL_LAMONGAN_BOUNDS: L.LatLngBoundsExpression = [
   [-7.384821, 112.072567],
   [-6.861185, 112.552381]
-];
-
-// Bounding box batas wilayah dengan buffer ~8% (~4.5 km) untuk membatasi navigasi/panning liar ke luar kabupaten
-const LAMONGAN_MAX_BOUNDS: L.LatLngBoundsExpression = [
-  [-7.426712, 112.034182],
-  [-6.819294, 112.590767]
 ];
 
 interface PublicMapExplorerProps {
@@ -203,14 +197,42 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [reportSent, setReportSent] = useState(false);
 
   // Hierarchical Wilayah & Budget filter state
+  const MIN_BUDGET_LIMIT = 0.1; // Rp 100 Jt
+  const MAX_BUDGET_LIMIT = 25; // Rp 25 Miliar
+  const [budgetMin, setBudgetMin] = useState<number>(0.1);
+  const [budgetMax, setBudgetMax] = useState<number>(25);
+  const [selectedBudget, setSelectedBudget] = useState<string>('all');
   const [selectedKecamatan, setSelectedKecamatan] = useState<string>('all');
   const [selectedDesaId, setSelectedDesaId] = useState<string>('all');
   const [desaOptions, setDesaOptions] = useState<WilayahOptionItem[]>([]);
   const [isLoadingDesa, setIsLoadingDesa] = useState<boolean>(false);
   const [desaLoadError, setDesaLoadError] = useState<boolean>(false);
   const [desaRetryCount, setDesaRetryCount] = useState<number>(0);
-  const [selectedBudget, setSelectedBudget] = useState<string>('all');
   const [showBoundaryPolygons, setShowBoundaryPolygons] = useState<boolean>(true);
+
+  const formatBudgetDisplay = (miliar: number): string => {
+    if (miliar <= 0.1) return 'Rp 100 Jt';
+    if (miliar < 1) return `Rp ${Math.round(miliar * 1000)} Jt`;
+    if (miliar >= MAX_BUDGET_LIMIT) return `Rp ${MAX_BUDGET_LIMIT} M`;
+    return `Rp ${Number(miliar.toFixed(1)).toString().replace('.0', '')} M`;
+  };
+
+  const handleSelectBudgetPreset = (presetId: string) => {
+    setSelectedBudget(presetId);
+    if (presetId === 'all') {
+      setBudgetMin(MIN_BUDGET_LIMIT);
+      setBudgetMax(MAX_BUDGET_LIMIT);
+    } else if (presetId === 'micro') {
+      setBudgetMin(MIN_BUDGET_LIMIT);
+      setBudgetMax(1);
+    } else if (presetId === 'medium') {
+      setBudgetMin(1);
+      setBudgetMax(5);
+    } else if (presetId === 'large') {
+      setBudgetMin(5);
+      setBudgetMax(MAX_BUDGET_LIMIT);
+    }
+  };
 
   // Real-time GPS & Geolocation state (Default to Pusat Kota Lamongan)
   const [userLocation, setUserLocation] = useState<{
@@ -289,15 +311,43 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       .getWilayah('desa', kecId)
       .then((res) => {
         if (!isCancelled) {
-          setDesaOptions(Array.isArray(res) ? res : []);
-          setDesaLoadError(false);
+          if (Array.isArray(res) && res.length > 0) {
+            setDesaOptions(res);
+            setDesaLoadError(false);
+          } else {
+            const fallbackDesas = LAMONGAN_DESA_GEOJSON?.features
+              ?.filter((f: any) => f.properties?.kecamatan_id === kecId)
+              ?.map((f: any) => ({
+                id: f.properties.id,
+                kode_wilayah: f.properties.kode_wilayah,
+                nama_wilayah: f.properties.nama_wilayah,
+                level: 'desa' as const,
+                parent_id: kecId!,
+              })) || [];
+            setDesaOptions(fallbackDesas);
+            setDesaLoadError(false);
+          }
         }
       })
       .catch((err) => {
         if (!isCancelled) {
-          console.warn('Gagal memuat daftar desa dari backend API:', err);
-          setDesaLoadError(true);
-          setDesaOptions([]);
+          console.warn('Backend API tidak merespons, memuat daftar desa dari dataset spasial lokal:', err);
+          const fallbackDesas = LAMONGAN_DESA_GEOJSON?.features
+            ?.filter((f: any) => f.properties?.kecamatan_id === kecId)
+            ?.map((f: any) => ({
+              id: f.properties.id,
+              kode_wilayah: f.properties.kode_wilayah,
+              nama_wilayah: f.properties.nama_wilayah,
+              level: 'desa' as const,
+              parent_id: kecId!,
+            })) || [];
+          if (fallbackDesas.length > 0) {
+            setDesaOptions(fallbackDesas);
+            setDesaLoadError(false);
+          } else {
+            setDesaLoadError(true);
+            setDesaOptions([]);
+          }
         }
       })
       .finally(() => {
@@ -404,17 +454,22 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         if (!matchKec) return false;
       }
 
-      // Hierarchical Desa filter (Strict relational ID comparison)
+      // Hierarchical Desa filter (Strict relational ID comparison & name fallback)
       if (selectedDesaId !== 'all') {
-        if (p.desa_id !== Number(selectedDesaId)) return false;
+        const sDesaId = Number(selectedDesaId);
+        const matchId = p.desa_id !== undefined && p.desa_id !== null && p.desa_id === sDesaId;
+        const selDesaObj = desaOptions.find((d) => d.id === sDesaId);
+        const cleanDesaName = selDesaObj ? selDesaObj.nama_wilayah.toLowerCase().replace(/^(desa|kelurahan)\s+/i, '').trim() : '';
+        const matchName = Boolean(cleanDesaName && p.nama_desa && p.nama_desa.toLowerCase().includes(cleanDesaName));
+        if (!matchId && !matchName) return false;
       }
 
-      // Budget Range filter
-      if (selectedBudget !== 'all') {
-        const bConfig = BUDGET_RANGES.find((b) => b.id === selectedBudget);
-        if (bConfig) {
-          if (p.anggaran < bConfig.min || p.anggaran > bConfig.max) return false;
-        }
+      // Budget Range filter (Dynamic interactive dual-range in Rupiah)
+      const isBudgetFiltered = budgetMin > MIN_BUDGET_LIMIT || budgetMax < MAX_BUDGET_LIMIT;
+      if (isBudgetFiltered) {
+        const minRupiah = budgetMin * 1_000_000_000;
+        const maxRupiah = budgetMax >= MAX_BUDGET_LIMIT ? Infinity : budgetMax * 1_000_000_000;
+        if (p.anggaran < minRupiah || p.anggaran > maxRupiah) return false;
       }
 
       // Search Query filter
@@ -427,7 +482,21 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       }
       return true;
     });
-  }, [enrichedProjects, selectedStatus, selectedCategory, selectedKecamatan, selectedDesaId, selectedBudget, searchQuery]);
+  }, [enrichedProjects, selectedStatus, selectedCategory, selectedKecamatan, selectedDesaId, desaOptions, selectedBudget, budgetMin, budgetMax, searchQuery]);
+
+  const selectedDesaObj = useMemo(() => {
+    if (selectedDesaId === 'all') return null;
+    return desaOptions.find((d) => String(d.id) === String(selectedDesaId)) || null;
+  }, [selectedDesaId, desaOptions]);
+
+  const selectedDesaFeat = useMemo(() => {
+    if (selectedDesaId === 'all') return null;
+    return (
+      LAMONGAN_DESA_GEOJSON?.features?.find(
+        (f: any) => String(f.id) === String(selectedDesaId) || String(f.properties?.id) === String(selectedDesaId)
+      ) || null
+    );
+  }, [selectedDesaId]);
 
   // Selected project object
   const currentProject = useMemo(() => {
@@ -450,10 +519,10 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     if (selectedStatus !== 'all') count++;
     if (selectedKecamatan !== 'all') count++;
     if (selectedDesaId !== 'all') count++;
-    if (selectedBudget !== 'all') count++;
+    if (budgetMin > MIN_BUDGET_LIMIT || budgetMax < MAX_BUDGET_LIMIT) count++;
     if (searchQuery.trim()) count++;
     return count;
-  }, [selectedCategory, selectedStatus, selectedKecamatan, selectedDesaId, selectedBudget, searchQuery]);
+  }, [selectedCategory, selectedStatus, selectedKecamatan, selectedDesaId, budgetMin, budgetMax, searchQuery]);
 
   const toggleBookmark = (id: number, e?: React.MouseEvent) => {
     if (e) e.stopPropagation();
@@ -497,13 +566,11 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
     // Inisialisasi Peta Leaflet dengan Pembatasan Wilayah Kabupaten Lamongan
     const isMobile = typeof window !== 'undefined' && window.innerWidth < 768;
-    const responsiveMinZoom = isMobile ? 9 : 10;
+    const responsiveMinZoom = isMobile ? 8 : 9;
 
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
       minZoom: responsiveMinZoom,
-      maxBounds: LAMONGAN_MAX_BOUNDS,
-      maxBoundsViscosity: 1.0,
     });
 
     // Inisialisasi awal: langsung sesuaikan batas pandang ke seluruh 27 kecamatan Lamongan
@@ -564,35 +631,101 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     };
   }, []);
 
-  // 3a. Single Camera Controller (Single Source of Truth)
-  // Replaces all conflicting fitBounds/flyTo calls. Always moves smoothly with flyToBounds.
+  // 3a. Responsive Single Camera Controller (Single Source of Truth)
+  // Dynamically offsets camera padding so that the selected district is always
+  // centered in the visible map area (never obscured by left filter or right detail drawers).
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
 
     map.invalidateSize();
 
-    if (selectedKecamatan === 'all') {
-      // Smoothly fly to the overall bounding box of all 27 Lamongan districts
-      map.flyToBounds(ALL_LAMONGAN_BOUNDS, {
-        padding: [35, 35],
-        maxZoom: 12,
-        duration: 0.9,
-      });
-    } else {
-      // Find selected district feature bounds in GeoJSON
-      const feat = LAMONGAN_KECAMATAN_GEOJSON.features.find(
-        (f: any) => f.properties.nama === selectedKecamatan
-      );
-      if (feat && feat.properties.bounds) {
-        map.flyToBounds(feat.properties.bounds, {
-          padding: [45, 45],
-          maxZoom: 14,
-          duration: 0.9,
-        });
+    const screenW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const isMobile = screenW < 768;
+
+    // Calculate dynamic padding based on sidebar and drawer states
+    const isLeftSidebarVisible = !isSidebarCollapsed && !isDetailPanelOpen;
+    const isRightDetailVisible = isDetailPanelOpen;
+
+    let leftPad = 40;
+    if (isLeftSidebarVisible) {
+      if (isMobile) {
+        leftPad = 20;
+      } else {
+        // sm = 390px, xl = 420px + margin
+        const sidebarWidth = screenW >= 1280 ? 420 : 390;
+        leftPad = sidebarWidth + 45;
       }
     }
-  }, [selectedKecamatan]);
+
+    let rightPad = 70; // Clearance for right floating controls
+    if (isRightDetailVisible && !isMobile) {
+      const detailWidth = screenW >= 1280 ? 540 : 480;
+      rightPad = detailWidth + 45;
+    }
+
+    const topPad = 80;
+    const bottomPad = 50;
+
+    if (selectedKecamatan === 'all') {
+      // Smoothly fit the overall bounding box of all 27 Lamongan districts
+      map.fitBounds(ALL_LAMONGAN_BOUNDS, {
+        paddingTopLeft: [leftPad, topPad],
+        paddingBottomRight: [rightPad, bottomPad],
+        maxZoom: 12,
+        animate: true,
+        duration: 0.85,
+      });
+    } else if (selectedDesaId !== 'all') {
+      // Find selected desa feature in GeoJSON
+      const desaFeat = LAMONGAN_DESA_GEOJSON?.features?.find(
+        (f: any) => String(f.id) === String(selectedDesaId) || String(f.properties?.id) === String(selectedDesaId)
+      );
+      if (desaFeat) {
+        const bounds = desaFeat.properties?.bounds || (L.geoJSON ? L.geoJSON(desaFeat).getBounds() : null);
+        if (bounds) {
+          map.fitBounds(bounds, {
+            paddingTopLeft: [leftPad, topPad],
+            paddingBottomRight: [rightPad, bottomPad],
+            maxZoom: isMobile ? 14 : 15,
+            animate: true,
+            duration: 0.85,
+          });
+        }
+      }
+    } else {
+      // Find selected district feature in GeoJSON
+      const cleanKec = selectedKecamatan.trim().toLowerCase();
+      const feat = LAMONGAN_KECAMATAN_GEOJSON?.features?.find(
+        (f: any) =>
+          (f.properties?.nama || '').toLowerCase() === cleanKec ||
+          (f.properties?.kecamatan || '').toLowerCase() === cleanKec.replace('kecamatan ', '')
+      );
+      if (feat) {
+        const bounds = feat.properties?.bounds || (L.geoJSON ? L.geoJSON(feat).getBounds() : null);
+        if (bounds) {
+          map.fitBounds(bounds, {
+            paddingTopLeft: [leftPad, topPad],
+            paddingBottomRight: [rightPad, bottomPad],
+            maxZoom: isMobile ? 13 : 14,
+            animate: true,
+            duration: 0.85,
+          });
+        }
+      }
+    }
+  }, [selectedKecamatan, selectedDesaId, isSidebarCollapsed, isDetailPanelOpen]);
+
+  // Window resize observer to ensure Leaflet recalculates dimensions
+  useEffect(() => {
+    const handleResize = () => {
+      if (mapInstanceRef.current) {
+        mapInstanceRef.current.invalidateSize();
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
   // 3b. Render Google Maps-style Administrative GeoJSON Boundaries for all 27 Districts
   useEffect(() => {
@@ -610,13 +743,25 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         const isAnySelected = selectedKecamatan !== 'all';
 
         if (isSelected) {
-          // Highlighted district style
+          // If a desa is selected, parent district provides outer context boundary
+          if (selectedDesaId !== 'all') {
+            return {
+              color: '#2563EB',
+              weight: 2.2,
+              opacity: 0.85,
+              fillColor: '#3B82F6',
+              fillOpacity: 0.05,
+              dashArray: '5, 5',
+            };
+          }
+          // Highlighted district style when no specific desa is selected
           return {
             color: '#1D4ED8',
             weight: 2.8,
             opacity: 0.95,
             fillColor: '#3B82F6',
             fillOpacity: 0.22,
+            dashArray: undefined,
           };
         } else if (isAnySelected) {
           // When a specific kecamatan is selected, others are muted
@@ -700,10 +845,128 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
     polyGroup.addLayer(geoLayer);
 
+    // 3c. Render Dedicated Desa Polygons inside Selected Kecamatan
+    if (selectedKecamatan !== 'all') {
+      const cleanKec = selectedKecamatan.trim().toLowerCase().replace('kecamatan ', '');
+      const desasOfKec = (LAMONGAN_DESA_GEOJSON?.features || []).filter((f: any) => {
+        const kNama = (f.properties?.kecamatan_nama || '').toLowerCase().replace('kecamatan ', '').trim();
+        return kNama === cleanKec;
+      });
+
+      if (desasOfKec.length > 0) {
+        let selectedDesaLayerInstance: any = null;
+
+        const desaGeoLayer = L.geoJSON(desasOfKec as any, {
+          style: (feature: any) => {
+            const fProps = feature.properties;
+            const isDesaSelected =
+              selectedDesaId !== 'all' &&
+              (String(feature.id) === String(selectedDesaId) || String(fProps.id) === String(selectedDesaId));
+
+            if (isDesaSelected) {
+              // Highlighted Desa Polygon (indigo theme with high prominence)
+              return {
+                color: '#4F46E5',
+                weight: 3.5,
+                opacity: 1,
+                fillColor: '#6366F1',
+                fillOpacity: 0.38,
+                dashArray: undefined,
+              };
+            } else if (selectedDesaId !== 'all') {
+              // Neighbor desas in same kecamatan when one is selected
+              return {
+                color: '#60A5FA',
+                weight: 1.2,
+                opacity: 0.65,
+                fillColor: '#93C5FD',
+                fillOpacity: 0.04,
+                dashArray: '3, 3',
+              };
+            } else {
+              // Subdivided desas when only kecamatan is selected
+              return {
+                color: '#93C5FD',
+                weight: 1,
+                opacity: 0.45,
+                fillColor: '#BFDBFE',
+                fillOpacity: 0.03,
+                dashArray: '2, 3',
+              };
+            }
+          },
+          onEachFeature: (feature: any, layer: any) => {
+            const fProps = feature.properties;
+            const isDesaSelected =
+              selectedDesaId !== 'all' &&
+              (String(feature.id) === String(selectedDesaId) || String(fProps.id) === String(selectedDesaId));
+
+            if (isDesaSelected) {
+              selectedDesaLayerInstance = layer;
+              layer.bindTooltip(
+                `<div class="p-2.5 font-['DM_Sans'] text-xs min-w-[170px] bg-white rounded-xl shadow-xl border-2 border-indigo-400">
+                  <div class="flex items-center gap-1.5 pb-1.5 mb-1.5 border-b border-indigo-50">
+                    <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
+                    <strong class="text-[#0B2540] font-bold text-xs">${fProps.nama_wilayah}</strong>
+                    <span class="ml-auto px-1.5 py-0.5 rounded-md text-[9px] font-bold bg-indigo-100 text-indigo-700">Terpilih</span>
+                  </div>
+                  <div class="space-y-1 text-[11px] text-slate-600">
+                    <div class="flex justify-between">
+                      <span>Kecamatan:</span>
+                      <b class="text-slate-800">${fProps.kecamatan_nama}</b>
+                    </div>
+                    <div class="flex justify-between">
+                      <span>Kode Wilayah:</span>
+                      <span class="font-mono text-[10px] text-slate-500">${fProps.kode_wilayah}</span>
+                    </div>
+                  </div>
+                </div>`,
+                { sticky: true, direction: 'top', opacity: 0.98 }
+              );
+            } else {
+              layer.bindTooltip(
+                `<div class="p-2 font-['DM_Sans'] text-xs bg-white rounded-xl shadow-md border border-slate-100">
+                  <strong class="text-slate-800 font-bold">${fProps.nama_wilayah}</strong>
+                  <div class="text-[10px] text-blue-600 mt-0.5 font-medium">👉 Klik untuk pilih desa ini</div>
+                </div>`,
+                { sticky: true, direction: 'top', opacity: 0.95 }
+              );
+
+              layer.on({
+                mouseover: (e: any) => {
+                  const l = e.target;
+                  l.setStyle({
+                    weight: 2.2,
+                    color: '#4F46E5',
+                    fillColor: '#818CF8',
+                    fillOpacity: 0.22,
+                  });
+                  if (!L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+                    l.bringToFront();
+                  }
+                },
+                mouseout: (e: any) => {
+                  desaGeoLayer.resetStyle(e.target);
+                },
+                click: () => {
+                  setSelectedDesaId(String(fProps.id));
+                },
+              });
+            }
+          },
+        });
+
+        polyGroup.addLayer(desaGeoLayer);
+        if (selectedDesaLayerInstance && !L.Browser.ie && !L.Browser.opera && !L.Browser.edge) {
+          selectedDesaLayerInstance.bringToFront();
+        }
+      }
+    }
+
     return () => {
       polyGroup.clearLayers();
     };
-  }, [showBoundaryPolygons, selectedKecamatan]);
+  }, [showBoundaryPolygons, selectedKecamatan, selectedDesaId]);
 
   // 4. Update Tile Layer on toggle (Standard vs Satellite)
   useEffect(() => {
@@ -1017,27 +1280,92 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             isDetailPanelOpen
               ? 'left-4 sm:left-[210px]'
               : isSidebarCollapsed
-                ? 'left-4 sm:left-[70px]'
+                ? 'left-4 sm:left-[175px]'
                 : 'left-4 sm:left-[410px] xl:left-[440px]'
           }`}
         >
-          {/* Active District Banner if selected */}
+          {/* Active District / Desa Banner if selected */}
           {selectedKecamatan !== 'all' && (
-            <div className="flex items-center gap-2.5 bg-white/95 backdrop-blur-md border border-blue-200/90 shadow-xl rounded-2xl px-3.5 py-2 text-xs font-semibold text-slate-800 animate-fade-in">
-              <span className="w-2.5 h-2.5 rounded-full bg-blue-600 animate-pulse shrink-0"></span>
+            <div
+              onClick={() => {
+                if (selectedDesaId !== 'all' && selectedDesaFeat && mapInstanceRef.current) {
+                  const bounds = selectedDesaFeat.properties?.bounds || (L.geoJSON ? L.geoJSON(selectedDesaFeat).getBounds() : null);
+                  if (bounds) {
+                    const screenW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+                    const isLeftVisible = !isSidebarCollapsed && !isDetailPanelOpen;
+                    const leftPad = isLeftVisible ? (screenW >= 1280 ? 465 : 435) : 40;
+                    const rightPad = isDetailPanelOpen ? (screenW >= 1280 ? 585 : 525) : 70;
+                    mapInstanceRef.current.fitBounds(bounds, {
+                      paddingTopLeft: [leftPad, 80],
+                      paddingBottomRight: [rightPad, 50],
+                      maxZoom: 15,
+                      animate: true,
+                      duration: 0.8,
+                    });
+                    return;
+                  }
+                }
+                const cleanKec = selectedKecamatan.trim().toLowerCase();
+                const feat = LAMONGAN_KECAMATAN_GEOJSON?.features?.find(
+                  (f: any) =>
+                    (f.properties?.nama || '').toLowerCase() === cleanKec ||
+                    (f.properties?.kecamatan || '').toLowerCase() === cleanKec.replace('kecamatan ', '')
+                );
+                if (feat && mapInstanceRef.current) {
+                  const bounds = feat.properties?.bounds || (L.geoJSON ? L.geoJSON(feat).getBounds() : null);
+                  if (bounds) {
+                    const screenW = typeof window !== 'undefined' ? window.innerWidth : 1200;
+                    const isLeftVisible = !isSidebarCollapsed && !isDetailPanelOpen;
+                    const leftPad = isLeftVisible ? (screenW >= 1280 ? 465 : 435) : 40;
+                    const rightPad = isDetailPanelOpen ? (screenW >= 1280 ? 585 : 525) : 70;
+                    mapInstanceRef.current.fitBounds(bounds, {
+                      paddingTopLeft: [leftPad, 80],
+                      paddingBottomRight: [rightPad, 50],
+                      maxZoom: 14,
+                      animate: true,
+                      duration: 0.8,
+                    });
+                  }
+                }
+              }}
+              className="flex items-center gap-2.5 bg-white/95 backdrop-blur-md border border-blue-200/90 shadow-xl rounded-2xl px-3.5 py-2 text-xs font-semibold text-slate-800 animate-fade-in cursor-pointer hover:bg-blue-50/70 transition-all hover:scale-102"
+              title={selectedDesaId !== 'all' ? 'Klik untuk memusatkan peta ke desa ini' : 'Klik untuk memusatkan peta ke kecamatan ini'}
+            >
+              <span className={`w-2.5 h-2.5 rounded-full ${selectedDesaId !== 'all' ? 'bg-indigo-600' : 'bg-blue-600'} animate-pulse shrink-0`}></span>
               <div>
-                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block -mb-0.5">Batas Wilayah Terpilih</span>
-                <strong className="text-[#184C78] font-bold text-xs">{selectedKecamatan}</strong>
+                <span className="text-[9.5px] font-bold uppercase tracking-wider text-slate-400 block -mb-0.5">
+                  {selectedDesaId !== 'all' ? 'Batas Desa Terpilih' : 'Batas Wilayah Terpilih'}
+                </span>
+                <strong className="text-[#184C78] font-bold text-xs">
+                  {selectedDesaObj ? `${selectedDesaObj.nama_wilayah}, ${selectedKecamatan.replace('Kecamatan ', '')}` : selectedKecamatan}
+                </strong>
               </div>
               <span className="h-4 w-px bg-slate-200" />
               <span className="text-slate-600 text-[11px] font-bold">{filteredProjects.length} Proyek</span>
-              <button
-                onClick={handleFitAllLamongan}
-                className="ml-0.5 p-1 hover:bg-slate-100 rounded-lg text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
-                title="Kembali ke Seluruh Kabupaten Lamongan"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
+              {selectedDesaId !== 'all' ? (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedDesaId('all');
+                  }}
+                  className="ml-0.5 p-1 hover:bg-indigo-50 rounded-lg text-slate-400 hover:text-indigo-600 transition-colors cursor-pointer"
+                  title="Kembali ke Tampilan Seluruh Kecamatan"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              ) : (
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedKecamatan('all');
+                    setSelectedDesaId('all');
+                  }}
+                  className="ml-0.5 p-1 hover:bg-rose-50 rounded-lg text-slate-400 hover:text-rose-600 transition-colors cursor-pointer"
+                  title="Hapus Filter & Tampilkan Seluruh Lamongan"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              )}
             </div>
           )}
 
@@ -1118,15 +1446,21 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   </div>
                 </div>
 
-                {/* Batas Kecamatan */}
-                <div className="pt-1.5 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500 font-medium">
-                  <div className="flex items-center gap-1.5">
-                    <span className="w-3.5 h-0.5 bg-[#0369A1] shrink-0"></span>
-                    <span>27 Kecamatan</span>
+                {/* Batas Wilayah */}
+                <div className="pt-1.5 border-t border-slate-100 space-y-1.5 text-[10px] text-slate-500 font-medium">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-3.5 h-0.5 bg-[#0369A1] shrink-0"></span>
+                      <span>27 Kecamatan</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-3.5 h-0.5 bg-[#1D4ED8] ring-1 ring-blue-300 shrink-0"></span>
+                      <span>Kecamatan</span>
+                    </div>
                   </div>
                   <div className="flex items-center gap-1.5">
-                    <span className="w-3.5 h-0.5 bg-[#1D4ED8] ring-1 ring-blue-300 shrink-0"></span>
-                    <span>Terpilih</span>
+                    <span className="w-3.5 h-1.5 bg-[#4F46E5] rounded-xs shrink-0"></span>
+                    <span className="text-indigo-700 font-bold">Batas Poligon Desa Terpilih</span>
                   </div>
                 </div>
               </div>
@@ -1284,6 +1618,9 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                     const val = e.target.value;
                     setSelectedKecamatan(val);
                     setSelectedDesaId('all');
+                    if (typeof window !== 'undefined' && window.innerWidth < 768 && val !== 'all') {
+                      setIsSidebarCollapsed(true);
+                    }
                   }}
                   className="w-full appearance-none bg-slate-50 hover:bg-slate-100/80 border border-slate-200 rounded-2xl px-3.5 py-2.5 text-xs font-semibold text-slate-800 outline-none cursor-pointer pr-9 focus:border-[#2563EB]"
                 >
@@ -1356,30 +1693,59 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               <div className="grid grid-cols-2 gap-2 mb-2">
                 <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-center">
                   <span className="text-[10px] text-slate-400 block font-medium">Min</span>
-                  <span className="text-xs font-bold text-[#184C78]">Rp 100 Jt</span>
+                  <span className="text-xs font-bold text-[#184C78]">
+                    {formatBudgetDisplay(budgetMin)}
+                  </span>
                 </div>
                 <div className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-center">
                   <span className="text-[10px] text-slate-400 block font-medium">Max</span>
-                  <span className="text-xs font-bold text-[#184C78]">Rp 25 M</span>
+                  <span className="text-xs font-bold text-[#184C78]">
+                    {formatBudgetDisplay(budgetMax)}
+                  </span>
                 </div>
               </div>
 
-              {/* Dual-Handle Range Slider Graphic */}
+              {/* Dual-Handle Range Slider Graphic & Interactive Inputs */}
               <div className="relative py-2.5 px-1 mb-2">
                 <div className="h-1.5 w-full bg-slate-200/80 rounded-full relative">
                   <div
-                    className="absolute top-0 bottom-0 bg-[#6366F1] rounded-full"
-                    style={{ left: '12%', right: '22%' }}
-                  />
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-[3px] border-[#6366F1] shadow-md -ml-2 cursor-pointer hover:scale-115 transition-transform"
-                    style={{ left: '12%' }}
-                  />
-                  <div
-                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-white border-[3px] border-[#6366F1] shadow-md -ml-2 cursor-pointer hover:scale-115 transition-transform"
-                    style={{ left: '78%' }}
+                    className="absolute top-0 bottom-0 bg-[#6366F1] rounded-full pointer-events-none transition-all duration-75"
+                    style={{
+                      left: `${Math.max(0, Math.min(100, ((budgetMin - MIN_BUDGET_LIMIT) / (MAX_BUDGET_LIMIT - MIN_BUDGET_LIMIT)) * 100))}%`,
+                      width: `${Math.max(0, Math.min(100, ((budgetMax - budgetMin) / (MAX_BUDGET_LIMIT - MIN_BUDGET_LIMIT)) * 100))}%`,
+                    }}
                   />
                 </div>
+                <input
+                  type="range"
+                  min={MIN_BUDGET_LIMIT}
+                  max={MAX_BUDGET_LIMIT}
+                  step={0.1}
+                  value={budgetMin}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    const newMin = Math.min(val, budgetMax - 0.2);
+                    setBudgetMin(Number(newMin.toFixed(1)));
+                    setSelectedBudget('custom');
+                  }}
+                  className={`dual-range-input ${budgetMin > MAX_BUDGET_LIMIT - 3 ? 'z-30' : 'z-10'}`}
+                  aria-label="Filter Anggaran Minimum"
+                />
+                <input
+                  type="range"
+                  min={MIN_BUDGET_LIMIT}
+                  max={MAX_BUDGET_LIMIT}
+                  step={0.1}
+                  value={budgetMax}
+                  onChange={(e) => {
+                    const val = parseFloat(e.target.value);
+                    const newMax = Math.max(val, budgetMin + 0.2);
+                    setBudgetMax(Number(newMax.toFixed(1)));
+                    setSelectedBudget('custom');
+                  }}
+                  className="dual-range-input z-20"
+                  aria-label="Filter Anggaran Maksimum"
+                />
               </div>
 
               {/* Budget Range Presets */}
@@ -1387,7 +1753,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 {BUDGET_RANGES.map((b) => (
                   <button
                     key={b.id}
-                    onClick={() => setSelectedBudget(b.id)}
+                    onClick={() => handleSelectBudgetPreset(b.id)}
                     className={`px-2.5 py-1 rounded-xl text-[11px] font-semibold transition-all cursor-pointer ${
                       selectedBudget === b.id
                         ? 'bg-[#2563EB] text-white shadow-xs'
@@ -1401,7 +1767,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             </div>
 
             {/* Active Filter Chips */}
-            {(selectedCategory !== 'all' || selectedKecamatan !== 'all' || selectedBudget !== 'all' || selectedStatus !== 'all' || searchQuery) && (
+            {(selectedCategory !== 'all' || selectedKecamatan !== 'all' || selectedBudget !== 'all' || budgetMin > MIN_BUDGET_LIMIT || budgetMax < MAX_BUDGET_LIMIT || selectedStatus !== 'all' || searchQuery) && (
               <div className="flex flex-wrap items-center gap-1.5 pt-2 border-t border-slate-100">
                 {selectedCategory !== 'all' && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-[#184C78] border border-blue-200">
@@ -1428,17 +1794,24 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   </span>
                 )}
                 {selectedDesaId !== 'all' && (
-                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-blue-50 text-blue-800 border border-blue-200">
-                    <span>Desa: {desaOptions.find((d) => String(d.id) === selectedDesaId)?.nama_wilayah || selectedDesaId}</span>
-                    <button onClick={() => setSelectedDesaId('all')} className="hover:text-blue-950 cursor-pointer">
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-indigo-50 text-indigo-800 border border-indigo-200">
+                    <span>Desa: {selectedDesaObj?.nama_wilayah || selectedDesaId}</span>
+                    <button onClick={() => setSelectedDesaId('all')} className="hover:text-indigo-950 cursor-pointer" title="Hapus Filter Desa">
                       <X className="w-3 h-3" />
                     </button>
                   </span>
                 )}
-                {selectedBudget !== 'all' && (
+                {(selectedBudget !== 'all' || budgetMin > MIN_BUDGET_LIMIT || budgetMax < MAX_BUDGET_LIMIT) && (
                   <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-semibold bg-amber-50 text-amber-800 border border-amber-200">
-                    <span>Anggaran Filter</span>
-                    <button onClick={() => setSelectedBudget('all')} className="hover:text-amber-950 cursor-pointer">
+                    <span>Anggaran: {formatBudgetDisplay(budgetMin)} - {formatBudgetDisplay(budgetMax)}</span>
+                    <button
+                      onClick={() => {
+                        setSelectedBudget('all');
+                        setBudgetMin(MIN_BUDGET_LIMIT);
+                        setBudgetMax(MAX_BUDGET_LIMIT);
+                      }}
+                      className="hover:text-amber-950 cursor-pointer"
+                    >
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -1450,6 +1823,8 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                     setSelectedKecamatan('all');
                     setSelectedDesaId('all');
                     setSelectedBudget('all');
+                    setBudgetMin(MIN_BUDGET_LIMIT);
+                    setBudgetMax(MAX_BUDGET_LIMIT);
                     setSearchQuery('');
                   }}
                   className="text-[11px] text-rose-600 font-bold hover:underline cursor-pointer ml-1"
@@ -1540,6 +1915,8 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 setSelectedKecamatan('all');
                 setSelectedDesaId('all');
                 setSelectedBudget('all');
+                setBudgetMin(MIN_BUDGET_LIMIT);
+                setBudgetMax(MAX_BUDGET_LIMIT);
                 setSearchQuery('');
               }}
               className="py-3 px-3.5 bg-slate-100 hover:bg-slate-200 border border-slate-200/90 text-slate-800 text-xs font-bold rounded-2xl flex items-center gap-1.5 transition-all cursor-pointer shadow-xs active:scale-98"
@@ -1556,13 +1933,12 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
             <button
               onClick={() => {
-                if (filteredProjects[0]) {
-                  handleSelectPin(filteredProjects[0].id);
-                }
+                setIsSidebarCollapsed(true);
               }}
               className="flex-1 py-3 bg-[#111827] hover:bg-black text-white text-xs font-bold rounded-2xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98"
+              title="Sembunyikan Panel & Tampilkan Hasil di Peta"
             >
-              <span>Show ({filteredProjects.length})</span>
+              <span>Lihat di Peta ({filteredProjects.length})</span>
               <ArrowRight className="w-4 h-4" />
             </button>
           </div>
