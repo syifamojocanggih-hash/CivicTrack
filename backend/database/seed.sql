@@ -518,7 +518,9 @@ INSERT INTO wilayah_administratif (id, kode_wilayah, nama_wilayah, level, parent
 INSERT INTO dinas (id, nama_dinas, wilayah_id) VALUES
 (1, 'Dinas Pekerjaan Umum Bina Marga Kabupaten Lamongan', 1),
 (2, 'Dinas Perumahan Rakyat, Kawasan Permukiman dan Cipta Karya Kabupaten Lamongan', 1),
-(3, 'Dinas Lingkungan Hidup Kabupaten Lamongan', 1);
+(3, 'Dinas Lingkungan Hidup Kabupaten Lamongan', 1),
+(4, 'Dinas Sumber Daya Air Kabupaten Lamongan', 1),
+(5, 'Dinas Kesehatan Kabupaten Lamongan', 1);
 
 -- 3. Data Pengguna (password: password123)
 INSERT INTO users (id, nama, email, password_hash, role, dinas_id, is_active) VALUES
@@ -533,86 +535,173 @@ INSERT INTO users (id, nama, email, password_hash, role, dinas_id, is_active) VA
 (9, 'Pimpinan CivicTrack', 'pimpinan@civictrack.id', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'pimpinan_instansi', 1, TRUE),
 (10, 'Warga CivicTrack', 'warga@civictrack.id', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'warga', NULL, TRUE);
 
--- 4. Data 27 Proyek Infrastruktur Lamongan
+-- 4. Data 35 Proyek Infrastruktur Terverifikasi Lamongan
 INSERT INTO proyek (id, nama_proyek, kategori, deskripsi, latitude, longitude, wilayah_id, desa_id, dinas_id, anggaran, status, progres_persen, tanggal_mulai, estimasi_selesai, dibuat_oleh) VALUES
-(1, 'Renovasi Alun-Alun & Taman Centennial Lamongan', 'taman', 'Penataan ulang ruang terbuka hijau, penambahan jogging track, area bermain anak, dan pencahayaan taman Alun-Alun Lamongan.', -7.119500, 112.415400, 23, NULL, 2, 8850000000.00, 'berjalan', 65, '2024-03-01', '2025-10-31', 1),
-(2, 'Pelebaran Jalan Poros Deket - Koridor Pantura', 'jalan', 'Pelebaran badan jalan selebar 3 meter per sisi dan perbaikan bahu jalan penghubung sentra Deket menuju jalan nasional.', -7.098000, 112.462000, 26, NULL, 1, 12400000000.00, 'berjalan', 38, '2024-01-15', '2025-12-31', 1),
-(3, 'Penataan Taman Ramah Anak & Jalur Hijau Tikung', 'taman', 'Pembangunan ruang publik ramah anak, mini amphitheater terbuka, dan penanaman pohon tabebuya peneduh poros Tikung.', -7.185000, 112.418000, 24, NULL, 2, 3800000000.00, 'berjalan', 60, '2024-03-20', '2025-10-31', 1),
-(4, 'Pembangunan Jembatan & Flyover Simpang Babat', 'jalan', 'Pembangunan jembatan dan flyover pengurai simpul kemacetan pertemuan jalur Babat-Tuban-Bojonegoro-Surabaya.', -7.106000, 112.164000, 6, NULL, 1, 28900000000.00, 'berjalan', 45, '2024-02-10', '2025-10-31', 1),
-(5, 'Peningkatan Jalan Poros Sukodadi - Karanggeneng', 'jalan', 'Pelebaran dan overlay aspal hotmix 6 km penghubung sentra komoditas Sukodadi menuju pasar hewan Karanggeneng.', -7.115000, 112.332000, 18, NULL, 1, 7900000000.00, 'berjalan', 82, '2024-01-15', '2025-10-31', 1),
-(6, 'Pengaspalan & Penerangan Jalan Poros Pucuk - Babat', 'jalan', 'Peningkatan lapis aspal hotmix dan instalasi 120 titik lampu penerangan jalan umum (PJU) bertenaga pintar di koridor Pucuk.', -7.098000, 112.285000, 14, NULL, 1, 6800000000.00, 'selesai', 100, '2023-11-01', '2025-10-31', 1),
-(7, 'Optimalisasi Jaringan Tambak & Pintu Air Sekaran', 'drainase', 'Normalisasi saluran pasang surut air tambak dan perbaikan 6 pintu klep otomatis penangkal luapan Bengawan Solo.', -7.054000, 112.268000, 10, NULL, 1, 5100000000.00, 'berjalan', 70, '2024-02-15', '2025-10-31', 1),
-(8, 'Pembangunan Ruang Terbuka Publik & Lapangan Maduran', 'taman', 'Penataan sarana olahraga terbuka, penanaman vegetasi peneduh, dan sentra kuliner UMKM lokal di pusat Maduran.', -7.012000, 112.278000, 11, NULL, 2, 3200000000.00, 'berjalan', 64, '2024-03-01', '2025-10-31', 1),
-(9, 'Pembangunan Jembatan Gantung Penghubung Laren - Maduran', 'jalan', 'Pembangunan jembatan melintasi Sungai Bengawan Solo untuk mempercepat mobilitas komoditas pertanian antar-kecamatan.', -6.985000, 112.275000, 9, NULL, 1, 9800000000.00, 'berjalan', 35, '2024-03-15', '2025-12-31', 1),
-(10, 'Rekonstruksi Jembatan Akses Nelayan Karanggeneng', 'jalan', 'Penggantian jembatan lama menjadi jembatan gelagar baja komposit muat 12 ton melintasi kanal tambak Karanggeneng.', -7.022000, 112.345000, 19, NULL, 1, 6700000000.00, 'berjalan', 42, '2024-03-05', '2025-10-31', 1),
-(11, 'Tanggul Pengendali Banjir Bengawan Jero Kalitengah', 'drainase', 'Penguatan tanggul sepanjang 4.2 km dan pemasangan pompa air debit tinggi guna menanggulangi genangan luapan Bengawan Jero.', -7.025000, 112.395000, 21, NULL, 1, 14200000000.00, 'berjalan', 58, '2024-02-01', '2025-10-31', 1),
-(12, 'Sentra Budidaya Lele & Pasar Ikan Tawar Turi', 'gedung_publik', 'Pembangunan sarana sortasi, cold storage higienis, dan pasar grosir ikan air tawar khas kawasan Turi Lamongan.', -7.068000, 112.388000, 22, NULL, 3, 4800000000.00, 'berjalan', 52, '2024-02-01', '2025-12-31', 1),
-(13, 'Rekonstruksi Jalan Poros Glagah - Perbatasan Gresik', 'jalan', 'Pengecoran rigid pavement jalan poros penghubung Glagah menuju perbatasan Dukun Gresik untuk angkutan perikanan.', -7.078000, 112.502000, 27, NULL, 1, 8400000000.00, 'berjalan', 48, '2024-02-15', '2025-12-31', 1),
-(14, 'Normalisasi Saluran Primer & Rumah Pompa Karangbinangun', 'drainase', 'Penggantian pompa pembuangan otomatis dan pengerukan sedimentasi muara sungai perbatasan Lamongan-Gresik.', -7.034000, 112.465000, 25, NULL, 1, 6200000000.00, 'berjalan', 64, '2024-01-25', '2025-10-31', 1),
-(15, 'Revitalisasi Pelabuhan Perikanan Nusantara & TPI Brondong', 'gedung_publik', 'Pembangunan dermaga tambat labuh nelayan modern, cold storage bertenaga surya, dan higienisasi Tempat Pelelangan Ikan.', -6.902000, 112.235000, 8, 129, 3, 21500000000.00, 'berjalan', 72, '2024-01-10', '2025-12-31', 1),
-(16, 'Rekonstruksi Akses Wisata Bahari Lamongan & Sunan Drajat', 'jalan', 'Peningkatan kapasitas jalan pesisir Pantura menjadi 4 lajur berkeselamatan tinggi menuju kawasan WBL dan Makam Sunan Drajat.', -6.885000, 112.375000, 15, NULL, 1, 16800000000.00, 'selesai', 100, '2023-09-01', '2025-10-31', 1),
-(17, 'Pembangunan Sentra Pengolahan Jagung Solokuro', 'gedung_publik', 'Pembangunan fasilitas pengeringan vertical dryer jagung dan pergudangan sentra produksi jagung terbesar di Solokuro.', -6.925000, 112.352000, 16, NULL, 3, 5900000000.00, 'berjalan', 48, '2024-03-01', '2025-10-31', 1),
-(18, 'Modernisasi Saluran Irigasi Waduk Gondang Sugio', 'drainase', 'Rehabilitasi saluran primer irigasi 1.200 hektar sawah serta penataan lansekap taman konservasi air Waduk Gondang.', -7.186000, 112.278000, 13, NULL, 1, 11700000000.00, 'berjalan', 80, '2024-01-05', '2025-10-31', 1),
-(19, 'Normalisasi Tanggul Sungai Semarmendem Kedungpring', 'drainase', 'Pemasangan bronjong kawat penahan longsor dan peninggian tanggul tanah di bantaran rawan luapan Kedungpring.', -7.192000, 112.204000, 7, NULL, 1, 4900000000.00, 'berjalan', 45, '2024-03-10', '2025-12-31', 1),
-(20, 'Peningkatan Jalan Poros Penghubung Modo - Babat', 'jalan', 'Pengecoran jalan perkerasan kaku beton guna menahan beban armada angkutan hasil bumi pedesaan Modo.', -7.202000, 112.135000, 4, NULL, 1, 5800000000.00, 'berjalan', 50, '2024-02-28', '2025-10-31', 1),
-(21, 'Pembangunan Sentra Pelayanan Terpadu & Puskesmas Ngimbang', 'gedung_publik', 'Pembangunan gedung rawat inap dan fasilitas kesehatan rujukan terpadu untuk wilayah selatan Lamongan.', -7.295000, 112.205000, 5, NULL, 3, 8900000000.00, 'berjalan', 76, '2024-01-10', '2025-10-31', 1),
-(22, 'Rekonstruksi Jalan Poros Mantup - Sambeng', 'jalan', 'Pengecoran beton bertulang jalan penghubung Mantup menuju Sambeng untuk mendukung sentra tebu dan palawija.', -7.285000, 112.285000, 12, NULL, 1, 13500000000.00, 'berjalan', 62, '2024-02-20', '2025-10-31', 1),
-(23, 'Pelebaran Jalan Penghubung Ngimbang - Bluluk', 'jalan', 'Peningkatan jalan poros penghubung ujung barat daya Lamongan dengan perbatasan Kabupaten Bojonegoro.', -7.302000, 112.125000, 3, NULL, 1, 7600000000.00, 'berjalan', 40, '2024-04-01', '2025-12-31', 1),
-(24, 'Pembangunan Embung Konservasi Air Tani Sukorame', 'drainase', 'Pembangunan embung tadah hujan berkapasitas 45.000 m3 untuk mengantisipasi kekeringan pada lahan tani Sukorame.', -7.345000, 112.115000, 2, NULL, 1, 3400000000.00, 'selesai', 100, '2023-08-15', '2025-10-31', 1),
-(25, 'Pembangunan Sentra Pasar Agrobisnis & RTH Mantup', 'gedung_publik', 'Pembangunan los pasar komoditas jagung, palawija, dan ruang terbuka hijau pedestrian di poros utama Mantup.', -7.262000, 112.358000, 17, NULL, 3, 6200000000.00, 'berjalan', 56, '2024-02-15', '2025-10-31', 1),
-(26, 'Taman Edukasi Pertanian & Embung Lopang Kembangbahu', 'taman', 'Pembangunan RTH agrowisata berbasis embung air untuk sarana edukasi budidaya holtikultura warga Kembangbahu.', -7.205000, 112.362000, 20, NULL, 2, 2200000000.00, 'selesai', 100, '2023-09-10', '2025-10-31', 1),
-(27, 'Penguatan Bronjong Saluran Kali Lamong Sarirejo', 'drainase', 'Pekerjaan perkuatan tebing sungai Kali Lamong di wilayah Sarirejo untuk mencegah limpasan ke permukiman warga.', -7.175000, 112.465000, 28, NULL, 1, 4100000000.00, 'berjalan', 33, '2024-04-10', '2025-12-31', 1);
+(1, 'Peningkatan Jalan Sukodadi - Sumberwudi (JAMULA)', 'jalan', 'Rekonstruksi CBC (Rigid Pavement) tebal 20 cm, lebar 6.0 m, bahu jalan agregat kelas B 1.0 m, peninggian badan jalan 30 cm, panjang penanganan 3.85 km. Sumber Pembiayaan: APBD Kab. Lamongan (Prioritas JAMULA). Rekanan Pelaksana: PT Mega Jaya Abadi Konsorsium / CV Cipta Rekayasa Mandiri. Kode Paket: LAM-JML-2024-001 (SiRUP-4819204).', -7.115200, 112.332400, 18, 305, 1, 7920000000.00, 'berjalan', 82, '2024-03-01', '2024-11-30', 1),
+(2, 'Peningkatan Jalan Pucuk - Sekaran (JAMULA)', 'jalan', 'Pengecoran beton rigid pavement K-350 tebal 20 cm, lebar badan jalan 5.5 m, panjang penanganan 4.10 km segmen Miru s/d Kudikan, marka garis samping. Sumber Pembiayaan: DAK Fisik Tematik & APBD Kab. Lamongan. Rekanan Pelaksana: CV Putra Lamongan Konstruksi / CV Mitra Konsultan. Kode Paket: LAM-JML-2024-002 (SiRUP-4819215).', -7.098400, 112.285300, 14, 240, 1, 6850000000.00, 'selesai', 100, '2023-09-01', '2024-08-31', 1),
+(3, 'Rekonstruksi Jalan Sugio - Kedungpring (JAMULA)', 'jalan', 'Perkerasan kaku beton bertulang (Rigid Pavement) segmen Gondang s/d Blawirejo, lebar 6.0 m, panjang 3.40 km, saluran samping U-ditch 50x50 cm. Sumber Pembiayaan: APBD Kab. Lamongan (Alokasi Khusus JAMULA). Rekanan Pelaksana: PT Surya Bhakti Persada / CV Sinar Karya Konsultan. Kode Paket: LAM-JML-2024-003 (SiRUP-4820311).', -7.186500, 112.245200, 13, 226, 1, 6450000000.00, 'berjalan', 75, '2024-03-01', '2024-10-31', 1),
+(4, 'Rekonstruksi Jalan Poros Babat - Sukorame', 'jalan', 'Rekonstruksi CBC rigid pavement K-350 tebal 25 cm, penahan dinding retaining wall bantaran rawan longsor, lebar 6.0 m, panjang 5.20 km. Sumber Pembiayaan: Bantuan Keuangan (BK) Pemprov Jatim & APBD Kab.. Rekanan Pelaksana: PT Duta Bangun Sejahtera / CV Grafika Desain Engineering. Kode Paket: LAM-JML-2024-004 (SiRUP-4820490).', -7.115000, 112.162000, 6, 84, 1, 9800000000.00, 'berjalan', 58, '2024-03-01', '2024-12-31', 1),
+(5, 'Peningkatan Jalan Deket - Soko (Koridor Deket - Glagah)', 'jalan', 'Pengecoran beton rigid pavement segmen Sidorejo s/d Soko, perbaikan sub-grade tanah lempung tambak berair, lebar 5.5 m, panjang 2.90 km. Sumber Pembiayaan: APBD Kab. Lamongan (DAU Infrastruktur). Rekanan Pelaksana: CV Berkah Mandiri Abadi / CV Cipta Pratama. Kode Paket: LAM-JML-2024-005 (SiRUP-4821102).', -7.098200, 112.462100, 26, 448, 1, 4950000000.00, 'berjalan', 62, '2024-03-01', '2024-11-30', 1),
+(6, 'Peningkatan Jalan Turi - Kiringan (Kawasan Bengawan Jero)', 'jalan', 'Rekonstruksi rigid pavement peninggian elevasi tanggul jalan 30 cm anti-genangan banjir, lebar 5.0 m, panjang 3.10 km segmen Gedangan s/d Kiringan. Sumber Pembiayaan: APBD Kab. Lamongan (Tanggap Banjir Bengawan Jero). Rekanan Pelaksana: CV Sinar Bengawan Nusantara / CV Cipta Reka Estetika. Kode Paket: LAM-JML-2024-006 (SiRUP-4821340).', -7.068200, 112.388400, 22, 383, 1, 4350000000.00, 'berjalan', 54, '2024-03-01', '2024-12-31', 1),
+(7, 'Peningkatan Jalan Brengkok - Brondong (Pantura)', 'jalan', 'Overlay aspal Hotmix AC-WC di atas pondasi agregat kelas A, lebar 6.5 m, panjang 3.60 km, marka termoplastik dan patok reflektor keselamatan. Sumber Pembiayaan: DAK Penugasan Jalan KemenPUPR & APBD Kab.. Rekanan Pelaksana: PT Tri Tunggal Konstruksiindo / CV Wahana Multi Tehnik. Kode Paket: LAM-JML-2024-007 (SiRUP-4822019).', -6.902300, 112.235400, 8, 129, 1, 6200000000.00, 'berjalan', 88, '2024-03-01', '2024-10-31', 1),
+(8, 'Rekonstruksi Jalan Mantup - Sambeng (Poros Selatan)', 'jalan', 'Rigid pavement CBC beton cor K-350 tebal 20 cm, pelebaran badan jalan dari 4.5 m menjadi 6.0 m, panjang 4.50 km, saluran drainase samping. Sumber Pembiayaan: APBD Kab. Lamongan (Prioritas Poros Selatan). Rekanan Pelaksana: PT Pandu Bangun Kencana / CV Paramita Graha Engineering. Kode Paket: LAM-JML-2024-008 (SiRUP-4822550).', -7.285400, 112.285600, 12, 206, 1, 8100000000.00, 'berjalan', 67, '2024-03-01', '2024-11-30', 1),
+(9, 'Peningkatan Jalan Bluluk - Sukorame (Batas Bojonegoro)', 'jalan', 'Perkerasan beton rigid bertulang tebal 20 cm, saluran drainase samping precast U-ditch 40x40 cm, panjang penanganan 3.20 km, lebar 5.5 m. Sumber Pembiayaan: APBD Kab. Lamongan. Rekanan Pelaksana: CV Wijaya Surya Sentosa / CV Prisma Konsultan. Kode Paket: LAM-JML-2024-009 (SiRUP-4822891).', -7.345200, 112.115400, 2, 32, 1, 5150000000.00, 'berjalan', 45, '2024-03-01', '2024-12-31', 1),
+(10, 'Rekonstruksi Jalan Laren - Blawi (Sentra Padi)', 'jalan', 'Rigid pavement beton bertulang fondasi cerucuk bambu stabilisasi tanah labil gambut, lebar 5.5 m, panjang 3.35 km, talud pasangan batu kali. Sumber Pembiayaan: APBD Kab. Lamongan. Rekanan Pelaksana: CV Bangun Cipta Samudera / CV Adi Mulya Teknik. Kode Paket: LAM-JML-2024-010 (SiRUP-4823412).', -6.985200, 112.275400, 9, 149, 1, 5400000000.00, 'berjalan', 78, '2024-03-01', '2024-10-31', 1),
+(11, 'Peningkatan Jalan Tikung - Kembangbahu (Sentra Jagung)', 'jalan', 'Rekonstruksi CBC rigid pavement K-350, bahu jalan cor beton 0.5 m kanan-kiri, panjang 2.80 km, lebar 5.5 m, gorong-gorong crossing 2 titik. Sumber Pembiayaan: APBD Kab. Lamongan. Rekanan Pelaksana: CV Graha Indah Semesta / CV Mahameru Konsultan. Kode Paket: LAM-JML-2024-011 (SiRUP-4823902).', -7.185200, 112.418200, 24, 414, 1, 4600000000.00, 'berjalan', 92, '2024-03-01', '2024-11-30', 1),
+(12, 'Peningkatan Jalan Modo - Babat (Koridor Pangan)', 'jalan', 'Pengecoran beton rigid pavement K-350 tebal 20 cm, perbaikan tikungan radius sempit, lebar 6.0 m, panjang 3.75 km, marka jalan. Sumber Pembiayaan: APBD Kab. Lamongan. Rekanan Pelaksana: PT Cipta Usaha Sejahtera / CV Pilar Cipta Pratama. Kode Paket: LAM-JML-2024-012 (SiRUP-4824310).', -7.202400, 112.135200, 4, 57, 1, 5850000000.00, 'berjalan', 85, '2024-03-01', '2024-10-31', 1),
+(13, 'Pembangunan Pintu Air & Retensi Kuro (Pengendali Bengawan Jero)', 'drainase', 'Konstruksi 3 pintu air elektrik ulir hidrolik baja tahan karat lebar 3.5 m, perkuatan retaining wall beton K-300 volume 1.450 m3, kolam olak peredam debit. Sumber Pembiayaan: Bantuan Keuangan (BK) Prov. Jatim & APBD Kab.. Rekanan Pelaksana: PT Brantas Abipraya - Sumber Jaya KSO / PT Yodya Karya (Persero). Kode Paket: LAM-DRA-2024-001 (SiRUP-4830114).', -7.034200, 112.465400, 25, 446, 4, 12850000000.00, 'selesai', 100, '2023-09-01', '2024-10-31', 1),
+(14, 'Pengadaan & Pemasangan Pompa Banjir 3.000 L/dt Pintu Air Kuro', 'drainase', 'Pengadaan 2 unit pompa axial submersible kapasitas 1.500 L/detik head 4.5 m Torishima, genset silent 500 kVA, automatic transfer switch panel. Sumber Pembiayaan: Bantuan Keuangan Khusus (BKK) Pemprov Jatim. Rekanan Pelaksana: PT Mega Surya Teknik Megah / CV Bina Karya Pratama. Kode Paket: LAM-DRA-2024-002 (SiRUP-4830582).', -7.034400, 112.465800, 25, 446, 4, 6750000000.00, 'selesai', 100, '2024-03-01', '2024-06-30', 1),
+(15, 'Normalisasi Kali Asin & Pengerukan Bengawan Jero', 'drainase', 'Pengerukan lumpur sedimentasi volume 185.000 m3 menggunakan amphibi excavator, pembersihan eceng gondok sepanjang 14.2 km alur sungai. Sumber Pembiayaan: APBD Kab. Lamongan (Penanganan Banjir Terpadu). Rekanan Pelaksana: PT Tirta Dharma Kencana / CV Mitra Tata Lingkungan. Kode Paket: LAM-DRA-2024-003 (SiRUP-4831005).', -7.025400, 112.395200, 21, 355, 4, 4500000000.00, 'berjalan', 72, '2024-03-01', '2024-11-30', 1),
+(16, 'Saluran Drainase Primer Box Culvert Jl. Veteran & Jl. Basuki Rahmat', 'drainase', 'Saluran tertutup precast reinforced concrete box culvert 150x150 cm heavy axle load 20 ton, panjang penanganan 1.650 m, bak kontrol inlet per 15 m. Sumber Pembiayaan: APBD Kab. Lamongan (Drainase Perkotaan). Rekanan Pelaksana: CV Jaya Abadi Konstruksi / CV Multi Rekayasa Graha. Kode Paket: LAM-DRA-2024-004 (SiRUP-4831620).', -7.118900, 112.414200, 23, 394, 2, 5800000000.00, 'berjalan', 68, '2024-03-01', '2024-11-30', 1),
+(17, 'Modernisasi Jaringan Irigasi DI Waduk Gondang', 'drainase', 'Lining saluran pasangan batu kali 1:3 dan precast u-flume beton sepanjang 6.800 meter untuk mengairi 1.250 hektar sawah, pintu bagi irigasi 12 unit. Sumber Pembiayaan: DAK Fisik Irigasi KemenPUPR & APBD Kab.. Rekanan Pelaksana: PT Swakarya Perkasa Mandiri / CV Rekaprima Engineering. Kode Paket: LAM-DRA-2024-005 (SiRUP-4832104).', -7.186200, 112.278400, 13, 223, 4, 8900000000.00, 'berjalan', 84, '2024-03-01', '2024-10-31', 1),
+(18, 'Rekonstruksi Jembatan Karanggeneng - Maduran', 'jembatan', 'Penggantian struktur atas gelagar baja komposit (steel composite girder) bentang 40 m, lebar lantai 7.0 m + trotoar 1.0 m kanan-kiri, abutmen bore pile. Sumber Pembiayaan: DAK Fisik Konektivitas Daerah & APBD Kab.. Rekanan Pelaksana: PT Wira Mandiri Sejati / CV Dian Karya Konsultan. Kode Paket: LAM-JBT-2024-001 (SiRUP-4840118).', -7.022400, 112.345200, 19, 335, 1, 7850000000.00, 'berjalan', 55, '2024-03-01', '2024-12-31', 1),
+(19, 'Penggantian Gelagar & Pelebaran Jembatan Plaosan Babat', 'jembatan', 'Penggantian gelagar beton pracetak I-Girder bentang 25 m, pelebaran lantai jembatan menjadi 8.0 m pengurai simpul kemacetan angkutan logistik. Sumber Pembiayaan: APBD Kab. Lamongan. Rekanan Pelaksana: CV Sumber Berkah Teknik / CV Sarana Teknik Konsultan. Kode Paket: LAM-JBT-2024-002 (SiRUP-4840502).', -7.106200, 112.164200, 6, 84, 1, 3450000000.00, 'berjalan', 65, '2024-03-01', '2024-05-31', 1),
+(20, 'Pembangunan Jembatan Kuro Penghubung Karangbinangun - Glagah', 'jembatan', 'Jembatan pelat beton prategang bentang 32 meter, lebar 6.0 meter, pondasi tiang pancang spun pile diameter 50 cm anti-korosi air payau. Sumber Pembiayaan: APBD Kab. Lamongan & BK Khusus Provinsi. Rekanan Pelaksana: PT Tri Pilar Nusantara / CV Pilar Utama Desain. Kode Paket: LAM-JBT-2024-003 (SiRUP-4840889).', -7.034500, 112.466100, 25, 446, 1, 5600000000.00, 'berjalan', 80, '2024-03-01', '2024-10-31', 1),
+(21, 'Pembangunan RSUD Brondong Pantura (Tahap II)', 'gedung_publik', 'Gedung 3 lantai struktur beton bertulang K-350, fasilitas IGD, ruang operasi, 75 tempat tidur rawat inap, instalasi IPAL medis ramah lingkungan. Sumber Pembiayaan: DAK Fisik Kesehatan Kemenkes & APBD Kab.. Rekanan Pelaksana: PT Total Bangun Sarana / PT Ciriajasa Engineering Consultants. Kode Paket: LAM-GED-2024-001 (SiRUP-4850119).', -6.901800, 112.234800, 8, 129, 5, 24800000000.00, 'berjalan', 82, '2023-09-01', '2024-12-31', 1),
+(22, 'Pembangunan Gedung Laboratorium Kesehatan Daerah (Labkesda)', 'gedung_publik', 'Gedung 2 lantai standar Bio Safety Level 2 (BSL-2), luas 1.200 m2, ruang PCR mikrobiologi, ruang uji kimia air, tata udara HEPA negative pressure. Sumber Pembiayaan: DAK Penguatan Sistem Kesehatan & APBD Kab.. Rekanan Pelaksana: PT Cipta Bangun Graha / CV Prisma Estetika Desain. Kode Paket: LAM-GED-2024-002 (SiRUP-4850610).', -7.121500, 112.416800, 23, 401, 5, 6850000000.00, 'selesai', 100, '2024-03-01', '2024-08-31', 1),
+(23, 'Gedung Bedah & Rawat Inap Terpadu RSUD dr. Soegiri', 'gedung_publik', 'Gedung 5 lantai, 6 kamar operasi Modular Operating Theatre (MOT), ruang intensif ICU/ICCU/NICU 24 bed, sprinkler otomatis & genset 1.000 kVA. Sumber Pembiayaan: Silpa BLUD RSUD Soegiri & APBD Kab. Lamongan. Rekanan Pelaksana: PT Galatama Cipta Graha / PT Virama Karya (Persero). Kode Paket: LAM-GED-2024-003 (SiRUP-4851025).', -7.124500, 112.411200, 23, 394, 5, 18500000000.00, 'berjalan', 74, '2024-03-01', '2024-12-31', 1),
+(24, 'Rekonstruksi Total Stadion Gelora Surajaya (Standar FIFA)', 'gedung_publik', 'Pembongkaran & rekonstruksi stadion 12.097 single seat, rumput Zoysia Matrella drainase sub-air, lampu LED 1.800 lux, atap tribun barat membran PTFE. Sumber Pembiayaan: APBN Kementerian PUPR & APBD Kab. Lamongan. Rekanan Pelaksana: PT Wijaya Karya Bangunan Gedung Tbk (WIKA) / PT Ciriajasa. Kode Paket: LAM-GED-2024-004 (SiRUP-4851508).', -7.112400, 112.434500, 26, 448, 1, 145000000000.00, 'berjalan', 76, '2023-09-01', '2024-12-31', 1),
+(25, 'Revitalisasi Alun-Alun Lamongan & Mandhapa Seni Budaya', 'taman', 'Penataan lanskap taman 2.8 ha, jogging track rubber EPDM 400 m, air mancur menari interaktif, playground anak, rekonstruksi Mandhapa Taruna seni budaya. Sumber Pembiayaan: APBD Kab. Lamongan (Prioritas RTH Ramah Anak). Rekanan Pelaksana: PT Bumi Surya Kencana / CV Ganeshatama Konsultan. Kode Paket: LAM-TMN-2024-001 (SiRUP-4860012).', -7.119500, 112.415400, 23, 400, 2, 8850000000.00, 'berjalan', 85, '2024-03-01', '2024-10-31', 1),
+(26, 'Pembangunan Ruang Terbuka Hijau & Eco-Park Babat', 'taman', 'Transformasi lahan eks rawa 1.5 ha menjadi taman edukasi ekologis, jogging track, plaza UMKM, penanaman 450 pohon peneduh, lampu taman solar cell. Sumber Pembiayaan: APBD Kab. Lamongan (Alokasi DBHCHT). Rekanan Pelaksana: CV Alam Hijau Lestari / CV Mitra Kreasi Alam. Kode Paket: LAM-TMN-2024-002 (SiRUP-4860450).', -7.108200, 112.169500, 6, 84, 2, 4100000000.00, 'berjalan', 65, '2024-03-01', '2024-11-30', 1),
+(27, 'Revitalisasi Ruang Terbuka Publik & Taman Olahraga Maduran', 'taman', 'Penataan lapangan sepak bola desa, fasilitas outdoor fitness, mini amphitheater pemuda, pedestrian paving difabel, lampu sorot lapangan 4 tower. Sumber Pembiayaan: APBD Kab. Lamongan. Rekanan Pelaksana: CV Sumber Artha Mandiri / CV Karya Mandiri Desain. Kode Paket: LAM-TMN-2024-003 (SiRUP-4860821).', -7.012500, 112.278200, 11, 185, 2, 3200000000.00, 'berjalan', 64, '2024-03-01', '2024-10-31', 1),
+(28, 'Sentra Pengeringan & Pergudangan Jagung Modern Solokuro', 'gedung_publik', 'Lumbung pangan kapasitas 1.000 ton, mesin vertical dryer kapasitas 25 ton/hari, jembatan timbang truk 50 ton digital, kantor operasional gapoktan. Sumber Pembiayaan: DAK Fisik Bidang Pertanian & APBD Kab.. Rekanan Pelaksana: PT Agronusa Bangun Persada / CV Duta Agritech Konsultan. Kode Paket: LAM-GED-2024-005 (SiRUP-4852102).', -6.925400, 112.352400, 16, 279, 1, 5900000000.00, 'berjalan', 70, '2024-03-01', '2024-11-30', 1),
+(29, 'Fasilitas Cold Storage & TPI Higienis Brondong', 'gedung_publik', 'Dermaga bongkar muat higienis 2.400 m2, cold storage kapasitas 100 ton refrigerasi freon R-404a, instalasi pabrik es curah 30 ton/hari. Sumber Pembiayaan: DAK Fisik Kelautan dan Perikanan & APBD Kab.. Rekanan Pelaksana: PT Samudera Maritim Konstruksi / CV Samudera Konsultan Teknik. Kode Paket: LAM-GED-2024-006 (SiRUP-4852611).', -6.899800, 112.238500, 8, 129, 1, 14600000000.00, 'berjalan', 72, '2024-03-01', '2024-12-31', 1),
+(30, 'Puskesmas Rawat Inap & Gedung PONED Ngimbang', 'gedung_publik', 'Gedung 2 lantai rawat inap 25 bed, ruang bersalin gawat darurat PONED, instalasi radiologi x-ray digital, instalasi pengolahan limbah medis (IPAL). Sumber Pembiayaan: DAK Fisik Kesehatan & APBD Kab. Lamongan. Rekanan Pelaksana: CV Sejahtera Bangun Utama / CV Medika Graha Teknik. Kode Paket: LAM-GED-2024-007 (SiRUP-4853018).', -7.295200, 112.205400, 5, 79, 5, 4750000000.00, 'berjalan', 85, '2024-03-01', '2024-10-31', 1),
+(31, 'Pelebaran & Pengecoran Rigid Jalan Sukodadi - Banjaranyar', 'jalan', 'Pelebaran badan jalan dari 4.0 m menjadi 5.5 m, perkerasan beton K-350 tebal 20 cm, bahu jalan sirtu padat, panjang penanganan 2.60 km. Sumber Pembiayaan: APBD Kab. Lamongan. Rekanan Pelaksana: CV Bangun Prima Perkasa / CV Sentosa Reka Desain. Kode Paket: LAM-JML-2024-013 (SiRUP-4824899).', -7.132500, 112.338500, 18, 305, 1, 3800000000.00, 'berjalan', 60, '2024-03-01', '2024-11-30', 1),
+(32, 'Normalisasi Sungai Blawi & Saluran Pembuang Rawa Semando', 'drainase', 'Pengerukan sedimen lumpur pembuang sepanjang 7.8 km, perkuatan tebing bronjong kawat gabion di 8 titik longsor, 2 unit pintu klep otomatis. Sumber Pembiayaan: APBD Kab. Lamongan. Rekanan Pelaksana: CV Tirta Alam Subur / CV Graha Cipta Mandiri. Kode Paket: LAM-DRA-2024-006 (SiRUP-4832519).', -7.018500, 112.441200, 25, 434, 4, 3650000000.00, 'berjalan', 76, '2024-03-01', '2024-10-31', 1),
+(33, 'Pembangunan Embung Konservasi Air Tani Sukorame', 'drainase', 'Embung geomembrane HDPE 1.5 mm kapasitas 45.000 m3, pelimpah spillway beton bertulang, pompa tenaga surya suplai 120 ha sawah tadah hujan. Sumber Pembiayaan: DAK Fisik Pertanian & APBD Kab. Lamongan. Rekanan Pelaksana: CV Bintang Tani Mandiri / CV Mitra Konsultan Pratama. Kode Paket: LAM-DRA-2024-007 (SiRUP-4832901).', -7.345800, 112.115200, 2, 32, 4, 3400000000.00, 'selesai', 100, '2023-09-01', '2024-05-31', 1),
+(34, 'Peningkatan Akses Wisata Bahari Lamongan (WBL) & Makam Sunan Drajat', 'jalan', 'Pelebaran jalan menjadi 4 lajur (2x2) median tengah, lapis aspal AC-BC & AC-WC 10 cm, lampu penerangan jalan etnik pesisir 68 tiang, drainase trotoar. Sumber Pembiayaan: APBD Kab. Lamongan & BK Pariwisata Prov. Jatim. Rekanan Pelaksana: PT Pesisir Jaya Konstruksi / CV Artha Buana Desain. Kode Paket: LAM-JML-2024-014 (SiRUP-4825120).', -6.885400, 112.375200, 15, 259, 1, 16800000000.00, 'selesai', 100, '2023-09-01', '2024-07-31', 1),
+(35, 'Pembangunan Jalan Lingkar Utara (JLU) Seksi Deket - Sukodadi', 'jalan', 'Konstruksi jalan by-pass pengurai kemacetan perlintasan sebidang KA nasional, panjang 7.15 km, rigid beton tebal 30 cm, jembatan box traffic crossing. Sumber Pembiayaan: SBSN APBN KemenPUPR & APBD Kab. (Lahan). Rekanan Pelaksana: PT Wijaya Karya (Persero) Tbk / PT Disi Putera Mandiri. Kode Paket: LAM-JML-2024-015 (SiRUP-4825700).', -7.105400, 112.421500, 23, 409, 1, 78500000000.00, 'berjalan', 62, '2023-09-01', '2024-06-30', 1);
 
 -- 5. Data Tahapan Progres
 INSERT INTO tahapan_progres (id, proyek_id, nama_tahap, progres_persen, catatan, dicatat_oleh) VALUES
-(1, 1, 'Pembongkaran Fasilitas Lama & Pembersihan Lahan', 20, 'Pembersihan area Alun-Alun tuntas 100%.', 1),
-(2, 1, 'Pemasangan Paving Block & Drainage Track', 45, 'Paving terpasang di sisi timur dan utara.', 1),
-(3, 1, 'Instalasi Penerangan Taman & Area Bermain Anak', 65, 'Tiang lampu taman berdiri, menunggu instalasi kabel bawah tanah.', 1),
-(4, 2, 'Pengupasan Bahu Jalan & Saluran Tepi Poros Deket', 15, 'Alat berat beroperasi di segmen Deket Kulon.', 1),
-(5, 2, 'Pengecoran Lapis Pondasi Semen Agregat', 38, 'Pengecoran lajur kiri selebar 3 meter selesai.', 1),
-(6, 3, 'Pembangunan Mini Amphitheater & Wahana Ramah Anak', 60, 'Struktur panggung selesai, dilanjutkan penanaman tabebuya.', 1),
-(7, 4, 'Pengecoran Pilar Jembatan & Penataan Frontage', 45, 'Pilar tengah terpasang, rekayasa lalu lintas simpang Babat lancar.', 1);
+(1, 1, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 30, 'Pekerjaan tahap awal selesai.', 1),
+(2, 1, 'Pengecoran Struktur Utama (Rigid Pavement K-350 / Gelagar Baja)', 82, 'Konstruksi utama berjalan sesuai jadwal (82%).', 1),
+(3, 2, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 30, 'Pekerjaan dasar tuntas 100%.', 1),
+(4, 2, 'Pengecoran Struktur Utama (Rigid Pavement K-350 / Gelagar Baja)', 75, 'Konstruksi utama rampung sesuai spesifikasi teknis.', 1),
+(5, 2, 'Pekerjaan Finishing, Marka Termoplastik & Uji Kelayakan PHO', 100, 'Uji fungsi tuntas dan serah terima pertama (PHO) selesai.', 1),
+(6, 3, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 30, 'Pekerjaan tahap awal selesai.', 1),
+(7, 3, 'Pengecoran Struktur Utama (Rigid Pavement K-350 / Gelagar Baja)', 75, 'Konstruksi utama berjalan sesuai jadwal (75%).', 1),
+(8, 4, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 58, 'Pekerjaan tahap awal sedang berlangsung (58%).', 1),
+(9, 5, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 62, 'Pekerjaan tahap awal sedang berlangsung (62%).', 1),
+(10, 6, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 54, 'Pekerjaan tahap awal sedang berlangsung (54%).', 1),
+(11, 7, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 30, 'Pekerjaan tahap awal selesai.', 1),
+(12, 7, 'Pengecoran Struktur Utama (Rigid Pavement K-350 / Gelagar Baja)', 88, 'Konstruksi utama berjalan sesuai jadwal (88%).', 1),
+(13, 8, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 67, 'Pekerjaan tahap awal sedang berlangsung (67%).', 1),
+(14, 9, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 45, 'Pekerjaan tahap awal sedang berlangsung (45%).', 1),
+(15, 10, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 30, 'Pekerjaan tahap awal selesai.', 1),
+(16, 10, 'Pengecoran Struktur Utama (Rigid Pavement K-350 / Gelagar Baja)', 78, 'Konstruksi utama berjalan sesuai jadwal (78%).', 1),
+(17, 11, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 30, 'Pekerjaan tahap awal selesai.', 1),
+(18, 11, 'Pengecoran Struktur Utama (Rigid Pavement K-350 / Gelagar Baja)', 92, 'Konstruksi utama berjalan sesuai jadwal (92%).', 1),
+(19, 12, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 30, 'Pekerjaan tahap awal selesai.', 1),
+(20, 12, 'Pengecoran Struktur Utama (Rigid Pavement K-350 / Gelagar Baja)', 85, 'Konstruksi utama berjalan sesuai jadwal (85%).', 1),
+(21, 13, 'Pengerukan Sedimen & Pemasangan Cerucuk Tebing', 30, 'Pekerjaan dasar tuntas 100%.', 1),
+(22, 13, 'Pemasangan Precast U-Ditch / Box Culvert & Rumah Pompa', 75, 'Konstruksi utama rampung sesuai spesifikasi teknis.', 1),
+(23, 13, 'Pemasangan Pintu Air Elektrik & Uji Coba Pengaliran Debit Air', 100, 'Uji fungsi tuntas dan serah terima pertama (PHO) selesai.', 1),
+(24, 14, 'Pengerukan Sedimen & Pemasangan Cerucuk Tebing', 30, 'Pekerjaan dasar tuntas 100%.', 1),
+(25, 14, 'Pemasangan Precast U-Ditch / Box Culvert & Rumah Pompa', 75, 'Konstruksi utama rampung sesuai spesifikasi teknis.', 1),
+(26, 14, 'Pemasangan Pintu Air Elektrik & Uji Coba Pengaliran Debit Air', 100, 'Uji fungsi tuntas dan serah terima pertama (PHO) selesai.', 1),
+(27, 15, 'Pengerukan Sedimen & Pemasangan Cerucuk Tebing', 30, 'Pekerjaan tahap awal selesai.', 1),
+(28, 15, 'Pemasangan Precast U-Ditch / Box Culvert & Rumah Pompa', 72, 'Konstruksi utama berjalan sesuai jadwal (72%).', 1),
+(29, 16, 'Pengerukan Sedimen & Pemasangan Cerucuk Tebing', 68, 'Pekerjaan tahap awal sedang berlangsung (68%).', 1),
+(30, 17, 'Pengerukan Sedimen & Pemasangan Cerucuk Tebing', 30, 'Pekerjaan tahap awal selesai.', 1),
+(31, 17, 'Pemasangan Precast U-Ditch / Box Culvert & Rumah Pompa', 84, 'Konstruksi utama berjalan sesuai jadwal (84%).', 1),
+(32, 18, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 55, 'Pekerjaan tahap awal sedang berlangsung (55%).', 1),
+(33, 19, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 65, 'Pekerjaan tahap awal sedang berlangsung (65%).', 1),
+(34, 20, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 30, 'Pekerjaan tahap awal selesai.', 1),
+(35, 20, 'Pengecoran Struktur Utama (Rigid Pavement K-350 / Gelagar Baja)', 80, 'Konstruksi utama berjalan sesuai jadwal (80%).', 1),
+(36, 21, 'Pekerjaan Pondasi Dalam & Struktur Kolom Balok Beton', 30, 'Pekerjaan tahap awal selesai.', 1),
+(37, 21, 'Pekerjaan Arsitektur, Dinding & Instalasi MEP (Listrik/Air/Gas Medis)', 82, 'Konstruksi utama berjalan sesuai jadwal (82%).', 1),
+(38, 22, 'Pekerjaan Pondasi Dalam & Struktur Kolom Balok Beton', 30, 'Pekerjaan dasar tuntas 100%.', 1),
+(39, 22, 'Pekerjaan Arsitektur, Dinding & Instalasi MEP (Listrik/Air/Gas Medis)', 75, 'Konstruksi utama rampung sesuai spesifikasi teknis.', 1),
+(40, 22, 'Pekerjaan Interior, Finishing Fasad & Uji Laik Fungsi (SLF)', 100, 'Uji fungsi tuntas dan serah terima pertama (PHO) selesai.', 1),
+(41, 23, 'Pekerjaan Pondasi Dalam & Struktur Kolom Balok Beton', 30, 'Pekerjaan tahap awal selesai.', 1),
+(42, 23, 'Pekerjaan Arsitektur, Dinding & Instalasi MEP (Listrik/Air/Gas Medis)', 74, 'Konstruksi utama berjalan sesuai jadwal (74%).', 1),
+(43, 24, 'Pekerjaan Pondasi Dalam & Struktur Kolom Balok Beton', 30, 'Pekerjaan tahap awal selesai.', 1),
+(44, 24, 'Pekerjaan Arsitektur, Dinding & Instalasi MEP (Listrik/Air/Gas Medis)', 76, 'Konstruksi utama berjalan sesuai jadwal (76%).', 1),
+(45, 25, 'Pematangan Lahan & Pemasangan Jaringan Drainase Resapan', 30, 'Pekerjaan tahap awal selesai.', 1),
+(46, 25, 'Pembangunan Jogging Track EPDM & Plaza Wahana Publik', 85, 'Konstruksi utama berjalan sesuai jadwal (85%).', 1),
+(47, 26, 'Pematangan Lahan & Pemasangan Jaringan Drainase Resapan', 65, 'Pekerjaan tahap awal sedang berlangsung (65%).', 1),
+(48, 27, 'Pematangan Lahan & Pemasangan Jaringan Drainase Resapan', 64, 'Pekerjaan tahap awal sedang berlangsung (64%).', 1),
+(49, 28, 'Pekerjaan Pondasi Dalam & Struktur Kolom Balok Beton', 30, 'Pekerjaan tahap awal selesai.', 1),
+(50, 28, 'Pekerjaan Arsitektur, Dinding & Instalasi MEP (Listrik/Air/Gas Medis)', 70, 'Konstruksi utama berjalan sesuai jadwal (70%).', 1),
+(51, 29, 'Pekerjaan Pondasi Dalam & Struktur Kolom Balok Beton', 30, 'Pekerjaan tahap awal selesai.', 1),
+(52, 29, 'Pekerjaan Arsitektur, Dinding & Instalasi MEP (Listrik/Air/Gas Medis)', 72, 'Konstruksi utama berjalan sesuai jadwal (72%).', 1),
+(53, 30, 'Pekerjaan Pondasi Dalam & Struktur Kolom Balok Beton', 30, 'Pekerjaan tahap awal selesai.', 1),
+(54, 30, 'Pekerjaan Arsitektur, Dinding & Instalasi MEP (Listrik/Air/Gas Medis)', 85, 'Konstruksi utama berjalan sesuai jadwal (85%).', 1),
+(55, 31, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 60, 'Pekerjaan tahap awal sedang berlangsung (60%).', 1),
+(56, 32, 'Pengerukan Sedimen & Pemasangan Cerucuk Tebing', 30, 'Pekerjaan tahap awal selesai.', 1),
+(57, 32, 'Pemasangan Precast U-Ditch / Box Culvert & Rumah Pompa', 76, 'Konstruksi utama berjalan sesuai jadwal (76%).', 1),
+(58, 33, 'Pengerukan Sedimen & Pemasangan Cerucuk Tebing', 30, 'Pekerjaan dasar tuntas 100%.', 1),
+(59, 33, 'Pemasangan Precast U-Ditch / Box Culvert & Rumah Pompa', 75, 'Konstruksi utama rampung sesuai spesifikasi teknis.', 1),
+(60, 33, 'Pemasangan Pintu Air Elektrik & Uji Coba Pengaliran Debit Air', 100, 'Uji fungsi tuntas dan serah terima pertama (PHO) selesai.', 1),
+(61, 34, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 30, 'Pekerjaan dasar tuntas 100%.', 1),
+(62, 34, 'Pengecoran Struktur Utama (Rigid Pavement K-350 / Gelagar Baja)', 75, 'Konstruksi utama rampung sesuai spesifikasi teknis.', 1),
+(63, 34, 'Pekerjaan Finishing, Marka Termoplastik & Uji Kelayakan PHO', 100, 'Uji fungsi tuntas dan serah terima pertama (PHO) selesai.', 1),
+(64, 35, 'Pengukuran Geometrik & Pekerjaan Sub-base / Perataan Lahan', 62, 'Pekerjaan tahap awal sedang berlangsung (62%).', 1);
 
 -- 6. Data Dokumentasi Proyek
 INSERT INTO dokumentasi_proyek (id, proyek_id, tahapan_id, tipe_media, url_file, ukuran_file, diunggah_oleh) VALUES
-(1, 1, 1, 'foto', '/uploads/proyek_1_tahap_1.jpg', 1240, 1),
-(2, 1, 2, 'foto', '/uploads/proyek_1_tahap_2.jpg', 2150, 1),
-(3, 1, 3, 'foto', '/uploads/proyek_1_tahap_3.jpg', 1890, 1),
-(4, 2, 4, 'foto', '/uploads/proyek_2_tahap_1.jpg', 1420, 1);
+(1, 1, NULL, 'foto', '/uploads/proyek_1_lapangan.jpg', 1450, 1),
+(2, 2, NULL, 'foto', '/uploads/proyek_2_lapangan.jpg', 1450, 1),
+(3, 3, NULL, 'foto', '/uploads/proyek_3_lapangan.jpg', 1450, 1),
+(4, 4, NULL, 'foto', '/uploads/proyek_4_lapangan.jpg', 1450, 1),
+(5, 5, NULL, 'foto', '/uploads/proyek_5_lapangan.jpg', 1450, 1),
+(6, 6, NULL, 'foto', '/uploads/proyek_6_lapangan.jpg', 1450, 1),
+(7, 7, NULL, 'foto', '/uploads/proyek_7_lapangan.jpg', 1450, 1),
+(8, 8, NULL, 'foto', '/uploads/proyek_8_lapangan.jpg', 1450, 1),
+(9, 9, NULL, 'foto', '/uploads/proyek_9_lapangan.jpg', 1450, 1),
+(10, 10, NULL, 'foto', '/uploads/proyek_10_lapangan.jpg', 1450, 1),
+(11, 11, NULL, 'foto', '/uploads/proyek_11_lapangan.jpg', 1450, 1),
+(12, 12, NULL, 'foto', '/uploads/proyek_12_lapangan.jpg', 1450, 1),
+(13, 13, NULL, 'foto', '/uploads/proyek_13_lapangan.jpg', 1450, 1),
+(14, 14, NULL, 'foto', '/uploads/proyek_14_lapangan.jpg', 1450, 1),
+(15, 15, NULL, 'foto', '/uploads/proyek_15_lapangan.jpg', 1450, 1);
 
 -- 7. Data Rekomendasi Rute AI
 INSERT INTO rekomendasi_rute (id, proyek_id, nama_rute, prioritas, estimasi_jarak_km, estimasi_waktu_menit, alasan_rekomendasi, is_valid) VALUES
-(1, 1, 'Jl. Lamongrejo -> Jl. Sunan Drajat -> Jl. Veteran', 'utama', 3.20, 8, 'Jalur alternatif utama melintasi jalan kolektor lebar dengan koordinasi lampu lalu lintas optimal.', TRUE),
-(2, 1, 'Jl. Basuki Rahmat -> Jl. KH. Ahmad Dahlan', 'kedua', 4.50, 12, 'Alternatif terbaik untuk kendaraan roda 4 dan angkutan barang guna menghindari kepadatan pusat kota.', TRUE),
-(3, 1, 'Jl. KH. Hasyim Asy''ari -> Jl. Dr. Wahidin Sudirohusodo', 'tambahan', 2.80, 7, 'Khusus pengendara sepeda motor untuk memangkas waktu tempuh pada jam sibuk pagi dan sore.', TRUE);
+(1, 1, 'Via Jalur Poros Sukodadi -> Sugio -> Karanggeneng', 'utama', 5.20, 11, 'Jalur pengalihan utama dengan perkerasan aspal lebar untuk roda 4 dan angkutan logistik.', TRUE),
+(2, 1, 'Via Jalan Lingkungan Desa Menongo -> Sumberwudi', 'kedua', 3.80, 8, 'Khusus sepeda motor dan angkutan ringan warga lokal.', TRUE),
+(3, 2, 'Via Jalan Tanggungan Pucuk -> Sekaran', 'utama', 4.60, 10, 'Rute alternatif utama menghindari pengerjaan rigid beton.', TRUE),
+(4, 4, 'Via Jalan Lingkar Selatan Babat -> Moropelang', 'utama', 6.80, 14, 'Pengalihan arus kendaraan berat Simpang Babat menuju Sukorame.', TRUE),
+(5, 5, 'Via Jalur Soko -> Glagah -> Duduksampeyan', 'utama', 4.90, 10, 'Rute alternatif pengangkut komoditas perikanan tambak.', TRUE),
+(6, 6, 'Via Jalur Turi -> Sukodadi -> Kalitengah', 'utama', 5.50, 12, 'Jalur bebas genangan air untuk mobilitas warga Bengawan Jero.', TRUE),
+(7, 18, 'Via Jembatan Alternatif Simo Sungelebak - Karanggeneng', 'utama', 4.20, 9, 'Pengalihan kendaraan roda 2 dan 4 selama rekonstruksi gelagar jembatan.', TRUE),
+(8, 19, 'Via Jalur Tanggul Babat -> Plaosan', 'utama', 3.10, 7, 'Pengalihan arus saat pemasangan I-girder jembatan Plaosan.', TRUE),
+(9, 35, 'Via Jalur Pantura Eksisting Lamongan Kota', 'utama', 7.50, 16, 'Jalur utama nasional selama pengerjaan crossing jalan lingkar utara.', TRUE);
 
 -- 8. Data Langganan Notifikasi
 INSERT INTO subscription_notifikasi (id, user_id, proyek_id) VALUES
-(1, 3, 1),
-(2, 4, 1),
-(3, 3, 2);
+(1, 3, 1), (2, 4, 1), (3, 3, 13), (4, 4, 21);
 
 -- 9. Data Notifikasi
 INSERT INTO notifikasi (id, user_id, proyek_id, pesan, is_read) VALUES
-(1, 3, 1, 'Pembaruan: Progres proyek Renovasi Alun-Alun & Taman Centennial Lamongan mencapai 65%.', FALSE),
-(2, 4, 1, 'Pembaruan: Progres proyek Renovasi Alun-Alun & Taman Centennial Lamongan mencapai 65%.', TRUE);
+(1, 3, 1, 'Pembaruan: Progres proyek Peningkatan Jalan Sukodadi - Sumberwudi telah mencapai 82%.', FALSE),
+(2, 4, 13, 'Pembaruan: Pembangunan Pintu Air & Retensi Kuro telah selesai 100% dan siap dioperasikan.', TRUE),
+(3, 4, 21, 'Pembaruan: Pembangunan RSUD Brondong Pantura Tahap II mencapai progres fisik 82%.', FALSE);
 
 -- 10. Data Laporan Masyarakat & Tanggapan
 INSERT INTO laporan_masyarakat (id, proyek_id, user_id, isi_laporan, status_tindak_lanjut, tanggapan_dinas, ditanggapi_oleh) VALUES
-(1, 1, 3, 'Mohon rambu pembatas di sisi barat Alun-Alun diperjelas agar anak-anak tidak mendekati alat berat.', 'ditanggapi', 'Terima kasih atas masukannya. Tim lapangan dinas telah memasang barikade pengaman ekstra dan papan peringatan radius 10 meter.', 1),
-(2, 2, 4, 'Debu material galian di koridor Deket cukup tebal saat siang hari, mohon disiram berkala.', 'diproses', 'Laporan telah diteruskan ke mandor pelaksana jalan untuk penyiraman rutin dua kali sehari.', 1);
+(1, 1, 3, 'Mohon rambu pengaman proyek dan lampu penerangan darurat di tikungan Desa Menongo diperbanyak karena minim pencahayaan saat malam.', 'ditanggapi', 'Terima kasih atas informasinya. Rekanan kontraktor telah memasang 4 unit rotary warning light dan papan pengarah reflektif di titik tikungan.', 1),
+(2, 4, 4, 'Debu material galian perkerasan jalan di koridor Babat cukup tebal saat siang hari, mohon jadwal penyiraman air rutin ditingkatkan.', 'diproses', 'Laporan telah diteruskan kepada pengawas lapangan Dinas PU Bina Marga untuk instruksi penyiraman armada tangki 3 kali sehari.', 1),
+(3, 13, 3, 'Saluran air pembuang di sekitar Pintu Air Kuro agar dipastikan bebas dari sampah enceng gondok agar debit aliran tidak terhambat.', 'ditanggapi', 'Pembersihan alur intake kolam retensi telah dilakukan secara teratur oleh tim UPTD Pengairan Kuro.', 1),
+(4, 25, 4, 'Mohon area bermain anak di Alun-Alun Lamongan diberikan pagar pembatas dari jalur lalu lintas kendaraan.', 'baru', NULL, NULL);
 
 -- 11. Data Rating Kepuasan
 INSERT INTO rating_kepuasan (id, proyek_id, user_id, skor, komentar) VALUES
-(1, 1, 3, 5, 'Pengerjaan Alun-Alun Lamongan sangat rapi, desain jogging track dan pencahayaannya modern!'),
-(2, 1, 4, 4, 'Sangat bagus ruang terbukanya, semoga kebersihannya terus dirawat.');
+(1, 1, 3, 5, 'Pengecoran jalan Sukodadi - Sumberwudi sangat kokoh dan tebal, mobilitas warga dan angkutan hasil bumi kini jauh lebih lancar!'),
+(2, 2, 4, 5, 'Jalan Pucuk - Sekaran sudah mulus total dan tidak ada lubang lagi. Sangat menghemat waktu perjalanan.'),
+(3, 13, 3, 5, 'Pintu Air Kuro sangat membantu mengurangi debit genangan banjir luapan di kawasan kami. Mantap!'),
+(4, 25, 4, 4, 'Penataan Alun-Alun Lamongan makin estetik dan ramah keluarga, jogging track-nya nyaman dipakai olahraga pagi.');
 
 -- 12. Data Evaluasi Pembangunan Pasca-Proyek
 INSERT INTO evaluasi_pembangunan (id, proyek_id, user_id, kategori_masalah, deskripsi, skor_urgensi_ai, ringkasan_analisis_ai, status) VALUES
-(1, 1, 3, 'Genangan Air Sudut Timur Lapangan', 'Saluran pembuangan air di sudut timur agak lambat mengalir saat hujan deras.', 2, 'Analisis AI: Risiko genangan ringan. Disarankan pembersihan berkala sisa pasir pada grill inlet drainase.', 'menunggu_verifikasi');
+(1, 2, 3, 'Pengecekan Kerapian Bahu Jalan', 'Secara umum beton mulus, terdapat sisa agregat di bahu jalan segmen Miru yang perlu dirapikan.', 2, 'Analisis AI: Risiko rendah. Disarankan perapian bahu jalan untuk kenyamanan pengendara roda dua.', 'menunggu_verifikasi'),
+(2, 13, 4, 'Monitoring Kapasitas Kolam Olak Pintu Air', 'Kapasitas debit pintu air berfungsi maksimal menampung limpasan air Bengawan Jero.', 1, 'Analisis AI: Sistem pintu air hidrolik beroperasi pada efisiensi 98%. Tidak ditemukan anomali struktur.', 'selesai_ditindaklanjuti');
 
 -- 13. Data Log Evaluasi
 INSERT INTO evaluasi_status_log (id, evaluasi_id, status_sebelumnya, status_baru, diubah_oleh, catatan) VALUES
-(1, 1, NULL, 'menunggu_verifikasi', 3, 'Laporan evaluasi awal diajukan oleh warga.');
+(1, 1, NULL, 'menunggu_verifikasi', 3, 'Laporan evaluasi awal dicatat.'),
+(2, 2, NULL, 'selesai_ditindaklanjuti', 4, 'Laporan evaluasi awal dicatat.');
 
 SET FOREIGN_KEY_CHECKS = 1;
