@@ -95,6 +95,8 @@ CREATE TABLE proyek (
     tanggal_mulai DATE NOT NULL,
     estimasi_selesai DATE NOT NULL,
     dibuat_oleh BIGINT NOT NULL,
+    kode_proyek VARCHAR(50) NULL UNIQUE,
+    kode_akses VARCHAR(100) NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_proyek_wilayah FOREIGN KEY (wilayah_id) 

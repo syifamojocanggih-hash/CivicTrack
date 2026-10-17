@@ -29,6 +29,8 @@ vi.mock('../../services/api', () => ({
     verifyEvaluation: vi.fn(),
     replyAduan: vi.fn(),
     getAllReports: vi.fn(),
+    getWilayahList: vi.fn(),
+    verifyProjectAccess: vi.fn(),
   },
 }));
 
@@ -39,6 +41,10 @@ describe('AdminDinasDashboard Form Validation', () => {
     vi.mocked(apiService.getWilayahStats).mockResolvedValue([]);
     vi.mocked(apiService.getEvaluations).mockResolvedValue([]);
     vi.mocked(apiService.getAllReports).mockResolvedValue([]);
+    vi.mocked(apiService.getWilayahList).mockResolvedValue([
+      { id: 400, nama_wilayah: 'Kelurahan Jetis', level: 'desa', parent_id: 23 }
+    ] as any);
+    vi.mocked(apiService.verifyProjectAccess).mockResolvedValue({ success: true, message: 'Valid' });
     vi.mocked(apiService.createProject).mockImplementation(async (data: any) => ({
       id: 999,
       nama_proyek: data.nama_proyek,

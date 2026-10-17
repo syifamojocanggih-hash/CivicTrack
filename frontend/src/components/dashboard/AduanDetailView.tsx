@@ -11,7 +11,6 @@ import {
   ExternalLink,
   ShieldCheck,
   AlertCircle,
-  FileText,
   User,
   Sparkles,
   MapPin,

@@ -8,6 +8,7 @@ import {
 import type { UserProfile, NotificationItem } from '../../types';
 import { MOCK_DYNAMIC_NOTIFICATIONS } from '../../data/dashboardMockData';
 import { apiService } from '../../services/api';
+import { CivicTrackLogo } from '../CivicTrackLogo';
 
 interface DashboardHeaderProps {
   currentUser: UserProfile;
@@ -96,7 +97,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
     <header className="sticky top-0 z-30 bg-white/95 backdrop-blur-md border-b border-[#DCE0E6] shadow-2xs h-16 flex items-center px-4 sm:px-6">
       <div className="w-full flex items-center justify-between">
         {/* Left: Mobile Sidebar Toggle + Breadcrumb */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2.5">
           <button
             onClick={onToggleMobileSidebar}
             className="md:hidden p-2 rounded-xl text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer"
@@ -104,6 +105,10 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           >
             <Menu className="w-5 h-5 text-[#184C78]" />
           </button>
+
+          <div className="md:hidden shrink-0">
+            <CivicTrackLogo size="xs" showText={false} />
+          </div>
 
           <div>
             <div className="flex items-center gap-2">

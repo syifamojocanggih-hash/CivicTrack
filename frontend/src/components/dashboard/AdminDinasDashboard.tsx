@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import {
   Building2,
   FolderKanban,
@@ -14,6 +14,16 @@ import {
   AlertTriangle,
   Clock,
   BarChart3,
+  Key,
+  ShieldCheck,
+  Lock,
+  Unlock,
+  RefreshCw,
+  Copy,
+  CheckCheck,
+  Eye,
+  EyeOff,
+  Layers,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -68,6 +78,65 @@ const KECAMATAN_ID_MAP: Record<string, number> = {
   'Kecamatan Sarirejo': 28,
 };
 
+export const KECAMATAN_CODE_MAP: Record<string, string> = {
+  'Kecamatan Sukorame': 'SKR',
+  'Kecamatan Bluluk': 'BLK',
+  'Kecamatan Modo': 'MDO',
+  'Kecamatan Ngimbang': 'NGB',
+  'Kecamatan Babat': 'BBT',
+  'Kecamatan Kedungpring': 'KDP',
+  'Kecamatan Brondong': 'BRD',
+  'Kecamatan Laren': 'LRN',
+  'Kecamatan Sekaran': 'SKN',
+  'Kecamatan Maduran': 'MDR',
+  'Kecamatan Sambeng': 'SMB',
+  'Kecamatan Sugio': 'SGO',
+  'Kecamatan Pucuk': 'PCK',
+  'Kecamatan Paciran': 'PCR',
+  'Kecamatan Solokuro': 'SLK',
+  'Kecamatan Mantup': 'MTP',
+  'Kecamatan Sukodadi': 'SKD',
+  'Kecamatan Karanggeneng': 'KGN',
+  'Kecamatan Kembangbahu': 'KBH',
+  'Kecamatan Kalitengah': 'KTG',
+  'Kecamatan Turi': 'TUR',
+  'Kecamatan Lamongan (Kota)': 'LMG',
+  'Kecamatan Tikung': 'TKG',
+  'Kecamatan Karangbinangun': 'KBN',
+  'Kecamatan Deket': 'DKT',
+  'Kecamatan Glagah': 'GLG',
+  'Kecamatan Sarirejo': 'SRJ',
+};
+
+export function abbreviateDesa(desaName: string): string {
+  const clean = desaName.replace(/Kelurahan|Desa/gi, '').trim().toUpperCase();
+  const consonants = clean.replace(/[^BCDFGHJKLMNPQRSTVWXYZ]/g, '');
+  if (consonants.length >= 3) return consonants.slice(0, 3);
+  const letters = clean.replace(/[^A-Z]/g, '');
+  return (letters + 'XXX').slice(0, 3);
+}
+
+export function generateProjectSerialNumber(
+  kecName: string,
+  desaName: string | undefined,
+  skala: 'skala_desa' | 'skala_kecamatan',
+  projectList: ProyekItem[]
+): string {
+  const kecCode = KECAMATAN_CODE_MAP[kecName] || 'LMG';
+  let prefix = kecCode;
+  if (skala === 'skala_desa' && desaName && desaName !== 'Semua Desa / Kelurahan' && desaName !== 'Seluruh Wilayah Kecamatan') {
+    prefix = `${kecCode}-${abbreviateDesa(desaName)}`;
+  }
+  const count = projectList.filter((p) => p.kode_proyek && p.kode_proyek.startsWith(prefix)).length;
+  const seq = count + 1;
+  return `${prefix}-${String(seq).padStart(3, '0')}`;
+}
+
+export function generateRandomAccessKey(): string {
+  const pin = Math.floor(10000 + Math.random() * 90000);
+  return `PJ-${pin}`;
+}
+
 interface AdminDinasDashboardProps {
   currentUser: UserProfile;
   projects: ProyekItem[];
@@ -104,6 +173,21 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   const [isNewProjectModalOpen, setIsNewProjectModalOpen] = useState(false);
   const [isSubmittingNewProj, setIsSubmittingNewProj] = useState(false);
   const [createProjError, setCreateProjError] = useState<string | null>(null);
+  const [desaOptions, setDesaOptions] = useState<Array<{ id: number; nama_wilayah: string }>>([
+    { id: 400, nama_wilayah: 'Kelurahan Jetis' },
+    { id: 394, nama_wilayah: 'Kelurahan Sukorejo' },
+    { id: 395, nama_wilayah: 'Kelurahan Sukomulyo' },
+    { id: 396, nama_wilayah: 'Kelurahan Sidoharjo' },
+    { id: 397, nama_wilayah: 'Kelurahan Tumenggungan' },
+    { id: 398, nama_wilayah: 'Kelurahan Sidokumpul' },
+    { id: 399, nama_wilayah: 'Kelurahan Tlogoanyar' },
+    { id: 401, nama_wilayah: 'Kelurahan Banjarmendalan' },
+    { id: 410, nama_wilayah: 'Desa Plosowahyu' },
+    { id: 412, nama_wilayah: 'Desa Made' },
+  ]);
+  const [isLoadingDesa, setIsLoadingDesa] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
   const [newProjectForm, setNewProjectForm] = useState({
     nama_proyek: '',
     kategori: 'jalan' as ProyekKategori,
@@ -113,12 +197,158 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     tanggal_mulai: new Date().toISOString().split('T')[0],
     estimasi_selesai: new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
     progres_persen: 0,
+    skala_proyek: 'skala_desa' as 'skala_desa' | 'skala_kecamatan',
     nama_wilayah: 'Kecamatan Lamongan (Kota)',
+    nama_desa: 'Kelurahan Jetis',
+    desa_id: 400 as number | null,
+    kode_proyek: 'LMG-JTS-001',
+    kode_akses: 'PJ-' + Math.floor(10000 + Math.random() * 90000),
     latitude: -7.1197,
     longitude: 112.4150,
     nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum dan Penataan Ruang',
     tahap_terkini: 'Pembersihan & Pengukuran Lahan',
   });
+
+  // State Gerbang Verifikasi Penanggung Jawab Proyek
+  const [unlockedProject, setUnlockedProject] = useState<ProyekItem | null>(() => {
+    try {
+      const saved = sessionStorage.getItem('civictrack_pj_unlocked_project');
+      if (saved) return JSON.parse(saved);
+    } catch (e) {
+      // ignore
+    }
+    return null;
+  });
+  const [gateCode, setGateCode] = useState('');
+  const [gatePassword, setGatePassword] = useState('');
+  const [showGatePassword, setShowGatePassword] = useState(false);
+  const [isVerifyingGate, setIsVerifyingGate] = useState(false);
+  const [gateError, setGateError] = useState<string | null>(null);
+
+  // Helper copy text ke clipboard
+  const handleCopyText = (text: string, label: string) => {
+    navigator.clipboard.writeText(text);
+    setCopyFeedback(label);
+    setTimeout(() => setCopyFeedback(null), 2000);
+  };
+
+  // Buka modal input proyek baru dengan kode seri & pin segar
+  const handleOpenNewProjectModal = () => {
+    const nextPin = generateRandomAccessKey();
+    const nextCode = generateProjectSerialNumber(
+      newProjectForm.nama_wilayah,
+      newProjectForm.skala_proyek === 'skala_desa' ? newProjectForm.nama_desa : undefined,
+      newProjectForm.skala_proyek,
+      projectList
+    );
+    setNewProjectForm((prev) => ({
+      ...prev,
+      kode_proyek: nextCode,
+      kode_akses: nextPin,
+    }));
+    setIsNewProjectModalOpen(true);
+  };
+
+  // Muat daftar desa ketika kecamatan berubah
+  useEffect(() => {
+    const kecId = KECAMATAN_ID_MAP[newProjectForm.nama_wilayah];
+    if (!kecId) return;
+
+    if (typeof apiService.getWilayahList === 'function') {
+      setIsLoadingDesa(true);
+      apiService
+        .getWilayahList('desa', kecId)
+        .then((res) => {
+          if (res && res.length > 0) {
+            const mapped = res.map((d) => ({ id: d.id, nama_wilayah: d.nama_wilayah }));
+            setDesaOptions(mapped);
+            if (newProjectForm.skala_proyek === 'skala_desa') {
+              const first = mapped[0];
+              const newCode = generateProjectSerialNumber(
+                newProjectForm.nama_wilayah,
+                first.nama_wilayah,
+                'skala_desa',
+                projectList
+              );
+              setNewProjectForm((prev) => ({
+                ...prev,
+                desa_id: first.id,
+                nama_desa: first.nama_wilayah,
+                kode_proyek: newCode,
+              }));
+            }
+          } else {
+            // Fallback ke data geoWilayahData
+            const matched = WILAYAH_DATA.kecamatanList.find((k) => k.nama === newProjectForm.nama_wilayah);
+            if (matched && matched.desaList) {
+              const fallbackList = matched.desaList
+                .filter((d) => d !== 'Semua Desa / Kelurahan')
+                .map((d, idx) => ({ id: 9000 + idx, nama_wilayah: d }));
+              setDesaOptions(fallbackList);
+            }
+          }
+        })
+        .catch(() => {
+          const matched = WILAYAH_DATA.kecamatanList.find((k) => k.nama === newProjectForm.nama_wilayah);
+          if (matched && matched.desaList) {
+            const fallbackList = matched.desaList
+              .filter((d) => d !== 'Semua Desa / Kelurahan')
+              .map((d, idx) => ({ id: 9000 + idx, nama_wilayah: d }));
+            setDesaOptions(fallbackList);
+          }
+        })
+        .finally(() => {
+          setIsLoadingDesa(false);
+        });
+    } else {
+      const matched = WILAYAH_DATA.kecamatanList.find((k) => k.nama === newProjectForm.nama_wilayah);
+      if (matched && matched.desaList) {
+        const fallbackList = matched.desaList
+          .filter((d) => d !== 'Semua Desa / Kelurahan')
+          .map((d, idx) => ({ id: 9000 + idx, nama_wilayah: d }));
+        setDesaOptions(fallbackList);
+      }
+    }
+  }, [newProjectForm.nama_wilayah]);
+
+  // Handle verifikasi akses penanggung jawab proyek
+  const handleVerifyGate = async (e?: React.FormEvent, directCode?: string, directPw?: string) => {
+    if (e) e.preventDefault();
+    const codeToVerify = (directCode || gateCode).trim().toUpperCase();
+    const pwToVerify = (directPw || gatePassword).trim();
+
+    if (!codeToVerify || !pwToVerify) {
+      setGateError('Harap masukkan Nomor Seri Kode Proyek dan Kunci Akses Khusus.');
+      return;
+    }
+
+    setIsVerifyingGate(true);
+    setGateError(null);
+
+    try {
+      const res = await apiService.verifyProjectAccess(codeToVerify, pwToVerify);
+      if (res.success && res.proyek) {
+        setUnlockedProject(res.proyek);
+        sessionStorage.setItem('civictrack_pj_unlocked_project', JSON.stringify(res.proyek));
+        setSelectedProjectForTimeline(res.proyek.id);
+        setNewDocForm((prev) => ({ ...prev, proyek_id: res.proyek!.id }));
+      } else {
+        setGateError(res.message || 'Verifikasi akses gagal.');
+      }
+    } catch (err: any) {
+      setGateError(err.message || 'Kode proyek atau kunci akses khusus tidak valid.');
+    } finally {
+      setIsVerifyingGate(false);
+    }
+  };
+
+  const handleLockProject = () => {
+    setUnlockedProject(null);
+    sessionStorage.removeItem('civictrack_pj_unlocked_project');
+    setGateCode('');
+    setGatePassword('');
+    setGateError(null);
+  };
 
   // Edit project state
   const [editingProject, setEditingProject] = useState<ProyekItem | null>(null);
@@ -168,11 +398,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     tipe_file: 'foto' as const,
   });
 
-  // Aduan response state
+  // Aduan state
   const [aduanList, setAduanList] = useState<LaporanAduan[]>(MOCK_LAPORAN_WARGA);
   const [selectedAduanToReply, setSelectedAduanToReply] = useState<LaporanAduan | null>(null);
-  const [replyText, setReplyText] = useState('');
-  const [replyNewStatus, setReplyNewStatus] = useState<'diproses' | 'selesai'>('diproses');
 
   // Load aduan warga from database & persistent storage + real-time listener
   React.useEffect(() => {
@@ -274,12 +502,15 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         latitude: Number(newProjectForm.latitude),
         longitude: Number(newProjectForm.longitude),
         wilayah_id: wilayahId,
+        desa_id: newProjectForm.skala_proyek === 'skala_desa' ? newProjectForm.desa_id : null,
         dinas_id: dinasId,
         anggaran: Number(newProjectForm.anggaran),
         status: newProjectForm.status,
         progres_persen: Number(newProjectForm.progres_persen),
         tanggal_mulai: newProjectForm.tanggal_mulai,
         estimasi_selesai: newProjectForm.estimasi_selesai,
+        kode_proyek: newProjectForm.kode_proyek.trim() || undefined,
+        kode_akses: newProjectForm.kode_akses.trim() || undefined,
       });
 
       setProjectList((prev) => [created, ...prev]);
@@ -288,6 +519,13 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       }
 
       setIsNewProjectModalOpen(false);
+      const nextPin = generateRandomAccessKey();
+      const nextCode = generateProjectSerialNumber(
+        'Kecamatan Lamongan (Kota)',
+        'Kelurahan Jetis',
+        'skala_desa',
+        [created, ...projectList]
+      );
       setNewProjectForm({
         nama_proyek: '',
         kategori: 'jalan',
@@ -297,7 +535,12 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         tanggal_mulai: new Date().toISOString().split('T')[0],
         estimasi_selesai: new Date(Date.now() + 180 * 86400000).toISOString().split('T')[0],
         progres_persen: 0,
+        skala_proyek: 'skala_desa',
         nama_wilayah: 'Kecamatan Lamongan (Kota)',
+        nama_desa: 'Kelurahan Jetis',
+        desa_id: 400,
+        kode_proyek: nextCode,
+        kode_akses: nextPin,
         latitude: -7.1197,
         longitude: 112.4150,
         nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum dan Penataan Ruang',
@@ -459,36 +702,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     });
   };
 
-  // Handle reply citizen report
-  const handleSendAduanReply = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!selectedAduanToReply || !replyText.trim()) return;
 
-    try {
-      await apiService.replyAduan(selectedAduanToReply.id, {
-        status_tindak_lanjut: replyNewStatus === 'selesai' ? 'ditanggapi' : 'diproses',
-        tanggapan_dinas: replyText.trim(),
-      });
-
-      setAduanList((prev) =>
-        prev.map((item) =>
-          item.id === selectedAduanToReply.id
-            ? {
-                ...item,
-                tanggapan_dinas: replyText,
-                status: replyNewStatus,
-                tanggal_tanggapan: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
-                petugas_penjawab: `${currentUser.nama} (${currentUser.role.replace('_', ' ').toUpperCase()})`,
-              }
-            : item
-        )
-      );
-      setSelectedAduanToReply(null);
-      setReplyText('');
-    } catch (err: any) {
-      alert(err.message || 'Gagal menanggapi aduan masyarakat.');
-    }
-  };
 
   // Handle verify defect
   const handleVerifyDefect = async (e: React.FormEvent) => {
@@ -548,6 +762,150 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     return true;
   });
 
+  // ── GERBANG AKSES VERIFIKASI PENANGGUNG JAWAB PROYEK ──
+  if (currentUser.role === 'penanggung_jawab' && !unlockedProject) {
+    return (
+      <div className="max-w-2xl w-full mx-auto py-8 px-4 space-y-6 animate-fade-in">
+        {/* Toast Notifikasi Feedback Copy */}
+        {copyFeedback && (
+          <div className="fixed top-6 right-6 z-50 bg-[#184C78] text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 animate-bounce">
+            <CheckCheck className="w-4 h-4 text-emerald-400" />
+            <span>{copyFeedback} berhasil disalin ke clipboard!</span>
+          </div>
+        )}
+
+        <div className="bg-white rounded-3xl border border-[#DCE0E6] shadow-xl overflow-hidden">
+          {/* Header Gerbang Bernuansa Keamanan Tinggi */}
+          <div className="bg-gradient-to-r from-[#0f3252] via-[#184C78] to-[#1f5f94] text-white p-7 sm:p-8 relative overflow-hidden">
+            <div className="absolute right-0 top-0 translate-x-4 -translate-y-4 w-48 h-48 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-400/20 text-amber-200 border border-amber-400/30 text-xs font-semibold mb-3">
+              <Lock className="w-3.5 h-3.5 text-amber-300" />
+              <span>Verifikasi Otorisasi Penanggung Jawab Proyek</span>
+            </div>
+            <h2 className="font-['DM_Sans'] text-2xl font-bold tracking-tight">
+              Gerbang Akses Penanggung Jawab Proyek
+            </h2>
+            <p className="text-xs sm:text-sm text-white/80 mt-1 leading-relaxed">
+              Silakan masukkan <strong>Nomor Seri / Kode Registrasi Proyek</strong> dan <strong>Kunci Akses Khusus</strong> yang telah diberikan oleh Pimpinan Instansi / Dinas untuk membuka lembar kerja proyek Anda.
+            </p>
+          </div>
+
+          {/* Form Verifikasi */}
+          <form onSubmit={handleVerifyGate} className="p-6 sm:p-8 space-y-5">
+            {gateError && (
+              <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-start gap-3 text-rose-800 text-xs animate-shake">
+                <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold">Akses Ditolak / Tidak Ditemukan</p>
+                  <p className="mt-0.5 leading-relaxed">{gateError}</p>
+                </div>
+              </div>
+            )}
+
+            <div>
+              <label htmlFor="gate_kode_proyek" className="block text-xs font-bold text-[#184C78] uppercase tracking-wider mb-2">
+                Nomor Seri / Kode Registrasi Proyek
+              </label>
+              <div className="relative">
+                <input
+                  id="gate_kode_proyek"
+                  type="text"
+                  required
+                  value={gateCode}
+                  onChange={(e) => setGateCode(e.target.value.toUpperCase())}
+                  placeholder="Contoh: SKD-SKD-001 atau LMG-JTS-001"
+                  className="w-full pl-11 pr-4 py-3 bg-[#F5F7FA] border border-[#DCE0E6] rounded-xl font-mono text-sm uppercase tracking-wider font-bold text-[#212529] outline-none focus:border-[#2980B9] focus:bg-white transition-all shadow-inner"
+                />
+                <FolderKanban className="w-5 h-5 text-[#6C757D] absolute left-3.5 top-3.5 pointer-events-none" />
+              </div>
+              <p className="text-[11px] text-[#6C757D] mt-1.5">
+                Nomor registrasi unik lokasi proyek (Kecamatan - Desa - Urutan) yang diterbitkan saat penginputan proyek baru.
+              </p>
+            </div>
+
+            <div>
+              <label htmlFor="gate_password" className="block text-xs font-bold text-[#184C78] uppercase tracking-wider mb-2">
+                Kunci Akses Khusus / Password Proyek
+              </label>
+              <div className="relative">
+                <input
+                  id="gate_password"
+                  type={showGatePassword ? 'text' : 'password'}
+                  required
+                  value={gatePassword}
+                  onChange={(e) => setGatePassword(e.target.value)}
+                  placeholder="Contoh: PJ-17409"
+                  className="w-full pl-11 pr-11 py-3 bg-[#F5F7FA] border border-[#DCE0E6] rounded-xl font-mono text-sm font-bold text-[#212529] outline-none focus:border-[#2980B9] focus:bg-white transition-all shadow-inner"
+                />
+                <Key className="w-5 h-5 text-[#6C757D] absolute left-3.5 top-3.5 pointer-events-none" />
+                <button
+                  type="button"
+                  onClick={() => setShowGatePassword(!showGatePassword)}
+                  className="absolute right-3.5 top-3.5 text-[#6C757D] hover:text-[#184C78] cursor-pointer"
+                >
+                  {showGatePassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                </button>
+              </div>
+              <p className="text-[11px] text-[#6C757D] mt-1.5">
+                Password otorisasi khusus yang diserahkan oleh pimpinan kepada mandor / pelaksana sebelum memulai proyek.
+              </p>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isVerifyingGate}
+              className="w-full py-3.5 bg-gradient-to-r from-[#184C78] to-[#2980B9] hover:from-[#0f3252] hover:to-[#184C78] text-white font-bold rounded-xl transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer disabled:opacity-70"
+            >
+              {isVerifyingGate ? (
+                <>
+                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span>Memverifikasi Otorisasi Proyek...</span>
+                </>
+              ) : (
+                <>
+                  <Unlock className="w-4 h-4 text-amber-300" />
+                  <span>Buka Lembar Kerja Proyek</span>
+                </>
+              )}
+            </button>
+          </form>
+
+          {/* Bantuan Pengujian Cepat / Kunci Demo */}
+          <div className="bg-[#F8FAFC] border-t border-[#DCE0E6] p-6 space-y-3">
+            <div className="flex items-center gap-2 text-xs font-bold text-[#184C78]">
+              <Sparkles className="w-4 h-4 text-amber-500" />
+              <span>Pilihan Proyek Tersedia untuk Pengujian Langsung:</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+              {projectList.slice(0, 4).map((demoProj) => (
+                <button
+                  key={demoProj.id}
+                  type="button"
+                  onClick={() => {
+                    setGateCode(demoProj.kode_proyek || '');
+                    setGatePassword(demoProj.kode_akses || '');
+                    handleVerifyGate(undefined, demoProj.kode_proyek, demoProj.kode_akses);
+                  }}
+                  className="text-left p-3 rounded-xl border border-[#DCE0E6] bg-white hover:border-[#2980B9] hover:bg-[#EBF4FB] transition-all group cursor-pointer"
+                >
+                  <div className="flex items-center justify-between text-xs font-mono font-bold text-[#184C78]">
+                    <span>{demoProj.kode_proyek || 'PROYEK'}</span>
+                    <span className="text-[11px] text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                      {demoProj.kode_akses || 'KUNCI'}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[#495057] line-clamp-1 mt-1 font-medium group-hover:text-[#184C78]">
+                    {demoProj.nama_proyek}
+                  </div>
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   if (selectedAduanToReply) {
     return (
       <AduanDetailView
@@ -568,6 +926,58 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
   return (
     <div className="space-y-6 animate-hero-in">
+      {/* Toast Notifikasi Feedback Copy */}
+      {copyFeedback && (
+        <div className="fixed top-6 right-6 z-50 bg-[#184C78] text-white px-4 py-2.5 rounded-xl shadow-lg text-xs font-semibold flex items-center gap-2 animate-bounce">
+          <CheckCheck className="w-4 h-4 text-emerald-400" />
+          <span>{copyFeedback} berhasil disalin ke clipboard!</span>
+        </div>
+      )}
+
+      {/* ── BANNER LEMBAR KERJA PROYEK AKTIF (KHUSUS PENANGGUNG JAWAB TERVERIFIKASI) ── */}
+      {currentUser.role === 'penanggung_jawab' && unlockedProject && (
+        <div className="bg-gradient-to-r from-[#0f3252] via-[#184C78] to-[#1F5F94] rounded-2xl p-6 text-white shadow-lg border border-[#184C78] flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-bold">
+                <ShieldCheck className="w-3.5 h-3.5" />
+                <span>Lembar Kerja Terverifikasi</span>
+              </span>
+              <span className="font-mono text-xs font-bold bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20 text-white">
+                {unlockedProject.kode_proyek}
+              </span>
+              <span className="text-[11px] font-bold uppercase bg-white/10 px-2.5 py-0.5 rounded text-white/90">
+                {unlockedProject.kategori}
+              </span>
+            </div>
+            <h2 className="font-['DM_Sans'] text-xl font-bold text-white">
+              {unlockedProject.nama_proyek}
+            </h2>
+            <div className="flex flex-wrap items-center gap-3 text-xs text-white/80">
+              <span className="flex items-center gap-1">
+                <MapPin className="w-3.5 h-3.5 text-cyan-300" />
+                {unlockedProject.nama_wilayah} {unlockedProject.nama_desa ? `• ${unlockedProject.nama_desa}` : ''}
+              </span>
+              <span>•</span>
+              <span>Pagu: <strong>Rp {unlockedProject.anggaran.toLocaleString('id-ID')}</strong></span>
+              <span>•</span>
+              <span>Progres Fisik: <strong className="text-amber-300">{unlockedProject.progres_persen}%</strong></span>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={handleLockProject}
+              className="px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
+              title="Kunci kembali lembar kerja untuk beralih ke proyek lain"
+            >
+              <Lock className="w-3.5 h-3.5 text-amber-300" />
+              <span>Kunci / Ganti Proyek</span>
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── TOP PENANGGUNG JAWAB PROYEK BANNER ── */}
       <div className="bg-gradient-to-r from-[#0f3252] via-[#184C78] to-[#1a6fa8] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -585,8 +995,8 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             </h1>
             <p className="text-white/80 text-xs sm:text-sm mt-1">
               {currentUser.role === 'pimpinan_instansi' || currentUser.role === 'aparatur_pemerintah'
-                ? `Pimpinan Daerah & Pengambil Kebijakan — ${currentUser.nama_dinas || 'Pemerintah Kabupaten Lamongan'}`
-                : `Pejabat Pembuat Komitmen (PPK) & Tim Pelaksana Teknis — ${currentUser.nama_dinas || 'Dinas Pekerjaan Umum & Tim Pelaksana'}`}
+                ? `Pimpinan Daerah & Pengambil Kebijakan : ${currentUser.nama_dinas || 'Pemerintah Kabupaten Lamongan'}`
+                : `Pejabat Pembuat Komitmen (PPK) & Tim Pelaksana Teknis : ${currentUser.nama_dinas || 'Dinas Pekerjaan Umum & Tim Pelaksana'}`}
             </p>
             <div className="flex flex-wrap items-center gap-4 text-xs text-white/70 mt-3 font-mono">
               <span>{currentUser.nip ? `NIP: ${currentUser.nip}` : 'Hak Akses: Penuh'}</span>
@@ -706,132 +1116,271 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       {/* ── SECTION 1: DAFTAR PROYEK DINAS ── */}
       {(activeTab === 'proyek' || activeTab === 'overview') && (
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-[#DCE0E6]">
-            <div className="flex items-center gap-2 flex-1 max-w-md">
-              <input
-                type="text"
-                placeholder="Cari nama proyek, wilayah, atau kategori..."
-                value={searchProj}
-                onChange={(e) => setSearchProj(e.target.value)}
-                className="w-full text-xs px-3 py-2 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-              />
+          {currentUser.role === 'penanggung_jawab' && unlockedProject ? (
+            <div className="bg-white rounded-2xl border border-[#DCE0E6] p-6 shadow-xs space-y-6 animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#DCE0E6]">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="font-mono text-xs font-bold bg-[#EBF4FB] text-[#184C78] px-2.5 py-0.5 rounded border border-[#c5def2]">
+                      {unlockedProject.kode_proyek}
+                    </span>
+                    <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
+                      Status: {unlockedProject.status}
+                    </span>
+                  </div>
+                  <h3 className="font-['DM_Sans'] text-lg font-bold text-[#184C78] mt-1.5">
+                    {unlockedProject.nama_proyek}
+                  </h3>
+                  <p className="text-xs text-[#6C757D] mt-0.5">
+                    {unlockedProject.deskripsi || 'Lingkup pengerjaan konstruksi infrastruktur publik Kabupaten Lamongan.'}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <button
+                    onClick={() => handleOpenEditModal(unlockedProject)}
+                    className="px-3.5 py-2 bg-[#EBF4FB] hover:bg-[#d8eaf7] text-[#184C78] font-bold text-xs rounded-xl border border-[#c5def2] transition-colors cursor-pointer"
+                  >
+                    Sunting Data Proyek
+                  </button>
+                  <button
+                    onClick={() => onOpenProjectDetail(unlockedProject)}
+                    className="px-3.5 py-2 bg-[#184C78] hover:bg-[#0f3252] text-white font-bold text-xs rounded-xl transition-colors cursor-pointer"
+                  >
+                    Buka Detail Lengkap
+                  </button>
+                </div>
+              </div>
+
+              {/* Toolbar Aksi Mandor / Rekanan */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5">
+                <button
+                  onClick={() => {
+                    setSelectedProjectForTimeline(unlockedProject.id);
+                    onSelectSection?.('linimasa');
+                  }}
+                  className="p-4 rounded-xl border border-[#DCE0E6] hover:border-[#184C78] hover:bg-[#F5F7FA] transition-all text-left group cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-[#EBF4FB] text-[#184C78] flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                    <Clock className="w-4 h-4" />
+                  </div>
+                  <div className="font-bold text-xs text-[#212529]">Perbarui Linimasa Proyek</div>
+                  <div className="text-[11px] text-[#6C757D] mt-0.5">Catat progres mingguan dan bobot tahapan fisik</div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    setNewDocForm((prev) => ({ ...prev, proyek_id: unlockedProject.id }));
+                    onSelectSection?.('dokumentasi');
+                    setIsNewDocModalOpen(true);
+                  }}
+                  className="p-4 rounded-xl border border-[#DCE0E6] hover:border-[#184C78] hover:bg-[#F5F7FA] transition-all text-left group cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-emerald-50 text-emerald-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                    <Upload className="w-4 h-4" />
+                  </div>
+                  <div className="font-bold text-xs text-[#212529]">Unggah Bukti Dokumentasi</div>
+                  <div className="text-[11px] text-[#6C757D] mt-0.5">Upload arsip foto dan drone video pengerjaan</div>
+                </button>
+
+                <button
+                  onClick={() => onSelectSection?.('aduan')}
+                  className="p-4 rounded-xl border border-[#DCE0E6] hover:border-[#184C78] hover:bg-[#F5F7FA] transition-all text-left group cursor-pointer"
+                >
+                  <div className="w-8 h-8 rounded-lg bg-amber-50 text-amber-700 flex items-center justify-center mb-2 group-hover:scale-105 transition-transform">
+                    <MessageSquare className="w-4 h-4" />
+                  </div>
+                  <div className="font-bold text-xs text-[#212529]">Tanggapi Aduan Warga</div>
+                  <div className="text-[11px] text-[#6C757D] mt-0.5">Respon keluhan masyarakat terkait proyek ini</div>
+                </button>
+              </div>
+
+              {/* Detail Kemajuan Fisik & Spesifikasi */}
+              <div className="p-4 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6]/80 space-y-3">
+                <div className="flex justify-between items-center text-xs font-bold text-[#184C78]">
+                  <span>Kemajuan Fisik Proyek</span>
+                  <span>{unlockedProject.progres_persen}% Rampung</span>
+                </div>
+                <div className="w-full bg-[#DCE0E6] h-3 rounded-full overflow-hidden">
+                  <div
+                    className="bg-gradient-to-r from-[#184C78] to-[#2980B9] h-full rounded-full transition-all"
+                    style={{ width: `${unlockedProject.progres_persen}%` }}
+                  />
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-[11px] text-[#6C757D]">
+                  <div>Pagu: <strong className="text-[#212529]">Rp {unlockedProject.anggaran.toLocaleString('id-ID')}</strong></div>
+                  <div>Mulai: <strong className="text-[#212529]">{unlockedProject.tanggal_mulai || '-'}</strong></div>
+                  <div>Target Selesai: <strong className="text-[#212529]">{unlockedProject.estimasi_selesai || '-'}</strong></div>
+                  <div>Dinas: <strong className="text-[#212529]">{unlockedProject.nama_dinas || '-'}</strong></div>
+                </div>
+              </div>
             </div>
+          ) : (
+            <>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-[#DCE0E6]">
+                <div className="flex items-center gap-2 flex-1 max-w-md">
+                  <input
+                    type="text"
+                    placeholder="Cari nama proyek, wilayah, kode seri, atau kategori..."
+                    value={searchProj}
+                    onChange={(e) => setSearchProj(e.target.value)}
+                    className="w-full text-xs px-3 py-2 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
 
-            <div className="flex items-center gap-2">
-              <select
-                value={filterStatus}
-                onChange={(e) => setFilterStatus(e.target.value)}
-                className="text-xs px-3 py-2 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-              >
-                <option value="semua">Semua Status</option>
-                <option value="berjalan">Sedang Berjalan</option>
-                <option value="selesai">Selesai</option>
-                <option value="ditangguhkan">Ditangguhkan</option>
-              </select>
+                <div className="flex items-center gap-2">
+                  <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    className="text-xs px-3 py-2 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                  >
+                    <option value="semua">Semua Status</option>
+                    <option value="berjalan">Sedang Berjalan</option>
+                    <option value="selesai">Selesai</option>
+                    <option value="ditangguhkan">Ditangguhkan</option>
+                  </select>
 
-              <button
-                onClick={() => setIsNewProjectModalOpen(true)}
-                className="btn-primary !h-9 text-xs flex items-center gap-1.5 shrink-0 shadow-xs"
-              >
-                <Plus className="w-4 h-4" />
-                <span>Input Proyek Baru</span>
-              </button>
-            </div>
-          </div>
+                  <button
+                    onClick={handleOpenNewProjectModal}
+                    className="btn-primary !h-9 text-xs flex items-center gap-1.5 shrink-0 shadow-xs"
+                  >
+                    <Plus className="w-4 h-4" />
+                    <span>Input Proyek Baru</span>
+                  </button>
+                </div>
+              </div>
 
-          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-[#F5F7FA] text-[#184C78] font-['DM_Sans'] font-bold border-b border-[#DCE0E6]">
-                  <tr>
-                    <th className="p-3.5">Nama Proyek</th>
-                    <th className="p-3.5">Kategori</th>
-                    <th className="p-3.5">Anggaran (Pagu)</th>
-                    <th className="p-3.5">Progres Fisik</th>
-                    <th className="p-3.5">Tahap Terkini</th>
-                    <th className="p-3.5">Status</th>
-                    <th className="p-3.5 text-right">Aksi</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-[#DCE0E6]">
-                  {filteredProjects.map((p) => {
-                    const getBadge = (st: string) => {
-                      if (st === 'selesai') return 'bg-[#E6F7F1] text-[#1A9E6E] border-[#B7EBD8]';
-                      if (st === 'berjalan') return 'bg-[#FEF3E7] text-[#E67E22] border-[#FBD8B3]';
-                      return 'bg-[#FDEDEC] text-[#E74C3C] border-[#FADBD8]';
-                    };
-
-                    return (
-                      <tr key={p.id} className="hover:bg-[#F5F7FA]/70 transition-colors">
-                        <td className="p-3.5">
-                          <div className="font-bold text-[#212529]">{p.nama_proyek}</div>
-                          <div className="text-[11px] text-[#6C757D] flex items-center gap-1 mt-0.5">
-                            <MapPin className="w-3 h-3 text-[#2980B9]" />
-                            <span>{p.nama_wilayah}</span>
-                          </div>
-                        </td>
-                        <td className="p-3.5">
-                          <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded bg-[#EBF4FB] text-[#184C78]">
-                            {p.kategori}
-                          </span>
-                        </td>
-                        <td className="p-3.5 font-mono font-semibold text-[#212529]">
-                          Rp {(p.anggaran).toLocaleString('id-ID')}
-                        </td>
-                        <td className="p-3.5 w-40">
-                          <div className="flex justify-between text-[11px] font-bold text-[#184C78] mb-1">
-                            <span>{p.progres_persen}%</span>
-                          </div>
-                          <div className="w-full bg-[#DCE0E6] h-2 rounded-full overflow-hidden">
-                            <div
-                              className="bg-[#184C78] h-full rounded-full"
-                              style={{ width: `${p.progres_persen}%` }}
-                            />
-                          </div>
-                        </td>
-                        <td className="p-3.5 text-[11px] text-[#495057]">
-                          {p.tahap_terkini || 'Pelaksanaan Konstruksi'}
-                        </td>
-                        <td className="p-3.5">
-                          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border capitalize ${getBadge(p.status)}`}>
-                            {p.status}
-                          </span>
-                        </td>
-                        <td className="p-3.5 text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <button
-                              onClick={() => handleOpenEditModal(p)}
-                              className="px-2.5 py-1.5 bg-[#EBF4FB] hover:bg-[#d8eaf7] text-[#184C78] font-semibold rounded-lg border border-[#c5def2] transition-colors cursor-pointer"
-                              title="Sunting Data Proyek"
-                            >
-                              Edit
-                            </button>
-                            <button
-                              onClick={() => onOpenProjectDetail(p)}
-                              className="px-2.5 py-1.5 bg-[#F5F7FA] hover:bg-[#EBF4FB] text-[#184C78] font-semibold rounded-lg border border-[#DCE0E6] transition-colors cursor-pointer"
-                              title="Lihat Detail Proyek"
-                            >
-                              Detail
-                            </button>
-                            <button
-                              onClick={() => {
-                                setSelectedProjectForTimeline(p.id);
-                                if (onSelectSection) onSelectSection('linimasa');
-                              }}
-                              className="px-2.5 py-1.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-semibold rounded-lg transition-colors cursor-pointer"
-                              title="Kelola Linimasa"
-                            >
-                              Linimasa
-                            </button>
-                          </div>
-                        </td>
+              <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs">
+                    <thead className="bg-[#F5F7FA] text-[#184C78] font-['DM_Sans'] font-bold border-b border-[#DCE0E6]">
+                      <tr>
+                        <th className="p-3.5">Kode Proyek</th>
+                        <th className="p-3.5">Nama Proyek</th>
+                        <th className="p-3.5">Kategori</th>
+                        <th className="p-3.5">Anggaran (Pagu)</th>
+                        <th className="p-3.5">Progres Fisik</th>
+                        <th className="p-3.5">Status</th>
+                        {currentUser.role !== 'penanggung_jawab' && (
+                          <th className="p-3.5">Kunci Akses (PJ)</th>
+                        )}
+                        <th className="p-3.5 text-right">Aksi</th>
                       </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                    </thead>
+                    <tbody className="divide-y divide-[#DCE0E6]">
+                      {filteredProjects.map((p) => {
+                        const getBadge = (st: string) => {
+                          if (st === 'selesai') return 'bg-[#E6F7F1] text-[#1A9E6E] border-[#B7EBD8]';
+                          if (st === 'berjalan') return 'bg-[#FEF3E7] text-[#E67E22] border-[#FBD8B3]';
+                          return 'bg-[#FDEDEC] text-[#E74C3C] border-[#FADBD8]';
+                        };
+
+                        return (
+                          <tr key={p.id} className="hover:bg-[#F5F7FA]/70 transition-colors">
+                            <td className="p-3.5">
+                              <div className="flex items-center gap-1.5">
+                                <span className="font-mono text-xs font-bold text-[#184C78] bg-[#EBF4FB] px-2 py-0.5 rounded border border-[#c5def2]">
+                                  {p.kode_proyek || 'LMG-001'}
+                                </span>
+                                {p.kode_proyek && (
+                                  <button
+                                    onClick={() => handleCopyText(p.kode_proyek!, `Kode ${p.kode_proyek}`)}
+                                    className="text-[#6C757D] hover:text-[#184C78] cursor-pointer p-0.5"
+                                    title="Salin Kode Proyek"
+                                  >
+                                    <Copy className="w-3.5 h-3.5" />
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <div className="font-bold text-[#212529]">{p.nama_proyek}</div>
+                              <div className="text-[11px] text-[#6C757D] flex items-center gap-1 mt-0.5">
+                                <MapPin className="w-3 h-3 text-[#2980B9]" />
+                                <span>{p.nama_wilayah} {p.nama_desa ? `• ${p.nama_desa}` : ''}</span>
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded bg-[#EBF4FB] text-[#184C78]">
+                                {p.kategori}
+                              </span>
+                            </td>
+                            <td className="p-3.5 font-mono font-semibold text-[#212529]">
+                              Rp {(p.anggaran).toLocaleString('id-ID')}
+                            </td>
+                            <td className="p-3.5 w-36">
+                              <div className="flex justify-between text-[11px] font-bold text-[#184C78] mb-1">
+                                <span>{p.progres_persen}%</span>
+                              </div>
+                              <div className="w-full bg-[#DCE0E6] h-2 rounded-full overflow-hidden">
+                                <div
+                                  className="bg-[#184C78] h-full rounded-full"
+                                  style={{ width: `${p.progres_persen}%` }}
+                                />
+                              </div>
+                            </td>
+                            <td className="p-3.5">
+                              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border capitalize ${getBadge(p.status)}`}>
+                                {p.status}
+                              </span>
+                            </td>
+                            {currentUser.role !== 'penanggung_jawab' && (
+                              <td className="p-3.5">
+                                {p.kode_akses ? (
+                                  <div className="flex items-center gap-1.5">
+                                    <span className="font-mono text-xs font-bold text-amber-800 bg-amber-50 px-2 py-0.5 rounded border border-amber-200">
+                                      {p.kode_akses}
+                                    </span>
+                                    <button
+                                      onClick={() => handleCopyText(p.kode_akses!, `Password ${p.kode_akses}`)}
+                                      className="text-amber-700 hover:text-amber-900 cursor-pointer p-0.5"
+                                      title="Salin Kunci Akses Khusus Penanggung Jawab"
+                                    >
+                                      <Copy className="w-3.5 h-3.5" />
+                                    </button>
+                                  </div>
+                                ) : (
+                                  <span className="text-[11px] text-[#6C757D]">-</span>
+                                )}
+                              </td>
+                            )}
+                            <td className="p-3.5 text-right">
+                              <div className="flex items-center justify-end gap-1.5">
+                                <button
+                                  onClick={() => handleOpenEditModal(p)}
+                                  className="px-2.5 py-1.5 bg-[#EBF4FB] hover:bg-[#d8eaf7] text-[#184C78] font-semibold rounded-lg border border-[#c5def2] transition-colors cursor-pointer"
+                                  title="Sunting Data Proyek"
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => onOpenProjectDetail(p)}
+                                  className="px-2.5 py-1.5 bg-[#F5F7FA] hover:bg-[#EBF4FB] text-[#184C78] font-semibold rounded-lg border border-[#DCE0E6] transition-colors cursor-pointer"
+                                  title="Lihat Detail Proyek"
+                                >
+                                  Detail
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedProjectForTimeline(p.id);
+                                    if (onSelectSection) onSelectSection('linimasa');
+                                  }}
+                                  className="px-2.5 py-1.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-semibold rounded-lg transition-colors cursor-pointer"
+                                  title="Kelola Linimasa"
+                                >
+                                  Linimasa
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </>
+          )}
         </div>
       )}
 
@@ -840,18 +1389,34 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-[#DCE0E6]">
             <div className="flex items-center gap-3">
-              <label className="text-xs font-bold text-[#184C78]">Pilih Proyek:</label>
-              <select
-                value={selectedProjectForTimeline}
-                onChange={(e) => setSelectedProjectForTimeline(Number(e.target.value))}
-                className="text-xs p-2 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9] font-medium"
-              >
-                {projectList.map((p) => (
-                  <option key={p.id} value={p.id}>
-                    {p.nama_proyek} (Progres: {p.progres_persen}%)
-                  </option>
-                ))}
-              </select>
+              <label className="text-xs font-bold text-[#184C78]">
+                {currentUser.role === 'penanggung_jawab' && unlockedProject ? 'Proyek Dikelola:' : 'Pilih Proyek:'}
+              </label>
+              {currentUser.role === 'penanggung_jawab' && unlockedProject ? (
+                <div className="flex items-center gap-2 px-3 py-1.5 bg-[#EBF4FB] rounded-lg border border-[#BDD7EE]">
+                  <span className="font-mono font-bold text-xs text-[#184C78] bg-white px-2 py-0.5 rounded shadow-2xs">
+                    {unlockedProject.kode_proyek || 'KODE-PJ'}
+                  </span>
+                  <span className="text-xs font-semibold text-[#184C78]">
+                    {unlockedProject.nama_proyek}
+                  </span>
+                  <span className="text-[10.5px] text-[#2980B9] font-medium">
+                    (Progres: {unlockedProject.progres_persen}%)
+                  </span>
+                </div>
+              ) : (
+                <select
+                  value={selectedProjectForTimeline}
+                  onChange={(e) => setSelectedProjectForTimeline(Number(e.target.value))}
+                  className="text-xs p-2 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9] font-medium"
+                >
+                  {projectList.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.kode_proyek ? `[${p.kode_proyek}] ` : ''}{p.nama_proyek} (Progres: {p.progres_persen}%)
+                    </option>
+                  ))}
+                </select>
+              )}
             </div>
 
             <button
@@ -949,44 +1514,71 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {dokumentasiList.map((doc) => (
-              <div
-                key={doc.id}
-                className="bg-white rounded-2xl border border-[#DCE0E6] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
-              >
-                <div>
-                  <div className="relative h-44 bg-slate-100 overflow-hidden">
-                    <img
-                      src={doc.foto_url}
-                      alt={doc.judul}
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                    <span className="absolute bottom-2 left-2 text-[10px] font-bold bg-black/70 text-white px-2 py-0.5 rounded backdrop-blur-xs">
-                      {doc.nama_tahap || 'Inspeksi Fisik'}
-                    </span>
-                  </div>
+          {(() => {
+            const filteredDocs =
+              currentUser.role === 'penanggung_jawab' && unlockedProject
+                ? dokumentasiList.filter(
+                    (doc) =>
+                      doc.proyek_id === unlockedProject.id ||
+                      doc.nama_proyek.toLowerCase() === unlockedProject.nama_proyek.toLowerCase()
+                  )
+                : dokumentasiList;
 
-                  <div className="p-4 space-y-2">
-                    <div className="text-[10px] text-[#6C757D] font-mono flex items-center justify-between">
-                      <span>{doc.tanggal_unggah}</span>
-                      <span className="text-[#184C78] font-bold">{doc.nama_proyek}</span>
+            if (filteredDocs.length === 0) {
+              return (
+                <div className="bg-white rounded-2xl border border-dashed border-[#BDD7EE] p-8 text-center space-y-2">
+                  <Upload className="w-8 h-8 text-[#2980B9] mx-auto opacity-60" />
+                  <h4 className="font-bold text-sm text-[#184C78]">Belum Ada Dokumentasi Lapangan</h4>
+                  <p className="text-xs text-[#6C757D] max-w-md mx-auto">
+                    {currentUser.role === 'penanggung_jawab' && unlockedProject
+                      ? `Belum ada bukti dokumentasi fisik untuk proyek ${unlockedProject.nama_proyek}. Silakan klik tombol "Unggah Dokumentasi Baru" di atas.`
+                      : 'Belum ada arsip dokumentasi fisik yang diunggah untuk proyek ini.'}
+                  </p>
+                </div>
+              );
+            }
+
+            return (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {filteredDocs.map((doc) => (
+                  <div
+                    key={doc.id}
+                    className="bg-white rounded-2xl border border-[#DCE0E6] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
+                  >
+                    <div>
+                      <div className="relative h-44 bg-slate-100 overflow-hidden">
+                        <img
+                          src={doc.foto_url}
+                          alt={doc.judul}
+                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                        />
+                        <span className="absolute bottom-2 left-2 text-[10px] font-bold bg-black/70 text-white px-2 py-0.5 rounded backdrop-blur-xs">
+                          {doc.nama_tahap || 'Inspeksi Fisik'}
+                        </span>
+                      </div>
+
+                      <div className="p-4 space-y-2">
+                        <div className="text-[10px] text-[#6C757D] font-mono flex items-center justify-between">
+                          <span>{doc.tanggal_unggah}</span>
+                          <span className="text-[#184C78] font-bold">{doc.nama_proyek}</span>
+                        </div>
+                        <h4 className="font-['DM_Sans'] font-bold text-sm text-[#212529] leading-snug">
+                          {doc.judul}
+                        </h4>
+                        <p className="text-xs text-[#495057] leading-relaxed">
+                          {doc.deskripsi}
+                        </p>
+                      </div>
                     </div>
-                    <h4 className="font-['DM_Sans'] font-bold text-sm text-[#212529] leading-snug">
-                      {doc.judul}
-                    </h4>
-                    <p className="text-xs text-[#495057] leading-relaxed">
-                      {doc.deskripsi}
-                    </p>
-                  </div>
-                </div>
 
-                <div className="p-3 bg-[#F5F7FA] border-t border-[#DCE0E6] text-[10px] text-[#6C757D]">
-                  Diunggah oleh: <strong className="text-[#184C78]">{doc.diunggah_oleh}</strong>
-                </div>
+                    <div className="p-3 bg-[#F5F7FA] border-t border-[#DCE0E6] text-[10px] text-[#6C757D]">
+                      Diunggah oleh: <strong className="text-[#184C78]">{doc.diunggah_oleh}</strong>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1004,62 +1596,89 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             </div>
           </div>
 
-          <div className="space-y-3">
-            {aduanList.map((item) => (
-              <div key={item.id} className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <span className="text-xs font-bold text-[#184C78] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg mr-2">
-                      {item.nama_proyek}
-                    </span>
-                    <span className="text-xs text-[#6C757D]">Pelapor: <strong>{item.nama_pelapor}</strong> ({item.email_pelapor})</span>
-                  </div>
-                  <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize ${
-                    item.status === 'selesai'
-                      ? 'bg-[#E6F7F1] text-[#1A9E6E]'
-                      : item.status === 'diproses'
-                      ? 'bg-[#FEF3E7] text-[#E67E22]'
-                      : 'bg-[#FDEDEC] text-[#E74C3C]'
-                  }`}>
-                    Status: {item.status}
-                  </span>
-                </div>
+          {(() => {
+            const filteredAduan =
+              currentUser.role === 'penanggung_jawab' && unlockedProject
+                ? aduanList.filter(
+                    (item) =>
+                      item.proyek_id === unlockedProject.id ||
+                      item.nama_proyek.toLowerCase() === unlockedProject.nama_proyek.toLowerCase()
+                  )
+                : aduanList;
 
-                <div>
-                  <h4 className="font-['DM_Sans'] font-bold text-sm text-[#212529]">{item.judul}</h4>
-                  <p className="text-xs text-[#495057] mt-1 bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/50">
-                    "{item.isi_laporan}"
+            if (filteredAduan.length === 0) {
+              return (
+                <div className="bg-white rounded-2xl border border-dashed border-[#BDD7EE] p-8 text-center space-y-2">
+                  <MessageSquare className="w-8 h-8 text-[#2980B9] mx-auto opacity-60" />
+                  <h4 className="font-bold text-sm text-[#184C78]">Tidak Ada Aduan Warga</h4>
+                  <p className="text-xs text-[#6C757D] max-w-md mx-auto">
+                    {currentUser.role === 'penanggung_jawab' && unlockedProject
+                      ? `Belum ada laporan atau pengaduan masyarakat untuk proyek ${unlockedProject.nama_proyek}.`
+                      : 'Belum ada aduan warga yang masuk untuk kategori ini.'}
                   </p>
                 </div>
+              );
+            }
 
-                {item.tanggapan_dinas && (
-                  <div className="p-3 bg-[#EBF4FB] rounded-xl border border-[#c5def2] text-xs space-y-1">
-                    <div className="font-bold text-[#184C78] flex items-center justify-between">
-                      <span>Tanggapan Resmi Dinas ({item.petugas_penjawab}):</span>
-                      <span className="text-[10px] text-[#6C757D] font-mono">{item.tanggal_tanggapan}</span>
+            return (
+              <div className="space-y-3">
+                {filteredAduan.map((item) => (
+                  <div key={item.id} className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs space-y-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                      <div>
+                        <span className="text-xs font-bold text-[#184C78] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg mr-2">
+                          {item.nama_proyek}
+                        </span>
+                        <span className="text-xs text-[#6C757D]">Pelapor: <strong>{item.nama_pelapor}</strong> ({item.email_pelapor})</span>
+                      </div>
+                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize ${
+                        item.status === 'selesai'
+                          ? 'bg-[#E6F7F1] text-[#1A9E6E]'
+                          : item.status === 'diproses'
+                          ? 'bg-[#FEF3E7] text-[#E67E22]'
+                          : 'bg-[#FDEDEC] text-[#E74C3C]'
+                      }`}>
+                        Status: {item.status}
+                      </span>
                     </div>
-                    <p className="text-[#212529] leading-relaxed line-clamp-3">{item.tanggapan_dinas}</p>
-                  </div>
-                )}
 
-                <div className="pt-2 flex justify-end gap-2">
-                  <button
-                    onClick={() => {
-                      setSelectedAduanToReply(item);
-                    }}
-                    className={`${
-                      item.tanggapan_dinas
-                        ? 'btn-ghost border border-[#c5def2] text-[#184C78] hover:bg-[#EBF4FB]'
-                        : 'btn-primary'
-                    } !h-8 text-xs flex items-center gap-1.5 shadow-xs`}
-                  >
-                    <MessageSquare className="w-3.5 h-3.5" />
-                    <span>{item.tanggapan_dinas ? 'Buka Halaman Detail & Riwayat Respon' : 'Buka Halaman Respon Tanggapan'}</span>
-                  </button>
-                </div>
+                    <div>
+                      <h4 className="font-['DM_Sans'] font-bold text-sm text-[#212529]">{item.judul}</h4>
+                      <p className="text-xs text-[#495057] mt-1 bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/50">
+                        "{item.isi_laporan}"
+                      </p>
+                    </div>
+
+                    {item.tanggapan_dinas && (
+                      <div className="p-3 bg-[#EBF4FB] rounded-xl border border-[#c5def2] text-xs space-y-1">
+                        <div className="font-bold text-[#184C78] flex items-center justify-between">
+                          <span>Tanggapan Resmi Dinas ({item.petugas_penjawab}):</span>
+                          <span className="text-[10px] text-[#6C757D] font-mono">{item.tanggal_tanggapan}</span>
+                        </div>
+                        <p className="text-[#212529] leading-relaxed line-clamp-3">{item.tanggapan_dinas}</p>
+                      </div>
+                    )}
+
+                    <div className="pt-2 flex justify-end gap-2">
+                      <button
+                        onClick={() => {
+                          setSelectedAduanToReply(item);
+                        }}
+                        className={`${
+                          item.tanggapan_dinas
+                            ? 'btn-ghost border border-[#c5def2] text-[#184C78] hover:bg-[#EBF4FB]'
+                            : 'btn-primary'
+                        } !h-8 text-xs flex items-center gap-1.5 shadow-xs`}
+                      >
+                        <MessageSquare className="w-3.5 h-3.5" />
+                        <span>{item.tanggapan_dinas ? 'Buka Halaman Detail & Riwayat Respon' : 'Buka Halaman Respon Tanggapan'}</span>
+                      </button>
+                    </div>
+                  </div>
+                ))}
               </div>
-            ))}
-          </div>
+            );
+          })()}
         </div>
       )}
 
@@ -1413,31 +2032,300 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Pilihan Wilayah Administratif Berjenjang */}
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">
-                  Wilayah Administratif Terdaftar
-                </label>
-                <select
-                  value={newProjectForm.nama_wilayah}
-                  onChange={(e) => {
-                    const selName = e.target.value;
-                    const matched = WILAYAH_DATA.kecamatanList.find((k) => k.nama === selName);
-                    setNewProjectForm({
-                      ...newProjectForm,
-                      nama_wilayah: selName,
-                      latitude: matched ? matched.koordinatPusat[0] : newProjectForm.latitude,
-                      longitude: matched ? matched.koordinatPusat[1] : newProjectForm.longitude,
-                    });
-                  }}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                >
-                  {WILAYAH_DATA.kecamatanList.map((k) => (
-                    <option key={k.nama} value={k.nama}>
-                      {k.nama}
-                    </option>
-                  ))}
-                </select>
+              {/* Cakupan Skala Proyek & Lokasi Administratif Berjenjang */}
+              <div className="p-4 bg-[#F8FAFC] rounded-2xl border border-[#DCE0E6] space-y-3.5">
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-[#2980B9]" />
+                      Skala &amp; Cakupan Wilayah Proyek
+                    </span>
+                    <span className="text-[10.5px] font-normal text-[#6C757D]">
+                      Menentukan struktur kode seri nomor registrasi
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newCode = generateProjectSerialNumber(
+                          newProjectForm.nama_wilayah,
+                          newProjectForm.nama_desa,
+                          'skala_desa',
+                          projectList
+                        );
+                        setNewProjectForm({
+                          ...newProjectForm,
+                          skala_proyek: 'skala_desa',
+                          kode_proyek: newCode,
+                        });
+                      }}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        newProjectForm.skala_proyek === 'skala_desa'
+                          ? 'bg-white border-[#184C78] shadow-xs ring-2 ring-[#184C78]/10'
+                          : 'bg-white/60 border-[#DCE0E6] hover:bg-white text-[#6C757D]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-xs text-[#184C78]">Skala Desa / Kelurahan</span>
+                        <div
+                          className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                            newProjectForm.skala_proyek === 'skala_desa'
+                              ? 'border-[#184C78] bg-[#184C78]'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {newProjectForm.skala_proyek === 'skala_desa' && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-[#6C757D] leading-tight">
+                        Fokus pada satu desa/kelurahan spesifik (Format: KEC-DES-XXX)
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newCode = generateProjectSerialNumber(
+                          newProjectForm.nama_wilayah,
+                          undefined,
+                          'skala_kecamatan',
+                          projectList
+                        );
+                        setNewProjectForm({
+                          ...newProjectForm,
+                          skala_proyek: 'skala_kecamatan',
+                          kode_proyek: newCode,
+                        });
+                      }}
+                      className={`p-2.5 rounded-xl border text-left transition-all ${
+                        newProjectForm.skala_proyek === 'skala_kecamatan'
+                          ? 'bg-white border-[#184C78] shadow-xs ring-2 ring-[#184C78]/10'
+                          : 'bg-white/60 border-[#DCE0E6] hover:bg-white text-[#6C757D]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-xs text-[#184C78]">Skala Kecamatan (Lintas Desa)</span>
+                        <div
+                          className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                            newProjectForm.skala_proyek === 'skala_kecamatan'
+                              ? 'border-[#184C78] bg-[#184C78]'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {newProjectForm.skala_proyek === 'skala_kecamatan' && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-[#6C757D] leading-tight">
+                        Infrastruktur koridor/lintas desa se-kecamatan (Format: KEC-XXX)
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Pilihan Kecamatan */}
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">
+                      Kecamatan
+                    </label>
+                    <select
+                      value={newProjectForm.nama_wilayah}
+                      onChange={(e) => {
+                        const selName = e.target.value;
+                        const matched = WILAYAH_DATA.kecamatanList.find((k) => k.nama === selName);
+                        const newLat = matched ? matched.koordinatPusat[0] : newProjectForm.latitude;
+                        const newLng = matched ? matched.koordinatPusat[1] : newProjectForm.longitude;
+                        const newCode = newProjectForm.skala_proyek === 'skala_kecamatan'
+                          ? generateProjectSerialNumber(selName, undefined, 'skala_kecamatan', projectList)
+                          : generateProjectSerialNumber(selName, newProjectForm.nama_desa, 'skala_desa', projectList);
+                        setNewProjectForm({
+                          ...newProjectForm,
+                          nama_wilayah: selName,
+                          latitude: newLat,
+                          longitude: newLng,
+                          kode_proyek: newCode,
+                        });
+                      }}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                    >
+                      {WILAYAH_DATA.kecamatanList.map((k) => (
+                        <option key={k.nama} value={k.nama}>
+                          {k.nama}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Pilihan Desa / Kelurahan */}
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">
+                      Desa / Kelurahan
+                    </label>
+                    {newProjectForm.skala_proyek === 'skala_desa' ? (
+                      <select
+                        value={newProjectForm.desa_id || (desaOptions[0]?.id ?? '')}
+                        disabled={isLoadingDesa}
+                        onChange={(e) => {
+                          const selId = Number(e.target.value);
+                          const selDesa = desaOptions.find((d) => d.id === selId);
+                          const selName = selDesa ? selDesa.nama_wilayah : 'Kelurahan';
+                          const newCode = generateProjectSerialNumber(
+                            newProjectForm.nama_wilayah,
+                            selName,
+                            'skala_desa',
+                            projectList
+                          );
+                          setNewProjectForm({
+                            ...newProjectForm,
+                            desa_id: selId,
+                            nama_desa: selName,
+                            kode_proyek: newCode,
+                          });
+                        }}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9] disabled:bg-slate-100"
+                      >
+                        {isLoadingDesa ? (
+                          <option value="">Memuat daftar desa...</option>
+                        ) : desaOptions.length > 0 ? (
+                          desaOptions.map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.nama_wilayah}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">Pusat Kecamatan / Ibu Kota</option>
+                        )}
+                      </select>
+                    ) : (
+                      <div className="p-2.5 bg-slate-100 border border-[#DCE0E6] rounded-lg text-slate-500 italic text-xs flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>Cakupan Lintas Wilayah Kecamatan</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Box Kredensial Akses & Nomor Seri Proyek */}
+              <div className="p-4 bg-gradient-to-br from-[#F5F9FD] to-[#EDF5FC] rounded-2xl border border-[#BDD7EE] space-y-3">
+                <div className="flex items-center justify-between border-b border-[#D4E4F5] pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-[#184C78] text-white rounded-lg shadow-xs">
+                      <Key className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h4 className="font-['DM_Sans'] font-bold text-xs text-[#184C78]">
+                        Nomor Seri Registrasi &amp; Kunci Akses Khusus
+                      </h4>
+                      <p className="text-[10px] text-[#6C757D]">
+                        Kredensial resmi yang dibagikan pimpinan ke penanggung jawab proyek
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold bg-[#EBF4FB] text-[#184C78] px-2 py-0.5 rounded-full border border-[#BDD7EE]">
+                    Otomatisasi Sistem
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Nomor Seri / Kode Proyek */}
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1 flex items-center justify-between">
+                      <span>Kode Seri Proyek</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const refreshed = generateProjectSerialNumber(
+                            newProjectForm.nama_wilayah,
+                            newProjectForm.skala_proyek === 'skala_desa' ? newProjectForm.nama_desa : undefined,
+                            newProjectForm.skala_proyek,
+                            projectList
+                          );
+                          setNewProjectForm({ ...newProjectForm, kode_proyek: refreshed });
+                        }}
+                        className="text-[10.5px] text-[#2980B9] hover:underline flex items-center gap-1 cursor-pointer font-normal"
+                        title="Perbarui kode nomor seri secara otomatis"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Generate Ulang</span>
+                      </button>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={newProjectForm.kode_proyek}
+                        onChange={(e) =>
+                          setNewProjectForm({ ...newProjectForm, kode_proyek: e.target.value.toUpperCase() })
+                        }
+                        placeholder="Contoh: LMG-JTS-001"
+                        className="w-full p-2.5 font-mono font-bold text-sm tracking-wider text-[#184C78] bg-white border border-[#BDD7EE] rounded-lg outline-none focus:border-[#184C78] focus:ring-1 focus:ring-[#184C78]"
+                      />
+                    </div>
+                    <p className="text-[10px] text-[#6C757D] mt-1">
+                      Menyesuaikan kode kecamatan &amp; desa: {newProjectForm.kode_proyek || '-'}
+                    </p>
+                  </div>
+
+                  {/* Password / Kunci Akses Khusus */}
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1 flex items-center justify-between">
+                      <span>Password / Kunci Akses Khusus</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newPin = generateRandomAccessKey();
+                            setNewProjectForm({ ...newProjectForm, kode_akses: newPin });
+                          }}
+                          className="text-[10.5px] text-[#2980B9] hover:underline flex items-center gap-1 cursor-pointer font-normal"
+                          title="Buat PIN acak baru"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>Acak PIN</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(newProjectForm.kode_akses, 'Kunci Akses Form')}
+                          className="text-[10.5px] text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer font-normal"
+                          title="Salin Kunci Akses"
+                        >
+                          {copyFeedback === 'Kunci Akses Form' ? (
+                            <>
+                              <CheckCheck className="w-3 h-3 text-emerald-600" />
+                              <span className="text-emerald-700 font-bold">Disalin!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Salin</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={newProjectForm.kode_akses}
+                        onChange={(e) =>
+                          setNewProjectForm({ ...newProjectForm, kode_akses: e.target.value })
+                        }
+                        placeholder="Contoh: PJ-17409"
+                        className="w-full p-2.5 font-mono font-bold text-sm tracking-wider text-emerald-800 bg-white border border-[#BDD7EE] rounded-lg outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                      />
+                    </div>
+                    <p className="text-[10px] text-[#6C757D] mt-1">
+                      Berikan password ini kepada mandor/kontraktor penanggung jawab
+                    </p>
+                  </div>
+                </div>
               </div>
 
               {/* Koordinat Lintang & Bujur (Point-in-Polygon Validation) */}
@@ -1692,10 +2580,16 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 <select
                   value={newDocForm.proyek_id}
                   onChange={(e) => setNewDocForm({ ...newDocForm, proyek_id: Number(e.target.value) })}
-                  className="w-full p-2 border border-[#DCE0E6] rounded-lg bg-white outline-none"
+                  disabled={currentUser.role === 'penanggung_jawab' && !!unlockedProject}
+                  className="w-full p-2 border border-[#DCE0E6] rounded-lg bg-white outline-none disabled:bg-slate-100 font-medium"
                 >
-                  {projectList.map((p) => (
-                    <option key={p.id} value={p.id}>{p.nama_proyek}</option>
+                  {(currentUser.role === 'penanggung_jawab' && unlockedProject
+                    ? [unlockedProject]
+                    : projectList
+                  ).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.kode_proyek ? `[${p.kode_proyek}] ` : ''}{p.nama_proyek}
+                    </option>
                   ))}
                 </select>
               </div>

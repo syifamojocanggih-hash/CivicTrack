@@ -90,12 +90,12 @@ describe('AuthModal', () => {
     expect(screen.queryByText('Drs. Joko')).not.toBeInTheDocument();
     expect(screen.queryByText('Bambang, S.T.')).not.toBeInTheDocument();
 
-    // Pastikan tombol switch ke Sign Up berfungsi
+    // Pastikan tombol switch ke mode pendaftaran berfungsi
     const user = userEvent.setup();
-    const signUpSwitchBtn = screen.getByRole('button', { name: /^Sign Up$/i });
+    const signUpSwitchBtn = screen.getByRole('button', { name: /Daftar Akun/i });
     await user.click(signUpSwitchBtn);
 
-    // Sekarang berada di mode register (ada field Nama: Enter your name)
-    expect(screen.getByPlaceholderText(/Enter your name/i)).toBeInTheDocument();
+    // Sekarang berada di mode register (ada field Nama: Masukkan nama lengkap Anda)
+    expect(screen.getByPlaceholderText(/Masukkan nama lengkap/i)).toBeInTheDocument();
   });
 });

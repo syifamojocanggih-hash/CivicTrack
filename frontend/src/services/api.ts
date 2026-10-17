@@ -23,6 +23,7 @@ import type {
   SubscriptionStatus,
   ApiEvaluationStatusLog,
   LaporanAduan,
+  ProjectVerifyAccessResult,
 } from '../types';
 import { LAMONGAN_DESA_GEOJSON } from '../data/lamonganDesaGeoJSON';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
@@ -78,6 +79,8 @@ export interface BackendProjectItem {
   wilayah?: { id: number; nama_wilayah: string };
   desa?: { id: number; nama_wilayah: string } | null;
   dinas?: { id: number; nama_dinas: string };
+  kode_proyek?: string;
+  kode_akses?: string;
   rata_rata_rating?: number | null;
   jumlah_rating?: number;
   tahap_terkini?: string;
@@ -110,6 +113,8 @@ export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
     progres_persen: p.progres_persen || 0,
     tanggal_mulai: p.tanggal_mulai ? String(p.tanggal_mulai).split('T')[0] : '2024-01-01',
     estimasi_selesai: p.estimasi_selesai ? String(p.estimasi_selesai).split('T')[0] : '2024-12-31',
+    kode_proyek: p.kode_proyek,
+    kode_akses: p.kode_akses,
     nama_wilayah: p.nama_wilayah || p.wilayah?.nama_wilayah || 'Kabupaten Lamongan',
     nama_desa: p.nama_desa || p.desa?.nama_wilayah || undefined,
     nama_dinas: p.nama_dinas || p.dinas?.nama_dinas || 'Dinas Pekerjaan Umum Kab. Lamongan',
@@ -541,6 +546,46 @@ export const apiService = {
       await handleApiError(res, 'Gagal menambahkan tahapan linimasa.');
     }
 
+    return await res.json();
+  },
+
+  async verifyProjectAccess(kode_proyek: string, kode_akses: string): Promise<ProjectVerifyAccessResult> {
+    const res = await fetch(`${BASE_URL}/proyek/verify-access`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+      body: JSON.stringify({
+        kode_proyek: kode_proyek.trim().toUpperCase(),
+        kode_akses: kode_akses.trim(),
+      }),
+    });
+
+    if (!res.ok) {
+      await handleApiError(res, 'Verifikasi kode proyek atau kunci akses gagal.');
+    }
+
+    const data = await res.json();
+    return {
+      success: data.success,
+      message: data.message,
+      proyek: data.proyek ? mapBackendToProyekItem(data.proyek) : undefined,
+    };
+  },
+
+  async getWilayahList(level?: 'kabupaten' | 'kecamatan' | 'desa', parentId?: number): Promise<Array<{ id: number; kode_wilayah: string; nama_wilayah: string; level: string; parent_id?: number | null }>> {
+    const params = new URLSearchParams();
+    if (level) params.append('level', level);
+    if (parentId !== undefined && parentId !== null) params.append('parent_id', String(parentId));
+
+    const query = params.toString() ? `?${params.toString()}` : '';
+    const res = await fetch(`${BASE_URL}/wilayah${query}`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (!res.ok) {
+      return [];
+    }
     return await res.json();
   },
 

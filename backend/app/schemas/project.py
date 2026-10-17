@@ -48,6 +48,8 @@ class ProyekBase(BaseModel):
     progres_persen: int = Field(0, ge=0, le=100)
     tanggal_mulai: date
     estimasi_selesai: date
+    kode_proyek: Optional[str] = None
+    kode_akses: Optional[str] = None
 
     @field_validator("nama_proyek")
     @classmethod
@@ -114,6 +116,8 @@ class ProyekUpdate(BaseModel):
     progres_persen: Optional[int] = Field(None, ge=0, le=100)
     tanggal_mulai: Optional[date] = None
     estimasi_selesai: Optional[date] = None
+    kode_proyek: Optional[str] = None
+    kode_akses: Optional[str] = None
     catatan_perubahan: Optional[str] = None
 
     @field_validator("nama_proyek")
@@ -196,6 +200,8 @@ class ProyekListItem(BaseModel):
     estimasi_selesai: date
     created_at: datetime
     updated_at: datetime
+    kode_proyek: Optional[str] = None
+    kode_akses: Optional[str] = None
     nama_wilayah: Optional[str] = None
     nama_desa: Optional[str] = None
     nama_dinas: Optional[str] = None
@@ -209,3 +215,12 @@ class PaginatedProyekResponse(BaseModel):
     page: int
     page_size: int
     items: List[ProyekListItem]
+
+class ProjectVerifyAccessRequest(BaseModel):
+    kode_proyek: str = Field(..., min_length=2, max_length=50, description="Kode registrasi unik proyek (misal: LMG-001 atau LMG-JTS-001)")
+    kode_akses: str = Field(..., min_length=2, max_length=100, description="Kunci akses / password khusus dari pimpinan")
+
+class ProjectVerifyAccessResponse(BaseModel):
+    success: bool
+    message: str
+    proyek: Optional[ProyekResponse] = None

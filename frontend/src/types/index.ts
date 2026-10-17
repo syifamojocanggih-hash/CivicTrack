@@ -20,6 +20,8 @@ export interface ProyekItem {
   nama_wilayah?: string;
   nama_desa?: string;
   nama_dinas?: string;
+  kode_proyek?: string;
+  kode_akses?: string;
   rata_rata_rating?: number | null;
   jumlah_rating?: number;
   tahap_terkini?: string;
@@ -34,6 +36,8 @@ export interface ProyekUpdatePayload {
   progres_persen?: number;
   tanggal_mulai?: string;
   estimasi_selesai?: string;
+  kode_proyek?: string;
+  kode_akses?: string;
   catatan_perubahan?: string;
 }
 
@@ -51,6 +55,14 @@ export interface ProyekCreatePayload {
   progres_persen?: number;
   tanggal_mulai: string;
   estimasi_selesai: string;
+  kode_proyek?: string;
+  kode_akses?: string;
+}
+
+export interface ProjectVerifyAccessResult {
+  success: boolean;
+  message: string;
+  proyek?: ProyekItem;
 }
 
 export interface TahapanCreatePayload {

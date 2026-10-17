@@ -43,6 +43,8 @@ class Proyek(Base):
     tanggal_mulai = Column(Date, nullable=False)
     estimasi_selesai = Column(Date, nullable=False)
     dibuat_oleh = Column(BigInteger, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
+    kode_proyek = Column(String(50), nullable=True, unique=True, index=True)
+    kode_akses = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 

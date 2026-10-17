@@ -153,7 +153,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
               {currentUser.nama}
             </h1>
             <p className="text-white/80 text-xs sm:text-sm mt-1">
-              Bupati / Walikota / Kepala Bappeda — Pengawasan Makro &amp; Evaluasi Strategis Kebijakan Pembangunan
+              Bupati / Walikota / Kepala Bappeda: Pengawasan Makro &amp; Evaluasi Strategis Kebijakan Pembangunan
             </p>
             <div className="flex flex-wrap items-center gap-4 text-xs text-white/70 mt-3 font-mono">
               <span>Periode Tahun Anggaran 2024 / 2025</span>

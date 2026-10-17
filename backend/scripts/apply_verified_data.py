@@ -164,7 +164,9 @@ def run():
             progres_persen=item["progres"],
             tanggal_mulai=t_mulai,
             estimasi_selesai=t_selesai,
-            dibuat_oleh=1
+            dibuat_oleh=1,
+            kode_proyek=item.get("kode_proyek"),
+            kode_akses=item.get("kode_akses")
         )
         db.add(p_obj)
         proyek_objs.append(p_obj)

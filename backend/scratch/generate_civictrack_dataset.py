@@ -749,6 +749,53 @@ def add_hyperlink(paragraph, url, text, color="0D6EFD", font_size_pt=8, underlin
     paragraph._p.append(hyperlink)
     return hyperlink
 
+PROJECT_CREDENTIALS = {
+    1: ("SKD-SKD-001", "PJ-17409"),
+    2: ("PCK-PCK-001", "PJ-67946"),
+    3: ("SGO-GND-001", "PJ-80019"),
+    4: ("BBT-BBT-001", "PJ-79219"),
+    5: ("DKT-SDR-001", "PJ-58960"),
+    6: ("TUR-TUR-001", "PJ-25754"),
+    7: ("BRD-BRN-001", "PJ-23756"),
+    8: ("SMB-RDR-001", "PJ-65837"),
+    9: ("SKR-SKR-001", "PJ-64860"),
+    10: ("LRN-PLN-001", "PJ-19421"),
+    11: ("TKG-WNK-001", "PJ-92221"),
+    12: ("MDO-MJR-001", "PJ-70456"),
+    13: ("KBN-KUR-001", "PJ-85411"),
+    14: ("KBN-KUR-002", "PJ-87168"),
+    15: ("KTG-PCN-001", "PJ-77488"),
+    16: ("LMG-SKR-001", "PJ-64476"),
+    17: ("SGO-KDN-001", "PJ-38712"),
+    18: ("KGN-KRN-001", "PJ-80769"),
+    19: ("BBT-BBT-002", "PJ-42726"),
+    20: ("KBN-KUR-003", "PJ-29841"),
+    21: ("BRD-BRN-002", "PJ-29331"),
+    22: ("LMG-BNJ-001", "PJ-98341"),
+    23: ("LMG-SKR-002", "PJ-35719"),
+    24: ("DKT-SDR-002", "PJ-64964"),
+    25: ("LMG-JTS-001", "PJ-60636"),
+    26: ("BBT-BBT-003", "PJ-24554"),
+    27: ("MDR-PNG-001", "PJ-60279"),
+    28: ("SLK-SLK-001", "PJ-62328"),
+    29: ("BRD-BRN-003", "PJ-59544"),
+    30: ("NGB-NGM-001", "PJ-47587"),
+    31: ("SKD-SKD-002", "PJ-46709"),
+    32: ("KBN-BLW-001", "PJ-67075"),
+    33: ("SKR-SKR-002", "PJ-65894"),
+    34: ("PCR-PCR-001", "PJ-96727"),
+    35: ("LMG-PLS-001", "PJ-40619"),
+}
+
+for item in projects_data:
+    pid = item["no"]
+    if pid in PROJECT_CREDENTIALS:
+        item["kode_proyek"] = PROJECT_CREDENTIALS[pid][0]
+        item["kode_akses"] = PROJECT_CREDENTIALS[pid][1]
+    else:
+        item["kode_proyek"] = f"LMG-00{pid}"
+        item["kode_akses"] = f"PJ-{pid:05d}"
+
 # ==========================================
 # 1. GENERATE MARKDOWN FILE
 # ==========================================
@@ -766,11 +813,19 @@ md_lines.append("")
 md_lines.append("## 1. PENDAHULUAN & PROFIL INVENTARIS CIVICTRACK")
 md_lines.append("Dokumen ini merupakan master dataset resmi pembangunan infrastruktur publik di Kabupaten Lamongan yang dihimpun dan diverifikasi untuk sistem **CivicTrack** (Platform Transparansi & Akuntabilitas Pembangunan Daerah). Data ini disusun berdasarkan sumber rujukan yang valid, berkekuatan hukum, dan dapat dipertanggungjawabkan (*accountable*), bersumber dari Layanan Pengadaan Secara Elektronik (LPSE) Kabupaten Lamongan, Sistem Informasi Rencana Umum Pengadaan (SiRUP LKPP), Portal Berita Resmi Pemerintah Kabupaten Lamongan, Satu Data Lamongan, serta rujukan media monitoring terakreditasi.")
 md_lines.append("")
-md_lines.append("Setiap paket pekerjaan dalam katalog ini telah melalui validasi geospasial presisi (koordinat lintang dan bujur), kode paket pengadaan resmi, pagu anggaran, sumber pembiayaan (APBD/DAK/Provinsi/APBN), instansi OPD penanggung jawab, kontraktor penyedia jasa pelaksana, hingga tautan rujukan resmi untuk verifikasi independen publik.")
+md_lines.append("Setiap paket pekerjaan dalam katalog ini telah melalui validasi geospasial presisi (koordinat lintang dan bujur), kode registrasi seri proyek unik, kode paket pengadaan resmi, kode akses otorisasi penanggung jawab, pagu anggaran, sumber pembiayaan (APBD/DAK/Provinsi/APBN), instansi OPD penanggung jawab, kontraktor penyedia jasa pelaksana, hingga tautan rujukan resmi untuk verifikasi independen publik.")
 md_lines.append("")
 md_lines.append("---")
 md_lines.append("")
-md_lines.append("## 2. KLASIFIKASI & PROGRAM UNGGULAN STRATEGIS DAERAH")
+md_lines.append("## 2. SISTEM SERIALISASI KODE PROYEK & KREDENSIAL AKSES PENANGGUNG JAWAB (PJ)")
+md_lines.append("Sebagai wujud tata kelola infrastruktur terpadu yang aman, akuntabel, dan transparan di Kabupaten Lamongan, sistem CivicTrack menerapkan verifikasi dua arah untuk setiap proyek:")
+md_lines.append("1. **Kode Seri Registrasi Proyek (`kode_proyek`)**: Format penomoran otomatis berjenjang `[KEC]-[DES]-[NNN]` berdasarkan lokus wilayah administratif kecamatan dan desa/kelurahan (contoh: `SKD-SKD-001`, `LMG-JTS-001`, `BBT-BBT-002`). Kode ini menjadi nomor seri baku pada dashboard, peta interaktif, dan pelaporan publik.")
+md_lines.append("2. **Password Khusus Otorisasi PJ (`kode_akses`)**: PIN unik 5 digit bertanda `PJ-XXXXX` (contoh: `PJ-17409`, `PJ-67946`) yang diterbitkan secara resmi oleh Admin Pimpinan Daerah untuk penanggung jawab proyek (kontraktor / mandor). Penanggung jawab wajib memasukkan kode proyek dan password ini sebelum dapat mengakses dasbor kerja, menginput data progres fisik, atau mengunggah dokumentasi berkala.")
+md_lines.append("3. **Prinsip Akuntabilitas & Isolasi Proyek (*Zero Cross-Project Tampering*)**: Memastikan rekanan pelaksana hanya dapat mengelola proyek yang menjadi tanggung jawabnya tanpa risiko interferensi antar-proyek.")
+md_lines.append("")
+md_lines.append("---")
+md_lines.append("")
+md_lines.append("## 3. KLASIFIKASI & PROGRAM UNGGULAN STRATEGIS DAERAH")
 md_lines.append("Kabupaten Lamongan mengonsolidasikan pembangunan infrastruktur ke dalam beberapa klaster tematik strategis:")
 md_lines.append("1. **Program JAMULA (Jalan Mantap dan Mulus Lamongan)**: Program prioritas Bupati Lamongan untuk memastikan konektivitas antar-kecamatan dan antar-desa dengan konstruksi utama perkerasan kaku beton (*rigid pavement CBC*) dan aspal hotmix bermutu tinggi.")
 md_lines.append("2. **Pengendalian Banjir & Ketahanan Sumber Daya Air (Bengawan Jero & Bengawan Solo)**: Normalisasi alur sungai primer (Kali Asin, Kali Blawi), modernisasi pintu air elektrik Kuro, dan penyediaan pompa banjir berdebit tinggi.")
@@ -779,23 +834,24 @@ md_lines.append("4. **Revitalisasi Ruang Publik, Olahraga & Sentra Perekonomian*
 md_lines.append("")
 md_lines.append("---")
 md_lines.append("")
-md_lines.append("## 3. KATALOG MASTER 35 DATA PROYEK PEMBANGUNAN KABUPATEN LAMONGAN")
-md_lines.append("Berikut adalah daftar komprehensif 35 paket proyek pembangunan fisik strategis di Kabupaten Lamongan beserta atribut teknis pengerjaan, nilai pagu, lokasi presisi, rekanan pelaksana, dan tautan verifikasi resmi:")
+md_lines.append("## 4. KATALOG MASTER 35 DATA PROYEK PEMBANGUNAN KABUPATEN LAMONGAN")
+md_lines.append("Berikut adalah daftar komprehensif 35 paket proyek pembangunan fisik strategis di Kabupaten Lamongan beserta atribut teknis pengerjaan, kode seri unik, password akses PJ, nilai pagu, lokasi presisi, rekanan pelaksana, dan tautan verifikasi resmi:")
 md_lines.append("")
-md_lines.append("| No | Kode Registrasi | Nama Proyek & Spesifikasi Teknis Pengerjaan | Kategori | Pagu Anggaran | Sumber Dana | Instansi Pengampu | Wilayah Administratif | Koordinat Geospasial | Linimasa | Progres & Status | Rekanan Pelaksana | Tautan Verifikasi Resmi |")
-md_lines.append("|:---:|:---:|---|:---:|:---:|---|---|---|:---:|:---:|:---:|---|:---:|")
+md_lines.append("| No | Kode Seri Proyek | Password Akses PJ | Kode Paket & SiRUP | Nama Proyek & Spesifikasi Teknis Pengerjaan | Kategori | Pagu Anggaran | Sumber Dana | Instansi Pengampu | Wilayah Administratif | Koordinat Geospasial | Linimasa | Progres & Status | Rekanan Pelaksana | Tautan Verifikasi Resmi |")
+md_lines.append("|:---:|:---:|:---:|:---:|---|:---:|:---:|---|---|---|:---:|:---:|:---:|---|:---:|")
+md_lines.append("")
 
 for p in projects_data:
     pagu_str = format_rupiah(p["pagu"])
     coord_str = f"`{p['lat']:.6f}, {p['lng']:.6f}`"
     link_str = f"[{p['rujukan_judul']}]({p['rujukan_url']})"
     status_badge = f"**{p['status']}** ({p['progres']}%)"
-    md_lines.append(f"| {p['no']} | `{p['kode']}`<br>*{p['sirup']}* | {p['nama']}<br><small>{p['spesifikasi']}</small> | **{p['kategori']}** | {pagu_str} | {p['sumber_dana']} | {p['opd']} | {p['wilayah']} | {coord_str} | {p['linimasa']} | {status_badge} | {p['pelaksana']} | {link_str} |")
+    md_lines.append(f"| {p['no']} | **`{p['kode_proyek']}`** | `{p['kode_akses']}` | `{p['kode']}`<br>*{p['sirup']}* | {p['nama']}<br><small>{p['spesifikasi']}</small> | **{p['kategori']}** | {pagu_str} | {p['sumber_dana']} | {p['opd']} | {p['wilayah']} | {coord_str} | {p['linimasa']} | {status_badge} | {p['pelaksana']} | {link_str} |")
 
 md_lines.append("")
 md_lines.append("---")
 md_lines.append("")
-md_lines.append("## 4. REKAPITULASI & STATISTIK AGREGAT DATA")
+md_lines.append("## 5. REKAPITULASI & STATISTIK AGREGAT DATA")
 
 # Statistics
 total_anggaran = sum(p["pagu"] for p in projects_data)
@@ -921,11 +977,40 @@ r_intro = p_intro.add_run(
 r_intro.font.name = "Calibri"
 r_intro.font.size = Pt(9.5)
 
-# Heading 2
+# Heading 2: Sistem Serialisasi & Akses PJ
+h_auth = doc.add_paragraph()
+h_auth.paragraph_format.space_before = Pt(8)
+h_auth.paragraph_format.space_after = Pt(4)
+r_ha = h_auth.add_run("2. SISTEM SERIALISASI KODE PROYEK & KREDENSIAL AKSES PENANGGUNG JAWAB (PJ)")
+r_ha.font.name = "Calibri"
+r_ha.font.bold = True
+r_ha.font.size = Pt(12)
+r_ha.font.color.rgb = RGBColor(30, 58, 138)
+
+auth_desc = [
+    ("Format Serialisasi Kode Proyek (kode_proyek)", "Penomoran terstandarisasi berbasis hierarki kewilayahan [Kecamatan]-[Desa]-[Nomor Urut 3 Digit], contoh: SKD-SKD-001 (Kec. Sukodadi, Desa Sukodadi, Proyek ke-1), LMG-JTS-001 (Kec. Lamongan, Kel. Jetis), BBT-BBT-002 (Kec. Babat, Kel. Babat). Kode ini di-generate otomatis oleh sistem saat Pimpinan/Dinas menginput proyek baru."),
+    ("Password Khusus Otorisasi PJ (kode_akses)", "Kunci keamanan autentikasi unik 5 digit bertanda PJ-XXXXX (misal: PJ-17409, PJ-67946) yang diterbitkan eksklusif oleh Admin Pimpinan Daerah untuk mandor/kontraktor rekanan pelaksana. Penanggung jawab wajib memasukkan kode seri proyek dan password ini sebelum dapat mengakses lembar kerja proyek di sistem CivicTrack."),
+    ("Prinsip Akuntabilitas (Zero Cross-Project Tampering)", "Mencegah modifikasi data lintas proyek dan memastikan akuntabilitas input progres fisik, unggahan dokumentasi foto/video, serta pelaporan tahapan konstruksi hanya dilakukan oleh pihak berwenang.")
+]
+
+for auth_title, auth_detail in auth_desc:
+    pp = doc.add_paragraph()
+    pp.paragraph_format.space_before = Pt(1)
+    pp.paragraph_format.space_after = Pt(2)
+    pp.paragraph_format.left_indent = Inches(0.2)
+    r_at = pp.add_run(f"• {auth_title}: ")
+    r_at.font.name = "Calibri"
+    r_at.font.bold = True
+    r_at.font.size = Pt(9.5)
+    r_ad = pp.add_run(auth_detail)
+    r_ad.font.name = "Calibri"
+    r_ad.font.size = Pt(9.5)
+
+# Heading 3
 h2 = doc.add_paragraph()
 h2.paragraph_format.space_before = Pt(8)
 h2.paragraph_format.space_after = Pt(4)
-r_h2 = h2.add_run("2. KLASIFIKASI & PROGRAM UNGGULAN STRATEGIS DAERAH")
+r_h2 = h2.add_run("3. KLASIFIKASI & PROGRAM UNGGULAN STRATEGIS DAERAH")
 r_h2.font.name = "Calibri"
 r_h2.font.bold = True
 r_h2.font.size = Pt(12)
@@ -951,11 +1036,11 @@ for prog_title, prog_desc in programs:
     r_pd.font.name = "Calibri"
     r_pd.font.size = Pt(9.5)
 
-# Heading 3
+# Heading 4
 h3 = doc.add_paragraph()
 h3.paragraph_format.space_before = Pt(10)
 h3.paragraph_format.space_after = Pt(4)
-r_h3 = h3.add_run("3. KATALOG MASTER 35 DATA PROYEK PEMBANGUNAN KABUPATEN LAMONGAN")
+r_h3 = h3.add_run("4. KATALOG MASTER 35 DATA PROYEK PEMBANGUNAN KABUPATEN LAMONGAN")
 r_h3.font.name = "Calibri"
 r_h3.font.bold = True
 r_h3.font.size = Pt(12)
@@ -963,7 +1048,7 @@ r_h3.font.color.rgb = RGBColor(30, 58, 138)
 
 # Table Generation
 headers = [
-    "No", "Kode & SiRUP", "Nama Proyek & Spesifikasi Teknis", "Kategori",
+    "No", "Kode Seri & Kredensial PJ", "Nama Proyek & Spesifikasi Teknis", "Kategori",
     "Pagu Anggaran", "Sumber Dana", "OPD Pengampu", "Wilayah & Koordinat",
     "Linimasa & Status", "Penyedia Jasa", "Rujukan Resmi"
 ]
@@ -999,14 +1084,41 @@ for row_idx, item in enumerate(projects_data, start=1):
     row_cells[0].text = str(item["no"])
     row_cells[0].paragraphs[0].alignment = WD_ALIGN_PARAGRAPH.CENTER
     
-    # Col 1: Kode & SiRUP
+    # Col 1: Kode Seri & Kredensial PJ
     p1 = row_cells[1].paragraphs[0]
+    r_lbl1 = p1.add_run("KODE SERI:\n")
+    r_lbl1.font.name = "Calibri"
+    r_lbl1.font.size = Pt(7)
+    r_lbl1.font.bold = True
+    r_lbl1.font.color.rgb = RGBColor(100, 116, 139)
+
+    r_kd = p1.add_run(item["kode_proyek"] + "\n")
+    r_kd.font.name = "Calibri"
+    r_kd.font.bold = True
+    r_kd.font.size = Pt(8.5)
+    r_kd.font.color.rgb = RGBColor(24, 76, 120)
+
+    r_lbl2 = p1.add_run("PW AKSES PJ:\n")
+    r_lbl2.font.name = "Calibri"
+    r_lbl2.font.size = Pt(7)
+    r_lbl2.font.bold = True
+    r_lbl2.font.color.rgb = RGBColor(180, 83, 9)
+
+    r_pw = p1.add_run(item["kode_akses"] + "\n")
+    r_pw.font.name = "Calibri"
+    r_pw.font.bold = True
+    r_pw.font.size = Pt(8)
+    r_pw.font.color.rgb = RGBColor(180, 83, 9)
+
     r_k = p1.add_run(item["kode"] + "\n")
-    r_k.font.bold = True
-    r_k.font.size = Pt(8)
+    r_k.font.name = "Calibri"
+    r_k.font.size = Pt(7.5)
+    r_k.font.color.rgb = RGBColor(71, 85, 105)
+
     r_s = p1.add_run(item["sirup"])
+    r_s.font.name = "Calibri"
     r_s.font.italic = True
-    r_s.font.size = Pt(7.5)
+    r_s.font.size = Pt(7)
     r_s.font.color.rgb = RGBColor(100, 116, 139)
     
     # Col 2: Nama & Spesifikasi
@@ -1075,11 +1187,11 @@ for row_idx, item in enumerate(projects_data, start=1):
         for para in cell.paragraphs:
             para.paragraph_format.line_spacing = 1.1
 
-# Heading 4: Summary
+# Heading 5: Summary
 h4 = doc.add_paragraph()
 h4.paragraph_format.space_before = Pt(12)
 h4.paragraph_format.space_after = Pt(4)
-r_h4 = h4.add_run("4. REKAPITULASI & STATISTIK AGREGAT DATA")
+r_h4 = h4.add_run("5. REKAPITULASI & STATISTIK AGREGAT DATA")
 r_h4.font.name = "Calibri"
 r_h4.font.bold = True
 r_h4.font.size = Pt(12)

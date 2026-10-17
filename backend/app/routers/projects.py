@@ -1,3 +1,4 @@
+import secrets
 from typing import List, Optional
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query, status, BackgroundTasks
@@ -10,10 +11,73 @@ from app.models.project import Proyek, TahapanProgres, ProyekKategori, ProyekSta
 from app.models.report import RatingKepuasan
 from app.schemas.project import (
     ProyekCreate, ProyekUpdate, ProyekResponse, ProyekListItem, PaginatedProyekResponse,
-    TahapanCreate, TahapanResponse
+    TahapanCreate, TahapanResponse, ProjectVerifyAccessRequest, ProjectVerifyAccessResponse
 )
 from app.services.notification_service import notify_project_subscribers, send_project_update_notifications
 from app.core.spatial import validate_coordinates_in_wilayah
+
+# Peta singkatan 3 huruf konsisten untuk 27 kecamatan di Kabupaten Lamongan
+KECAMATAN_CODE_MAP = {
+    2: "SKR",   # Sukorame
+    3: "BLK",   # Bluluk
+    4: "MDO",   # Modo
+    5: "NGB",   # Ngimbang
+    6: "BBT",   # Babat
+    7: "KDP",   # Kedungpring
+    8: "BRD",   # Brondong
+    9: "LRN",   # Laren
+    10: "SKN",  # Sekaran
+    11: "MDR",  # Maduran
+    12: "SMB",  # Sambeng
+    13: "SGO",  # Sugio
+    14: "PCK",  # Pucuk
+    15: "PCR",  # Paciran
+    16: "SLK",  # Solokuro
+    17: "MTP",  # Mantup
+    18: "SKD",  # Sukodadi
+    19: "KGN",  # Karanggeneng
+    20: "KBH",  # Kembangbahu
+    21: "KTG",  # Kalitengah
+    22: "TUR",  # Turi
+    23: "LMG",  # Lamongan Kota
+    24: "TKG",  # Tikung
+    25: "KBN",  # Karangbinangun
+    26: "DKT",  # Deket
+    27: "GLG",  # Glagah
+    28: "SRJ",  # Sarirejo
+}
+
+def abbreviate_desa_name(desa_name: str) -> str:
+    cleaned = desa_name.replace("Kelurahan", "").replace("Desa", "").strip().upper()
+    consonants = "".join([c for c in cleaned if c in "BCDFGHJKLMNPQRSTVWXYZ"])
+    if len(consonants) >= 3:
+        return consonants[:3]
+    letters = "".join([c for c in cleaned if c.isalpha()])
+    return (letters + "XXX")[:3]
+
+def generate_project_code(db: Session, wilayah_id: int, desa_id: Optional[int] = None) -> str:
+    kec_code = KECAMATAN_CODE_MAP.get(wilayah_id, "LMG")
+    prefix = kec_code
+    if desa_id:
+        desa = db.query(WilayahAdministratif).filter(WilayahAdministratif.id == desa_id).first()
+        if desa:
+            desa_code = abbreviate_desa_name(desa.nama_wilayah)
+            prefix = f"{kec_code}-{desa_code}"
+
+    # Cari nomor urut berikutnya berdasarkan prefix
+    existing_count = db.query(Proyek).filter(Proyek.kode_proyek.like(f"{prefix}-%")).count()
+    candidate_num = existing_count + 1
+    candidate_code = f"{prefix}-{candidate_num:03d}"
+
+    while db.query(Proyek).filter(Proyek.kode_proyek == candidate_code).first():
+        candidate_num += 1
+        candidate_code = f"{prefix}-{candidate_num:03d}"
+
+    return candidate_code
+
+def generate_default_access_code() -> str:
+    pin = secrets.randbelow(90000) + 10000
+    return f"PJ-{pin}"
 
 router = APIRouter(prefix="/proyek", tags=["Proyek Pembangunan"])
 
@@ -97,6 +161,8 @@ def get_projects(
             progres_persen=p.progres_persen,
             tanggal_mulai=p.tanggal_mulai,
             estimasi_selesai=p.estimasi_selesai,
+            kode_proyek=p.kode_proyek,
+            kode_akses=p.kode_akses,
             created_at=p.created_at,
             updated_at=p.updated_at,
             nama_wilayah=p.wilayah.nama_wilayah if p.wilayah else None,
@@ -112,6 +178,42 @@ def get_projects(
         page=page,
         page_size=page_size,
         items=items
+    )
+
+@router.post("/verify-access", response_model=ProjectVerifyAccessResponse)
+def verify_project_access(
+    req: ProjectVerifyAccessRequest,
+    db: Session = Depends(get_db)
+):
+    """
+    Verifikasi Kunci Akses Khusus Penanggung Jawab Proyek.
+    Memverifikasi kode_proyek dan kode_akses yang diberikan oleh Pimpinan.
+    Jika valid, mengembalikan detail proyek untuk membuka lembar kerja khusus proyek tersebut.
+    """
+    clean_kode_proyek = req.kode_proyek.strip().upper()
+    clean_kode_akses = req.kode_akses.strip()
+
+    proyek = db.query(Proyek).filter(
+        func.upper(Proyek.kode_proyek) == clean_kode_proyek
+    ).first()
+
+    if not proyek:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Proyek dengan kode seri '{clean_kode_proyek}' tidak ditemukan."
+        )
+
+    if not proyek.kode_akses or proyek.kode_akses.strip() != clean_kode_akses:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Kunci akses / password khusus penanggung jawab tidak valid."
+        )
+
+    proyek_detail = get_project_detail(proyek.id, db)
+    return ProjectVerifyAccessResponse(
+        success=True,
+        message="Otorisasi berhasil. Lembar kerja penanggung jawab proyek dibuka.",
+        proyek=proyek_detail
     )
 
 @router.get("/{id}", response_model=ProyekResponse)
@@ -196,6 +298,15 @@ def create_project(
                 detail=f"Desa '{desa.nama_wilayah}' bukan merupakan bagian dari kecamatan terpilih (wilayah_id {req.wilayah_id})."
             )
 
+    # Kode Proyek: otomatis generate jika kosong atau gunakan input pimpinan
+    kode_proyek = req.kode_proyek.strip().upper() if req.kode_proyek else generate_project_code(db, req.wilayah_id, req.desa_id)
+    existing_code = db.query(Proyek).filter(Proyek.kode_proyek == kode_proyek).first()
+    if existing_code:
+        kode_proyek = generate_project_code(db, req.wilayah_id, req.desa_id)
+
+    # Kunci Akses Penanggung Jawab: otomatis generate PIN acak jika kosong
+    kode_akses = req.kode_akses.strip() if req.kode_akses else generate_default_access_code()
+
     proyek = Proyek(
         nama_proyek=req.nama_proyek,
         kategori=req.kategori,
@@ -210,7 +321,9 @@ def create_project(
         progres_persen=req.progres_persen,
         tanggal_mulai=req.tanggal_mulai,
         estimasi_selesai=req.estimasi_selesai,
-        dibuat_oleh=current_user.id
+        dibuat_oleh=current_user.id,
+        kode_proyek=kode_proyek,
+        kode_akses=kode_akses
     )
     db.add(proyek)
     db.commit()

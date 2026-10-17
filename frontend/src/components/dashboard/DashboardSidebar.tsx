@@ -1,6 +1,5 @@
 import React from 'react';
 import {
-  Shield,
   Compass,
   MapPin,
   Bookmark,
@@ -22,6 +21,7 @@ import {
   Camera,
 } from 'lucide-react';
 import type { UserProfile, UserRole } from '../../types';
+import { CivicTrackLogo } from '../CivicTrackLogo';
 
 interface DashboardSidebarProps {
   currentUser: UserProfile;
@@ -139,19 +139,14 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       >
         {/* ── 1. HEADER & BRAND ── */}
         <div className="h-16 px-4 flex items-center justify-between border-b border-white/10 shrink-0">
-          <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-9 h-9 bg-gradient-to-br from-[#2980B9] to-[#184C78] rounded-xl flex items-center justify-center text-white shrink-0 shadow-md ring-1 ring-white/20">
-              <Shield className="w-5 h-5 text-cyan-300" />
-            </div>
-            {!isCollapsed && (
-              <div className="leading-tight overflow-hidden">
-                <div className="font-['DM_Sans'] font-extrabold text-lg text-white tracking-tight flex items-center gap-1.5">
-                  <span>CivicTrack</span>
-                  <span className="text-[10px] bg-cyan-500/20 text-cyan-300 px-1.5 py-0.2 rounded font-bold border border-cyan-400/30 uppercase">
-                    Hub
-                  </span>
-                </div>
-                <div className="text-[10px] text-cyan-100/70 truncate">Sistem Transparansi Proyek</div>
+          <div className="flex items-center overflow-hidden">
+            {isCollapsed ? (
+              <div className="mx-auto" title="CivicTrack">
+                <CivicTrackLogo size="sm" showText={false} theme="dark" />
+              </div>
+            ) : (
+              <div className="overflow-hidden">
+                <CivicTrackLogo size="md" theme="dark" subtitle="Kabupaten Lamongan" />
               </div>
             )}
           </div>

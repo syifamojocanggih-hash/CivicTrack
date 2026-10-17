@@ -35,6 +35,7 @@ import {
 import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem } from '../types';
 import centennialParkImg from '../assets/centennial_park.jpg';
 import { apiService } from '../services/api';
+import { CivicTrackLogo } from './CivicTrackLogo';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON, LAMONGAN_DESA_GEOJSON } from '../data/geoWilayahData';
 
 // Bounding box resmi gabungan seluruh 27 Kecamatan di Kab. Lamongan (dihitung dari poligon GeoJSON BPS/BIG)
@@ -1246,10 +1247,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           <div className="h-4 w-px bg-slate-200 hidden sm:block" />
 
           <div className="flex items-center gap-2">
-            <img src="/civictrack-icon.png" alt="CivicTrack Logo" className="h-7 w-auto object-contain" />
-            <span className="font-['DM_Sans'] font-black text-base text-[#184C78] tracking-tight">
-              CivicTrack <span className="text-xs font-medium text-slate-500 hidden md:inline">| Peta Spasial Proyek</span>
-            </span>
+            <CivicTrackLogo size="sm" subtitle="Peta Spasial Proyek" />
           </div>
         </div>
 
@@ -2438,7 +2436,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                           <div>
                             <div className="flex items-center justify-between">
                               <div className="flex items-baseline gap-1">
-                                <span className="font-['DM_Sans'] text-sm font-bold text-slate-900 group-hover:text-[#6366F1] transition-colors">
+                                <span className="font-['DM_Sans'] text-sm font-bold text-slate-900 group-hover:text-[#2980B9] transition-colors">
                                   Rp {(p.anggaran / 1000000000).toFixed(1)} M
                                 </span>
                                 <span className="text-[10px] text-slate-400 font-normal">/proyek</span>
