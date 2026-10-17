@@ -28,6 +28,7 @@ vi.mock('../../services/api', () => ({
     getEvaluationDetail: vi.fn(),
     verifyEvaluation: vi.fn(),
     replyAduan: vi.fn(),
+    getAllReports: vi.fn(),
   },
 }));
 
@@ -37,6 +38,7 @@ describe('AdminDinasDashboard Form Validation', () => {
     vi.mocked(apiService.getProjects).mockResolvedValue({ projects: [], isFromBackend: true });
     vi.mocked(apiService.getWilayahStats).mockResolvedValue([]);
     vi.mocked(apiService.getEvaluations).mockResolvedValue([]);
+    vi.mocked(apiService.getAllReports).mockResolvedValue([]);
     vi.mocked(apiService.createProject).mockImplementation(async (data: any) => ({
       id: 999,
       nama_proyek: data.nama_proyek,

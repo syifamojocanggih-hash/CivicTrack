@@ -368,6 +368,35 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const markersLayerRef = useRef<any | null>(null);
   const polygonsLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
+  const legendRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-hide Legenda popover saat klik di luar area legenda atau menekan tombol Escape
+  useEffect(() => {
+    if (!isLegendOpen) return;
+
+    const handlePointerDownOutside = (event: MouseEvent | TouchEvent) => {
+      if (legendRef.current && !legendRef.current.contains(event.target as Node)) {
+        setIsLegendOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsLegendOpen(false);
+      }
+    };
+
+    // Gunakan capture phase agar tidak terblokir oleh stopPropagation internal Leaflet
+    document.addEventListener('pointerdown', handlePointerDownOutside, true);
+    document.addEventListener('touchstart', handlePointerDownOutside, true);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDownOutside, true);
+      document.removeEventListener('touchstart', handlePointerDownOutside, true);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLegendOpen]);
 
   // 1. Geolocation Watcher for Real-time GPS
   useEffect(() => {
@@ -545,9 +574,24 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
     try {
       const fullText = reportTitle.trim() ? `${reportTitle.trim()}: ${content}` : content;
-      await apiService.submitLaporan(selectedProjectId, {
-        isi_laporan: fullText,
-      });
+      await apiService.submitLaporan(
+        currentProject.id,
+        { isi_laporan: fullText },
+        {
+          nama_proyek: currentProject.nama_proyek,
+          nama_pelapor: currentUser?.nama || 'Warga Masyarakat',
+          email_pelapor: currentUser?.email || 'warga@civictrack.id',
+          judul: reportTitle.trim() || 'Aduan Warga',
+          kategori_aduan:
+            reportCategory === 'keterlambatan'
+              ? 'Keterlambatan Pengerjaan Fisik'
+              : reportCategory === 'kerusakan'
+              ? 'Jalan Rusak / Kualitas Aspal Buruk'
+              : reportCategory === 'lalu_lintas'
+              ? 'Kemacetan / Pengalihan Rute Terganggu'
+              : 'Debu & Dampak Lingkungan Warga',
+        }
+      );
 
       setReportSent(true);
       setTimeout(() => {
@@ -1370,7 +1414,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           )}
 
           {/* Legenda Peta Dropdown Button in Top-Left */}
-          <div className="relative">
+          <div ref={legendRef} className="relative">
             <button
               onClick={() => setIsLegendOpen(!isLegendOpen)}
               className={`bg-white/95 backdrop-blur-md hover:bg-white border shadow-md rounded-2xl px-3 py-2 text-xs font-bold text-slate-700 flex items-center gap-1.5 cursor-pointer hover:shadow-lg transition-all ${
@@ -2286,7 +2330,34 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                     Laporan telah dicatat ke sistem dan tiket pelacakan telah diterbitkan untuk tim pengawas lapangan.
                   </p>
                 </div>
-              ) : (
+              ) : (() => {
+                let existingReportInMap: any = null;
+                try {
+                  const saved = localStorage.getItem('civictrack_submitted_reports');
+                  if (saved) {
+                    const list = JSON.parse(saved);
+                    existingReportInMap = list.find((item: any) => item.proyek_id === currentProject.id) || null;
+                  }
+                } catch {}
+
+                if (existingReportInMap) {
+                  return (
+                    <div className="bg-amber-50 border border-amber-200 rounded-2xl p-4 text-xs space-y-2">
+                      <div className="font-bold text-amber-900 flex items-center gap-2">
+                        <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Anda Sudah Mengajukan Aduan Pada Proyek Ini</span>
+                      </div>
+                      <p className="text-amber-800 text-[11px]">
+                        Judul Aduan: <strong>"{existingReportInMap.judul}"</strong>
+                      </p>
+                      <p className="text-[#6C757D] text-[11px] leading-relaxed">
+                        Setiap warga hanya diperkenankan memiliki 1 pengaduan aktif per proyek. Silakan buka Dashboard Warga untuk melihat tindak lanjut atau mengedit pengaduan Anda sebelum ditanggapi oleh dinas.
+                      </p>
+                    </div>
+                  );
+                }
+
+                return (
                 <form onSubmit={handleReportSubmit} className="space-y-3">
                   <div>
                     <label className="font-bold text-slate-700 block mb-1">Kategori Aduan</label>
@@ -2334,7 +2405,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                     <span>Kirimkan Aduan ke Dinas</span>
                   </button>
                 </form>
-              )}
+              ); })()}
             </div>
           )}
 

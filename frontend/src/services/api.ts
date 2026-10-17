@@ -22,9 +22,11 @@ import type {
   ApiNotificationItem,
   SubscriptionStatus,
   ApiEvaluationStatusLog,
+  LaporanAduan,
 } from '../types';
 import { LAMONGAN_DESA_GEOJSON } from '../data/lamonganDesaGeoJSON';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
+import { MOCK_LAPORAN_WARGA } from '../data/dashboardMockData';
 
 const BASE_URL = '/api/v1';
 
@@ -544,23 +546,165 @@ export const apiService = {
 
   // ── Laporan & Pengaduan Warga ──
 
-  async submitLaporan(projectId: number, data: LaporanCreatePayload): Promise<LaporanResponseItem> {
+  async submitLaporan(
+    projectId: number,
+    data: LaporanCreatePayload,
+    extraMeta?: {
+      nama_proyek?: string;
+      nama_pelapor?: string;
+      email_pelapor?: string;
+      judul?: string;
+      kategori_aduan?: string;
+    }
+  ): Promise<LaporanResponseItem> {
     const headers = getAuthHeaders();
-    if (!headers['Authorization']) {
-      throw new Error('Harap masuk terlebih dahulu untuk mengirimkan aduan.');
+    let resData: LaporanResponseItem | null = null;
+
+    if (headers['Authorization']) {
+      const res = await fetch(`${BASE_URL}/proyek/${projectId}/laporan`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+      });
+
+      if (res.ok) {
+        resData = await res.json();
+      } else {
+        await handleApiError(res, 'Gagal mengirimkan laporan pengaduan.');
+      }
+    } else {
+      throw new Error('Harap masuk terlebih dahulu untuk mengirimkan pengaduan.');
     }
 
-    const res = await fetch(`${BASE_URL}/proyek/${projectId}/laporan`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data),
-    });
-
-    if (!res.ok) {
-      await handleApiError(res, 'Gagal mengirimkan laporan pengaduan.');
+    const reportId = resData ? resData.id : Date.now();
+    let parsedJudul = extraMeta?.judul || 'Aduan Warga';
+    let parsedIsi = data.isi_laporan;
+    if (!extraMeta?.judul && data.isi_laporan.includes(': ')) {
+      const parts = data.isi_laporan.split(': ');
+      parsedJudul = parts[0];
+      parsedIsi = parts.slice(1).join(': ');
     }
 
-    return await res.json();
+    const localItem: LaporanAduan = {
+      id: reportId,
+      proyek_id: projectId,
+      nama_proyek: extraMeta?.nama_proyek || resData?.nama_proyek || `Proyek #${projectId}`,
+      user_id: resData?.user_id || 1,
+      nama_pelapor: extraMeta?.nama_pelapor || resData?.pelapor?.nama || 'Warga Masyarakat',
+      email_pelapor: extraMeta?.email_pelapor || resData?.pelapor?.email || 'warga@civictrack.id',
+      judul: parsedJudul,
+      isi_laporan: parsedIsi,
+      kategori_aduan: extraMeta?.kategori_aduan || 'Pengaduan Teknis Lapangan',
+      status: 'menunggu',
+      tanggal_lapor: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+    };
+
+    // Save to localStorage for instant cross-tab and cross-role synchronization
+    try {
+      const saved = localStorage.getItem('civictrack_submitted_reports');
+      const list: LaporanAduan[] = saved ? JSON.parse(saved) : [];
+      localStorage.setItem(
+        'civictrack_submitted_reports',
+        JSON.stringify([localItem, ...list.filter((item) => item.id !== localItem.id)])
+      );
+    } catch {
+      // ignore
+    }
+
+    // Dispatch global event for instant UI update across active components
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('civictrack_new_aduan', { detail: localItem }));
+    }
+
+    if (resData) return resData;
+
+    return {
+      id: reportId,
+      proyek_id: projectId,
+      nama_proyek: localItem.nama_proyek,
+      user_id: localItem.user_id,
+      isi_laporan: data.isi_laporan,
+      status_tindak_lanjut: 'baru',
+      created_at: new Date().toISOString(),
+      pelapor: {
+        id: localItem.user_id,
+        nama: localItem.nama_pelapor,
+        email: localItem.email_pelapor,
+        role: 'warga',
+      },
+    };
+  },
+
+  async getAllReports(): Promise<LaporanAduan[]> {
+    let backendItems: LaporanAduan[] = [];
+    try {
+      const res = await fetch(`${BASE_URL}/laporan`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (res.ok) {
+        const data: LaporanResponseItem[] = await res.json();
+        backendItems = data.map((item) => {
+          let judul = 'Aduan Warga';
+          let isi = item.isi_laporan;
+          if (item.isi_laporan.includes(': ')) {
+            const parts = item.isi_laporan.split(': ');
+            judul = parts[0];
+            isi = parts.slice(1).join(': ');
+          } else if (item.isi_laporan.length > 50) {
+            judul = item.isi_laporan.slice(0, 47) + '...';
+          }
+
+          let statusAduan: 'menunggu' | 'diproses' | 'selesai' | 'ditolak' = 'menunggu';
+          if (item.status_tindak_lanjut === 'diproses') statusAduan = 'diproses';
+          else if (item.status_tindak_lanjut === 'ditanggapi') statusAduan = 'selesai';
+          else if (item.status_tindak_lanjut === 'ditolak') statusAduan = 'ditolak';
+
+          const pet = item.penanggap?.nama || (item.ditanggapi_oleh ? `Petugas #${item.ditanggapi_oleh}` : undefined);
+
+          return {
+            id: item.id,
+            proyek_id: item.proyek_id,
+            nama_proyek: item.nama_proyek || `Proyek #${item.proyek_id}`,
+            user_id: item.user_id,
+            nama_pelapor: item.pelapor?.nama || 'Warga Masyarakat',
+            email_pelapor: item.pelapor?.email || 'warga@civictrack.id',
+            judul,
+            isi_laporan: isi,
+            kategori_aduan: 'Pengaduan Teknis Lapangan',
+            status: statusAduan,
+            tanggal_lapor: new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+            tanggapan_dinas: item.tanggapan_dinas || undefined,
+            tanggal_tanggapan: item.tanggapan_dinas
+              ? new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' })
+              : undefined,
+            petugas_penjawab: pet,
+          };
+        });
+      }
+    } catch (err) {
+      console.warn('Gagal memuat aduan dari backend:', err);
+    }
+
+    // Retrieve locally submitted reports
+    let localSubmitted: LaporanAduan[] = [];
+    try {
+      const saved = localStorage.getItem('civictrack_submitted_reports');
+      if (saved) {
+        localSubmitted = JSON.parse(saved);
+      }
+    } catch {
+      // ignore
+    }
+
+    const existingIds = new Set(backendItems.map((b) => b.id));
+    const uniqueLocal = localSubmitted.filter((l) => !existingIds.has(l.id));
+
+    // Combine local + backend (newest first)
+    const combined = [...uniqueLocal, ...backendItems];
+    const combinedIds = new Set(combined.map((c) => c.id));
+    const uniqueMocks = MOCK_LAPORAN_WARGA.filter((m) => !combinedIds.has(m.id));
+
+    return [...combined, ...uniqueMocks];
   },
 
   async getProjectReports(projectId: number): Promise<LaporanResponseItem[]> {
@@ -576,23 +720,186 @@ export const apiService = {
     return Array.isArray(data) ? data : [];
   },
 
-  async replyAduan(reportId: number, data: LaporanTanggapiPayload): Promise<LaporanResponseItem> {
+  async replyAduan(reportId: number, data: LaporanTanggapiPayload): Promise<LaporanResponseItem | null> {
     const headers = getAuthHeaders();
-    if (!headers['Authorization']) {
-      throw new Error('Anda harus login untuk menanggapi laporan.');
+    let resData: LaporanResponseItem | null = null;
+    if (headers['Authorization']) {
+      try {
+        const res = await fetch(`${BASE_URL}/laporan/${reportId}/tanggapi`, {
+          method: 'PUT',
+          headers,
+          body: JSON.stringify(data),
+        });
+        if (res.ok) {
+          resData = await res.json();
+        }
+      } catch (err) {
+        console.warn('Backend replyAduan failed:', err);
+      }
     }
 
-    const res = await fetch(`${BASE_URL}/laporan/${reportId}/tanggapi`, {
+    // Also update locally cached report
+    try {
+      const saved = localStorage.getItem('civictrack_submitted_reports');
+      if (saved) {
+        const list: LaporanAduan[] = JSON.parse(saved);
+        const updated = list.map((item) =>
+          item.id === reportId
+            ? {
+                ...item,
+                status: (data.status_tindak_lanjut === 'ditanggapi' ? 'selesai' : data.status_tindak_lanjut) as any,
+                tanggapan_dinas: data.tanggapan_dinas,
+                tanggal_tanggapan: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+              }
+            : item
+        );
+        localStorage.setItem('civictrack_submitted_reports', JSON.stringify(updated));
+      }
+    } catch {
+      // ignore
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('civictrack_replied_aduan', {
+          detail: {
+            reportId,
+            status: data.status_tindak_lanjut,
+            tanggapan_dinas: data.tanggapan_dinas,
+          },
+        })
+      );
+    }
+
+    return resData;
+  },
+
+  async updateLaporan(
+    reportId: number,
+    data: LaporanCreatePayload,
+    extraMeta?: {
+      judul?: string;
+      kategori_aduan?: string;
+    }
+  ): Promise<LaporanResponseItem> {
+    const headers = getAuthHeaders();
+    if (!headers['Authorization']) {
+      throw new Error('Harap masuk terlebih dahulu untuk mengedit pengaduan.');
+    }
+
+    const res = await fetch(`${BASE_URL}/laporan/${reportId}`, {
       method: 'PUT',
       headers,
       body: JSON.stringify(data),
     });
 
     if (!res.ok) {
-      await handleApiError(res, 'Gagal menanggapi aduan masyarakat.');
+      await handleApiError(res, 'Gagal memperbarui laporan pengaduan.');
     }
 
-    return await res.json();
+    const resData: LaporanResponseItem = await res.json();
+
+    let parsedJudul = extraMeta?.judul || 'Aduan Warga';
+    let parsedIsi = data.isi_laporan;
+    if (!extraMeta?.judul && data.isi_laporan.includes(': ')) {
+      const parts = data.isi_laporan.split(': ');
+      parsedJudul = parts[0];
+      parsedIsi = parts.slice(1).join(': ');
+    }
+
+    // Update in localStorage as well
+    try {
+      const saved = localStorage.getItem('civictrack_submitted_reports');
+      if (saved) {
+        const list: LaporanAduan[] = JSON.parse(saved);
+        const updated = list.map((item) =>
+          item.id === reportId
+            ? {
+                ...item,
+                judul: parsedJudul,
+                isi_laporan: parsedIsi,
+                kategori_aduan: extraMeta?.kategori_aduan || item.kategori_aduan,
+              }
+            : item
+        );
+        localStorage.setItem('civictrack_submitted_reports', JSON.stringify(updated));
+      }
+    } catch {
+      // ignore
+    }
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('civictrack_updated_aduan', {
+          detail: {
+            id: reportId,
+            judul: parsedJudul,
+            isi_laporan: parsedIsi,
+            kategori_aduan: extraMeta?.kategori_aduan,
+          },
+        })
+      );
+    }
+
+    return resData;
+  },
+
+  async getReportDetail(reportId: number): Promise<LaporanAduan | null> {
+    try {
+      const res = await fetch(`${BASE_URL}/laporan/${reportId}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (res.ok) {
+        const item: LaporanResponseItem = await res.json();
+        let judul = 'Aduan Warga';
+        let isi = item.isi_laporan;
+        if (item.isi_laporan.includes(': ')) {
+          const parts = item.isi_laporan.split(': ');
+          judul = parts[0];
+          isi = parts.slice(1).join(': ');
+        } else if (item.isi_laporan.length > 50) {
+          judul = item.isi_laporan.slice(0, 47) + '...';
+        }
+
+        let statusAduan: 'menunggu' | 'diproses' | 'selesai' | 'ditolak' = 'menunggu';
+        if (item.status_tindak_lanjut === 'diproses') statusAduan = 'diproses';
+        else if (item.status_tindak_lanjut === 'ditanggapi') statusAduan = 'selesai';
+        else if (item.status_tindak_lanjut === 'ditolak') statusAduan = 'ditolak';
+
+        const pet = item.penanggap?.nama || (item.ditanggapi_oleh ? `Petugas #${item.ditanggapi_oleh}` : undefined);
+
+        return {
+          id: item.id,
+          proyek_id: item.proyek_id,
+          nama_proyek: item.nama_proyek || `Proyek #${item.proyek_id}`,
+          user_id: item.user_id,
+          nama_pelapor: item.pelapor?.nama || 'Warga Masyarakat',
+          email_pelapor: item.pelapor?.email || 'warga@civictrack.id',
+          judul,
+          isi_laporan: isi,
+          kategori_aduan: 'Pengaduan Teknis Lapangan',
+          status: statusAduan,
+          tanggal_lapor: new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+          tanggapan_dinas: item.tanggapan_dinas || undefined,
+          tanggal_tanggapan: item.tanggapan_dinas ? new Date(item.created_at).toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }) : undefined,
+          petugas_penjawab: pet,
+        };
+      }
+    } catch {
+      // ignore
+    }
+
+    // Fallback to local storage if available
+    try {
+      const saved = localStorage.getItem('civictrack_submitted_reports');
+      if (saved) {
+        const list: LaporanAduan[] = JSON.parse(saved);
+        const found = list.find((item) => item.id === reportId);
+        if (found) return found;
+      }
+    } catch {}
+
+    return null;
   },
 
   // ── Rating & Ulasan Warga ──

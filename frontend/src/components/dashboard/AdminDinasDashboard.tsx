@@ -34,6 +34,7 @@ import {
 } from '../../data/dashboardMockData';
 import { apiService } from '../../services/api';
 import { MiniMapOverview } from './MiniMapOverview';
+import { AduanDetailView } from './AduanDetailView';
 import { WILAYAH_DATA } from '../../data/geoWilayahData';
 import { validateCoordinatesInKecamatan } from '../../utils/spatial';
 
@@ -172,6 +173,33 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   const [selectedAduanToReply, setSelectedAduanToReply] = useState<LaporanAduan | null>(null);
   const [replyText, setReplyText] = useState('');
   const [replyNewStatus, setReplyNewStatus] = useState<'diproses' | 'selesai'>('diproses');
+
+  // Load aduan warga from database & persistent storage + real-time listener
+  React.useEffect(() => {
+    if (typeof apiService.getAllReports === 'function') {
+      apiService
+        .getAllReports()
+        .then((reports) => {
+          if (reports && reports.length > 0) {
+            setAduanList(reports);
+          }
+        })
+        .catch((err) => {
+          console.warn('Gagal memuat aduan masyarakat:', err);
+        });
+    }
+
+    const handleNewAduan = (event: any) => {
+      if (event.detail) {
+        setAduanList((prev) => [event.detail, ...prev.filter((item) => item.id !== event.detail.id)]);
+      }
+    };
+
+    window.addEventListener('civictrack_new_aduan', handleNewAduan);
+    return () => {
+      window.removeEventListener('civictrack_new_aduan', handleNewAduan);
+    };
+  }, []);
 
   // Evaluasi cacat state
   const [evaluasiList, setEvaluasiList] = useState<EvaluasiCacatItem[]>(MOCK_EVALUASI_CACAT);
@@ -519,6 +547,24 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     }
     return true;
   });
+
+  if (selectedAduanToReply) {
+    return (
+      <AduanDetailView
+        aduan={selectedAduanToReply}
+        currentUser={currentUser}
+        projects={projects}
+        onBack={() => setSelectedAduanToReply(null)}
+        onOpenProjectDetail={onOpenProjectDetail}
+        onAduanUpdated={(updated) => {
+          setAduanList((prev) =>
+            prev.map((item) => (item.id === updated.id ? updated : item))
+          );
+          setSelectedAduanToReply(updated);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 animate-hero-in">
@@ -986,29 +1032,31 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                   </p>
                 </div>
 
-                {item.tanggapan_dinas ? (
+                {item.tanggapan_dinas && (
                   <div className="p-3 bg-[#EBF4FB] rounded-xl border border-[#c5def2] text-xs space-y-1">
                     <div className="font-bold text-[#184C78] flex items-center justify-between">
                       <span>Tanggapan Resmi Dinas ({item.petugas_penjawab}):</span>
                       <span className="text-[10px] text-[#6C757D] font-mono">{item.tanggal_tanggapan}</span>
                     </div>
-                    <p className="text-[#212529] leading-relaxed">{item.tanggapan_dinas}</p>
-                  </div>
-                ) : (
-                  <div className="pt-2 flex justify-end">
-                    <button
-                      onClick={() => {
-                        setSelectedAduanToReply(item);
-                        setReplyText('');
-                        setReplyNewStatus('diproses');
-                      }}
-                      className="btn-primary !h-8 text-xs flex items-center gap-1.5 shadow-xs"
-                    >
-                      <MessageSquare className="w-3.5 h-3.5" />
-                      <span>Beri Tanggapan Resmi</span>
-                    </button>
+                    <p className="text-[#212529] leading-relaxed line-clamp-3">{item.tanggapan_dinas}</p>
                   </div>
                 )}
+
+                <div className="pt-2 flex justify-end gap-2">
+                  <button
+                    onClick={() => {
+                      setSelectedAduanToReply(item);
+                    }}
+                    className={`${
+                      item.tanggapan_dinas
+                        ? 'btn-ghost border border-[#c5def2] text-[#184C78] hover:bg-[#EBF4FB]'
+                        : 'btn-primary'
+                    } !h-8 text-xs flex items-center gap-1.5 shadow-xs`}
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>{item.tanggapan_dinas ? 'Buka Halaman Detail & Riwayat Respon' : 'Buka Halaman Respon Tanggapan'}</span>
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -1697,63 +1745,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </button>
                 <button type="submit" className="btn-primary">
                   Unggah Sekarang
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: BALAS ADUAN WARGA ── */}
-      {selectedAduanToReply && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6]">
-            <div className="bg-[#184C78] text-white p-5">
-              <h3 className="font-['DM_Sans'] text-base font-bold">Kirim Tanggapan Resmi Dinas</h3>
-              <p className="text-xs text-white/75 mt-0.5">
-                Kepada: {selectedAduanToReply.nama_pelapor} ({selectedAduanToReply.judul})
-              </p>
-            </div>
-            <form onSubmit={handleSendAduanReply} className="p-5 space-y-3 text-xs">
-              <div className="p-3 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6]/60">
-                <div className="font-bold text-[#184C78]">Keluhan Warga:</div>
-                <p className="text-[#495057] italic mt-1">"{selectedAduanToReply.isi_laporan}"</p>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Update Status Aduan</label>
-                <select
-                  value={replyNewStatus}
-                  onChange={(e) => setReplyNewStatus(e.target.value as any)}
-                  className="w-full p-2 border border-[#DCE0E6] rounded-lg bg-white outline-none"
-                >
-                  <option value="diproses">Sedang Ditindaklanjuti Tim Lapangan</option>
-                  <option value="selesai">Tindak Lanjut Selesai / Rampung</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Isi Tanggapan Resmi Dinas</label>
-                <textarea
-                  rows={4}
-                  required
-                  placeholder="Tuliskan tindakan konkret yang telah atau sedang diambil oleh dinas teknis dan kontraktor..."
-                  value={replyText}
-                  onChange={(e) => setReplyText(e.target.value)}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                <button
-                  type="button"
-                  onClick={() => setSelectedAduanToReply(null)}
-                  className="btn-ghost"
-                >
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary">
-                  Publikasikan Tanggapan
                 </button>
               </div>
             </form>

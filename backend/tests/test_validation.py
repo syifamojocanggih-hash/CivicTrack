@@ -925,20 +925,51 @@ def test_laporan_masyarakat_antispam_and_ratelimit(client):
     assert "***" in res_valid_1.json()["isi_laporan"]
     assert "anjing" not in res_valid_1.json()["isi_laporan"].lower()
 
-    # 5. Uji Rate Limiting: Maksimal 5 laporan per 10 menit
+    # 5. Uji Rate Limiting: Maksimal 5 laporan per 10 menit (menggunakan proyek berbeda untuk tiap aduan)
     # res_valid_1 sudah merupakan request ke-1 yang berhasil
     # Kirim request ke-2 s.d. ke-5 secara beruntun -> semuanya HARUS DITERIMA 201
     for i in range(2, 6):
+        p_extra = client.post("/api/v1/proyek", json={
+            "nama_proyek": f"Proyek Uji Rate Limit {i}",
+            "kategori": "drainase",
+            "latitude": -7.15,
+            "longitude": 112.35,
+            "wilayah_id": wid,
+            "dinas_id": did,
+            "anggaran": 100000000.0,
+            "status": "berjalan",
+            "progres_persen": 10,
+            "tanggal_mulai": "2025-01-01",
+            "estimasi_selesai": "2025-08-01"
+        }, headers=admin_headers)
+        pid_i = p_extra.json()["id"]
+
         res_i = client.post(
-            f"/api/v1/proyek/{pid}/laporan",
+            f"/api/v1/proyek/{pid_i}/laporan",
             json={"isi_laporan": f"Keluhan ke-{i}: Akses jalan alternatif becek saat hujan deras."},
             headers=warga_headers
         )
         assert res_i.status_code == 201, f"Request ke-{i} gagal: {res_i.text}"
 
+    # Buat proyek ke-6 untuk menguji limit rate limit tercapai
+    p_extra_6 = client.post("/api/v1/proyek", json={
+        "nama_proyek": "Proyek Uji Rate Limit 6",
+        "kategori": "drainase",
+        "latitude": -7.15,
+        "longitude": 112.35,
+        "wilayah_id": wid,
+        "dinas_id": did,
+        "anggaran": 100000000.0,
+        "status": "berjalan",
+        "progres_persen": 10,
+        "tanggal_mulai": "2025-01-01",
+        "estimasi_selesai": "2025-08-01"
+    }, headers=admin_headers)
+    pid_6 = p_extra_6.json()["id"]
+
     # Request ke-6 melebihi batas (5/10minute) -> HARUS DITOLAK 429 Too Many Requests
     res_exceeded = client.post(
-        f"/api/v1/proyek/{pid}/laporan",
+        f"/api/v1/proyek/{pid_6}/laporan",
         json={"isi_laporan": "Keluhan ke-6: Mencoba spam laporan melebihi ambang batas rate limit."},
         headers=warga_headers
     )
@@ -946,8 +977,48 @@ def test_laporan_masyarakat_antispam_and_ratelimit(client):
     assert "Batas pengiriman laporan tercapai" in res_exceeded.json()["detail"]
     assert "5 per 10 minute" in res_exceeded.json()["detail"]
 
+    # Bersihkan storage limiter untuk pengujian aturan bisnis pengaduan
+    limiter._storage.reset()
+
+    # 6. Uji Aturan 1 Proyek 1 Aduan: Coba kirim ulang ke proyek yang sama -> HARUS DITOLAK 400
+    res_duplicate = client.post(
+        f"/api/v1/proyek/{pid}/laporan",
+        json={"isi_laporan": "Keluhan duplikat pada proyek yang sama yang harus ditolak."},
+        headers=warga_headers
+    )
+    assert res_duplicate.status_code == 400
+    assert "sudah memiliki pengaduan" in res_duplicate.json()["detail"].lower()
+
+    # 7. Uji Fitur Edit Aduan sebelum ditanggapi dinas -> HARUS DITERIMA 200
+    lap_id = res_valid_1.json()["id"]
+    res_edit = client.put(
+        f"/api/v1/laporan/{lap_id}",
+        json={"isi_laporan": "Revisi: Akses jalan alternatif sangat becek saat hujan dan perlu perkerasan."},
+        headers=warga_headers
+    )
+    assert res_edit.status_code == 200
+    assert "Revisi" in res_edit.json()["isi_laporan"]
+
+    # 8. Uji Edit Aduan SETELAH ditanggapi dinas -> HARUS DITOLAK 400
+    res_tanggapi = client.put(
+        f"/api/v1/laporan/{lap_id}/tanggapi",
+        json={"status_tindak_lanjut": "diproses", "tanggapan_dinas": "Tim dinas sedang meninjau lokasi."},
+        headers=admin_headers
+    )
+    assert res_tanggapi.status_code == 200
+
+    res_edit_locked = client.put(
+        f"/api/v1/laporan/{lap_id}",
+        json={"isi_laporan": "Revisi kedua setelah dinas menanggapi, harus ditolak sistem."},
+        headers=warga_headers
+    )
+    assert res_edit_locked.status_code == 400
+    assert "tidak dapat diedit" in res_edit_locked.json()["detail"].lower()
+    assert "5 per 10 minute" in res_exceeded.json()["detail"]
+
     # Bersihkan storage limiter setelah pengujian selesai
     limiter._storage.reset()
+
 
 
 

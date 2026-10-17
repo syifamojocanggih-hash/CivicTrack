@@ -38,6 +38,7 @@ class LaporanTanggapi(BaseModel):
 class LaporanResponse(BaseModel):
     id: int
     proyek_id: int
+    nama_proyek: Optional[str] = None
     user_id: int
     isi_laporan: str
     status_tindak_lanjut: LaporanStatus

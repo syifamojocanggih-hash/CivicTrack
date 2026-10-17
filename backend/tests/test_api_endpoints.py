@@ -113,6 +113,16 @@ def test_full_civictrack_features_flow(client):
     assert rep_res.status_code == 200
     assert rep_res.json()["status_tindak_lanjut"] == "ditanggapi"
 
+    # Cek daftar semua laporan lintas proyek untuk akun dinas
+    all_laporan_res = client.get("/api/v1/laporan")
+    assert all_laporan_res.status_code == 200
+    all_laporan = all_laporan_res.json()
+    assert len(all_laporan) >= 1
+    found_laporan = next((lap for lap in all_laporan if lap["id"] == laporan_id), None)
+    assert found_laporan is not None
+    assert found_laporan["nama_proyek"] == "Pembangunan Saluran Air Veteran"
+    assert found_laporan["status_tindak_lanjut"] == "ditanggapi"
+
     # 11. Fitur 9: Open Data API Publik
     open_res = client.get("/api/v1/open-data/proyek?format=geojson")
     assert open_res.status_code == 200

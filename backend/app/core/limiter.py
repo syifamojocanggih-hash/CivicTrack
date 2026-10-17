@@ -39,8 +39,8 @@ def get_user_or_ip_key(request: Request) -> str:
     client_ip = get_remote_address(request)
     return f"ip:{client_ip or '127.0.0.1'}"
 
-# Limiter berbasis memory storage
-limiter = Limiter(key_func=get_user_or_ip_key)
+# Limiter berbasis memory storage dengan endpoint-level scoping
+limiter = Limiter(key_func=get_user_or_ip_key, key_style="endpoint")
 
 def rate_limit_exceeded_handler(request: Request, exc: RateLimitExceeded) -> Response:
     """

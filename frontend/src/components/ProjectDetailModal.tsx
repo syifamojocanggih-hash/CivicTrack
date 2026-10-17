@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { X, MapPin, Building, DollarSign, Star, CheckCircle, Bell, Sparkles, Send, Check } from 'lucide-react';
+import { X, MapPin, Building, DollarSign, Star, CheckCircle, Bell, Sparkles, Send, Check, AlertCircle } from 'lucide-react';
 import type { ProyekItem, UserProfile } from '../types';
 import { apiService } from '../services/api';
 
@@ -25,11 +25,13 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const [activeTab, setActiveTab] = useState<'timeline' | 'gallery' | 'report' | 'rating'>('timeline');
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
+  const [existingReport, setExistingReport] = useState<any>(null);
 
-  // Sinkronisasi status langganan dari API saat modal dibuka
+  // Sinkronisasi status langganan dan laporan yang sudah pernah dikirim dari API / cache
   useEffect(() => {
     if (!isOpen || !project || !currentUser) {
       setIsSubscribed(false);
+      setExistingReport(null);
       return;
     }
     let isCancelled = false;
@@ -38,6 +40,18 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         setIsSubscribed(res.is_subscribed);
       }
     }).catch(() => {});
+
+    try {
+      const saved = localStorage.getItem('civictrack_submitted_reports');
+      if (saved) {
+        const list = JSON.parse(saved);
+        const found = list.find((item: any) => item.proyek_id === project.id);
+        if (!isCancelled) {
+          setExistingReport(found || null);
+        }
+      }
+    } catch {}
+
     return () => {
       isCancelled = true;
     };
@@ -106,9 +120,17 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
     setReportError(null);
     try {
       const fullContent = reportTitle.trim() ? `${reportTitle.trim()}: ${content}` : content;
-      await apiService.submitLaporan(project.id, {
-        isi_laporan: fullContent,
-      });
+      await apiService.submitLaporan(
+        project.id,
+        { isi_laporan: fullContent },
+        {
+          nama_proyek: project.nama_proyek,
+          nama_pelapor: currentUser?.nama || 'Warga Masyarakat',
+          email_pelapor: currentUser?.email || 'warga@civictrack.id',
+          judul: reportTitle.trim() || 'Aduan Warga',
+          kategori_aduan: 'Pengaduan Teknis Lapangan',
+        }
+      );
 
       setReportSubmitted(true);
       setTimeout(() => {
@@ -428,6 +450,19 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                     <strong className="block font-bold">Laporan Berhasil Terkirim!</strong>
                     Nomor tiket aduan Anda telah dicatat dalam sistem dan menunggu tanggapan resmi dinas.
                   </div>
+                </div>
+              ) : existingReport ? (
+                <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl space-y-2 text-xs">
+                  <div className="font-bold text-amber-900 flex items-center gap-2">
+                    <AlertCircle className="w-4 h-4 text-amber-600 shrink-0" />
+                    <span>Anda Sudah Memiliki Pengaduan Pada Proyek Ini</span>
+                  </div>
+                  <p className="text-amber-800">
+                    Judul Aduan: <strong>"{existingReport.judul}"</strong>
+                  </p>
+                  <p className="text-[#6C757D] leading-relaxed">
+                    Setiap warga hanya diperkenankan memiliki 1 pengaduan aktif per proyek. Anda dapat melihat perkembangan respon dinas atau mengedit pengaduan melalui Dashboard Warga sebelum ditanggapi oleh dinas.
+                  </p>
                 </div>
               ) : (
                 <form onSubmit={handleReportSubmit} className="space-y-3">

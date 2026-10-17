@@ -17,6 +17,8 @@ import {
   Check,
   History,
   FileText,
+  Edit3,
+  AlertCircle,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -34,6 +36,7 @@ import {
 } from '../../data/dashboardMockData';
 import { apiService } from '../../services/api';
 import { MiniMapOverview } from './MiniMapOverview';
+import { AduanDetailView } from './AduanDetailView';
 
 interface WargaDashboardProps {
   currentUser: UserProfile;
@@ -98,6 +101,12 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     kategori_aduan: 'Dampak Lingkungan & Keselamatan',
   });
   const [reportFilter, setReportFilter] = useState<'semua' | 'menunggu' | 'diproses' | 'selesai'>('semua');
+  const [selectedAduanDetail, setSelectedAduanDetail] = useState<LaporanAduan | null>(null);
+  const [editingAduan, setEditingAduan] = useState<LaporanAduan | null>(null);
+  const [editJudul, setEditJudul] = useState('');
+  const [editIsi, setEditIsi] = useState('');
+  const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   // Rating state
   const [ratingList, setRatingList] = useState<RatingUlasanItem[]>(MOCK_RATING_ULASAN);
@@ -130,7 +139,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     );
   };
 
-  // Sync real evaluations from database on mount
+  // Sync real evaluations and citizen reports from database on mount
   React.useEffect(() => {
     apiService
       .getEvaluations()
@@ -155,6 +164,28 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         }
       })
       .catch(() => {});
+
+    if (typeof apiService.getAllReports === 'function') {
+      apiService
+        .getAllReports()
+        .then((reports) => {
+          if (reports && reports.length > 0) {
+            setLaporanList(reports);
+          }
+        })
+        .catch(() => {});
+    }
+
+    const handleNewAduan = (event: any) => {
+      if (event.detail) {
+        setLaporanList((prev) => [event.detail, ...prev.filter((item) => item.id !== event.detail.id)]);
+      }
+    };
+
+    window.addEventListener('civictrack_new_aduan', handleNewAduan);
+    return () => {
+      window.removeEventListener('civictrack_new_aduan', handleNewAduan);
+    };
   }, []);
 
   // Handle submit report
@@ -170,9 +201,17 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         ? `${reportForm.judul.trim()}: ${reportForm.isi_laporan.trim()}`
         : reportForm.isi_laporan.trim();
 
-      const resLaporan = await apiService.submitLaporan(pId, {
-        isi_laporan: fullText,
-      });
+      const resLaporan = await apiService.submitLaporan(
+        pId,
+        { isi_laporan: fullText },
+        {
+          nama_proyek: selectedProj?.nama_proyek || 'Proyek Kota',
+          nama_pelapor: currentUser.nama,
+          email_pelapor: currentUser.email,
+          judul: reportForm.judul || 'Aduan Warga',
+          kategori_aduan: reportForm.kategori_aduan,
+        }
+      );
 
       const newLaporan: LaporanAduan = {
         id: resLaporan.id,
@@ -198,6 +237,46 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
       });
     } catch (err: any) {
       alert(err.message || 'Gagal mengirimkan laporan pengaduan.');
+    }
+  };
+
+  // Handle edit unreplied report
+  const handleSaveEditAduan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingAduan || !editIsi.trim() || editIsi.trim().length < 10) {
+      setEditError('Uraian laporan minimal harus 10 karakter.');
+      return;
+    }
+
+    setIsSubmittingEdit(true);
+    setEditError(null);
+
+    try {
+      const fullText = editJudul.trim() ? `${editJudul.trim()}: ${editIsi.trim()}` : editIsi.trim();
+
+      await apiService.updateLaporan(
+        editingAduan.id,
+        { isi_laporan: fullText },
+        {
+          judul: editJudul.trim(),
+          kategori_aduan: editingAduan.kategori_aduan,
+        }
+      );
+
+      const updated: LaporanAduan = {
+        ...editingAduan,
+        judul: editJudul.trim() || 'Aduan Warga',
+        isi_laporan: editIsi.trim(),
+      };
+
+      setLaporanList((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item))
+      );
+      setEditingAduan(null);
+    } catch (err: any) {
+      setEditError(err.message || 'Gagal memperbarui pengaduan.');
+    } finally {
+      setIsSubmittingEdit(false);
     }
   };
 
@@ -299,6 +378,24 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   });
 
   const completedProjects = projects.filter((p) => p.status === 'selesai');
+
+  if (selectedAduanDetail) {
+    return (
+      <AduanDetailView
+        aduan={selectedAduanDetail}
+        currentUser={currentUser}
+        projects={projects}
+        onBack={() => setSelectedAduanDetail(null)}
+        onOpenProjectDetail={onOpenProjectDetail}
+        onAduanUpdated={(updated) => {
+          setLaporanList((prev) =>
+            prev.map((item) => (item.id === updated.id ? updated : item))
+          );
+          setSelectedAduanDetail(updated);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6 animate-hero-in">
@@ -762,7 +859,6 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                     </p>
                   </div>
 
-                  {/* Tanggapan Resmi Dinas */}
                   {lap.tanggapan_dinas ? (
                     <div className="mt-3 p-3.5 bg-[#EBF4FB]/70 rounded-xl border border-[#c5def2] text-xs space-y-1.5">
                       <div className="flex items-center justify-between">
@@ -772,7 +868,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                         </div>
                         <span className="text-[10px] text-[#6C757D] font-mono">{lap.tanggal_tanggapan}</span>
                       </div>
-                      <p className="text-[#212529] leading-relaxed">
+                      <p className="text-[#212529] leading-relaxed line-clamp-3">
                         {lap.tanggapan_dinas}
                       </p>
                     </div>
@@ -782,6 +878,30 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                       <span>Sedang dalam antrean telaah teknis pengawas lapangan dinas.</span>
                     </div>
                   )}
+
+                  <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[#DCE0E6]/50">
+                    <button
+                      onClick={() => setSelectedAduanDetail(lap)}
+                      className="text-xs font-bold text-[#184C78] hover:text-[#2980B9] flex items-center gap-1.5 cursor-pointer py-1"
+                    >
+                      <span>Lihat Halaman Detail &amp; Tanggapan Lengkap &rarr;</span>
+                    </button>
+
+                    {!lap.tanggapan_dinas && lap.status === 'menunggu' && (
+                      <button
+                        onClick={() => {
+                          setEditingAduan(lap);
+                          setEditJudul(lap.judul);
+                          setEditIsi(lap.isi_laporan);
+                          setEditError(null);
+                        }}
+                        className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-[#EBF4FB] text-[#184C78] hover:bg-[#d8eaf7] border border-[#c5def2] flex items-center gap-1.5 cursor-pointer shadow-xs transition-all"
+                      >
+                        <Edit3 className="w-3.5 h-3.5 text-[#2980B9]" />
+                        <span>Edit Pengaduan</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -1183,46 +1303,142 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
               </p>
             </div>
 
-            <form onSubmit={handleSubmitReport} className="p-6 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Pilih Proyek Terkait</label>
-                <select
-                  value={reportForm.proyek_id}
-                  onChange={(e) => setReportForm({ ...reportForm, proyek_id: Number(e.target.value) })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                >
-                  {projects.map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.nama_proyek} ({p.nama_dinas || 'Dinas Terkait'})
-                    </option>
-                  ))}
-                </select>
+            {/* Check if current user already reported this project */}
+            {(() => {
+              const existingReportForSelected = laporanList.find(
+                (lap) => lap.proyek_id === Number(reportForm.proyek_id)
+              );
+              return (
+                <form onSubmit={handleSubmitReport} className="p-6 space-y-4 text-xs">
+                  {existingReportForSelected && (
+                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-medium space-y-1">
+                      <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                        <span>Anda Sudah Mengajukan Aduan Pada Proyek Ini</span>
+                      </div>
+                      <p>
+                        Anda telah memiliki aduan: <strong>"{existingReportForSelected.judul}"</strong>. Setiap warga hanya diperkenankan memiliki 1 aduan aktif per proyek. Silakan gunakan fitur <strong>Edit Pengaduan</strong> di daftar riwayat aduan Anda jika belum ditanggapi dinas.
+                      </p>
+                    </div>
+                  )}
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Pilih Proyek Terkait</label>
+                    <select
+                      value={reportForm.proyek_id}
+                      onChange={(e) => setReportForm({ ...reportForm, proyek_id: Number(e.target.value) })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                    >
+                      {projects.map((p) => {
+                        const alreadyReported = laporanList.some((lap) => lap.proyek_id === p.id);
+                        return (
+                          <option key={p.id} value={p.id}>
+                            {p.nama_proyek} {alreadyReported ? '(⚠️ Sudah Pernah Anda Adukan)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Kategori Laporan</label>
+                    <select
+                      value={reportForm.kategori_aduan}
+                      onChange={(e) => setReportForm({ ...reportForm, kategori_aduan: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                    >
+                      <option value="Dampak Lingkungan & Keselamatan">Dampak Lingkungan & Keselamatan</option>
+                      <option value="Jadwal & Akses Jalan">Jadwal & Akses Jalan</option>
+                      <option value="Kualitas Mutu Bangunan">Kualitas Mutu Bangunan</option>
+                      <option value="Apresiasi & Fasilitas">Apresiasi & Fasilitas</option>
+                      <option value="Lainnya">Lainnya</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Judul Ringkas</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contoh: Rambu keselamatan malam hari perlu ditambah"
+                      value={reportForm.judul}
+                      onChange={(e) => setReportForm({ ...reportForm, judul: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Uraian Detail Laporan</label>
+                    <textarea
+                      rows={4}
+                      required
+                      placeholder="Jelaskan secara runtut kejadian, kendala, atau saran konstruktif yang Anda temukan di lokasi..."
+                      value={reportForm.isi_laporan}
+                      onChange={(e) => setReportForm({ ...reportForm, isi_laporan: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                    />
+                    <span className="text-[10px] text-[#6C757D] mt-1 block">
+                      🛡️ Dilengkapi Sensor Otomatis: Kata tidak pantas akan difilter demi etika komunikasi publik.
+                    </span>
+                  </div>
+
+                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
+                    <button
+                      type="button"
+                      onClick={() => setIsNewReportModalOpen(false)}
+                      className="btn-ghost"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={!!existingReportForSelected}
+                      className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {existingReportForSelected ? 'Proyek Sudah Diadukan' : 'Kirim Laporan Sekarang'}
+                    </button>
+                  </div>
+                </form>
+              );
+            })()}
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: EDIT PENGADUAN WARGA (SEBELUM DITANGGAPI DINAS) ── */}
+      {editingAduan && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
+          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6]">
+            <div className="bg-[#184C78] text-white p-5">
+              <h3 className="font-['DM_Sans'] text-base font-bold flex items-center gap-2">
+                <Edit3 className="w-5 h-5 text-amber-300" />
+                <span>Edit Pengaduan Warga</span>
+              </h3>
+              <p className="text-xs text-white/75 mt-0.5">
+                Terkait: {editingAduan.nama_proyek}
+              </p>
+            </div>
+
+            <form onSubmit={handleSaveEditAduan} className="p-6 space-y-4 text-xs">
+              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 font-medium flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                <span>Pengaduan hanya dapat diedit sebelum petugas dinas memberikan tanggapan resmi.</span>
               </div>
 
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Kategori Laporan</label>
-                <select
-                  value={reportForm.kategori_aduan}
-                  onChange={(e) => setReportForm({ ...reportForm, kategori_aduan: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                >
-                  <option value="Dampak Lingkungan & Keselamatan">Dampak Lingkungan & Keselamatan</option>
-                  <option value="Jadwal & Akses Jalan">Jadwal & Akses Jalan</option>
-                  <option value="Kualitas Mutu Bangunan">Kualitas Mutu Bangunan</option>
-                  <option value="Apresiasi & Fasilitas">Apresiasi & Fasilitas</option>
-                  <option value="Lainnya">Lainnya</option>
-                </select>
-              </div>
+              {editError && (
+                <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-rose-800 font-semibold">
+                  {editError}
+                </div>
+              )}
 
               <div>
                 <label className="block font-semibold text-[#184C78] mb-1">Judul Ringkas</label>
                 <input
                   type="text"
                   required
-                  placeholder="Contoh: Rambu keselamatan malam hari perlu ditambah"
-                  value={reportForm.judul}
-                  onChange={(e) => setReportForm({ ...reportForm, judul: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  value={editJudul}
+                  onChange={(e) => setEditJudul(e.target.value)}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9]"
                 />
               </div>
 
@@ -1231,29 +1447,26 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <textarea
                   rows={4}
                   required
-                  placeholder="Jelaskan secara runtut kejadian, kendala, atau saran konstruktif yang Anda temukan di lokasi..."
-                  value={reportForm.isi_laporan}
-                  onChange={(e) => setReportForm({ ...reportForm, isi_laporan: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  value={editIsi}
+                  onChange={(e) => setEditIsi(e.target.value)}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9]"
                 />
-                <span className="text-[10px] text-[#6C757D] mt-1 block">
-                  🛡️ Dilengkapi Sensor Otomatis: Kata tidak pantas akan difilter demi etika komunikasi publik.
-                </span>
               </div>
 
               <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
                 <button
                   type="button"
-                  onClick={() => setIsNewReportModalOpen(false)}
+                  onClick={() => setEditingAduan(null)}
                   className="btn-ghost"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
+                  disabled={isSubmittingEdit}
                   className="btn-primary"
                 >
-                  Kirim Laporan Sekarang
+                  {isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
               </div>
             </form>

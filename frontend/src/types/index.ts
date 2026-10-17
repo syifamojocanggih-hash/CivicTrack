@@ -81,6 +81,7 @@ export interface LaporanTanggapiPayload {
 export interface LaporanResponseItem {
   id: number;
   proyek_id: number;
+  nama_proyek?: string | null;
   user_id: number;
   isi_laporan: string;
   status_tindak_lanjut: 'baru' | 'diproses' | 'ditanggapi' | 'ditolak';

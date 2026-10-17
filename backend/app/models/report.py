@@ -26,6 +26,10 @@ class LaporanMasyarakat(Base):
     pelapor = relationship("User", foreign_keys=[user_id])
     penanggap = relationship("User", foreign_keys=[ditanggapi_oleh])
 
+    @property
+    def nama_proyek(self) -> str:
+        return self.proyek.nama_proyek if self.proyek else "Proyek Daerah"
+
 class RatingKepuasan(Base):
     __tablename__ = "rating_kepuasan"
     __table_args__ = (
