@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Bookmark,
   Bell,
@@ -19,6 +19,8 @@ import {
   FileText,
   Edit3,
   AlertCircle,
+  X,
+  ArrowLeft,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -139,8 +141,24 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     );
   };
 
+  // Handle Escape key to close any open modal
+  useEffect(() => {
+    if (!isNewReportModalOpen && !editingAduan && !isEvaluasiModalOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsNewReportModalOpen(false);
+        setEditingAduan(null);
+        setIsEvaluasiModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isNewReportModalOpen, editingAduan, isEvaluasiModalOpen]);
+
   // Sync real evaluations and citizen reports from database on mount
-  React.useEffect(() => {
+  useEffect(() => {
     apiService
       .getEvaluations()
       .then((apiEvals) => {
@@ -397,8 +415,408 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     );
   }
 
+  const isAnyFormOpen = isNewReportModalOpen || !!editingAduan || isEvaluasiModalOpen;
+  const existingReportForSelected = laporanList.find(
+    (lap) => lap.proyek_id === Number(reportForm.proyek_id)
+  );
+
   return (
     <div className="space-y-6 animate-hero-in">
+      {/* ── SUB-HALAMAN KHUSUS: FORMULIR LAPORAN WARGA / MASUKAN BARU ── */}
+      {isNewReportModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-report-title"
+          className="space-y-6 animate-hero-in"
+        >
+          {/* Top Header & Breadcrumb Navigation */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsNewReportModalOpen(false)}
+                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
+                title="Kembali ke Dashboard"
+                aria-label="Kembali ke Dashboard"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
+              </button>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
+                    #FORMULIR-LAPORAN-WARGA
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-blue-50 text-[#184C78] border-blue-200">
+                    <MessageSquarePlus className="w-3.5 h-3.5 text-[#2980B9]" />
+                    <span>Kanal Aspirasi &amp; Aduan Publik</span>
+                  </span>
+                </div>
+                <h1 id="modal-report-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
+                  Kirim Laporan / Tanggapan Warga
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-3">
+              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
+                Laporan diteruskan langsung ke dinas teknis terkait dan tercatat transparan di dashboard.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsNewReportModalOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Tutup Modal"
+                aria-label="Tutup Modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Card Formulir Selayar Penuh */}
+          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
+            {existingReportForSelected && (
+              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-medium space-y-1">
+                <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                  <span>Anda Sudah Mengajukan Aduan Pada Proyek Ini</span>
+                </div>
+                <p className="leading-relaxed">
+                  Anda telah memiliki aduan: <strong>"{existingReportForSelected.judul}"</strong>. Setiap warga hanya diperkenankan memiliki 1 aduan aktif per proyek. Silakan gunakan fitur <strong>Edit Pengaduan</strong> di daftar riwayat aduan Anda jika belum ditanggapi dinas.
+                </p>
+              </div>
+            )}
+
+            <form onSubmit={handleSubmitReport} className="space-y-5 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1.5">Pilih Proyek Terkait</label>
+                  <select
+                    value={reportForm.proyek_id}
+                    onChange={(e) => setReportForm({ ...reportForm, proyek_id: Number(e.target.value) })}
+                    className="w-full p-3 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
+                  >
+                    {projects.map((p) => {
+                      const alreadyReported = laporanList.some((lap) => lap.proyek_id === p.id);
+                      return (
+                        <option key={p.id} value={p.id}>
+                          {p.nama_proyek} {alreadyReported ? '(⚠️ Sudah Pernah Anda Adukan)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1.5">Kategori Laporan</label>
+                  <select
+                    value={reportForm.kategori_aduan}
+                    onChange={(e) => setReportForm({ ...reportForm, kategori_aduan: e.target.value })}
+                    className="w-full p-3 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
+                  >
+                    <option value="Dampak Lingkungan & Keselamatan">Dampak Lingkungan & Keselamatan</option>
+                    <option value="Jadwal & Akses Jalan">Jadwal & Akses Jalan</option>
+                    <option value="Kualitas Mutu Bangunan">Kualitas Mutu Bangunan</option>
+                    <option value="Apresiasi & Fasilitas">Apresiasi & Fasilitas</option>
+                    <option value="Lainnya">Lainnya</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1.5">Judul Ringkas Laporan</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Rambu keselamatan malam hari perlu ditambah"
+                  value={reportForm.judul}
+                  onChange={(e) => setReportForm({ ...reportForm, judul: e.target.value })}
+                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1.5">Uraian Detail Laporan</label>
+                <textarea
+                  rows={6}
+                  required
+                  placeholder="Jelaskan secara runtut kejadian, kendala, atau saran konstruktif yang Anda temukan di lokasi..."
+                  value={reportForm.isi_laporan}
+                  onChange={(e) => setReportForm({ ...reportForm, isi_laporan: e.target.value })}
+                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed"
+                />
+                <div className="flex items-center gap-1.5 text-[11px] text-[#6C757D] mt-2">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                  <span>Dilengkapi Sensor Otomatis: Kata tidak pantas akan difilter demi etika komunikasi publik.</span>
+                </div>
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-[#DCE0E6]">
+                <button
+                  type="button"
+                  onClick={() => setIsNewReportModalOpen(false)}
+                  className="w-full sm:w-auto px-5 py-2.5 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl transition-colors cursor-pointer text-center"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={!!existingReportForSelected}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-[#184C78] hover:bg-[#12395b] text-white font-bold rounded-xl shadow-xs hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
+                >
+                  {existingReportForSelected ? 'Proyek Sudah Diadukan' : 'Kirim Laporan Sekarang'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── SUB-HALAMAN KHUSUS: EDIT PENGADUAN WARGA ── */}
+      {editingAduan && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-edit-title"
+          className="space-y-6 animate-hero-in"
+        >
+          {/* Top Header & Breadcrumb Navigation */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setEditingAduan(null)}
+                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
+                title="Kembali ke Dashboard"
+                aria-label="Kembali ke Dashboard"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
+              </button>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
+                    #EDIT-ADUAN-{editingAduan.id}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
+                    <Edit3 className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Koreksi Informasi Laporan</span>
+                  </span>
+                </div>
+                <h1 id="modal-edit-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
+                  Edit Pengaduan Warga
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-3">
+              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
+                Terkait Proyek: <strong className="text-[#184C78]">{editingAduan.nama_proyek}</strong>
+              </p>
+              <button
+                type="button"
+                onClick={() => setEditingAduan(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Tutup Modal"
+                aria-label="Tutup Modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Card Formulir Selayar Penuh */}
+          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
+            <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-xs font-medium flex items-center gap-2.5">
+              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+              <span>Pengaduan hanya dapat diedit sebelum petugas dinas memberikan tanggapan resmi.</span>
+            </div>
+
+            {editError && (
+              <div className="p-4 bg-rose-50 rounded-xl border border-rose-200 text-rose-800 font-semibold text-xs">
+                {editError}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveEditAduan} className="space-y-5 text-xs">
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1.5">Judul Ringkas</label>
+                <input
+                  type="text"
+                  required
+                  value={editJudul}
+                  onChange={(e) => setEditJudul(e.target.value)}
+                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1.5">Uraian Detail Laporan</label>
+                <textarea
+                  rows={6}
+                  required
+                  value={editIsi}
+                  onChange={(e) => setEditIsi(e.target.value)}
+                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed"
+                />
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-[#DCE0E6]">
+                <button
+                  type="button"
+                  onClick={() => setEditingAduan(null)}
+                  className="w-full sm:w-auto px-5 py-2.5 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl transition-colors cursor-pointer text-center"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingEdit}
+                  className="w-full sm:w-auto px-6 py-2.5 bg-[#184C78] hover:bg-[#12395b] text-white font-bold rounded-xl shadow-xs hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
+                >
+                  {isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── SUB-HALAMAN KHUSUS: EVALUASI CACAT FISIK PASCA-PROYEK ── */}
+      {isEvaluasiModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-evaluasi-title"
+          className="space-y-6 animate-hero-in"
+        >
+          {/* Top Header & Breadcrumb Navigation */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsEvaluasiModalOpen(false)}
+                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
+                title="Kembali ke Dashboard"
+                aria-label="Kembali ke Dashboard"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
+              </button>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
+                    #FORMULIR-EVALUASI-FHO
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Didukung Groq AI Analysis</span>
+                  </span>
+                </div>
+                <h1 id="modal-evaluasi-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
+                  Laporkan Cacat Fisik Pasca-Proyek
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-3">
+              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
+                Pengaduan kerusakan fisik proyek selesai dengan analisis urgensi otomatis Groq AI untuk masa pemeliharaan.
+              </p>
+              <button
+                type="button"
+                onClick={() => setIsEvaluasiModalOpen(false)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Tutup Modal"
+                aria-label="Tutup Modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Card Formulir Selayar Penuh */}
+          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
+            <form onSubmit={handleSubmitEvaluasi} className="space-y-5 text-xs">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1.5">Proyek Selesai</label>
+                  <select
+                    value={evaluasiForm.proyek_id}
+                    onChange={(e) => setEvaluasiForm({ ...evaluasiForm, proyek_id: Number(e.target.value) })}
+                    className="w-full p-3 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
+                  >
+                    {completedProjects.length > 0 ? (
+                      completedProjects.map((p) => (
+                        <option key={p.id} value={p.id}>{p.nama_proyek}</option>
+                      ))
+                    ) : (
+                      <option value={3}>Normalisasi Drainase Jl. MT. Haryono</option>
+                    )}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1.5">Kategori Cacat Fisik</label>
+                  <select
+                    value={evaluasiForm.kategori_cacat}
+                    onChange={(e) => setEvaluasiForm({ ...evaluasiForm, kategori_cacat: e.target.value })}
+                    className="w-full p-3 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
+                  >
+                    <option value="Struktur Beton / Retak">Struktur Beton / Retak Ambles</option>
+                    <option value="Endapan / Saluran Tersumbat">Endapan / Saluran Tersumbat</option>
+                    <option value="Aspal Mengelupas / Lubang Jalan">Aspal Mengelupas / Lubang Jalan</option>
+                    <option value="Fasilitas / Lampu / Rambu Rusak">Fasilitas / Lampu / Rambu Rusak</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1.5">Titik Patokan Lokasi</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Depan Ruko No. 42 / Dekat Halte Busway"
+                  value={evaluasiForm.lokasi_titik}
+                  onChange={(e) => setEvaluasiForm({ ...evaluasiForm, lokasi_titik: e.target.value })}
+                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1.5">Deskripsi Kerusakan Fisik</label>
+                <textarea
+                  rows={6}
+                  required
+                  placeholder="Jelaskan jenis kerusakan, ukuran retakan/amblesan, dan potensi bahaya keselamatan bagi pejalan kaki atau kendaraan..."
+                  value={evaluasiForm.deskripsi}
+                  onChange={(e) => setEvaluasiForm({ ...evaluasiForm, deskripsi: e.target.value })}
+                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed"
+                />
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-[#DCE0E6]">
+                <button
+                  type="button"
+                  onClick={() => setIsEvaluasiModalOpen(false)}
+                  className="w-full sm:w-auto px-5 py-2.5 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl transition-colors cursor-pointer text-center"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-[#184C78] hover:bg-[#12395b] text-white font-bold rounded-xl shadow-xs hover:shadow-sm transition-all cursor-pointer text-center flex items-center justify-center gap-2"
+                >
+                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <span>Analisis AI &amp; Kirimkan</span>
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── KONTEN UTAMA DASHBOARD (DISEMBUNYIKAN KETIKA SUB-HALAMAN FORMULIR AKTIF) ── */}
+      <div className={isAnyFormOpen ? 'hidden' : 'space-y-6'}>
       {/* ── TAB CONTENT 1: DASHBOARD OVERVIEW (RINGKASAN & MONITORING) ── */}
       {activeTab === 'overview' && (
         <>
@@ -416,17 +834,19 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 Pantau perkembangan proyek infrastruktur di sekitar tempat tinggalmu secara transparan, kirimkan tanggapan langsung ke dinas pengawas, serta berikan penilaian kepuasan pembangunan.
               </p>
 
-              <div className="flex flex-wrap gap-3 mt-5">
+              <div className="flex flex-col sm:flex-row flex-wrap gap-2.5 sm:gap-3 mt-5">
                 <button
+                  type="button"
                   onClick={() => setIsNewReportModalOpen(true)}
-                  className="px-4 py-2 bg-white text-[#184C78] font-bold text-xs rounded-xl shadow-xs hover:bg-slate-100 flex items-center gap-2 transition-transform hover:scale-102 cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-white text-[#184C78] font-bold text-xs rounded-xl shadow-xs hover:bg-slate-100 flex items-center justify-center gap-2 transition-all hover:scale-102 cursor-pointer active:scale-98 min-h-[42px]"
                 >
                   <Plus className="w-4 h-4 text-[#184C78]" />
                   <span>Buat Laporan / Masukan Baru</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => onOpenAIRoute('Pelebaran Jalan Soekarno Hatta')}
-                  className="px-4 py-2 bg-white/20 hover:bg-white/30 text-white font-semibold text-xs rounded-xl backdrop-blur-md flex items-center gap-2 transition-all cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white font-semibold text-xs rounded-xl backdrop-blur-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 min-h-[42px]"
                 >
                   <Sparkles className="w-4 h-4 text-amber-300" />
                   <span>Cek Rute Alternatif AI</span>
@@ -1291,278 +1711,9 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
           </div>
         </div>
       )}
-
-      {/* ── MODAL: BUAT LAPORAN BARU ── */}
-      {isNewReportModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6] relative">
-            <div className="bg-[#184C78] text-white p-5">
-              <h3 className="font-['DM_Sans'] text-lg font-bold">Kirim Laporan / Tanggapan Warga</h3>
-              <p className="text-xs text-white/75 mt-0.5">
-                Laporan akan diteruskan ke dinas teknis terkait dan tercatat secara transparan di dashboard.
-              </p>
-            </div>
-
-            {/* Check if current user already reported this project */}
-            {(() => {
-              const existingReportForSelected = laporanList.find(
-                (lap) => lap.proyek_id === Number(reportForm.proyek_id)
-              );
-              return (
-                <form onSubmit={handleSubmitReport} className="p-6 space-y-4 text-xs">
-                  {existingReportForSelected && (
-                    <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-medium space-y-1">
-                      <div className="font-bold flex items-center gap-1.5 text-amber-900">
-                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                        <span>Anda Sudah Mengajukan Aduan Pada Proyek Ini</span>
-                      </div>
-                      <p>
-                        Anda telah memiliki aduan: <strong>"{existingReportForSelected.judul}"</strong>. Setiap warga hanya diperkenankan memiliki 1 aduan aktif per proyek. Silakan gunakan fitur <strong>Edit Pengaduan</strong> di daftar riwayat aduan Anda jika belum ditanggapi dinas.
-                      </p>
-                    </div>
-                  )}
-
-                  <div>
-                    <label className="block font-semibold text-[#184C78] mb-1">Pilih Proyek Terkait</label>
-                    <select
-                      value={reportForm.proyek_id}
-                      onChange={(e) => setReportForm({ ...reportForm, proyek_id: Number(e.target.value) })}
-                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                    >
-                      {projects.map((p) => {
-                        const alreadyReported = laporanList.some((lap) => lap.proyek_id === p.id);
-                        return (
-                          <option key={p.id} value={p.id}>
-                            {p.nama_proyek} {alreadyReported ? '(⚠️ Sudah Pernah Anda Adukan)' : ''}
-                          </option>
-                        );
-                      })}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-[#184C78] mb-1">Kategori Laporan</label>
-                    <select
-                      value={reportForm.kategori_aduan}
-                      onChange={(e) => setReportForm({ ...reportForm, kategori_aduan: e.target.value })}
-                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                    >
-                      <option value="Dampak Lingkungan & Keselamatan">Dampak Lingkungan & Keselamatan</option>
-                      <option value="Jadwal & Akses Jalan">Jadwal & Akses Jalan</option>
-                      <option value="Kualitas Mutu Bangunan">Kualitas Mutu Bangunan</option>
-                      <option value="Apresiasi & Fasilitas">Apresiasi & Fasilitas</option>
-                      <option value="Lainnya">Lainnya</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-[#184C78] mb-1">Judul Ringkas</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="Contoh: Rambu keselamatan malam hari perlu ditambah"
-                      value={reportForm.judul}
-                      onChange={(e) => setReportForm({ ...reportForm, judul: e.target.value })}
-                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block font-semibold text-[#184C78] mb-1">Uraian Detail Laporan</label>
-                    <textarea
-                      rows={4}
-                      required
-                      placeholder="Jelaskan secara runtut kejadian, kendala, atau saran konstruktif yang Anda temukan di lokasi..."
-                      value={reportForm.isi_laporan}
-                      onChange={(e) => setReportForm({ ...reportForm, isi_laporan: e.target.value })}
-                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                    />
-                    <span className="text-[10px] text-[#6C757D] mt-1 block">
-                      🛡️ Dilengkapi Sensor Otomatis: Kata tidak pantas akan difilter demi etika komunikasi publik.
-                    </span>
-                  </div>
-
-                  <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                    <button
-                      type="button"
-                      onClick={() => setIsNewReportModalOpen(false)}
-                      className="btn-ghost"
-                    >
-                      Batal
-                    </button>
-                    <button
-                      type="submit"
-                      disabled={!!existingReportForSelected}
-                      className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {existingReportForSelected ? 'Proyek Sudah Diadukan' : 'Kirim Laporan Sekarang'}
-                    </button>
-                  </div>
-                </form>
-              );
-            })()}
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: EDIT PENGADUAN WARGA (SEBELUM DITANGGAPI DINAS) ── */}
-      {editingAduan && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6]">
-            <div className="bg-[#184C78] text-white p-5">
-              <h3 className="font-['DM_Sans'] text-base font-bold flex items-center gap-2">
-                <Edit3 className="w-5 h-5 text-amber-300" />
-                <span>Edit Pengaduan Warga</span>
-              </h3>
-              <p className="text-xs text-white/75 mt-0.5">
-                Terkait: {editingAduan.nama_proyek}
-              </p>
-            </div>
-
-            <form onSubmit={handleSaveEditAduan} className="p-6 space-y-4 text-xs">
-              <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 font-medium flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
-                <span>Pengaduan hanya dapat diedit sebelum petugas dinas memberikan tanggapan resmi.</span>
-              </div>
-
-              {editError && (
-                <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-rose-800 font-semibold">
-                  {editError}
-                </div>
-              )}
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Judul Ringkas</label>
-                <input
-                  type="text"
-                  required
-                  value={editJudul}
-                  onChange={(e) => setEditJudul(e.target.value)}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Uraian Detail Laporan</label>
-                <textarea
-                  rows={4}
-                  required
-                  value={editIsi}
-                  onChange={(e) => setEditIsi(e.target.value)}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                <button
-                  type="button"
-                  onClick={() => setEditingAduan(null)}
-                  className="btn-ghost"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingEdit}
-                  className="btn-primary"
-                >
-                  {isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: EVALUASI CACAT FISIK PASCA PROYEK ── */}
-      {isEvaluasiModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6] relative">
-            <div className="bg-[#184C78] text-white p-5">
-              <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-amber-300" />
-                <h3 className="font-['DM_Sans'] text-lg font-bold">Laporkan Cacat Fisik Pasca-Proyek</h3>
-              </div>
-              <p className="text-xs text-white/75 mt-0.5">
-                Pengaduan kerusakan fisik proyek selesai dengan analisis urgensi otomatis Groq AI.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmitEvaluasi} className="p-6 space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Proyek Selesai</label>
-                <select
-                  value={evaluasiForm.proyek_id}
-                  onChange={(e) => setEvaluasiForm({ ...evaluasiForm, proyek_id: Number(e.target.value) })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                >
-                  {completedProjects.length > 0 ? (
-                    completedProjects.map((p) => (
-                      <option key={p.id} value={p.id}>{p.nama_proyek}</option>
-                    ))
-                  ) : (
-                    <option value={3}>Normalisasi Drainase Jl. MT. Haryono</option>
-                  )}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Kategori Cacat Fisik</label>
-                <select
-                  value={evaluasiForm.kategori_cacat}
-                  onChange={(e) => setEvaluasiForm({ ...evaluasiForm, kategori_cacat: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                >
-                  <option value="Struktur Beton / Retak">Struktur Beton / Retak Ambles</option>
-                  <option value="Endapan / Saluran Tersumbat">Endapan / Saluran Tersumbat</option>
-                  <option value="Aspal Mengelupas / Lubang Jalan">Aspal Mengelupas / Lubang Jalan</option>
-                  <option value="Fasilitas / Lampu / Rambu Rusak">Fasilitas / Lampu / Rambu Rusak</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Titik Patokan Lokasi</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Depan Ruko No. 42 / Dekat Halte Busway"
-                  value={evaluasiForm.lokasi_titik}
-                  onChange={(e) => setEvaluasiForm({ ...evaluasiForm, lokasi_titik: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Deskripsi Kerusakan Fisik</label>
-                <textarea
-                  rows={4}
-                  required
-                  placeholder="Jelaskan jenis kerusakan, ukuran retakan/amblesan, dan potensi bahaya keselamatan bagi pejalan kaki atau kendaraan..."
-                  value={evaluasiForm.deskripsi}
-                  onChange={(e) => setEvaluasiForm({ ...evaluasiForm, deskripsi: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                <button
-                  type="button"
-                  onClick={() => setIsEvaluasiModalOpen(false)}
-                  className="btn-ghost"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  className="btn-primary"
-                >
-                  Analisis AI &amp; Kirimkan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
+
+

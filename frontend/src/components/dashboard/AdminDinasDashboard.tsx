@@ -24,6 +24,9 @@ import {
   Eye,
   EyeOff,
   Layers,
+  ArrowLeft,
+  Edit3,
+  X,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -924,6 +927,31 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     );
   }
 
+  const isAnyFormOpen =
+    isNewProjectModalOpen ||
+    !!editingProject ||
+    isNewStageModalOpen ||
+    isNewDocModalOpen ||
+    !!selectedEvalToVerify;
+
+  useEffect(() => {
+    if (!isAnyFormOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isNewProjectModalOpen) {
+          setIsNewProjectModalOpen(false);
+          setCreateProjError(null);
+        }
+        if (editingProject) setEditingProject(null);
+        if (isNewStageModalOpen) setIsNewStageModalOpen(false);
+        if (isNewDocModalOpen) setIsNewDocModalOpen(false);
+        if (selectedEvalToVerify) setSelectedEvalToVerify(null);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isAnyFormOpen, isNewProjectModalOpen, editingProject, isNewStageModalOpen, isNewDocModalOpen, selectedEvalToVerify]);
+
   return (
     <div className="space-y-6 animate-hero-in">
       {/* Toast Notifikasi Feedback Copy */}
@@ -934,6 +962,1196 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         </div>
       )}
 
+      {/* ── SUB-HALAMAN KHUSUS: INPUT PROYEK BARU ── */}
+      {isNewProjectModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-new-project-title"
+          className="space-y-6 animate-hero-in"
+        >
+          {/* Top Header & Breadcrumb Navigation */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNewProjectModalOpen(false);
+                  setCreateProjError(null);
+                }}
+                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
+                title="Kembali ke Dashboard"
+                aria-label="Kembali ke Dashboard"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
+              </button>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
+                    #INPUT-PROYEK-BARU
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-blue-50 text-[#184C78] border-blue-200">
+                    <FolderKanban className="w-3.5 h-3.5 text-[#2980B9]" />
+                    <span>Registrasi Infrastruktur Daerah</span>
+                  </span>
+                </div>
+                <h1 id="modal-new-project-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
+                  Input Data Proyek Pembangunan Baru
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-3">
+              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
+                Proyek akan langsung terindeks di peta interaktif dan dapat dipantau oleh warga masyarakat.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsNewProjectModalOpen(false);
+                  setCreateProjError(null);
+                }}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Tutup Modal"
+                aria-label="Tutup Modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Card Formulir Selayar Penuh */}
+          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
+            <form onSubmit={handleCreateProject} className="space-y-4 text-xs">
+              <div>
+                <label htmlFor="nama_proyek" className="block font-semibold text-[#184C78] mb-1">Nama Proyek</label>
+                <input
+                  id="nama_proyek"
+                  type="text"
+                  required
+                  placeholder="Contoh: Peningkatan Jalan Raya Arjuno KM 1–3"
+                  value={newProjectForm.nama_proyek}
+                  onChange={(e) => setNewProjectForm({ ...newProjectForm, nama_proyek: e.target.value })}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="kategori" className="block font-semibold text-[#184C78] mb-1">Kategori Sektor</label>
+                  <select
+                    id="kategori"
+                    value={newProjectForm.kategori}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, kategori: e.target.value as any })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                  >
+                    <option value="jalan">Jalan & Jembatan</option>
+                    <option value="taman">Taman & RTH</option>
+                    <option value="drainase">Drainase & Sanitasi</option>
+                    <option value="fasilitas">Fasilitas Publik</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="anggaran" className="block font-semibold text-[#184C78] mb-1">Pagu Anggaran (Rp)</label>
+                  <input
+                    id="anggaran"
+                    type="number"
+                    required
+                    min={10000000}
+                    step={10000000}
+                    value={newProjectForm.anggaran}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, anggaran: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+              </div>
+
+              {/* Periode Pelaksanaan Proyek */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="tanggal_mulai" className="block font-semibold text-[#184C78] mb-1">
+                    Tanggal Mulai Pelaksanaan
+                  </label>
+                  <input
+                    id="tanggal_mulai"
+                    type="date"
+                    required
+                    value={newProjectForm.tanggal_mulai}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, tanggal_mulai: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="estimasi_selesai" className="block font-semibold text-[#184C78] mb-1">
+                    Estimasi Selesai (Target Rampung)
+                  </label>
+                  <input
+                    id="estimasi_selesai"
+                    type="date"
+                    required
+                    min={newProjectForm.tanggal_mulai}
+                    value={newProjectForm.estimasi_selesai}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, estimasi_selesai: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+              </div>
+
+              {/* Cakupan Skala Proyek & Lokasi Administratif Berjenjang */}
+              <div className="p-4 bg-[#F8FAFC] rounded-2xl border border-[#DCE0E6] space-y-3.5">
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1.5 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5">
+                      <Layers className="w-4 h-4 text-[#2980B9]" />
+                      Skala &amp; Cakupan Wilayah Proyek
+                    </span>
+                    <span className="text-[10.5px] font-normal text-[#6C757D]">
+                      Menentukan struktur kode seri nomor registrasi
+                    </span>
+                  </label>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newCode = generateProjectSerialNumber(
+                          newProjectForm.nama_wilayah,
+                          newProjectForm.nama_desa,
+                          'skala_desa',
+                          projectList
+                        );
+                        setNewProjectForm({
+                          ...newProjectForm,
+                          skala_proyek: 'skala_desa',
+                          kode_proyek: newCode,
+                        });
+                      }}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        newProjectForm.skala_proyek === 'skala_desa'
+                          ? 'bg-white border-[#184C78] shadow-xs ring-2 ring-[#184C78]/10'
+                          : 'bg-white/60 border-[#DCE0E6] hover:bg-white text-[#6C757D]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-xs text-[#184C78]">Skala Desa / Kelurahan</span>
+                        <div
+                          className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                            newProjectForm.skala_proyek === 'skala_desa'
+                              ? 'border-[#184C78] bg-[#184C78]'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {newProjectForm.skala_proyek === 'skala_desa' && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-[#6C757D] leading-tight">
+                        Fokus pada satu desa/kelurahan spesifik (Format: KEC-DES-XXX)
+                      </p>
+                    </button>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newCode = generateProjectSerialNumber(
+                          newProjectForm.nama_wilayah,
+                          undefined,
+                          'skala_kecamatan',
+                          projectList
+                        );
+                        setNewProjectForm({
+                          ...newProjectForm,
+                          skala_proyek: 'skala_kecamatan',
+                          kode_proyek: newCode,
+                        });
+                      }}
+                      className={`p-2.5 rounded-xl border text-left transition-all cursor-pointer ${
+                        newProjectForm.skala_proyek === 'skala_kecamatan'
+                          ? 'bg-white border-[#184C78] shadow-xs ring-2 ring-[#184C78]/10'
+                          : 'bg-white/60 border-[#DCE0E6] hover:bg-white text-[#6C757D]'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between mb-1">
+                        <span className="font-bold text-xs text-[#184C78]">Skala Kecamatan (Lintas Desa)</span>
+                        <div
+                          className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
+                            newProjectForm.skala_proyek === 'skala_kecamatan'
+                              ? 'border-[#184C78] bg-[#184C78]'
+                              : 'border-slate-300'
+                          }`}
+                        >
+                          {newProjectForm.skala_proyek === 'skala_kecamatan' && (
+                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-[10px] text-[#6C757D] leading-tight">
+                        Infrastruktur koridor/lintas desa se-kecamatan (Format: KEC-XXX)
+                      </p>
+                    </button>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Pilihan Kecamatan */}
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">
+                      Kecamatan
+                    </label>
+                    <select
+                      value={newProjectForm.nama_wilayah}
+                      onChange={(e) => {
+                        const selName = e.target.value;
+                        const matched = WILAYAH_DATA.kecamatanList.find((k) => k.nama === selName);
+                        const newLat = matched ? matched.koordinatPusat[0] : newProjectForm.latitude;
+                        const newLng = matched ? matched.koordinatPusat[1] : newProjectForm.longitude;
+                        const newCode = newProjectForm.skala_proyek === 'skala_kecamatan'
+                          ? generateProjectSerialNumber(selName, undefined, 'skala_kecamatan', projectList)
+                          : generateProjectSerialNumber(selName, newProjectForm.nama_desa, 'skala_desa', projectList);
+                        setNewProjectForm({
+                          ...newProjectForm,
+                          nama_wilayah: selName,
+                          latitude: newLat,
+                          longitude: newLng,
+                          kode_proyek: newCode,
+                        });
+                      }}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                    >
+                      {WILAYAH_DATA.kecamatanList.map((k) => (
+                        <option key={k.nama} value={k.nama}>
+                          {k.nama}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Pilihan Desa / Kelurahan */}
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">
+                      Desa / Kelurahan
+                    </label>
+                    {newProjectForm.skala_proyek === 'skala_desa' ? (
+                      <select
+                        value={newProjectForm.desa_id || (desaOptions[0]?.id ?? '')}
+                        disabled={isLoadingDesa}
+                        onChange={(e) => {
+                          const selId = Number(e.target.value);
+                          const selDesa = desaOptions.find((d) => d.id === selId);
+                          const selName = selDesa ? selDesa.nama_wilayah : 'Kelurahan';
+                          const newCode = generateProjectSerialNumber(
+                            newProjectForm.nama_wilayah,
+                            selName,
+                            'skala_desa',
+                            projectList
+                          );
+                          setNewProjectForm({
+                            ...newProjectForm,
+                            desa_id: selId,
+                            nama_desa: selName,
+                            kode_proyek: newCode,
+                          });
+                        }}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9] disabled:bg-slate-100"
+                      >
+                        {isLoadingDesa ? (
+                          <option value="">Memuat daftar desa...</option>
+                        ) : desaOptions.length > 0 ? (
+                          desaOptions.map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.nama_wilayah}
+                            </option>
+                          ))
+                        ) : (
+                          <option value="">Pusat Kecamatan / Ibu Kota</option>
+                        )}
+                      </select>
+                    ) : (
+                      <div className="p-2.5 bg-slate-100 border border-[#DCE0E6] rounded-lg text-slate-500 italic text-xs flex items-center gap-1.5">
+                        <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                        <span>Cakupan Lintas Wilayah Kecamatan</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Box Kredensial Akses & Nomor Seri Proyek */}
+              <div className="p-4 bg-gradient-to-br from-[#F5F9FD] to-[#EDF5FC] rounded-2xl border border-[#BDD7EE] space-y-3">
+                <div className="flex items-center justify-between border-b border-[#D4E4F5] pb-2">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 bg-[#184C78] text-white rounded-lg shadow-xs">
+                      <Key className="w-3.5 h-3.5" />
+                    </div>
+                    <div>
+                      <h4 className="font-['DM_Sans'] font-bold text-xs text-[#184C78]">
+                        Nomor Seri Registrasi &amp; Kunci Akses Khusus
+                      </h4>
+                      <p className="text-[10px] text-[#6C757D]">
+                        Kredensial resmi yang dibagikan pimpinan ke penanggung jawab proyek
+                      </p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] font-bold bg-[#EBF4FB] text-[#184C78] px-2 py-0.5 rounded-full border border-[#BDD7EE]">
+                    Otomatisasi Sistem
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {/* Nomor Seri / Kode Proyek */}
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1 flex items-center justify-between">
+                      <span>Kode Seri Proyek</span>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const refreshed = generateProjectSerialNumber(
+                            newProjectForm.nama_wilayah,
+                            newProjectForm.skala_proyek === 'skala_desa' ? newProjectForm.nama_desa : undefined,
+                            newProjectForm.skala_proyek,
+                            projectList
+                          );
+                          setNewProjectForm({ ...newProjectForm, kode_proyek: refreshed });
+                        }}
+                        className="text-[10.5px] text-[#2980B9] hover:underline flex items-center gap-1 cursor-pointer font-normal"
+                        title="Perbarui kode nomor seri secara otomatis"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        <span>Generate Ulang</span>
+                      </button>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={newProjectForm.kode_proyek}
+                        onChange={(e) =>
+                          setNewProjectForm({ ...newProjectForm, kode_proyek: e.target.value.toUpperCase() })
+                        }
+                        placeholder="Contoh: LMG-JTS-001"
+                        className="w-full p-2.5 font-mono font-bold text-sm tracking-wider text-[#184C78] bg-white border border-[#BDD7EE] rounded-lg outline-none focus:border-[#184C78] focus:ring-1 focus:ring-[#184C78]"
+                      />
+                    </div>
+                    <p className="text-[10px] text-[#6C757D] mt-1">
+                      Menyesuaikan kode kecamatan &amp; desa: {newProjectForm.kode_proyek || '-'}
+                    </p>
+                  </div>
+
+                  {/* Password / Kunci Akses Khusus */}
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1 flex items-center justify-between">
+                      <span>Password / Kunci Akses Khusus</span>
+                      <div className="flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const newPin = generateRandomAccessKey();
+                            setNewProjectForm({ ...newProjectForm, kode_akses: newPin });
+                          }}
+                          className="text-[10.5px] text-[#2980B9] hover:underline flex items-center gap-1 cursor-pointer font-normal"
+                          title="Buat PIN acak baru"
+                        >
+                          <RefreshCw className="w-3 h-3" />
+                          <span>Acak PIN</span>
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(newProjectForm.kode_akses, 'Kunci Akses Form')}
+                          className="text-[10.5px] text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer font-normal"
+                          title="Salin Kunci Akses"
+                        >
+                          {copyFeedback === 'Kunci Akses Form' ? (
+                            <>
+                              <CheckCheck className="w-3 h-3 text-emerald-600" />
+                              <span className="text-emerald-700 font-bold">Disalin!</span>
+                            </>
+                          ) : (
+                            <>
+                              <Copy className="w-3 h-3" />
+                              <span>Salin</span>
+                            </>
+                          )}
+                        </button>
+                      </div>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        required
+                        value={newProjectForm.kode_akses}
+                        onChange={(e) =>
+                          setNewProjectForm({ ...newProjectForm, kode_akses: e.target.value })
+                        }
+                        placeholder="Contoh: PJ-17409"
+                        className="w-full p-2.5 font-mono font-bold text-sm tracking-wider text-emerald-800 bg-white border border-[#BDD7EE] rounded-lg outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
+                      />
+                    </div>
+                    <p className="text-[10px] text-[#6C757D] mt-1">
+                      Berikan password ini kepada mandor/kontraktor penanggung jawab
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Koordinat Lintang & Bujur (Point-in-Polygon Validation) */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="latitude" className="block font-semibold text-[#184C78] mb-1">
+                    Latitude (Lintang)
+                  </label>
+                  <input
+                    id="latitude"
+                    type="number"
+                    step="0.0001"
+                    required
+                    value={newProjectForm.latitude}
+                    onChange={(e) =>
+                      setNewProjectForm({
+                        ...newProjectForm,
+                        latitude: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="longitude" className="block font-semibold text-[#184C78] mb-1">
+                    Longitude (Bujur)
+                  </label>
+                  <input
+                    id="longitude"
+                    type="number"
+                    step="0.0001"
+                    required
+                    value={newProjectForm.longitude}
+                    onChange={(e) =>
+                      setNewProjectForm({
+                        ...newProjectForm,
+                        longitude: parseFloat(e.target.value) || 0,
+                      })
+                    }
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+              </div>
+
+              {/* Status Badge Verifikasi Spasial Point-in-Polygon */}
+              <div
+                className={`p-3 rounded-xl border flex items-start gap-2.5 text-xs transition-colors ${
+                  spatialValidation.isValid
+                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
+                    : 'bg-rose-50 border-rose-300 text-rose-800'
+                }`}
+              >
+                {spatialValidation.isValid ? (
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                ) : (
+                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                )}
+                <div className="flex-1">
+                  <div className="font-bold flex items-center justify-between">
+                    <span>
+                      {spatialValidation.isValid
+                        ? 'Point-in-Polygon: Terverifikasi di Dalam Wilayah'
+                        : 'Point-in-Polygon: Di Luar Batas Wilayah!'}
+                    </span>
+                    {spatialValidation.centerCoordinates && !spatialValidation.isValid && (
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setNewProjectForm({
+                            ...newProjectForm,
+                            latitude: spatialValidation.centerCoordinates![0],
+                            longitude: spatialValidation.centerCoordinates![1],
+                          })
+                        }
+                        className="text-[11px] underline font-semibold text-rose-700 hover:text-rose-900 cursor-pointer ml-2"
+                      >
+                        Reset ke Titik Wilayah
+                      </button>
+                    )}
+                  </div>
+                  <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">
+                    {spatialValidation.message}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="deskripsi" className="block font-semibold text-[#184C78] mb-1">Uraian / Deskripsi Pekerjaan</label>
+                <textarea
+                  id="deskripsi"
+                  rows={3}
+                  required
+                  placeholder="Jelaskan ruang lingkup pengerjaan konstruksi..."
+                  value={newProjectForm.deskripsi}
+                  onChange={(e) => setNewProjectForm({ ...newProjectForm, deskripsi: e.target.value })}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">Status Pekerjaan</label>
+                  <select
+                    value={newProjectForm.status}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, status: e.target.value as any })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                  >
+                    <option value="berjalan">Sedang Berjalan</option>
+                    <option value="selesai">Selesai</option>
+                    <option value="ditangguhkan">Ditangguhkan</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">Progres Awal (%)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    value={newProjectForm.progres_persen}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, progres_persen: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+              </div>
+
+              {createProjError && (
+                <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-800 text-xs">
+                  <p className="font-semibold">{createProjError}</p>
+                </div>
+              )}
+
+              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewProjectModalOpen(false);
+                    setCreateProjError(null);
+                  }}
+                  className="btn-ghost"
+                  disabled={isSubmittingNewProj}
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingNewProj}
+                  className="btn-primary"
+                >
+                  {isSubmittingNewProj ? 'Menyimpan ke Database...' : 'Simpan & Publikasikan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── SUB-HALAMAN KHUSUS: SUNTING DATA PROYEK ── */}
+      {editingProject && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-edit-project-title"
+          className="space-y-6 animate-hero-in"
+        >
+          {/* Top Header & Breadcrumb Navigation */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setEditingProject(null)}
+                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
+                title="Kembali ke Dashboard"
+                aria-label="Kembali ke Dashboard"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
+              </button>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
+                    #{editingProject.kode_proyek || `PROYEK-${editingProject.id}`}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
+                    <Edit3 className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Sunting Spesifikasi &amp; Progres</span>
+                  </span>
+                </div>
+                <h1 id="modal-edit-project-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
+                  Sunting Data Proyek: {editingProject.nama_proyek}
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-3">
+              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
+                Perbarui spesifikasi teknis, pagu anggaran, jadwal pelaksanaan, dan capaian progres fisik.
+              </p>
+              <button
+                type="button"
+                onClick={() => setEditingProject(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Tutup Modal"
+                aria-label="Tutup Modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Card Formulir Selayar Penuh */}
+          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
+            <form onSubmit={handleUpdateProject} className="space-y-4 text-xs">
+              {editError && (
+                <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-start gap-2">
+                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                  <div>
+                    <strong className="block font-semibold">Validasi Gagal</strong>
+                    <span>{editError}</span>
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <label htmlFor="edit_nama_proyek" className="block font-semibold text-[#184C78] mb-1">Nama Proyek</label>
+                <input
+                  id="edit_nama_proyek"
+                  type="text"
+                  required
+                  value={editForm.nama_proyek}
+                  onChange={(e) => setEditForm({ ...editForm, nama_proyek: e.target.value })}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="edit_kategori" className="block font-semibold text-[#184C78] mb-1">Kategori Sektor</label>
+                  <select
+                    id="edit_kategori"
+                    value={editForm.kategori}
+                    onChange={(e) => setEditForm({ ...editForm, kategori: e.target.value as ProyekKategori })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                  >
+                    <option value="jalan">Jalan & Jembatan</option>
+                    <option value="taman">Taman & Lanskap</option>
+                    <option value="drainase">Drainase & Saluran Air</option>
+                    <option value="fasilitas">Fasilitas Publik</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="edit_anggaran" className="block font-semibold text-[#184C78] mb-1">Pagu Anggaran (Rp)</label>
+                  <input
+                    id="edit_anggaran"
+                    type="number"
+                    required
+                    min={0}
+                    value={editForm.anggaran}
+                    onChange={(e) => setEditForm({ ...editForm, anggaran: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="edit_tanggal_mulai" className="block font-semibold text-[#184C78] mb-1">Tanggal Mulai</label>
+                  <input
+                    id="edit_tanggal_mulai"
+                    type="date"
+                    required
+                    value={editForm.tanggal_mulai}
+                    onChange={(e) => setEditForm({ ...editForm, tanggal_mulai: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="edit_estimasi_selesai" className="block font-semibold text-[#184C78] mb-1">Estimasi Selesai</label>
+                  <input
+                    id="edit_estimasi_selesai"
+                    type="date"
+                    required
+                    value={editForm.estimasi_selesai}
+                    onChange={(e) => setEditForm({ ...editForm, estimasi_selesai: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label htmlFor="edit_progres_persen" className="block font-semibold text-[#184C78] mb-1">
+                    Progres Fisik (%)
+                    <span className="text-[10px] text-slate-500 font-normal ml-1">
+                      (Saat ini: {editingProject.progres_persen}%)
+                    </span>
+                  </label>
+                  <input
+                    id="edit_progres_persen"
+                    type="number"
+                    min={0}
+                    max={100}
+                    required
+                    value={editForm.progres_persen}
+                    onChange={(e) => setEditForm({ ...editForm, progres_persen: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="edit_status" className="block font-semibold text-[#184C78] mb-1">Status Proyek</label>
+                  <select
+                    id="edit_status"
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value as ProyekStatus })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                  >
+                    <option value="berjalan">Sedang Berjalan</option>
+                    <option value="selesai">Selesai (FHO)</option>
+                    <option value="ditangguhkan">Ditangguhkan / Tertunda</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Peringatan & Field Wajib jika Progres Menurun (Aturan PRD 10.1) */}
+              {editForm.progres_persen < editingProject.progres_persen && (
+                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
+                  <div className="flex items-center gap-1.5 font-bold text-amber-800 text-[11px]">
+                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                    <span>Perhatian: Penurunan Progres Fisik Terdeteksi ({editingProject.progres_persen}% ➔ {editForm.progres_persen}%)</span>
+                  </div>
+                  <p className="text-[10.5px] text-amber-900 leading-snug">
+                    Sesuai ketentuan PRD Bagian 10.1, penurunan persentase progres wajib menyertakan keterangan/alasan minimal 10 karakter untuk dicatat ke riwayat audit trail.
+                  </p>
+                  <div>
+                    <label htmlFor="edit_catatan_perubahan" className="block font-semibold text-amber-900 mb-1">
+                      Alasan / Keterangan Penurunan Progres <span className="text-red-600">*</span>
+                    </label>
+                    <textarea
+                      id="edit_catatan_perubahan"
+                      rows={2}
+                      required
+                      placeholder="Contoh: Revisi volume lapangan, perbaikan struktur cor beton yang retak..."
+                      value={editForm.catatan_perubahan}
+                      onChange={(e) => setEditForm({ ...editForm, catatan_perubahan: e.target.value })}
+                      className="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none focus:border-amber-500 text-xs"
+                    />
+                  </div>
+                </div>
+              )}
+
+              <div className="pt-3 border-t border-[#DCE0E6] flex items-center justify-end gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingProject(null)}
+                  className="px-4 py-2 border border-[#DCE0E6] text-[#6C757D] font-semibold rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
+                >
+                  Batal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmittingEdit}
+                  className="px-4 py-2 bg-[#184C78] hover:bg-[#0f3252] disabled:opacity-70 text-white font-bold rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
+                >
+                  {isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── SUB-HALAMAN KHUSUS: TAMBAH TAHAP LINIMASA ── */}
+      {isNewStageModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-stage-title"
+          className="space-y-6 animate-hero-in"
+        >
+          {/* Top Header & Breadcrumb Navigation */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsNewStageModalOpen(false)}
+                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
+                title="Kembali ke Dashboard"
+                aria-label="Kembali ke Dashboard"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
+              </button>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
+                    #TAHAP-LINIMASA-BARU
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200">
+                    <Clock className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Manajemen Linimasa Konstruksi</span>
+                  </span>
+                </div>
+                <h1 id="modal-stage-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
+                  Tambah Tahapan Pengerjaan Baru
+                </h1>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsNewStageModalOpen(false)}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Tutup Modal"
+              aria-label="Tutup Modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Main Card Formulir Selayar Penuh */}
+          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
+            <form onSubmit={handleAddTimelineStage} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1">Nama Tahapan</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Pengecoran Abutmen Jembatan"
+                  value={newStageForm.nama_tahap}
+                  onChange={(e) => setNewStageForm({ ...newStageForm, nama_tahap: e.target.value })}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1">Uraian Teknis</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={newStageForm.deskripsi}
+                  onChange={(e) => setNewStageForm({ ...newStageForm, deskripsi: e.target.value })}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">Target Mulai</label>
+                  <input
+                    type="date"
+                    value={newStageForm.target_mulai}
+                    onChange={(e) => setNewStageForm({ ...newStageForm, target_mulai: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">Target Selesai</label>
+                  <input
+                    type="date"
+                    value={newStageForm.target_selesai}
+                    onChange={(e) => setNewStageForm({ ...newStageForm, target_selesai: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1">Target Capaian Progres Kumulatif (%)</label>
+                <p className="text-[10.5px] text-[#6C757D] mb-1">
+                  Persentase capaian kemajuan fisik kumulatif proyek hingga tahap ini (0–100%)
+                </p>
+                <input
+                  type="number"
+                  min={1}
+                  max={100}
+                  value={newStageForm.persentase_bobot}
+                  onChange={(e) => setNewStageForm({ ...newStageForm, persentase_bobot: Number(e.target.value) })}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
+                <button
+                  type="button"
+                  onClick={() => setIsNewStageModalOpen(false)}
+                  className="btn-ghost"
+                >
+                  Batal
+                </button>
+                <button type="submit" className="btn-primary">
+                  Simpan Tahap
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── SUB-HALAMAN KHUSUS: UPLOAD DOKUMENTASI FISIK ── */}
+      {isNewDocModalOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-doc-title"
+          className="space-y-6 animate-hero-in"
+        >
+          {/* Top Header & Breadcrumb Navigation */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setIsNewDocModalOpen(false)}
+                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
+                title="Kembali ke Dashboard"
+                aria-label="Kembali ke Dashboard"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
+              </button>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
+                    #DOKUMENTASI-FISIK-BARU
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-blue-50 text-[#184C78] border-blue-200">
+                    <Upload className="w-3.5 h-3.5 text-[#2980B9]" />
+                    <span>Upload Bukti Dokumentasi Fisik</span>
+                  </span>
+                </div>
+                <h1 id="modal-doc-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
+                  Upload Bukti Dokumentasi Fisik
+                </h1>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={() => setIsNewDocModalOpen(false)}
+              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+              title="Tutup Modal"
+              aria-label="Tutup Modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Main Card Formulir Selayar Penuh */}
+          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
+            <form onSubmit={handleAddDocumentation} className="space-y-4 text-xs">
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1">Proyek Terkait</label>
+                <select
+                  value={newDocForm.proyek_id}
+                  onChange={(e) => setNewDocForm({ ...newDocForm, proyek_id: Number(e.target.value) })}
+                  disabled={currentUser.role === 'penanggung_jawab' && !!unlockedProject}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none disabled:bg-slate-100 font-medium"
+                >
+                  {(currentUser.role === 'penanggung_jawab' && unlockedProject
+                    ? [unlockedProject]
+                    : projectList
+                  ).map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.kode_proyek ? `[${p.kode_proyek}] ` : ''}{p.nama_proyek}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1">Judul Dokumentasi</label>
+                <input
+                  type="text"
+                  required
+                  placeholder="Contoh: Uji Kuat Tekan Beton Silinder Sta 2+400"
+                  value={newDocForm.judul}
+                  onChange={(e) => setNewDocForm({ ...newDocForm, judul: e.target.value })}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1">URL Foto Bukti / File</label>
+                <input
+                  type="text"
+                  required
+                  value={newDocForm.foto_url}
+                  onChange={(e) => setNewDocForm({ ...newDocForm, foto_url: e.target.value })}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1">Catatan Teknis Pengawas</label>
+                <textarea
+                  rows={3}
+                  required
+                  placeholder="Keterangan kondisi visual dan hasil uji laboratorium..."
+                  value={newDocForm.deskripsi}
+                  onChange={(e) => setNewDocForm({ ...newDocForm, deskripsi: e.target.value })}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
+                <button
+                  type="button"
+                  onClick={() => setIsNewDocModalOpen(false)}
+                  className="btn-ghost"
+                >
+                  Batal
+                </button>
+                <button type="submit" className="btn-primary">
+                  Unggah Sekarang
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── SUB-HALAMAN KHUSUS: VERIFIKASI TINDAKAN CACAT FHO ── */}
+      {selectedEvalToVerify && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-verify-title"
+          className="space-y-6 animate-hero-in"
+        >
+          {/* Top Header & Breadcrumb Navigation */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedEvalToVerify(null)}
+                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
+                title="Kembali ke Dashboard"
+                aria-label="Kembali ke Dashboard"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                <span>Kembali</span>
+              </button>
+              <div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
+                    #VERIFIKASI-FHO-{selectedEvalToVerify.id}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
+                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
+                    <span>Tinjauan Mutu &amp; Audit Trail</span>
+                  </span>
+                </div>
+                <h1 id="modal-verify-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
+                  Verifikasi Tindakan Perbaikan FHO
+                </h1>
+              </div>
+            </div>
+            <div className="flex items-center justify-between sm:justify-end gap-3">
+              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
+                Tinjauan mutu &amp; jejak audit laporan evaluasi masa pemeliharaan.
+              </p>
+              <button
+                type="button"
+                onClick={() => setSelectedEvalToVerify(null)}
+                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                title="Tutup Modal"
+                aria-label="Tutup Modal"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Card Formulir Selayar Penuh */}
+          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
+            <form onSubmit={handleVerifyDefect} className="space-y-4 text-xs">
+              <div className="p-3.5 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6]/60">
+                <div className="font-bold text-[#184C78] text-sm">{selectedEvalToVerify.nama_proyek}</div>
+                <div className="text-[11px] text-[#6C757D] mt-0.5">{selectedEvalToVerify.lokasi_titik}</div>
+                <p className="text-[#495057] mt-1.5 italic bg-white p-2.5 rounded-lg border border-[#DCE0E6]">"{selectedEvalToVerify.deskripsi}"</p>
+              </div>
+
+              {/* Riwayat Jejak Audit Status (Audit Trail) */}
+              <div className="p-3.5 bg-[#f8fafc] rounded-xl border border-slate-200 space-y-2">
+                <div className="flex items-center gap-1.5 font-bold text-[#184C78]">
+                  <Clock className="w-3.5 h-3.5 text-[#2980B9]" />
+                  <span>Riwayat Jejak Audit Status (Linimasa Log)</span>
+                </div>
+                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
+                  {evalStatusLogs.length > 0 ? (
+                    evalStatusLogs.map((log: any, idx: number) => (
+                      <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-[11px] space-y-0.5">
+                        <div className="flex items-center justify-between font-semibold text-[#184C78]">
+                          <span>
+                            {log.status_sebelumnya ? `${log.status_sebelumnya} ➔ ` : ''}
+                            <span className="text-emerald-700 font-bold">{log.status_baru}</span>
+                          </span>
+                          <span className="text-[10px] text-slate-400 font-mono">
+                            {log.created_at ? new Date(log.created_at).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' }) : log.waktu || ''}
+                          </span>
+                        </div>
+                        <p className="text-slate-600 text-[10.5px]">
+                          <strong className="text-slate-700">{log.nama_pengubah || log.diubah_oleh}:</strong> {log.catatan || '-'}
+                        </p>
+                      </div>
+                    ))
+                  ) : (
+                    <p className="text-[11px] text-slate-400 italic">Belum ada riwayat perubahan status</p>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1">Keputusan Status Verifikasi</label>
+                <select
+                  value={verifyStatus}
+                  onChange={(e) => setVerifyStatus(e.target.value as EvaluasiStatusType)}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                >
+                  <option value="terverifikasi_perlu_tindak_lanjut">
+                    Terverifikasi - Perlu Tindak Lanjut (Proyek beralih ke masa peninjauan ulang)
+                  </option>
+                  <option value="selesai_ditindaklanjuti">
+                    Selesai Ditindaklanjuti (Perbaikan tuntas)
+                  </option>
+                  <option value="ditolak_tidak_terbukti">
+                    Ditolak - Tidak Terbukti (Laporan tidak valid)
+                  </option>
+                </select>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-[#184C78] mb-1">Catatan Tindakan Tim Lapangan</label>
+                <textarea
+                  rows={3}
+                  required
+                  value={tindakanDinasText}
+                  onChange={(e) => setTindakanDinasText(e.target.value)}
+                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
+                <button
+                  type="button"
+                  onClick={() => setSelectedEvalToVerify(null)}
+                  className="btn-ghost"
+                >
+                  Batal
+                </button>
+                <button type="submit" className="btn-primary">
+                  Konfirmasi Penanganan
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── KONTEN UTAMA DASHBOARD (DISEMBUNYIKAN KETIKA SUB-HALAMAN FORMULIR AKTIF) ── */}
+      <div className={isAnyFormOpen ? 'hidden' : 'space-y-6'}>
       {/* ── BANNER LEMBAR KERJA PROYEK AKTIF (KHUSUS PENANGGUNG JAWAB TERVERIFIKASI) ── */}
       {currentUser.role === 'penanggung_jawab' && unlockedProject && (
         <div className="bg-gradient-to-r from-[#0f3252] via-[#184C78] to-[#1F5F94] rounded-2xl p-6 text-white shadow-lg border border-[#184C78] flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -1760,988 +2978,8 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
           </div>
         </div>
       )}
-
-      {/* ── MODAL: EDIT PROYEK ── */}
-      {editingProject && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div role="dialog" aria-modal="true" className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6] relative">
-            <div className="bg-[#184C78] text-white p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="font-['DM_Sans'] text-lg font-bold">Sunting Data Proyek</h3>
-                  <p className="text-xs text-white/75 mt-0.5">
-                    Perbarui spesifikasi, status, jadwal, dan persentase progres fisik proyek.
-                  </p>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => setEditingProject(null)}
-                  className="text-white/70 hover:text-white text-lg font-bold p-1 cursor-pointer"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-
-            <form onSubmit={handleUpdateProject} className="p-6 space-y-3.5 text-xs max-h-[80vh] overflow-y-auto">
-              {editError && (
-                <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
-                  <div>
-                    <strong className="block font-semibold">Validasi Gagal</strong>
-                    <span>{editError}</span>
-                  </div>
-                </div>
-              )}
-
-              <div>
-                <label htmlFor="edit_nama_proyek" className="block font-semibold text-[#184C78] mb-1">Nama Proyek</label>
-                <input
-                  id="edit_nama_proyek"
-                  type="text"
-                  required
-                  value={editForm.nama_proyek}
-                  onChange={(e) => setEditForm({ ...editForm, nama_proyek: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="edit_kategori" className="block font-semibold text-[#184C78] mb-1">Kategori Sektor</label>
-                  <select
-                    id="edit_kategori"
-                    value={editForm.kategori}
-                    onChange={(e) => setEditForm({ ...editForm, kategori: e.target.value as ProyekKategori })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                  >
-                    <option value="jalan">Jalan & Jembatan</option>
-                    <option value="taman">Taman & Lanskap</option>
-                    <option value="drainase">Drainase & Saluran Air</option>
-                    <option value="fasilitas">Fasilitas Publik</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="edit_anggaran" className="block font-semibold text-[#184C78] mb-1">Pagu Anggaran (Rp)</label>
-                  <input
-                    id="edit_anggaran"
-                    type="number"
-                    required
-                    min={0}
-                    value={editForm.anggaran}
-                    onChange={(e) => setEditForm({ ...editForm, anggaran: Number(e.target.value) })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="edit_tanggal_mulai" className="block font-semibold text-[#184C78] mb-1">Tanggal Mulai</label>
-                  <input
-                    id="edit_tanggal_mulai"
-                    type="date"
-                    required
-                    value={editForm.tanggal_mulai}
-                    onChange={(e) => setEditForm({ ...editForm, tanggal_mulai: e.target.value })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="edit_estimasi_selesai" className="block font-semibold text-[#184C78] mb-1">Estimasi Selesai</label>
-                  <input
-                    id="edit_estimasi_selesai"
-                    type="date"
-                    required
-                    value={editForm.estimasi_selesai}
-                    onChange={(e) => setEditForm({ ...editForm, estimasi_selesai: e.target.value })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="edit_progres_persen" className="block font-semibold text-[#184C78] mb-1">
-                    Progres Fisik (%)
-                    <span className="text-[10px] text-slate-500 font-normal ml-1">
-                      (Saat ini: {editingProject.progres_persen}%)
-                    </span>
-                  </label>
-                  <input
-                    id="edit_progres_persen"
-                    type="number"
-                    min={0}
-                    max={100}
-                    required
-                    value={editForm.progres_persen}
-                    onChange={(e) => setEditForm({ ...editForm, progres_persen: Number(e.target.value) })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-
-                <div>
-                  <label htmlFor="edit_status" className="block font-semibold text-[#184C78] mb-1">Status Proyek</label>
-                  <select
-                    id="edit_status"
-                    value={editForm.status}
-                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value as ProyekStatus })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                  >
-                    <option value="berjalan">Sedang Berjalan</option>
-                    <option value="selesai">Selesai (FHO)</option>
-                    <option value="ditangguhkan">Ditangguhkan / Tertunda</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Peringatan & Field Wajib jika Progres Menurun (Aturan PRD 10.1) */}
-              {editForm.progres_persen < editingProject.progres_persen && (
-                <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl space-y-2">
-                  <div className="flex items-center gap-1.5 font-bold text-amber-800 text-[11px]">
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
-                    <span>Perhatian: Penurunan Progres Fisik Terdeteksi ({editingProject.progres_persen}% ➔ {editForm.progres_persen}%)</span>
-                  </div>
-                  <p className="text-[10.5px] text-amber-900 leading-snug">
-                    Sesuai ketentuan PRD Bagian 10.1, penurunan persentase progres wajib menyertakan keterangan/alasan minimal 10 karakter untuk dicatat ke riwayat audit trail.
-                  </p>
-                  <div>
-                    <label htmlFor="edit_catatan_perubahan" className="block font-semibold text-amber-900 mb-1">
-                      Alasan / Keterangan Penurunan Progres <span className="text-red-600">*</span>
-                    </label>
-                    <textarea
-                      id="edit_catatan_perubahan"
-                      rows={2}
-                      required
-                      placeholder="Contoh: Revisi volume lapangan, perbaikan struktur cor beton yang retak..."
-                      value={editForm.catatan_perubahan}
-                      onChange={(e) => setEditForm({ ...editForm, catatan_perubahan: e.target.value })}
-                      className="w-full p-2 bg-white border border-amber-300 rounded-lg outline-none focus:border-amber-500 text-xs"
-                    />
-                  </div>
-                </div>
-              )}
-
-              <div className="pt-3 border-t border-[#DCE0E6] flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingProject(null)}
-                  className="px-4 py-2 border border-[#DCE0E6] text-[#6C757D] font-semibold rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingEdit}
-                  className="px-4 py-2 bg-[#184C78] hover:bg-[#0f3252] disabled:opacity-70 text-white font-bold rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
-                >
-                  {isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: INPUT PROYEK BARU ── */}
-      {isNewProjectModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div role="dialog" aria-modal="true" className="bg-white rounded-2xl w-full max-w-lg overflow-hidden shadow-2xl border border-[#DCE0E6] relative">
-            <div className="bg-[#184C78] text-white p-5">
-              <h3 className="font-['DM_Sans'] text-lg font-bold">Input Data Proyek Pembangunan Baru</h3>
-              <p className="text-xs text-white/75 mt-0.5">
-                Proyek akan langsung terindeks di peta interaktif dan dapat dipantau oleh warga masyarakat.
-              </p>
-            </div>
-
-            <form onSubmit={handleCreateProject} className="p-6 space-y-3.5 text-xs max-h-[80vh] overflow-y-auto">
-              <div>
-                <label htmlFor="nama_proyek" className="block font-semibold text-[#184C78] mb-1">Nama Proyek</label>
-                <input
-                  id="nama_proyek"
-                  type="text"
-                  required
-                  placeholder="Contoh: Peningkatan Jalan Raya Arjuno KM 1–3"
-                  value={newProjectForm.nama_proyek}
-                  onChange={(e) => setNewProjectForm({ ...newProjectForm, nama_proyek: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="kategori" className="block font-semibold text-[#184C78] mb-1">Kategori Sektor</label>
-                  <select
-                    id="kategori"
-                    value={newProjectForm.kategori}
-                    onChange={(e) => setNewProjectForm({ ...newProjectForm, kategori: e.target.value as any })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                  >
-                    <option value="jalan">Jalan & Jembatan</option>
-                    <option value="taman">Taman & RTH</option>
-                    <option value="drainase">Drainase & Sanitasi</option>
-                    <option value="fasilitas">Fasilitas Publik</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="anggaran" className="block font-semibold text-[#184C78] mb-1">Pagu Anggaran (Rp)</label>
-                  <input
-                    id="anggaran"
-                    type="number"
-                    required
-                    min={10000000}
-                    step={10000000}
-                    value={newProjectForm.anggaran}
-                    onChange={(e) => setNewProjectForm({ ...newProjectForm, anggaran: Number(e.target.value) })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-              </div>
-
-              {/* Periode Pelaksanaan Proyek */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="tanggal_mulai" className="block font-semibold text-[#184C78] mb-1">
-                    Tanggal Mulai Pelaksanaan
-                  </label>
-                  <input
-                    id="tanggal_mulai"
-                    type="date"
-                    required
-                    value={newProjectForm.tanggal_mulai}
-                    onChange={(e) => setNewProjectForm({ ...newProjectForm, tanggal_mulai: e.target.value })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="estimasi_selesai" className="block font-semibold text-[#184C78] mb-1">
-                    Estimasi Selesai (Target Rampung)
-                  </label>
-                  <input
-                    id="estimasi_selesai"
-                    type="date"
-                    required
-                    min={newProjectForm.tanggal_mulai}
-                    value={newProjectForm.estimasi_selesai}
-                    onChange={(e) => setNewProjectForm({ ...newProjectForm, estimasi_selesai: e.target.value })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-              </div>
-
-              {/* Cakupan Skala Proyek & Lokasi Administratif Berjenjang */}
-              <div className="p-4 bg-[#F8FAFC] rounded-2xl border border-[#DCE0E6] space-y-3.5">
-                <div>
-                  <label className="block font-semibold text-[#184C78] mb-1.5 flex items-center justify-between">
-                    <span className="flex items-center gap-1.5">
-                      <Layers className="w-4 h-4 text-[#2980B9]" />
-                      Skala &amp; Cakupan Wilayah Proyek
-                    </span>
-                    <span className="text-[10.5px] font-normal text-[#6C757D]">
-                      Menentukan struktur kode seri nomor registrasi
-                    </span>
-                  </label>
-                  <div className="grid grid-cols-2 gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newCode = generateProjectSerialNumber(
-                          newProjectForm.nama_wilayah,
-                          newProjectForm.nama_desa,
-                          'skala_desa',
-                          projectList
-                        );
-                        setNewProjectForm({
-                          ...newProjectForm,
-                          skala_proyek: 'skala_desa',
-                          kode_proyek: newCode,
-                        });
-                      }}
-                      className={`p-2.5 rounded-xl border text-left transition-all ${
-                        newProjectForm.skala_proyek === 'skala_desa'
-                          ? 'bg-white border-[#184C78] shadow-xs ring-2 ring-[#184C78]/10'
-                          : 'bg-white/60 border-[#DCE0E6] hover:bg-white text-[#6C757D]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-xs text-[#184C78]">Skala Desa / Kelurahan</span>
-                        <div
-                          className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                            newProjectForm.skala_proyek === 'skala_desa'
-                              ? 'border-[#184C78] bg-[#184C78]'
-                              : 'border-slate-300'
-                          }`}
-                        >
-                          {newProjectForm.skala_proyek === 'skala_desa' && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-[#6C757D] leading-tight">
-                        Fokus pada satu desa/kelurahan spesifik (Format: KEC-DES-XXX)
-                      </p>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const newCode = generateProjectSerialNumber(
-                          newProjectForm.nama_wilayah,
-                          undefined,
-                          'skala_kecamatan',
-                          projectList
-                        );
-                        setNewProjectForm({
-                          ...newProjectForm,
-                          skala_proyek: 'skala_kecamatan',
-                          kode_proyek: newCode,
-                        });
-                      }}
-                      className={`p-2.5 rounded-xl border text-left transition-all ${
-                        newProjectForm.skala_proyek === 'skala_kecamatan'
-                          ? 'bg-white border-[#184C78] shadow-xs ring-2 ring-[#184C78]/10'
-                          : 'bg-white/60 border-[#DCE0E6] hover:bg-white text-[#6C757D]'
-                      }`}
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="font-bold text-xs text-[#184C78]">Skala Kecamatan (Lintas Desa)</span>
-                        <div
-                          className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                            newProjectForm.skala_proyek === 'skala_kecamatan'
-                              ? 'border-[#184C78] bg-[#184C78]'
-                              : 'border-slate-300'
-                          }`}
-                        >
-                          {newProjectForm.skala_proyek === 'skala_kecamatan' && (
-                            <div className="w-1.5 h-1.5 rounded-full bg-white" />
-                          )}
-                        </div>
-                      </div>
-                      <p className="text-[10px] text-[#6C757D] leading-tight">
-                        Infrastruktur koridor/lintas desa se-kecamatan (Format: KEC-XXX)
-                      </p>
-                    </button>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Pilihan Kecamatan */}
-                  <div>
-                    <label className="block font-semibold text-[#184C78] mb-1">
-                      Kecamatan
-                    </label>
-                    <select
-                      value={newProjectForm.nama_wilayah}
-                      onChange={(e) => {
-                        const selName = e.target.value;
-                        const matched = WILAYAH_DATA.kecamatanList.find((k) => k.nama === selName);
-                        const newLat = matched ? matched.koordinatPusat[0] : newProjectForm.latitude;
-                        const newLng = matched ? matched.koordinatPusat[1] : newProjectForm.longitude;
-                        const newCode = newProjectForm.skala_proyek === 'skala_kecamatan'
-                          ? generateProjectSerialNumber(selName, undefined, 'skala_kecamatan', projectList)
-                          : generateProjectSerialNumber(selName, newProjectForm.nama_desa, 'skala_desa', projectList);
-                        setNewProjectForm({
-                          ...newProjectForm,
-                          nama_wilayah: selName,
-                          latitude: newLat,
-                          longitude: newLng,
-                          kode_proyek: newCode,
-                        });
-                      }}
-                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                    >
-                      {WILAYAH_DATA.kecamatanList.map((k) => (
-                        <option key={k.nama} value={k.nama}>
-                          {k.nama}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  {/* Pilihan Desa / Kelurahan */}
-                  <div>
-                    <label className="block font-semibold text-[#184C78] mb-1">
-                      Desa / Kelurahan
-                    </label>
-                    {newProjectForm.skala_proyek === 'skala_desa' ? (
-                      <select
-                        value={newProjectForm.desa_id || (desaOptions[0]?.id ?? '')}
-                        disabled={isLoadingDesa}
-                        onChange={(e) => {
-                          const selId = Number(e.target.value);
-                          const selDesa = desaOptions.find((d) => d.id === selId);
-                          const selName = selDesa ? selDesa.nama_wilayah : 'Kelurahan';
-                          const newCode = generateProjectSerialNumber(
-                            newProjectForm.nama_wilayah,
-                            selName,
-                            'skala_desa',
-                            projectList
-                          );
-                          setNewProjectForm({
-                            ...newProjectForm,
-                            desa_id: selId,
-                            nama_desa: selName,
-                            kode_proyek: newCode,
-                          });
-                        }}
-                        className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9] disabled:bg-slate-100"
-                      >
-                        {isLoadingDesa ? (
-                          <option value="">Memuat daftar desa...</option>
-                        ) : desaOptions.length > 0 ? (
-                          desaOptions.map((d) => (
-                            <option key={d.id} value={d.id}>
-                              {d.nama_wilayah}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="">Pusat Kecamatan / Ibu Kota</option>
-                        )}
-                      </select>
-                    ) : (
-                      <div className="p-2.5 bg-slate-100 border border-[#DCE0E6] rounded-lg text-slate-500 italic text-xs flex items-center gap-1.5">
-                        <Layers className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                        <span>Cakupan Lintas Wilayah Kecamatan</span>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-
-              {/* Box Kredensial Akses & Nomor Seri Proyek */}
-              <div className="p-4 bg-gradient-to-br from-[#F5F9FD] to-[#EDF5FC] rounded-2xl border border-[#BDD7EE] space-y-3">
-                <div className="flex items-center justify-between border-b border-[#D4E4F5] pb-2">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 bg-[#184C78] text-white rounded-lg shadow-xs">
-                      <Key className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <h4 className="font-['DM_Sans'] font-bold text-xs text-[#184C78]">
-                        Nomor Seri Registrasi &amp; Kunci Akses Khusus
-                      </h4>
-                      <p className="text-[10px] text-[#6C757D]">
-                        Kredensial resmi yang dibagikan pimpinan ke penanggung jawab proyek
-                      </p>
-                    </div>
-                  </div>
-                  <span className="text-[10px] font-bold bg-[#EBF4FB] text-[#184C78] px-2 py-0.5 rounded-full border border-[#BDD7EE]">
-                    Otomatisasi Sistem
-                  </span>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Nomor Seri / Kode Proyek */}
-                  <div>
-                    <label className="block font-semibold text-[#184C78] mb-1 flex items-center justify-between">
-                      <span>Kode Seri Proyek</span>
-                      <button
-                        type="button"
-                        onClick={() => {
-                          const refreshed = generateProjectSerialNumber(
-                            newProjectForm.nama_wilayah,
-                            newProjectForm.skala_proyek === 'skala_desa' ? newProjectForm.nama_desa : undefined,
-                            newProjectForm.skala_proyek,
-                            projectList
-                          );
-                          setNewProjectForm({ ...newProjectForm, kode_proyek: refreshed });
-                        }}
-                        className="text-[10.5px] text-[#2980B9] hover:underline flex items-center gap-1 cursor-pointer font-normal"
-                        title="Perbarui kode nomor seri secara otomatis"
-                      >
-                        <RefreshCw className="w-3 h-3" />
-                        <span>Generate Ulang</span>
-                      </button>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        required
-                        value={newProjectForm.kode_proyek}
-                        onChange={(e) =>
-                          setNewProjectForm({ ...newProjectForm, kode_proyek: e.target.value.toUpperCase() })
-                        }
-                        placeholder="Contoh: LMG-JTS-001"
-                        className="w-full p-2.5 font-mono font-bold text-sm tracking-wider text-[#184C78] bg-white border border-[#BDD7EE] rounded-lg outline-none focus:border-[#184C78] focus:ring-1 focus:ring-[#184C78]"
-                      />
-                    </div>
-                    <p className="text-[10px] text-[#6C757D] mt-1">
-                      Menyesuaikan kode kecamatan &amp; desa: {newProjectForm.kode_proyek || '-'}
-                    </p>
-                  </div>
-
-                  {/* Password / Kunci Akses Khusus */}
-                  <div>
-                    <label className="block font-semibold text-[#184C78] mb-1 flex items-center justify-between">
-                      <span>Password / Kunci Akses Khusus</span>
-                      <div className="flex items-center gap-2">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            const newPin = generateRandomAccessKey();
-                            setNewProjectForm({ ...newProjectForm, kode_akses: newPin });
-                          }}
-                          className="text-[10.5px] text-[#2980B9] hover:underline flex items-center gap-1 cursor-pointer font-normal"
-                          title="Buat PIN acak baru"
-                        >
-                          <RefreshCw className="w-3 h-3" />
-                          <span>Acak PIN</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleCopyText(newProjectForm.kode_akses, 'Kunci Akses Form')}
-                          className="text-[10.5px] text-emerald-700 hover:underline flex items-center gap-1 cursor-pointer font-normal"
-                          title="Salin Kunci Akses"
-                        >
-                          {copyFeedback === 'Kunci Akses Form' ? (
-                            <>
-                              <CheckCheck className="w-3 h-3 text-emerald-600" />
-                              <span className="text-emerald-700 font-bold">Disalin!</span>
-                            </>
-                          ) : (
-                            <>
-                              <Copy className="w-3 h-3" />
-                              <span>Salin</span>
-                            </>
-                          )}
-                        </button>
-                      </div>
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="text"
-                        required
-                        value={newProjectForm.kode_akses}
-                        onChange={(e) =>
-                          setNewProjectForm({ ...newProjectForm, kode_akses: e.target.value })
-                        }
-                        placeholder="Contoh: PJ-17409"
-                        className="w-full p-2.5 font-mono font-bold text-sm tracking-wider text-emerald-800 bg-white border border-[#BDD7EE] rounded-lg outline-none focus:border-emerald-600 focus:ring-1 focus:ring-emerald-600"
-                      />
-                    </div>
-                    <p className="text-[10px] text-[#6C757D] mt-1">
-                      Berikan password ini kepada mandor/kontraktor penanggung jawab
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Koordinat Lintang & Bujur (Point-in-Polygon Validation) */}
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="latitude" className="block font-semibold text-[#184C78] mb-1">
-                    Latitude (Lintang)
-                  </label>
-                  <input
-                    id="latitude"
-                    type="number"
-                    step="0.0001"
-                    required
-                    value={newProjectForm.latitude}
-                    onChange={(e) =>
-                      setNewProjectForm({
-                        ...newProjectForm,
-                        latitude: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="longitude" className="block font-semibold text-[#184C78] mb-1">
-                    Longitude (Bujur)
-                  </label>
-                  <input
-                    id="longitude"
-                    type="number"
-                    step="0.0001"
-                    required
-                    value={newProjectForm.longitude}
-                    onChange={(e) =>
-                      setNewProjectForm({
-                        ...newProjectForm,
-                        longitude: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-              </div>
-
-              {/* Status Badge Verifikasi Spasial Point-in-Polygon */}
-              <div
-                className={`p-3 rounded-xl border flex items-start gap-2.5 text-xs transition-colors ${
-                  spatialValidation.isValid
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                    : 'bg-rose-50 border-rose-300 text-rose-800'
-                }`}
-              >
-                {spatialValidation.isValid ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <div className="font-bold flex items-center justify-between">
-                    <span>
-                      {spatialValidation.isValid
-                        ? 'Point-in-Polygon: Terverifikasi di Dalam Wilayah'
-                        : 'Point-in-Polygon: Di Luar Batas Wilayah!'}
-                    </span>
-                    {spatialValidation.centerCoordinates && !spatialValidation.isValid && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setNewProjectForm({
-                            ...newProjectForm,
-                            latitude: spatialValidation.centerCoordinates![0],
-                            longitude: spatialValidation.centerCoordinates![1],
-                          })
-                        }
-                        className="text-[11px] underline font-semibold text-rose-700 hover:text-rose-900 cursor-pointer ml-2"
-                      >
-                        Reset ke Titik Wilayah
-                      </button>
-                    )}
-                  </div>
-                  <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">
-                    {spatialValidation.message}
-                  </p>
-                </div>
-              </div>
-
-              <div>
-                <label htmlFor="deskripsi" className="block font-semibold text-[#184C78] mb-1">Uraian / Deskripsi Pekerjaan</label>
-                <textarea
-                  id="deskripsi"
-                  rows={3}
-                  required
-                  placeholder="Jelaskan ruang lingkup pengerjaan konstruksi..."
-                  value={newProjectForm.deskripsi}
-                  onChange={(e) => setNewProjectForm({ ...newProjectForm, deskripsi: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block font-semibold text-[#184C78] mb-1">Status Pekerjaan</label>
-                  <select
-                    value={newProjectForm.status}
-                    onChange={(e) => setNewProjectForm({ ...newProjectForm, status: e.target.value as any })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                  >
-                    <option value="berjalan">Sedang Berjalan</option>
-                    <option value="selesai">Selesai</option>
-                    <option value="ditangguhkan">Ditangguhkan</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-[#184C78] mb-1">Progres Awal (%)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    max={100}
-                    value={newProjectForm.progres_persen}
-                    onChange={(e) => setNewProjectForm({ ...newProjectForm, progres_persen: Number(e.target.value) })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-              </div>
-
-              {createProjError && (
-                <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-800 text-xs">
-                  <p className="font-semibold">{createProjError}</p>
-                </div>
-              )}
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsNewProjectModalOpen(false);
-                    setCreateProjError(null);
-                  }}
-                  className="btn-ghost"
-                  disabled={isSubmittingNewProj}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingNewProj}
-                  className="btn-primary"
-                >
-                  {isSubmittingNewProj ? 'Menyimpan ke Database...' : 'Simpan & Publikasikan'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: TAMBAH TAHAP LINIMASA ── */}
-      {isNewStageModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-[#DCE0E6]">
-            <div className="bg-[#184C78] text-white p-5">
-              <h3 className="font-['DM_Sans'] text-base font-bold">Tambah Tahapan Pengerjaan Baru</h3>
-            </div>
-            <form onSubmit={handleAddTimelineStage} className="p-5 space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Nama Tahapan</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Pengecoran Abutmen Jembatan"
-                  value={newStageForm.nama_tahap}
-                  onChange={(e) => setNewStageForm({ ...newStageForm, nama_tahap: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Uraian Teknis</label>
-                <textarea
-                  rows={2}
-                  required
-                  value={newStageForm.deskripsi}
-                  onChange={(e) => setNewStageForm({ ...newStageForm, deskripsi: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block font-semibold text-[#184C78] mb-1">Target Mulai</label>
-                  <input
-                    type="date"
-                    value={newStageForm.target_mulai}
-                    onChange={(e) => setNewStageForm({ ...newStageForm, target_mulai: e.target.value })}
-                    className="w-full p-2 border border-[#DCE0E6] rounded-lg outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block font-semibold text-[#184C78] mb-1">Target Selesai</label>
-                  <input
-                    type="date"
-                    value={newStageForm.target_selesai}
-                    onChange={(e) => setNewStageForm({ ...newStageForm, target_selesai: e.target.value })}
-                    className="w-full p-2 border border-[#DCE0E6] rounded-lg outline-none"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Target Capaian Progres Kumulatif (%)</label>
-                <p className="text-[10.5px] text-[#6C757D] mb-1">
-                  Persentase capaian kemajuan fisik kumulatif proyek hingga tahap ini (0–100%)
-                </p>
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={newStageForm.persentase_bobot}
-                  onChange={(e) => setNewStageForm({ ...newStageForm, persentase_bobot: Number(e.target.value) })}
-                  className="w-full p-2 border border-[#DCE0E6] rounded-lg outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                <button
-                  type="button"
-                  onClick={() => setIsNewStageModalOpen(false)}
-                  className="btn-ghost"
-                >
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary">
-                  Simpan Tahap
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: UPLOAD DOKUMENTASI ── */}
-      {isNewDocModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-md overflow-hidden shadow-2xl border border-[#DCE0E6]">
-            <div className="bg-[#184C78] text-white p-5">
-              <h3 className="font-['DM_Sans'] text-base font-bold">Upload Bukti Dokumentasi Fisik</h3>
-            </div>
-            <form onSubmit={handleAddDocumentation} className="p-5 space-y-3 text-xs">
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Proyek Terkait</label>
-                <select
-                  value={newDocForm.proyek_id}
-                  onChange={(e) => setNewDocForm({ ...newDocForm, proyek_id: Number(e.target.value) })}
-                  disabled={currentUser.role === 'penanggung_jawab' && !!unlockedProject}
-                  className="w-full p-2 border border-[#DCE0E6] rounded-lg bg-white outline-none disabled:bg-slate-100 font-medium"
-                >
-                  {(currentUser.role === 'penanggung_jawab' && unlockedProject
-                    ? [unlockedProject]
-                    : projectList
-                  ).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.kode_proyek ? `[${p.kode_proyek}] ` : ''}{p.nama_proyek}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Judul Dokumentasi</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Uji Kuat Tekan Beton Silinder Sta 2+400"
-                  value={newDocForm.judul}
-                  onChange={(e) => setNewDocForm({ ...newDocForm, judul: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">URL Foto Bukti / File</label>
-                <input
-                  type="text"
-                  required
-                  value={newDocForm.foto_url}
-                  onChange={(e) => setNewDocForm({ ...newDocForm, foto_url: e.target.value })}
-                  className="w-full p-2 border border-[#DCE0E6] rounded-lg outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Catatan Teknis Pengawas</label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="Keterangan kondisi visual dan hasil uji laboratorium..."
-                  value={newDocForm.deskripsi}
-                  onChange={(e) => setNewDocForm({ ...newDocForm, deskripsi: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                <button
-                  type="button"
-                  onClick={() => setIsNewDocModalOpen(false)}
-                  className="btn-ghost"
-                >
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary">
-                  Unggah Sekarang
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: VERIFIKASI CACAT ── */}
-      {selectedEvalToVerify && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm animate-fade-in">
-          <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl border border-[#DCE0E6]">
-            <div className="bg-[#184C78] text-white p-5 sticky top-0 z-10 flex items-center justify-between">
-              <div>
-                <h3 className="font-['DM_Sans'] text-base font-bold">Verifikasi Tindakan Perbaikan FHO</h3>
-                <p className="text-[11px] text-white/70">Tinjauan mutu &amp; jejak audit laporan evaluasi</p>
-              </div>
-              <span className="text-xs px-2.5 py-0.5 rounded-full bg-white/15 text-white font-mono">
-                #{selectedEvalToVerify.id}
-              </span>
-            </div>
-            <form onSubmit={handleVerifyDefect} className="p-5 space-y-3 text-xs">
-              <div className="p-3 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6]/60">
-                <div className="font-bold text-[#184C78]">{selectedEvalToVerify.nama_proyek}</div>
-                <div className="text-[11px] text-[#6C757D]">{selectedEvalToVerify.lokasi_titik}</div>
-                <p className="text-[#495057] mt-1 italic">"{selectedEvalToVerify.deskripsi}"</p>
-              </div>
-
-              {/* Riwayat Jejak Audit Status (Audit Trail) */}
-              <div className="p-3 bg-[#f8fafc] rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center gap-1.5 font-bold text-[#184C78]">
-                  <Clock className="w-3.5 h-3.5 text-[#2980B9]" />
-                  <span>Riwayat Jejak Audit Status (Linimasa Log)</span>
-                </div>
-                <div className="space-y-2 max-h-36 overflow-y-auto pr-1">
-                  {evalStatusLogs.length > 0 ? (
-                    evalStatusLogs.map((log: any, idx: number) => (
-                      <div key={idx} className="bg-white p-2 rounded-lg border border-slate-200 text-[11px] space-y-0.5">
-                        <div className="flex items-center justify-between font-semibold text-[#184C78]">
-                          <span>
-                            {log.status_sebelumnya ? `${log.status_sebelumnya} ➔ ` : ''}
-                            <span className="text-emerald-700 font-bold">{log.status_baru}</span>
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {log.created_at ? new Date(log.created_at).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' }) : log.waktu || ''}
-                          </span>
-                        </div>
-                        <p className="text-slate-600 text-[10.5px]">
-                          <strong className="text-slate-700">{log.nama_pengubah || log.diubah_oleh}:</strong> {log.catatan || '-'}
-                        </p>
-                      </div>
-                    ))
-                  ) : (
-                    <p className="text-[11px] text-slate-400 italic">Belum ada riwayat perubahan status</p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Keputusan Status Verifikasi</label>
-                <select
-                  value={verifyStatus}
-                  onChange={(e) => setVerifyStatus(e.target.value as EvaluasiStatusType)}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                >
-                  <option value="terverifikasi_perlu_tindak_lanjut">
-                    Terverifikasi - Perlu Tindak Lanjut (Proyek beralih ke masa peninjauan ulang)
-                  </option>
-                  <option value="selesai_ditindaklanjuti">
-                    Selesai Ditindaklanjuti (Perbaikan tuntas)
-                  </option>
-                  <option value="ditolak_tidak_terbukti">
-                    Ditolak - Tidak Terbukti (Laporan tidak valid)
-                  </option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Catatan Tindakan Tim Lapangan</label>
-                <textarea
-                  rows={3}
-                  required
-                  value={tindakanDinasText}
-                  onChange={(e) => setTindakanDinasText(e.target.value)}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                <button
-                  type="button"
-                  onClick={() => setSelectedEvalToVerify(null)}
-                  className="btn-ghost"
-                >
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary">
-                  Konfirmasi Penanganan
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };
+

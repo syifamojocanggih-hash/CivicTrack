@@ -119,7 +119,8 @@ export const MiniMapOverview: React.FC<MiniMapOverviewProps> = ({
   return (
     <div
       onClick={onOpenMapExplorer}
-      className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs hover:shadow-md transition-all overflow-hidden cursor-pointer group animate-fade-in"
+      className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs hover:shadow-md transition-all overflow-hidden cursor-pointer group animate-fade-in relative z-0 isolate"
+      style={{ isolation: 'isolate' }}
     >
       {/* ── CARD HEADER ── */}
       <div className="p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-[#E9ECEF] bg-gradient-to-r from-[#F8FAFC] via-white to-[#F8FAFC]">
@@ -168,9 +169,12 @@ export const MiniMapOverview: React.FC<MiniMapOverviewProps> = ({
       </div>
 
       {/* ── MINIMAP CONTAINER ── */}
-      <div className="relative h-60 sm:h-72 w-full overflow-hidden bg-slate-100">
+      <div
+        className="relative h-60 sm:h-72 w-full overflow-hidden bg-slate-100 z-0 isolate"
+        style={{ isolation: 'isolate' }}
+      >
         {/* Leaflet map */}
-        <div ref={mapContainerRef} className="w-full h-full" />
+        <div ref={mapContainerRef} className="w-full h-full z-0" style={{ isolation: 'isolate' }} />
 
         {/* Top-Left Informational Pill */}
         <div className="absolute top-3 left-3 z-10 pointer-events-none">
