@@ -22,7 +22,7 @@ vi.mock('react-leaflet', () => ({
 vi.mock('leaflet.markercluster', () => ({}));
 vi.mock('leaflet', () => ({
   default: {
-    map: vi.fn(() => ({ setView: vi.fn(), on: vi.fn(), remove: vi.fn(), fitBounds: vi.fn(), addLayer: vi.fn(), invalidateSize: vi.fn(), flyToBounds: vi.fn() })),
+    map: vi.fn(() => ({ setView: vi.fn(), on: vi.fn(), remove: vi.fn(), fitBounds: vi.fn(), addLayer: vi.fn(), invalidateSize: vi.fn(), flyToBounds: vi.fn(), flyTo: vi.fn() })),
     tileLayer: vi.fn(() => ({ addTo: vi.fn() })),
     layerGroup: vi.fn(() => ({ addTo: vi.fn(), clearLayers: vi.fn() })),
     markerClusterGroup: vi.fn(() => ({ addTo: vi.fn(), clearLayers: vi.fn(), addLayer: vi.fn() })),

@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import { PublicMapExplorer } from './PublicMapExplorer';
 import { apiService } from '../services/api';
 import userEvent from '@testing-library/user-event';
@@ -198,4 +198,215 @@ describe('PublicMapExplorer', () => {
       expect(screen.queryByText(/Batas Desa Terpilih/i)).not.toBeInTheDocument();
     });
   });
+
+  it('allows search & filter panel and project detail panel to be open simultaneously on desktop', async () => {
+    // Simulate desktop width
+    window.innerWidth = 1280;
+    const user = userEvent.setup();
+
+    render(
+      <PublicMapExplorer
+        projects={mockProjects as any}
+        currentUser={null}
+        onBackToLanding={() => {}}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={() => {}}
+        onOpenAuth={() => {}}
+      />
+    );
+
+    await waitFor(() => {
+      expect(apiService.getProjects).toHaveBeenCalled();
+    });
+
+    // Left sidebar is initially visible
+    const searchHeader = screen.getByText('Cari Proyek Pembangunan');
+    expect(searchHeader).toBeInTheDocument();
+    const leftAside = searchHeader.closest('aside');
+    expect(leftAside).toHaveClass('translate-x-0');
+
+    // Click on a project in the search list to open detail
+    const projectCards = await screen.findAllByText(/Proyek Desa A/i);
+    await user.click(projectCards[0]);
+
+    // Both panels are now open:
+    // 1. Left search panel remains open (has translate-x-0)
+    expect(leftAside).toHaveClass('translate-x-0');
+    expect(leftAside).not.toHaveClass('-translate-x-full');
+
+    // 2. Right detail panel is open (has translate-x-0)
+    const detailTabs = screen.getByText('Ringkasan');
+    expect(detailTabs).toBeInTheDocument();
+    const rightAside = detailTabs.closest('aside');
+    expect(rightAside).toHaveClass('translate-x-0');
+    expect(rightAside).not.toHaveClass('translate-x-full');
+
+    // 3. User can close the detail drawer while left search sidebar stays open
+    const closeDetailBtn = screen.getByTitle('Tutup Panel Info Proyek');
+    await user.click(closeDetailBtn);
+    expect(rightAside).toHaveClass('translate-x-full');
+    expect(leftAside).toHaveClass('translate-x-0');
+
+    // 4. User can open detail again
+    await user.click(projectCards[0]);
+    expect(rightAside).toHaveClass('translate-x-0');
+    expect(leftAside).toHaveClass('translate-x-0');
+
+    // 5. User can collapse the search sidebar while right detail drawer stays open
+    const collapseSearchBtn = screen.getByTitle('Sembunyikan Panel Filter');
+    await user.click(collapseSearchBtn);
+    expect(leftAside).toHaveClass('-translate-x-full');
+    expect(rightAside).toHaveClass('translate-x-0');
+
+    // 6. User can click floating button to reopen search panel without closing detail drawer
+    const reopenSearchBtn = screen.getByTitle('Buka Panel Pencarian & Filter');
+    await user.click(reopenSearchBtn);
+    expect(leftAside).toHaveClass('translate-x-0');
+    expect(rightAside).toHaveClass('translate-x-0');
+  });
+
+  it('collapses search sidebar on mobile screens (< 1024px) when project is selected', async () => {
+    // Simulate mobile width
+    window.innerWidth = 768;
+    const user = userEvent.setup();
+
+    render(
+      <PublicMapExplorer
+        projects={mockProjects as any}
+        currentUser={null}
+        onBackToLanding={() => {}}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={() => {}}
+        onOpenAuth={() => {}}
+      />
+    );
+
+    await waitFor(() => {
+      expect(apiService.getProjects).toHaveBeenCalled();
+    });
+
+    const searchHeader = screen.getByText('Cari Proyek Pembangunan');
+    const leftAside = searchHeader.closest('aside');
+    expect(leftAside).toHaveClass('translate-x-0');
+
+    // Click project on mobile
+    const projectCards = await screen.findAllByText(/Proyek Desa A/i);
+    await user.click(projectCards[0]);
+
+    // On mobile, left sidebar is collapsed to avoid screen clutter
+    expect(leftAside).toHaveClass('-translate-x-full');
+
+    // Right detail panel is open
+    const detailTabs = screen.getByText('Ringkasan');
+    const rightAside = detailTabs.closest('aside');
+    expect(rightAside).toHaveClass('translate-x-0');
+  });
+
+  it('calculates nearby projects based on true geographic proximity from current project and filters out distant projects', async () => {
+    // Define projects with realistic distant and close coordinates:
+    // Project 1: Sukorame (south) [-7.3450, 112.1150]
+    // Project 2: Bluluk (near Sukorame, ~4.9 km) [-7.3452, 112.1554]
+    // Project 3: Brondong (far north, ~50 km away) [-6.8998, 112.2385]
+    const testSpatialProjects = [
+      { id: 1, nama_proyek: 'Embung Sukorame', wilayah_id: 1, status: 'berjalan', kategori: 'drainase', anggaran: 3000000000, latitude: -7.3450, longitude: 112.1150, progres_persen: 80, progress_fisik: 80, deskripsi: 'Embung Sukorame', nama_wilayah: 'Kecamatan Sukorame' },
+      { id: 2, nama_proyek: 'Jalan Bluluk Dekat', wilayah_id: 2, status: 'berjalan', kategori: 'jalan', anggaran: 4000000000, latitude: -7.3452, longitude: 112.1554, progres_persen: 60, progress_fisik: 60, deskripsi: 'Jalan Bluluk', nama_wilayah: 'Kecamatan Bluluk' },
+      { id: 3, nama_proyek: 'Pelabuhan Brondong Jauh', wilayah_id: 3, status: 'berjalan', kategori: 'fasilitas', anggaran: 20000000000, latitude: -6.8998, longitude: 112.2385, progres_persen: 50, progress_fisik: 50, deskripsi: 'Pelabuhan Brondong', nama_wilayah: 'Kecamatan Brondong' },
+    ];
+
+    vi.mocked(apiService.getProjects).mockResolvedValue({
+      projects: testSpatialProjects,
+      isFromBackend: true,
+    } as any);
+
+    const user = userEvent.setup();
+    render(
+      <PublicMapExplorer
+        projects={testSpatialProjects as any}
+        currentUser={null}
+        onBackToLanding={() => {}}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={() => {}}
+        onOpenAuth={() => {}}
+      />
+    );
+
+    await waitFor(() => {
+      expect(apiService.getProjects).toHaveBeenCalled();
+    });
+
+    // Select the Sukorame project
+    const sukorameCards = await screen.findAllByText(/Embung Sukorame/i);
+    expect(sukorameCards.length).toBeGreaterThanOrEqual(1);
+    await user.click(sukorameCards[0]);
+
+    // Switch to Tab "Proyek Sekitar"
+    const sekitarTab = screen.getByRole('button', { name: /Proyek Sekitar/i });
+    await user.click(sekitarTab);
+
+    const nearbyHeading = screen.getByText('Infrastruktur Terkait di Sekitar Wilayah');
+    const nearbyContainer = nearbyHeading.closest('.flex-1') as HTMLElement;
+
+    // Nearby project (Bluluk) should be shown in Tab 4
+    expect(within(nearbyContainer).getByText('Jalan Bluluk Dekat')).toBeInTheDocument();
+    // Distance from current project indicator should be rendered
+    expect(within(nearbyContainer).getByText(/dari proyek ini/i)).toBeInTheDocument();
+
+    // Distant project (Brondong ~50 km) must NOT be shown in Tab 4 Proyek Sekitar
+    expect(within(nearbyContainer).queryByText('Pelabuhan Brondong Jauh')).not.toBeInTheDocument();
+  });
+
+  it('selects and displays the newly added project when clicking the Show button', async () => {
+    const projectsWithNewest = [
+      { id: 29, nama_proyek: 'lalalalalalalalalaalala', wilayah_id: 10, status: 'berjalan', kategori: 'jalan', anggaran: 5000000000, latitude: -7.12, longitude: 112.35, progres_persen: 40, progress_fisik: 40, deskripsi: 'ndaiyo ndaiyo ndaiyo ndaiyo ndaiyo', nama_wilayah: 'Kecamatan Lamongan (Kota)', estimasi_selesai: '2027-04-13' },
+      { id: 1, nama_proyek: 'Proyek Lama 1', wilayah_id: 10, status: 'berjalan', kategori: 'jalan', anggaran: 1000000000, latitude: -7.1, longitude: 112.1, progres_persen: 50, progress_fisik: 50, deskripsi: 'Proyek Lama 1', nama_wilayah: 'Kecamatan Lamongan (Kota)' },
+      { id: 2, nama_proyek: 'Proyek Lama 2', wilayah_id: 10, status: 'selesai', kategori: 'drainase', anggaran: 2000000000, latitude: -7.2, longitude: 112.2, progres_persen: 100, progress_fisik: 100, deskripsi: 'Proyek Lama 2', nama_wilayah: 'Kecamatan Lamongan (Kota)' },
+    ];
+
+    vi.mocked(apiService.getProjects).mockResolvedValue({
+      projects: projectsWithNewest,
+      isFromBackend: true,
+    } as any);
+
+    const user = userEvent.setup();
+    render(
+      <PublicMapExplorer
+        projects={projectsWithNewest as any}
+        currentUser={null}
+        onBackToLanding={() => {}}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={() => {}}
+        onOpenAuth={() => {}}
+      />
+    );
+
+    await waitFor(() => {
+      expect(apiService.getProjects).toHaveBeenCalled();
+    });
+
+    // Check search header and sidebar
+    const searchHeader = screen.getByText('Cari Proyek Pembangunan');
+    const leftAside = searchHeader.closest('aside');
+    expect(leftAside).toHaveClass('translate-x-0');
+
+    // Find the Show button with count (3)
+    const showButton = screen.getByRole('button', { name: /Show \(3\)/i });
+    expect(showButton).toBeInTheDocument();
+
+    // Click the Show button
+    await user.click(showButton);
+
+    // Left sidebar should be collapsed
+    expect(leftAside).toHaveClass('-translate-x-full');
+
+    // Right detail panel should be open
+    const detailTabs = screen.getByText('Ringkasan');
+    const rightAside = detailTabs.closest('aside');
+    expect(rightAside).toHaveClass('translate-x-0');
+
+    // The detail panel should display the newly added project (lalalalalalalalalaalala)
+    expect(within(rightAside as HTMLElement).getByText('lalalalalalalalalaalala')).toBeInTheDocument();
+    expect(within(rightAside as HTMLElement).getByText(/ndaiyo ndaiyo ndaiyo/i)).toBeInTheDocument();
+    expect(within(rightAside as HTMLElement).getByText(/Rp 5.0 M/i)).toBeInTheDocument();
+  });
 });
+
