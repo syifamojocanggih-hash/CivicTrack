@@ -615,6 +615,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               : reportCategory === 'lalu_lintas'
               ? 'Kemacetan / Pengalihan Rute Terganggu'
               : 'Debu & Dampak Lingkungan Warga',
+          user_id: currentUser?.id,
         }
       );
 

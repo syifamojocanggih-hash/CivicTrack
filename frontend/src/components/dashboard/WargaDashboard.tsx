@@ -350,6 +350,38 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
       }
     };
 
+    const handleRepliedAduan = (event: any) => {
+      if (event.detail) {
+        const { reportId, status, tanggapan_dinas, tanggal_tanggapan, petugas_penjawab } = event.detail;
+        setLaporanList((prev) =>
+          prev.map((item) =>
+            item.id === reportId
+              ? {
+                  ...item,
+                  status: status || item.status,
+                  tanggapan_dinas: tanggapan_dinas || item.tanggapan_dinas,
+                  tanggal_tanggapan: tanggal_tanggapan || item.tanggal_tanggapan,
+                  petugas_penjawab: petugas_penjawab || item.petugas_penjawab,
+                }
+              : item
+          )
+        );
+      }
+    };
+
+    const handleStorageChange = () => {
+      if (typeof apiService.getAllReports === 'function') {
+        apiService
+          .getAllReports()
+          .then((reports) => {
+            if (reports && reports.length > 0) {
+              setLaporanList(reports);
+            }
+          })
+          .catch(() => {});
+      }
+    };
+
     const handleNewRating = (event: any) => {
       if (event.detail) {
         setRatingList((prev) => [
@@ -360,12 +392,16 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     };
 
     window.addEventListener('civictrack_new_aduan', handleNewAduan);
+    window.addEventListener('civictrack_replied_aduan', handleRepliedAduan);
+    window.addEventListener('storage', handleStorageChange);
     window.addEventListener('civictrack_new_rating', handleNewRating);
 
     return () => {
       window.removeEventListener('civictrack_evaluasi_verified', handleEvaluasiVerified);
       window.removeEventListener('civictrack_new_evaluasi', handleNewEvaluasi);
       window.removeEventListener('civictrack_new_aduan', handleNewAduan);
+      window.removeEventListener('civictrack_replied_aduan', handleRepliedAduan);
+      window.removeEventListener('storage', handleStorageChange);
       window.removeEventListener('civictrack_new_rating', handleNewRating);
     };
   }, []);
@@ -392,6 +428,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
           email_pelapor: currentUser.email,
           judul: reportForm.judul || 'Aduan Warga',
           kategori_aduan: reportForm.kategori_aduan,
+          user_id: currentUser.id,
         }
       );
 

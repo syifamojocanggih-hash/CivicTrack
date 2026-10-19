@@ -412,18 +412,22 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
   // Load aduan warga from database & persistent storage + real-time listener
   React.useEffect(() => {
-    if (typeof apiService.getAllReports === 'function') {
-      apiService
-        .getAllReports()
-        .then((reports) => {
-          if (reports && reports.length > 0) {
-            setAduanList(reports);
-          }
-        })
-        .catch((err) => {
-          console.warn('Gagal memuat aduan masyarakat:', err);
-        });
-    }
+    const loadReports = () => {
+      if (typeof apiService.getAllReports === 'function') {
+        apiService
+          .getAllReports()
+          .then((reports) => {
+            if (reports && reports.length > 0) {
+              setAduanList(reports);
+            }
+          })
+          .catch((err) => {
+            console.warn('Gagal memuat aduan masyarakat:', err);
+          });
+      }
+    };
+
+    loadReports();
 
     const handleNewAduan = (event: any) => {
       if (event.detail) {
@@ -431,11 +435,39 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       }
     };
 
+    const handleRepliedAduan = (event: any) => {
+      if (event.detail) {
+        const { reportId, status, tanggapan_dinas, tanggal_tanggapan, petugas_penjawab } = event.detail;
+        setAduanList((prev) =>
+          prev.map((item) =>
+            item.id === reportId
+              ? {
+                  ...item,
+                  status: status || item.status,
+                  tanggapan_dinas: tanggapan_dinas || item.tanggapan_dinas,
+                  tanggal_tanggapan: tanggal_tanggapan || item.tanggal_tanggapan,
+                  petugas_penjawab: petugas_penjawab || item.petugas_penjawab,
+                }
+              : item
+          )
+        );
+      }
+    };
+
+    const handleStorageChange = () => {
+      loadReports();
+    };
+
     window.addEventListener('civictrack_new_aduan', handleNewAduan);
+    window.addEventListener('civictrack_replied_aduan', handleRepliedAduan);
+    window.addEventListener('storage', handleStorageChange);
+
     return () => {
       window.removeEventListener('civictrack_new_aduan', handleNewAduan);
+      window.removeEventListener('civictrack_replied_aduan', handleRepliedAduan);
+      window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [activeSection]);
 
   // Evaluasi cacat state
   const [evaluasiList, setEvaluasiList] = useState<EvaluasiCacatItem[]>(MOCK_EVALUASI_CACAT);

@@ -96,9 +96,17 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
     setReplySuccessMessage(null);
 
     try {
+      const responder = `${currentUser.nama} (${
+        currentUser.nama_dinas ||
+        (currentUser.role === 'aparatur_pemerintah' || currentUser.role === 'pimpinan_instansi'
+          ? 'Pemerintah Kabupaten Lamongan'
+          : 'Dinas PU')
+      })`;
+
       await apiService.replyAduan(currentAduan.id, {
         status_tindak_lanjut: replyStatus === 'selesai' ? 'ditanggapi' : 'diproses',
         tanggapan_dinas: replyText.trim(),
+        petugas_penjawab: responder,
       });
 
       const updated: LaporanAduan = {
@@ -109,7 +117,7 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
           dateStyle: 'short',
           timeStyle: 'short',
         }),
-        petugas_penjawab: `${currentUser.nama} (${currentUser.nama_dinas || 'Dinas PU'})`,
+        petugas_penjawab: responder,
       };
 
       setCurrentAduan(updated);

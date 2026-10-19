@@ -9,6 +9,15 @@ g.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
+// Ensure globalThis.localStorage points to JSDOM window.localStorage in Node 22+
+if (typeof window !== 'undefined' && window.localStorage) {
+  Object.defineProperty(globalThis, 'localStorage', {
+    value: window.localStorage,
+    writable: true,
+    configurable: true,
+  });
+}
+
 // Mock leaflet completely since we don't test map rendering details
 vi.mock('react-leaflet', () => ({
   MapContainer: ({ children }: any) => <div>{children}</div>,

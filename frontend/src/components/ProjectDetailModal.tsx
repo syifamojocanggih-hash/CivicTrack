@@ -148,6 +148,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           email_pelapor: currentUser?.email || 'warga@civictrack.id',
           judul: reportTitle.trim() || 'Aduan Warga',
           kategori_aduan: 'Pengaduan Teknis Lapangan',
+          user_id: currentUser?.id,
         }
       );
 

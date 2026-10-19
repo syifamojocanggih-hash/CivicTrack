@@ -88,6 +88,7 @@ export interface LaporanCreatePayload {
 export interface LaporanTanggapiPayload {
   status_tindak_lanjut: 'baru' | 'diproses' | 'ditanggapi' | 'ditolak';
   tanggapan_dinas: string;
+  petugas_penjawab?: string;
 }
 
 export interface LaporanResponseItem {

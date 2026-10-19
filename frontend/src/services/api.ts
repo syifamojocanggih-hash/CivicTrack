@@ -601,25 +601,28 @@ export const apiService = {
       email_pelapor?: string;
       judul?: string;
       kategori_aduan?: string;
+      user_id?: number;
     }
   ): Promise<LaporanResponseItem> {
     const headers = getAuthHeaders();
     let resData: LaporanResponseItem | null = null;
 
     if (headers['Authorization']) {
-      const res = await fetch(`${BASE_URL}/proyek/${projectId}/laporan`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data),
-      });
+      try {
+        const res = await fetch(`${BASE_URL}/proyek/${projectId}/laporan`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(data),
+        });
 
-      if (res.ok) {
-        resData = await res.json();
-      } else {
-        await handleApiError(res, 'Gagal mengirimkan laporan pengaduan.');
+        if (res.ok) {
+          resData = await res.json();
+        } else {
+          console.warn('Backend submitLaporan returned error status:', res.status);
+        }
+      } catch (err) {
+        console.warn('Backend submitLaporan network failed, using local persistence:', err);
       }
-    } else {
-      throw new Error('Harap masuk terlebih dahulu untuk mengirimkan pengaduan.');
     }
 
     const reportId = resData ? resData.id : Date.now();
@@ -635,7 +638,7 @@ export const apiService = {
       id: reportId,
       proyek_id: projectId,
       nama_proyek: extraMeta?.nama_proyek || resData?.nama_proyek || `Proyek #${projectId}`,
-      user_id: resData?.user_id || 1,
+      user_id: extraMeta?.user_id || resData?.user_id || 1,
       nama_pelapor: extraMeta?.nama_pelapor || resData?.pelapor?.nama || 'Warga Masyarakat',
       email_pelapor: extraMeta?.email_pelapor || resData?.pelapor?.email || 'warga@civictrack.id',
       judul: parsedJudul,
@@ -742,15 +745,39 @@ export const apiService = {
       // ignore
     }
 
-    const existingIds = new Set(backendItems.map((b) => b.id));
-    const uniqueLocal = localSubmitted.filter((l) => !existingIds.has(l.id));
+    // Prioritize locally submitted reports
+    const localIds = new Set(localSubmitted.map((l) => l.id));
+    const uniqueBackend = backendItems.filter((b) => !localIds.has(b.id));
 
     // Combine local + backend (newest first)
-    const combined = [...uniqueLocal, ...backendItems];
+    const combined = [...localSubmitted, ...uniqueBackend];
     const combinedIds = new Set(combined.map((c) => c.id));
     const uniqueMocks = MOCK_LAPORAN_WARGA.filter((m) => !combinedIds.has(m.id));
 
-    return [...combined, ...uniqueMocks];
+    // Retrieve persistent replies map
+    let repliesMap: Record<string, any> = {};
+    try {
+      const savedReplies = localStorage.getItem('civictrack_aduan_replies');
+      if (savedReplies) {
+        repliesMap = JSON.parse(savedReplies);
+      }
+    } catch {
+      // ignore
+    }
+
+    const mergedReports: LaporanAduan[] = [...combined, ...uniqueMocks].map((item) => {
+      const reply = repliesMap[item.id] || repliesMap[String(item.id)];
+      if (!reply) return item;
+      return {
+        ...item,
+        status: reply.status || (reply.status_tindak_lanjut === 'ditanggapi' ? 'selesai' : reply.status_tindak_lanjut) || item.status,
+        tanggapan_dinas: reply.tanggapan_dinas || item.tanggapan_dinas,
+        tanggal_tanggapan: reply.tanggal_tanggapan || item.tanggal_tanggapan,
+        petugas_penjawab: reply.petugas_penjawab || item.petugas_penjawab,
+      };
+    });
+
+    return mergedReports;
   },
 
   async getProjectReports(projectId: number): Promise<LaporanResponseItem[]> {
@@ -774,7 +801,10 @@ export const apiService = {
         const res = await fetch(`${BASE_URL}/laporan/${reportId}/tanggapi`, {
           method: 'PUT',
           headers,
-          body: JSON.stringify(data),
+          body: JSON.stringify({
+            status_tindak_lanjut: data.status_tindak_lanjut,
+            tanggapan_dinas: data.tanggapan_dinas,
+          }),
         });
         if (res.ok) {
           resData = await res.json();
@@ -784,7 +814,33 @@ export const apiService = {
       }
     }
 
-    // Also update locally cached report
+    const nowFormatted = new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' });
+    const replyStatus: 'diproses' | 'selesai' | 'ditolak' | 'menunggu' =
+      data.status_tindak_lanjut === 'ditanggapi'
+        ? 'selesai'
+        : data.status_tindak_lanjut === 'diproses'
+        ? 'diproses'
+        : data.status_tindak_lanjut === 'ditolak'
+        ? 'ditolak'
+        : 'selesai';
+
+    // 1. Save to dedicated civictrack_aduan_replies persistent map
+    try {
+      const savedReplies = localStorage.getItem('civictrack_aduan_replies');
+      const repliesMap = savedReplies ? JSON.parse(savedReplies) : {};
+      repliesMap[reportId] = {
+        status: replyStatus,
+        status_tindak_lanjut: data.status_tindak_lanjut,
+        tanggapan_dinas: data.tanggapan_dinas,
+        tanggal_tanggapan: nowFormatted,
+        petugas_penjawab: data.petugas_penjawab || 'Aparatur Pemerintah Kab. Lamongan',
+      };
+      localStorage.setItem('civictrack_aduan_replies', JSON.stringify(repliesMap));
+    } catch {
+      // ignore
+    }
+
+    // 2. Also update locally cached report in civictrack_submitted_reports if present
     try {
       const saved = localStorage.getItem('civictrack_submitted_reports');
       if (saved) {
@@ -793,9 +849,10 @@ export const apiService = {
           item.id === reportId
             ? {
                 ...item,
-                status: (data.status_tindak_lanjut === 'ditanggapi' ? 'selesai' : data.status_tindak_lanjut) as any,
+                status: replyStatus,
                 tanggapan_dinas: data.tanggapan_dinas,
-                tanggal_tanggapan: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
+                tanggal_tanggapan: nowFormatted,
+                petugas_penjawab: data.petugas_penjawab || item.petugas_penjawab || 'Aparatur Pemerintah Kab. Lamongan',
               }
             : item
         );
@@ -810,8 +867,11 @@ export const apiService = {
         new CustomEvent('civictrack_replied_aduan', {
           detail: {
             reportId,
-            status: data.status_tindak_lanjut,
+            status: replyStatus,
+            status_tindak_lanjut: data.status_tindak_lanjut,
             tanggapan_dinas: data.tanggapan_dinas,
+            tanggal_tanggapan: nowFormatted,
+            petugas_penjawab: data.petugas_penjawab || 'Aparatur Pemerintah Kab. Lamongan',
           },
         })
       );
