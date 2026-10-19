@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   X,
   MapPin,
@@ -38,6 +39,24 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
 }) => {
   const [selectedRadius, setSelectedRadius] = useState<number>(3); // 1, 3, 5, or 10 km
   const [selectedCategory, setSelectedCategory] = useState<ProyekKategori | 'all'>('all');
+
+  // Lock body scroll and handle Escape key when modal is open
+  useEffect(() => {
+    if (!isOpen) return;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, onClose]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
   const [userLocationName, setUserLocationName] = useState<string>('Pusat Kota (Klojen - Lowokwaru)');
 
@@ -134,9 +153,18 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
   // Pixel radius calculation on SVG
   const svgRadius = Math.min(selectedRadius * 48, 230);
 
-  return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl border border-[#DCE0E6] overflow-hidden my-auto animate-scale-up">
+  const modalContent = (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-nearby-map-title"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-black/65 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-5xl max-h-[92vh] flex flex-col shadow-2xl border border-[#DCE0E6] overflow-hidden my-auto animate-fade-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* ── MODAL HEADER ── */}
         <div className="bg-[#184C78] text-white px-5 sm:px-7 py-4.5 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-3">
@@ -622,4 +650,6 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

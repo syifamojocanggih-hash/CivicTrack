@@ -14,6 +14,7 @@ class RatingResponse(BaseModel):
     komentar: Optional[str] = None
     created_at: datetime
     nama_user: str = ""
+    nama_proyek: Optional[str] = ""
 
     model_config = ConfigDict(from_attributes=True)
 

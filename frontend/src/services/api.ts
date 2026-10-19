@@ -23,11 +23,12 @@ import type {
   SubscriptionStatus,
   ApiEvaluationStatusLog,
   LaporanAduan,
+  RatingUlasanItem,
   ProjectVerifyAccessResult,
 } from '../types';
 import { LAMONGAN_DESA_GEOJSON } from '../data/lamonganDesaGeoJSON';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
-import { MOCK_LAPORAN_WARGA } from '../data/dashboardMockData';
+import { MOCK_LAPORAN_WARGA, MOCK_RATING_ULASAN } from '../data/dashboardMockData';
 
 const BASE_URL = '/api/v1';
 
@@ -949,23 +950,87 @@ export const apiService = {
 
   // ── Rating & Ulasan Warga ──
 
-  async submitRating(projectId: number, data: RatingCreatePayload): Promise<RatingResponseItem> {
+  async submitRating(
+    projectId: number,
+    data: RatingCreatePayload,
+    extraMeta?: {
+      nama_proyek?: string;
+      user_id?: number;
+      nama_warga?: string;
+      aspek_kualitas?: number;
+      aspek_ketepatan_waktu?: number;
+      aspek_manfaat?: number;
+    }
+  ): Promise<RatingResponseItem> {
     const headers = getAuthHeaders();
     if (!headers['Authorization']) {
       throw new Error('Harap masuk terlebih dahulu untuk memberikan penilaian.');
     }
 
-    const res = await fetch(`${BASE_URL}/proyek/${projectId}/rating`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(data),
-    });
+    let resData: RatingResponseItem | null = null;
+    try {
+      const res = await fetch(`${BASE_URL}/proyek/${projectId}/rating`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(data),
+      });
 
-    if (!res.ok) {
-      await handleApiError(res, 'Gagal mengirimkan penilaian kepuasan.');
+      if (res.ok) {
+        resData = await res.json();
+      } else {
+        await handleApiError(res, 'Gagal mengirimkan penilaian kepuasan.');
+      }
+    } catch (err: any) {
+      console.warn('Backend rating endpoint error, saving locally:', err);
     }
 
-    return await res.json();
+    const ratingId = resData?.id || Date.now();
+    const localItem: RatingUlasanItem = {
+      id: ratingId,
+      proyek_id: projectId,
+      nama_proyek: extraMeta?.nama_proyek || resData?.nama_proyek || `Proyek #${projectId}`,
+      user_id: extraMeta?.user_id || resData?.user_id || 1,
+      nama_warga: extraMeta?.nama_warga || resData?.nama_user || 'Warga Masyarakat',
+      bintang: resData?.skor ?? data.skor,
+      komentar: resData?.komentar ?? data.komentar ?? '',
+      aspek_kualitas: extraMeta?.aspek_kualitas ?? data.skor,
+      aspek_ketepatan_waktu: extraMeta?.aspek_ketepatan_waktu ?? data.skor,
+      aspek_manfaat: extraMeta?.aspek_manfaat ?? data.skor,
+      tanggal: new Date().toISOString().split('T')[0],
+    };
+
+    // Save to localStorage for instant persistence across refreshes & tabs
+    try {
+      const saved = localStorage.getItem('civictrack_submitted_ratings');
+      const list: RatingUlasanItem[] = saved ? JSON.parse(saved) : [];
+      localStorage.setItem(
+        'civictrack_submitted_ratings',
+        JSON.stringify([
+          localItem,
+          ...list.filter((item) => item.id !== localItem.id && !(item.proyek_id === projectId && item.user_id === localItem.user_id)),
+        ])
+      );
+    } catch {
+      // ignore
+    }
+
+    // Dispatch global event for instant UI update across active components
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('civictrack_new_rating', { detail: localItem }));
+    }
+
+    if (resData) return resData;
+
+    return {
+      id: ratingId,
+      proyek_id: projectId,
+      user_id: localItem.user_id,
+      skor: localItem.bintang,
+      komentar: localItem.komentar,
+      created_at: new Date().toISOString(),
+      nama_user: localItem.nama_warga,
+      nama_proyek: localItem.nama_proyek,
+    };
   },
 
   async getProjectRatingSummary(projectId: number): Promise<RatingSummaryResponseItem> {
@@ -991,6 +1056,57 @@ export const apiService = {
 
     const data = await res.json();
     return Array.isArray(data) ? data : [];
+  },
+
+  async getAllReviews(): Promise<RatingUlasanItem[]> {
+    let backendItems: RatingUlasanItem[] = [];
+
+    try {
+      const res = await fetch(`${BASE_URL}/ulasan`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          backendItems = data.map((item: any) => ({
+            id: item.id,
+            proyek_id: item.proyek_id,
+            nama_proyek: item.nama_proyek || `Proyek #${item.proyek_id}`,
+            user_id: item.user_id,
+            nama_warga: item.nama_user || 'Warga Masyarakat',
+            bintang: item.skor,
+            komentar: item.komentar || '',
+            aspek_kualitas: item.skor,
+            aspek_ketepatan_waktu: item.skor,
+            aspek_manfaat: item.skor,
+            tanggal: item.created_at ? String(item.created_at).split('T')[0] : new Date().toISOString().split('T')[0],
+          }));
+        }
+      }
+    } catch (err) {
+      console.warn('Gagal memuat ulasan dari backend:', err);
+    }
+
+    // Retrieve locally submitted ratings
+    let localSubmitted: RatingUlasanItem[] = [];
+    try {
+      const saved = localStorage.getItem('civictrack_submitted_ratings');
+      if (saved) {
+        localSubmitted = JSON.parse(saved);
+      }
+    } catch {
+      // ignore
+    }
+
+    // Merge: local first, then backend (avoid duplicates), then mock items as fallback
+    const localIds = new Set(localSubmitted.map((l) => l.id));
+    const uniqueBackend = backendItems.filter((b) => !localIds.has(b.id));
+
+    const combined = [...localSubmitted, ...uniqueBackend];
+    const combinedIds = new Set(combined.map((c) => c.id));
+    const uniqueMocks = MOCK_RATING_ULASAN.filter((m) => !combinedIds.has(m.id));
+
+    return [...combined, ...uniqueMocks];
   },
 
   // ── Evaluasi Cacat Pembangunan Pasca-Proyek ──

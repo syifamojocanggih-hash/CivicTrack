@@ -127,6 +127,7 @@ export interface RatingResponseItem {
   komentar?: string | null;
   created_at: string;
   nama_user: string;
+  nama_proyek?: string;
 }
 
 export interface RatingSummaryResponseItem {

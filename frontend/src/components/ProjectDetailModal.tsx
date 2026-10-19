@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { X, MapPin, Building, DollarSign, Star, CheckCircle, Bell, Sparkles, Send, Check, AlertCircle } from 'lucide-react';
 import type { ProyekItem, UserProfile } from '../types';
 import { apiService } from '../services/api';
@@ -26,6 +27,24 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [existingReport, setExistingReport] = useState<any>(null);
+
+  // Lock body scroll and handle Escape key when modal is open
+  useEffect(() => {
+    if (!isOpen || !project) return;
+    document.body.style.overflow = 'hidden';
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onClose();
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isOpen, project, onClose]);
 
   // Sinkronisasi status langganan dan laporan yang sudah pernah dikirim dari API / cache
   useEffect(() => {
@@ -186,9 +205,18 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
     { title: 'Serah Terima Pekerjaan Akhir (FHO)', date: project.estimasi_selesai || 'Des 2024', pct: 100, done: project.progres_persen === 100, note: 'Pemeriksaan tim teknis dinas dan peresmian untuk publik.' },
   ];
 
-  return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto">
-      <div className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl border border-[#DCE0E6] my-8 max-h-[90vh] flex flex-col">
+  const modalContent = (
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="modal-project-detail-title"
+      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      onClick={onClose}
+    >
+      <div
+        className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl border border-[#DCE0E6] my-auto max-h-[90vh] flex flex-col animate-fade-in"
+        onClick={(e) => e.stopPropagation()}
+      >
         {/* Header */}
         <div className="bg-[#184C78] text-white p-6 relative shrink-0">
           <button
@@ -587,4 +615,6 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
       </div>
     </div>
   );
+
+  return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
 };

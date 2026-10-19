@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Bookmark,
   Bell,
@@ -21,6 +22,7 @@ import {
   AlertCircle,
   X,
   MessageSquare,
+  SlidersHorizontal,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -112,7 +114,31 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   const [editError, setEditError] = useState<string | null>(null);
 
   // Rating state
-  const [ratingList, setRatingList] = useState<RatingUlasanItem[]>(MOCK_RATING_ULASAN);
+  const [ratingList, setRatingList] = useState<RatingUlasanItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('civictrack_submitted_ratings');
+      if (saved) {
+        const localList: any[] = JSON.parse(saved);
+        const normalized: RatingUlasanItem[] = localList.map((item) => ({
+          id: item.id,
+          proyek_id: item.proyek_id,
+          nama_proyek: item.nama_proyek || `Proyek #${item.proyek_id}`,
+          user_id: item.user_id,
+          nama_warga: item.nama_warga || item.nama_user || 'Warga Masyarakat',
+          bintang: item.bintang || item.skor || 5,
+          komentar: item.komentar || '',
+          aspek_kualitas: item.aspek_kualitas ?? item.bintang ?? item.skor ?? 5,
+          aspek_ketepatan_waktu: item.aspek_ketepatan_waktu ?? item.bintang ?? item.skor ?? 5,
+          aspek_manfaat: item.aspek_manfaat ?? item.bintang ?? item.skor ?? 5,
+          tanggal: item.tanggal || (item.created_at ? String(item.created_at).split('T')[0] : new Date().toISOString().split('T')[0]),
+        }));
+        const localIds = new Set(normalized.map((l) => l.id));
+        const remainingMocks = MOCK_RATING_ULASAN.filter((m) => !localIds.has(m.id));
+        return [...normalized, ...remainingMocks];
+      }
+    } catch {}
+    return MOCK_RATING_ULASAN;
+  });
   const [ratingForm, setRatingForm] = useState({
     proyek_id: projects.find((p) => p.status === 'selesai')?.id || 3,
     bintang: 5,
@@ -122,6 +148,55 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     komentar: '',
   });
   const [ratingSuccessMessage, setRatingSuccessMessage] = useState('');
+
+  // Rating real-time synchronization helpers
+  const calculatedAvgRating = Number(
+    ((ratingForm.aspek_kualitas + ratingForm.aspek_ketepatan_waktu + ratingForm.aspek_manfaat) / 3).toFixed(1)
+  );
+
+  const getScoreDescriptor = (score: number) => {
+    if (score >= 4.5) return { label: 'Sangat Memuaskan', badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200' };
+    if (score >= 3.5) return { label: 'Baik & Memuaskan', badgeClass: 'bg-sky-50 text-sky-700 border-sky-200' };
+    if (score >= 2.5) return { label: 'Cukup Memuaskan', badgeClass: 'bg-amber-50 text-amber-700 border-amber-200' };
+    if (score >= 1.5) return { label: 'Kurang Memuaskan', badgeClass: 'bg-orange-50 text-orange-700 border-orange-200' };
+    return { label: 'Sangat Buruk', badgeClass: 'bg-rose-50 text-rose-700 border-rose-200' };
+  };
+
+  const getParamValueDescriptor = (val: number) => {
+    switch (val) {
+      case 5: return 'Sangat Baik';
+      case 4: return 'Baik';
+      case 3: return 'Cukup';
+      case 2: return 'Kurang';
+      case 1: return 'Sangat Buruk';
+      default: return `${val} / 5`;
+    }
+  };
+
+  const handleParameterChange = (
+    key: 'aspek_kualitas' | 'aspek_ketepatan_waktu' | 'aspek_manfaat',
+    value: number
+  ) => {
+    const clampedVal = Math.max(1, Math.min(5, Math.round(value)));
+    const nextForm = {
+      ...ratingForm,
+      [key]: clampedVal,
+    };
+    const newAvg = (nextForm.aspek_kualitas + nextForm.aspek_ketepatan_waktu + nextForm.aspek_manfaat) / 3;
+    nextForm.bintang = Math.max(1, Math.min(5, Math.round(newAvg)));
+    setRatingForm(nextForm);
+  };
+
+  const handleOverallStarClick = (star: number) => {
+    const clampedStar = Math.max(1, Math.min(5, star));
+    setRatingForm({
+      ...ratingForm,
+      bintang: clampedStar,
+      aspek_kualitas: clampedStar,
+      aspek_ketepatan_waktu: clampedStar,
+      aspek_manfaat: clampedStar,
+    });
+  };
 
   // Evaluasi Cacat state
   const [evaluasiList, setEvaluasiList] = useState<EvaluasiCacatItem[]>(MOCK_EVALUASI_CACAT);
@@ -227,15 +302,37 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         .catch(() => {});
     }
 
+    if (typeof apiService.getAllReviews === 'function') {
+      apiService
+        .getAllReviews()
+        .then((reviews) => {
+          if (reviews && reviews.length > 0) {
+            setRatingList(reviews);
+          }
+        })
+        .catch(() => {});
+    }
+
     const handleNewAduan = (event: any) => {
       if (event.detail) {
         setLaporanList((prev) => [event.detail, ...prev.filter((item) => item.id !== event.detail.id)]);
       }
     };
 
+    const handleNewRating = (event: any) => {
+      if (event.detail) {
+        setRatingList((prev) => [
+          event.detail,
+          ...prev.filter((item) => item.id !== event.detail.id),
+        ]);
+      }
+    };
+
     window.addEventListener('civictrack_new_aduan', handleNewAduan);
+    window.addEventListener('civictrack_new_rating', handleNewRating);
     return () => {
       window.removeEventListener('civictrack_new_aduan', handleNewAduan);
+      window.removeEventListener('civictrack_new_rating', handleNewRating);
     };
   }, []);
 
@@ -338,15 +435,26 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     const selProj = projects.find((p) => p.id === pId);
 
     try {
-      const resRating = await apiService.submitRating(pId, {
-        skor: ratingForm.bintang,
-        komentar: ratingForm.komentar.trim() || undefined,
-      });
+      const resRating = await apiService.submitRating(
+        pId,
+        {
+          skor: ratingForm.bintang,
+          komentar: ratingForm.komentar.trim() || undefined,
+        },
+        {
+          nama_proyek: selProj?.nama_proyek || 'Proyek Selesai',
+          user_id: currentUser.id,
+          nama_warga: currentUser.nama,
+          aspek_kualitas: ratingForm.aspek_kualitas,
+          aspek_ketepatan_waktu: ratingForm.aspek_ketepatan_waktu,
+          aspek_manfaat: ratingForm.aspek_manfaat,
+        }
+      );
 
       const newRating: RatingUlasanItem = {
         id: resRating.id,
         proyek_id: pId,
-        nama_proyek: selProj?.nama_proyek || 'Proyek Selesai',
+        nama_proyek: selProj?.nama_proyek || resRating.nama_proyek || 'Proyek Selesai',
         user_id: currentUser.id,
         nama_warga: currentUser.nama,
         bintang: resRating.skor,
@@ -357,7 +465,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         tanggal: new Date().toISOString().split('T')[0],
       };
 
-      setRatingList([newRating, ...ratingList]);
+      setRatingList((prev) => [newRating, ...prev.filter((item) => item.id !== newRating.id)]);
       setRatingSuccessMessage('Penilaian Anda berhasil disimpan ke database! Terima kasih atas partisipasi aktif Anda.');
       setTimeout(() => setRatingSuccessMessage(''), 4000);
       setRatingForm({
@@ -455,19 +563,24 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     (lap) => lap.proyek_id === Number(reportForm.proyek_id)
   );
 
+  const renderPortal = (modal: React.ReactNode) => {
+    if (typeof document === 'undefined') return null;
+    return createPortal(modal, document.body);
+  };
+
   return (
     <div className="space-y-6 animate-hero-in">
       {/* ── MODAL 1: DETAIL ADUAN WARGA (GAYA ETHOL DETAIL TUGAS) ── */}
-      {selectedAduanDetail && !showFullDetailView && (
+      {selectedAduanDetail && !showFullDetailView && renderPortal(
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-detail-aduan-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
           onClick={() => setSelectedAduanDetail(null)}
         >
           <div
-            className="relative w-full max-w-2xl sm:max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-hero-in"
+            className="relative w-full max-w-2xl sm:max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header: Dark Blue #184C78 */}
@@ -681,16 +794,16 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
       )}
 
       {/* ── MODAL 2: KIRIM LAPORAN / TANGGAPAN WARGA (GAYA ETHOL) ── */}
-      {isNewReportModalOpen && (
+      {isNewReportModalOpen && renderPortal(
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-report-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
           onClick={() => setIsNewReportModalOpen(false)}
         >
           <div
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-hero-in"
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header: Dark Blue #184C78 */}
@@ -821,16 +934,16 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
       )}
 
       {/* ── MODAL 3: EDIT PENGADUAN WARGA (GAYA ETHOL) ── */}
-      {editingAduan && (
+      {editingAduan && renderPortal(
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-edit-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
           onClick={() => setEditingAduan(null)}
         >
           <div
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-hero-in"
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header: Dark Blue #184C78 */}
@@ -919,16 +1032,16 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
       )}
 
       {/* ── MODAL 4: EVALUASI CACAT FISIK PASCA-PROYEK (GAYA ETHOL) ── */}
-      {isEvaluasiModalOpen && (
+      {isEvaluasiModalOpen && renderPortal(
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-evaluasi-title"
-          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
           onClick={() => setIsEvaluasiModalOpen(false)}
         >
           <div
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-hero-in"
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-fade-in"
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header: Dark Blue #184C78 */}
@@ -1598,63 +1711,159 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 </select>
               </div>
 
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Skor Bintang Keseluruhan</label>
-                <div className="flex items-center gap-1.5">
-                  {[1, 2, 3, 4, 5].map((star) => (
-                    <button
-                      type="button"
-                      key={star}
-                      onClick={() => setRatingForm({ ...ratingForm, bintang: star })}
-                      className="p-1 text-2xl text-amber-400 hover:scale-110 transition-transform cursor-pointer"
-                    >
-                      {star <= ratingForm.bintang ? '★' : '☆'}
-                    </button>
-                  ))}
-                  <span className="font-bold text-[#184C78] ml-2 text-sm">{ratingForm.bintang} / 5</span>
+              {/* Skor Bintang Keseluruhan (Real-time Synced) */}
+              <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] p-4 rounded-xl border border-[#DCE0E6] shadow-xs space-y-2.5">
+                <div className="flex items-center justify-between gap-2">
+                  <div>
+                    <label className="block font-bold text-xs text-[#184C78]">
+                      Skor Bintang Keseluruhan
+                    </label>
+                    <span className="text-[10px] text-gray-500">
+                      Otomatis tersinkronisasi realtime dengan 3 parameter
+                    </span>
+                  </div>
+                  <span
+                    className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-2xs ${
+                      getScoreDescriptor(calculatedAvgRating).badgeClass
+                    }`}
+                  >
+                    {getScoreDescriptor(calculatedAvgRating).label}
+                  </span>
+                </div>
+
+                <div className="flex items-center justify-between pt-0.5">
+                  <div className="flex items-center gap-1">
+                    {[1, 2, 3, 4, 5].map((star) => (
+                      <button
+                        type="button"
+                        key={star}
+                        onClick={() => handleOverallStarClick(star)}
+                        title={`Beri rating ${star} bintang (menyelaraskan semua parameter)`}
+                        className="p-0.5 text-2xl text-amber-400 hover:scale-125 active:scale-95 transition-all cursor-pointer focus:outline-hidden"
+                      >
+                        {star <= ratingForm.bintang ? '★' : '☆'}
+                      </button>
+                    ))}
+                  </div>
+
+                  <div className="flex items-baseline gap-1 bg-white px-2.5 py-1 rounded-lg border border-[#DCE0E6] shadow-2xs">
+                    <span className="text-lg font-black text-[#184C78] tabular-nums">
+                      {calculatedAvgRating.toFixed(1)}
+                    </span>
+                    <span className="text-[11px] font-semibold text-gray-400">/ 5.0</span>
+                  </div>
                 </div>
               </div>
 
-              <div className="space-y-2 bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/60">
-                <span className="font-semibold text-[#184C78] block text-[11px] uppercase tracking-wider">
-                  Penilaian Parameter Detail (1 - 5)
-                </span>
-                <div className="flex justify-between items-center">
-                  <span>Mutu &amp; Kerapian Fisik:</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    value={ratingForm.aspek_kualitas}
-                    onChange={(e) => setRatingForm({ ...ratingForm, aspek_kualitas: Number(e.target.value) })}
-                    className="w-24 accent-[#184C78]"
-                  />
-                  <span className="font-bold text-[#184C78]">{ratingForm.aspek_kualitas}</span>
+              {/* Penilaian Parameter Detail (1 - 5) */}
+              <div className="space-y-3 bg-[#F8FAFC] p-3.5 rounded-xl border border-[#DCE0E6]">
+                <div className="flex items-center justify-between pb-1 border-b border-[#E2E8F0]">
+                  <div className="flex items-center gap-1.5">
+                    <SlidersHorizontal className="w-3.5 h-3.5 text-[#184C78]" />
+                    <span className="font-bold text-[#184C78] text-[11px] uppercase tracking-wider">
+                      Penilaian Parameter Detail (1 - 5)
+                    </span>
+                  </div>
+                  <span className="text-[10px] font-semibold text-[#184C78] bg-[#EBF4FB] px-2 py-0.5 rounded border border-[#BFDBFE]">
+                    Rapi &amp; Realtime
+                  </span>
                 </div>
-                <div className="flex justify-between items-center">
-                  <span>Ketepatan Waktu:</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    value={ratingForm.aspek_ketepatan_waktu}
-                    onChange={(e) => setRatingForm({ ...ratingForm, aspek_ketepatan_waktu: Number(e.target.value) })}
-                    className="w-24 accent-[#184C78]"
-                  />
-                  <span className="font-bold text-[#184C78]">{ratingForm.aspek_ketepatan_waktu}</span>
-                </div>
-                <div className="flex justify-between items-center">
-                  <span>Kemanfaatan Warga:</span>
-                  <input
-                    type="range"
-                    min="1"
-                    max="5"
-                    value={ratingForm.aspek_manfaat}
-                    onChange={(e) => setRatingForm({ ...ratingForm, aspek_manfaat: Number(e.target.value) })}
-                    className="w-24 accent-[#184C78]"
-                  />
-                  <span className="font-bold text-[#184C78]">{ratingForm.aspek_manfaat}</span>
-                </div>
+
+                {[
+                  {
+                    key: 'aspek_kualitas' as const,
+                    label: 'Mutu & Kerapian Fisik',
+                    desc: 'Kekokohan material, finishing halus & kerapian',
+                    icon: ShieldCheck,
+                    val: ratingForm.aspek_kualitas,
+                  },
+                  {
+                    key: 'aspek_ketepatan_waktu' as const,
+                    label: 'Ketepatan Waktu Pelaksanaan',
+                    desc: 'Kesesuaian durasi pengerjaan dengan jadwal rencana',
+                    icon: Clock,
+                    val: ratingForm.aspek_ketepatan_waktu,
+                  },
+                  {
+                    key: 'aspek_manfaat' as const,
+                    label: 'Kemanfaatan bagi Warga',
+                    desc: 'Dampak nyata fasilitas bagi mobilitas & kenyamanan publik',
+                    icon: Sparkles,
+                    val: ratingForm.aspek_manfaat,
+                  },
+                ].map((param) => {
+                  const ParamIcon = param.icon;
+                  const fillPercent = ((param.val - 1) / 4) * 100;
+                  return (
+                    <div
+                      key={param.key}
+                      className="bg-white p-3 rounded-lg border border-[#E2E8F0] shadow-2xs space-y-2 hover:border-[#BFDBFE] transition-colors"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <div className="w-6 h-6 rounded-md bg-[#EBF4FB] text-[#184C78] flex items-center justify-center shrink-0">
+                            <ParamIcon className="w-3.5 h-3.5" />
+                          </div>
+                          <div className="min-w-0">
+                            <span className="font-bold text-xs text-[#184C78] block truncate">
+                              {param.label}
+                            </span>
+                            <span className="text-[10px] text-gray-400 block truncate">
+                              {param.desc}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <span className="text-[10px] font-semibold text-gray-500 hidden sm:inline">
+                            {getParamValueDescriptor(param.val)}
+                          </span>
+                          <span className="px-2 py-0.5 text-xs font-black rounded-md bg-[#184C78] text-white tabular-nums shadow-2xs">
+                            {param.val} / 5
+                          </span>
+                        </div>
+                      </div>
+
+                      {/* Interactive Custom Range Bar */}
+                      <div className="pt-0.5">
+                        <input
+                          type="range"
+                          min="1"
+                          max="5"
+                          step="1"
+                          aria-label={param.label}
+                          value={param.val}
+                          onChange={(e) => handleParameterChange(param.key, Number(e.target.value))}
+                          style={{
+                            background: `linear-gradient(to right, #184C78 0%, #2980B9 ${fillPercent}%, #E2E8F0 ${fillPercent}%, #E2E8F0 100%)`,
+                          }}
+                          className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-[#184C78] focus:outline-hidden"
+                        />
+                      </div>
+
+                      {/* Quick 1-5 Step Buttons */}
+                      <div className="flex justify-between items-center px-0.5 text-[10px] pt-0.5">
+                        {[1, 2, 3, 4, 5].map((step) => {
+                          const isActive = param.val === step;
+                          return (
+                            <button
+                              type="button"
+                              key={step}
+                              onClick={() => handleParameterChange(param.key, step)}
+                              className={`w-6 h-5.5 flex items-center justify-center rounded font-bold text-xs transition-all cursor-pointer ${
+                                isActive
+                                  ? 'bg-[#184C78] text-white shadow-2xs scale-105 ring-2 ring-[#184C78]/25'
+                                  : 'bg-[#F8FAFC] text-gray-500 border border-gray-200 hover:border-[#184C78] hover:text-[#184C78]'
+                              }`}
+                              title={`Pilih nilai ${step} untuk ${param.label}`}
+                            >
+                              {step}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               <div>
@@ -1689,11 +1898,11 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <div className="w-7 h-7 rounded-full bg-[#EBF4FB] text-[#184C78] font-bold text-xs flex items-center justify-center">
-                      {item.nama_warga.charAt(0)}
+                      {(item.nama_warga || 'W').charAt(0).toUpperCase()}
                     </div>
                     <div>
-                      <div className="font-bold text-xs text-[#212529]">{item.nama_warga}</div>
-                      <div className="text-[10px] text-[#6C757D]">{item.nama_proyek}</div>
+                      <div className="font-bold text-xs text-[#212529]">{item.nama_warga || 'Warga Masyarakat'}</div>
+                      <div className="text-[10px] text-[#6C757D]">{item.nama_proyek || 'Proyek Selesai'}</div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">

@@ -47,6 +47,7 @@ def submit_project_rating(
         db.refresh(existing_rating)
         res = RatingResponse.model_validate(existing_rating)
         res.nama_user = current_user.nama
+        res.nama_proyek = proyek.nama_proyek
         return res
 
     new_rating = RatingKepuasan(
@@ -61,6 +62,7 @@ def submit_project_rating(
 
     res = RatingResponse.model_validate(new_rating)
     res.nama_user = current_user.nama
+    res.nama_proyek = proyek.nama_proyek
     return res
 
 @router.get("/proyek/{id}/rating", response_model=RatingSummaryResponse)
@@ -104,5 +106,18 @@ def get_project_reviews(id: int, db: Session = Depends(get_db)):
     for r in ratings:
         item = RatingResponse.model_validate(r)
         item.nama_user = r.user.nama if r.user else "Warga"
+        item.nama_proyek = r.proyek.nama_proyek if r.proyek else "Proyek Selesai"
+        result.append(item)
+    return result
+
+@router.get("/ulasan", response_model=List[RatingResponse])
+def get_all_reviews(db: Session = Depends(get_db)):
+    """Mengambil seluruh daftar ulasan kepuasan warga publik terkini dari database."""
+    ratings = db.query(RatingKepuasan).order_by(RatingKepuasan.created_at.desc()).all()
+    result = []
+    for r in ratings:
+        item = RatingResponse.model_validate(r)
+        item.nama_user = r.user.nama if r.user else "Warga"
+        item.nama_proyek = r.proyek.nama_proyek if r.proyek else "Proyek Daerah"
         result.append(item)
     return result
