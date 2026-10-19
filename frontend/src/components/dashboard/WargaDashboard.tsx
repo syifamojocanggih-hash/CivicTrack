@@ -20,7 +20,7 @@ import {
   Edit3,
   AlertCircle,
   X,
-  ArrowLeft,
+  MessageSquare,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -44,7 +44,7 @@ interface WargaDashboardProps {
   currentUser: UserProfile;
   projects: ProyekItem[];
   onOpenProjectDetail: (project: ProyekItem) => void;
-  onOpenAIRoute: (projectName: string) => void;
+  onOpenAIRoute: (projectName: string, project?: ProyekItem | null) => void;
   activeSection?: string;
   onSelectSection?: (section: string) => void;
   onOpenMapExplorer?: () => void;
@@ -104,6 +104,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   });
   const [reportFilter, setReportFilter] = useState<'semua' | 'menunggu' | 'diproses' | 'selesai'>('semua');
   const [selectedAduanDetail, setSelectedAduanDetail] = useState<LaporanAduan | null>(null);
+  const [showFullDetailView, setShowFullDetailView] = useState<boolean>(false);
   const [editingAduan, setEditingAduan] = useState<LaporanAduan | null>(null);
   const [editJudul, setEditJudul] = useState('');
   const [editIsi, setEditIsi] = useState('');
@@ -132,6 +133,37 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     kategori_cacat: 'Struktur Beton / Retak',
   });
 
+  // Lock body scroll and support Escape key when any modal is open
+  useEffect(() => {
+    const isModalActive = !!(
+      selectedAduanDetail ||
+      isNewReportModalOpen ||
+      editingAduan ||
+      isEvaluasiModalOpen
+    );
+
+    if (isModalActive) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (selectedAduanDetail) setSelectedAduanDetail(null);
+        if (isNewReportModalOpen) setIsNewReportModalOpen(false);
+        if (editingAduan) setEditingAduan(null);
+        if (isEvaluasiModalOpen) setIsEvaluasiModalOpen(false);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selectedAduanDetail, isNewReportModalOpen, editingAduan, isEvaluasiModalOpen]);
+
   // Handle toggle notification
   const handleToggleNotification = (id: number) => {
     setSubscribedList((prev) =>
@@ -143,19 +175,20 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
   // Handle Escape key to close any open modal
   useEffect(() => {
-    if (!isNewReportModalOpen && !editingAduan && !isEvaluasiModalOpen) return;
+    if (!isNewReportModalOpen && !editingAduan && !isEvaluasiModalOpen && !selectedAduanDetail) return;
 
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         setIsNewReportModalOpen(false);
         setEditingAduan(null);
         setIsEvaluasiModalOpen(false);
+        setSelectedAduanDetail(null);
       }
     };
 
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isNewReportModalOpen, editingAduan, isEvaluasiModalOpen]);
+  }, [isNewReportModalOpen, editingAduan, isEvaluasiModalOpen, selectedAduanDetail]);
 
   // Sync real evaluations and citizen reports from database on mount
   useEffect(() => {
@@ -397,13 +430,16 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
   const completedProjects = projects.filter((p) => p.status === 'selesai');
 
-  if (selectedAduanDetail) {
+  if (showFullDetailView && selectedAduanDetail) {
     return (
       <AduanDetailView
         aduan={selectedAduanDetail}
         currentUser={currentUser}
         projects={projects}
-        onBack={() => setSelectedAduanDetail(null)}
+        onBack={() => {
+          setShowFullDetailView(false);
+          setSelectedAduanDetail(null);
+        }}
         onOpenProjectDetail={onOpenProjectDetail}
         onAduanUpdated={(updated) => {
           setLaporanList((prev) =>
@@ -415,155 +451,366 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     );
   }
 
-  const isAnyFormOpen = isNewReportModalOpen || !!editingAduan || isEvaluasiModalOpen;
   const existingReportForSelected = laporanList.find(
     (lap) => lap.proyek_id === Number(reportForm.proyek_id)
   );
 
   return (
     <div className="space-y-6 animate-hero-in">
-      {/* ── SUB-HALAMAN KHUSUS: FORMULIR LAPORAN WARGA / MASUKAN BARU ── */}
+      {/* ── MODAL 1: DETAIL ADUAN WARGA (GAYA ETHOL DETAIL TUGAS) ── */}
+      {selectedAduanDetail && !showFullDetailView && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-detail-aduan-title"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          onClick={() => setSelectedAduanDetail(null)}
+        >
+          <div
+            className="relative w-full max-w-2xl sm:max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-hero-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: Dark Blue #184C78 */}
+            <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                  <MessageSquare className="w-4 h-4 text-sky-300" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h3 id="modal-detail-aduan-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                      Detail Aduan &amp; Tanggapan Warga
+                    </h3>
+                    <span className="text-[10px] font-mono bg-white/15 px-2 py-0.5 rounded text-sky-200">
+                      #ADUAN-{selectedAduanDetail.id}
+                    </span>
+                  </div>
+                  <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
+                    Informasi lengkap aduan publik dan tindak lanjut dinas teknis Kabupaten Lamongan.
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedAduanDetail(null)}
+                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                title="Tutup Detail Aduan"
+                aria-label="Tutup Detail Aduan"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Scrollable Body: ETHOL key-value layout */}
+            <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
+              {/* Stepper Status Mini */}
+              <div className="bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]">
+                <div className="flex items-center justify-between text-[11px] font-bold text-[#6C757D] mb-2">
+                  <span>Status Alur Penanganan</span>
+                  <span className={`px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${
+                    selectedAduanDetail.status === 'selesai'
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                      : selectedAduanDetail.status === 'diproses'
+                      ? 'bg-amber-50 text-amber-700 border-amber-200'
+                      : 'bg-slate-100 text-slate-700 border-slate-300'
+                  }`}>
+                    {selectedAduanDetail.status === 'selesai'
+                      ? 'Selesai & Ditanggapi'
+                      : selectedAduanDetail.status === 'diproses'
+                      ? 'Sedang Ditindaklanjuti'
+                      : 'Menunggu Telaah Dinas'}
+                  </span>
+                </div>
+                <div className="grid grid-cols-4 gap-1.5 text-center text-[10px]">
+                  <div className="p-1.5 rounded-lg bg-emerald-100/80 text-emerald-800 font-semibold">
+                    1. Masuk
+                  </div>
+                  <div className={`p-1.5 rounded-lg font-semibold ${
+                    selectedAduanDetail.status !== 'menunggu'
+                      ? 'bg-emerald-100/80 text-emerald-800'
+                      : 'bg-slate-200/70 text-slate-600'
+                  }`}>
+                    2. Telaah
+                  </div>
+                  <div className={`p-1.5 rounded-lg font-semibold ${
+                    selectedAduanDetail.status === 'diproses' || selectedAduanDetail.status === 'selesai'
+                      ? 'bg-amber-100 text-amber-800'
+                      : 'bg-slate-200/70 text-slate-600'
+                  }`}>
+                    3. Lapangan
+                  </div>
+                  <div className={`p-1.5 rounded-lg font-semibold ${
+                    selectedAduanDetail.status === 'selesai'
+                      ? 'bg-emerald-100/80 text-emerald-800'
+                      : 'bg-slate-200/70 text-slate-600'
+                  }`}>
+                    4. Selesai
+                  </div>
+                </div>
+              </div>
+
+              {/* Detail Aduan Format ETHOL */}
+              <div className="bg-white border border-[#DCE0E6] rounded-xl p-4 sm:p-5 space-y-3">
+                <div className="grid grid-cols-[120px_16px_1fr] items-start text-xs">
+                  <span className="font-semibold text-slate-700">Judul</span>
+                  <span className="text-slate-400 font-semibold">:</span>
+                  <span className="text-slate-900 font-bold">{selectedAduanDetail.judul}</span>
+                </div>
+                <div className="grid grid-cols-[120px_16px_1fr] items-start text-xs">
+                  <span className="font-semibold text-slate-700">Proyek Terkait</span>
+                  <span className="text-slate-400 font-semibold">:</span>
+                  <span className="text-slate-800 font-medium">{selectedAduanDetail.nama_proyek}</span>
+                </div>
+                <div className="grid grid-cols-[120px_16px_1fr] items-start text-xs">
+                  <span className="font-semibold text-slate-700">Kategori</span>
+                  <span className="text-slate-400 font-semibold">:</span>
+                  <div>
+                    <span className="inline-block bg-[#EBF4FB] text-[#184C78] border border-[#c5def2] px-2.5 py-0.5 rounded text-[11px] font-semibold">
+                      {selectedAduanDetail.kategori_aduan}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-[120px_16px_1fr] items-start text-xs">
+                  <span className="font-semibold text-slate-700">Waktu Pengajuan</span>
+                  <span className="text-slate-400 font-semibold">:</span>
+                  <span className="text-slate-700 font-mono text-[11px]">{selectedAduanDetail.tanggal_lapor}</span>
+                </div>
+                <div className="grid grid-cols-[120px_16px_1fr] items-start text-xs">
+                  <span className="font-semibold text-slate-700">Status</span>
+                  <span className="text-slate-400 font-semibold">:</span>
+                  <div>
+                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full border text-[11px] font-bold ${
+                      selectedAduanDetail.status === 'selesai'
+                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                        : selectedAduanDetail.status === 'diproses'
+                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                        : 'bg-slate-100 text-slate-700 border-slate-300'
+                    }`}>
+                      {selectedAduanDetail.status === 'selesai' && <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />}
+                      {selectedAduanDetail.status === 'diproses' && <Clock className="w-3.5 h-3.5 text-amber-600" />}
+                      {selectedAduanDetail.status === 'selesai'
+                        ? 'Selesai & Ditanggapi'
+                        : selectedAduanDetail.status === 'diproses'
+                        ? 'Sedang Ditindaklanjuti'
+                        : 'Menunggu Telaah Dinas'}
+                    </span>
+                  </div>
+                </div>
+                <div className="grid grid-cols-[120px_16px_1fr] items-start text-xs pt-2 border-t border-slate-100">
+                  <span className="font-semibold text-slate-700">Deskripsi</span>
+                  <span className="text-slate-400 font-semibold">:</span>
+                  <p className="text-slate-800 leading-relaxed bg-[#F8FAFC] p-3 rounded-lg border border-slate-200/80">
+                    "{selectedAduanDetail.isi_laporan}"
+                  </p>
+                </div>
+              </div>
+
+              {/* Tanggapan Resmi Dinas (Section Tanggapan seperti Upload Jawaban ETHOL) */}
+              <div>
+                <h4 className="font-bold text-[#184C78] mb-1.5 flex items-center gap-1.5">
+                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Tindak Lanjut &amp; Tanggapan Resmi Dinas Teknis:</span>
+                </h4>
+                {selectedAduanDetail.tanggapan_dinas ? (
+                  <div className="p-4 bg-[#EBF4FB]/80 rounded-xl border border-[#c5def2] space-y-2">
+                    <div className="flex flex-wrap items-center justify-between gap-1 text-[11px]">
+                      <span className="font-bold text-[#184C78] flex items-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                        <span>Dijawab oleh: {selectedAduanDetail.petugas_penjawab || 'Admin Pengawas Dinas Teknis'}</span>
+                      </span>
+                      <span className="text-[#6C757D] font-mono">{selectedAduanDetail.tanggal_tanggapan}</span>
+                    </div>
+                    <p className="text-slate-800 leading-relaxed text-xs pt-1 border-t border-[#c5def2]/70">
+                      {selectedAduanDetail.tanggapan_dinas}
+                    </p>
+                  </div>
+                ) : (
+                  <div className="p-4 bg-amber-50/80 rounded-xl border border-amber-200 text-amber-800 space-y-1">
+                    <div className="font-bold flex items-center gap-1.5 text-xs text-amber-900">
+                      <Clock className="w-3.5 h-3.5 text-amber-600" />
+                      <span>Belum Ada Tanggapan Dinas</span>
+                    </div>
+                    <p className="text-[11px] leading-relaxed text-amber-800/90">
+                      Laporan Anda sudah masuk dalam sistem dan sedang dalam antrean verifikasi petugas dinas. Pengawas teknis lapangan akan meninjau dan menyampaikan tanggapan di sini.
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+              <button
+                type="button"
+                onClick={() => setShowFullDetailView(true)}
+                className="text-xs font-semibold text-[#184C78] hover:text-[#2980B9] flex items-center gap-1 cursor-pointer"
+              >
+                <span>Buka Halaman Audit Trail Lengkap</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </button>
+
+              <div className="flex items-center gap-2">
+                {!selectedAduanDetail.tanggapan_dinas && selectedAduanDetail.status === 'menunggu' && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const cur = selectedAduanDetail;
+                      setSelectedAduanDetail(null);
+                      setEditingAduan(cur);
+                      setEditJudul(cur.judul);
+                      setEditIsi(cur.isi_laporan);
+                      setEditError(null);
+                    }}
+                    className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-[#EBF4FB] text-[#184C78] hover:bg-[#d8eaf7] border border-[#c5def2] flex items-center gap-1.5 cursor-pointer transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-[#2980B9]" />
+                    <span>Edit Pengaduan</span>
+                  </button>
+                )}
+                <button
+                  type="button"
+                  onClick={() => setSelectedAduanDetail(null)}
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                  Tutup
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL 2: KIRIM LAPORAN / TANGGAPAN WARGA (GAYA ETHOL) ── */}
       {isNewReportModalOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-report-title"
-          className="space-y-6 animate-hero-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          onClick={() => setIsNewReportModalOpen(false)}
         >
-          {/* Top Header & Breadcrumb Navigation */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsNewReportModalOpen(false)}
-                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
-                title="Kembali ke Dashboard"
-                aria-label="Kembali ke Dashboard"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali</span>
-              </button>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
-                    #FORMULIR-LAPORAN-WARGA
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-blue-50 text-[#184C78] border-blue-200">
-                    <MessageSquarePlus className="w-3.5 h-3.5 text-[#2980B9]" />
-                    <span>Kanal Aspirasi &amp; Aduan Publik</span>
-                  </span>
+          <div
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-hero-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: Dark Blue #184C78 */}
+            <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                  <MessageSquarePlus className="w-4 h-4 text-sky-300" />
                 </div>
-                <h1 id="modal-report-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
-                  Kirim Laporan / Tanggapan Warga
-                </h1>
+                <div>
+                  <h3 id="modal-report-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                    Kirim Laporan / Tanggapan Warga
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
+                    Laporan akan diteruskan ke dinas teknis terkait dan tercatat secara transparan di dashboard.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center justify-between sm:justify-end gap-3">
-              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
-                Laporan diteruskan langsung ke dinas teknis terkait dan tercatat transparan di dashboard.
-              </p>
               <button
                 type="button"
                 onClick={() => setIsNewReportModalOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
                 title="Tutup Modal"
                 aria-label="Tutup Modal"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
-          </div>
 
-          {/* Main Card Formulir Selayar Penuh */}
-          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
-            {existingReportForSelected && (
-              <div className="p-4 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-medium space-y-1">
-                <div className="font-bold flex items-center gap-1.5 text-amber-900">
-                  <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
-                  <span>Anda Sudah Mengajukan Aduan Pada Proyek Ini</span>
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleSubmitReport} className="flex flex-col flex-1 overflow-hidden min-h-0">
+              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
+                {existingReportForSelected && (
+                  <div className="p-3.5 bg-amber-50 border border-amber-200 rounded-xl text-amber-800 text-xs font-medium space-y-1">
+                    <div className="font-bold flex items-center gap-1.5 text-amber-900">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                      <span>Anda Sudah Mengajukan Aduan Pada Proyek Ini</span>
+                    </div>
+                    <p className="leading-relaxed text-[11px]">
+                      Anda telah memiliki aduan: <strong>"{existingReportForSelected.judul}"</strong>. Setiap warga hanya diperkenankan memiliki 1 aduan aktif per proyek. Silakan gunakan fitur <strong>Edit Pengaduan</strong> di riwayat aduan Anda jika belum ditanggapi dinas.
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Pilih Proyek Terkait</label>
+                    <select
+                      value={reportForm.proyek_id}
+                      onChange={(e) => setReportForm({ ...reportForm, proyek_id: Number(e.target.value) })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
+                    >
+                      {projects.map((p) => {
+                        const alreadyReported = laporanList.some((lap) => lap.proyek_id === p.id);
+                        return (
+                          <option key={p.id} value={p.id}>
+                            {p.nama_proyek} {alreadyReported ? '(⚠️ Sudah Pernah Anda Adukan)' : ''}
+                          </option>
+                        );
+                      })}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Kategori Laporan</label>
+                    <select
+                      value={reportForm.kategori_aduan}
+                      onChange={(e) => setReportForm({ ...reportForm, kategori_aduan: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
+                    >
+                      <option value="Dampak Lingkungan & Keselamatan">Dampak Lingkungan & Keselamatan</option>
+                      <option value="Jadwal & Akses Jalan">Jadwal & Akses Jalan</option>
+                      <option value="Kualitas Mutu Bangunan">Kualitas Mutu Bangunan</option>
+                      <option value="Apresiasi & Fasilitas">Apresiasi & Fasilitas</option>
+                      <option value="Lainnya">Lainnya</option>
+                    </select>
+                  </div>
                 </div>
-                <p className="leading-relaxed">
-                  Anda telah memiliki aduan: <strong>"{existingReportForSelected.judul}"</strong>. Setiap warga hanya diperkenankan memiliki 1 aduan aktif per proyek. Silakan gunakan fitur <strong>Edit Pengaduan</strong> di daftar riwayat aduan Anda jika belum ditanggapi dinas.
-                </p>
-              </div>
-            )}
 
-            <form onSubmit={handleSubmitReport} className="space-y-5 text-xs">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block font-semibold text-[#184C78] mb-1.5">Pilih Proyek Terkait</label>
-                  <select
-                    value={reportForm.proyek_id}
-                    onChange={(e) => setReportForm({ ...reportForm, proyek_id: Number(e.target.value) })}
-                    className="w-full p-3 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
-                  >
-                    {projects.map((p) => {
-                      const alreadyReported = laporanList.some((lap) => lap.proyek_id === p.id);
-                      return (
-                        <option key={p.id} value={p.id}>
-                          {p.nama_proyek} {alreadyReported ? '(⚠️ Sudah Pernah Anda Adukan)' : ''}
-                        </option>
-                      );
-                    })}
-                  </select>
+                  <label className="block font-semibold text-[#184C78] mb-1">Judul Ringkas</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Rambu keselamatan malam hari perlu ditambah"
+                    value={reportForm.judul}
+                    onChange={(e) => setReportForm({ ...reportForm, judul: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
+                  />
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-[#184C78] mb-1.5">Kategori Laporan</label>
-                  <select
-                    value={reportForm.kategori_aduan}
-                    onChange={(e) => setReportForm({ ...reportForm, kategori_aduan: e.target.value })}
-                    className="w-full p-3 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
-                  >
-                    <option value="Dampak Lingkungan & Keselamatan">Dampak Lingkungan & Keselamatan</option>
-                    <option value="Jadwal & Akses Jalan">Jadwal & Akses Jalan</option>
-                    <option value="Kualitas Mutu Bangunan">Kualitas Mutu Bangunan</option>
-                    <option value="Apresiasi & Fasilitas">Apresiasi & Fasilitas</option>
-                    <option value="Lainnya">Lainnya</option>
-                  </select>
+                  <label className="block font-semibold text-[#184C78] mb-1">Uraian Detail Laporan</label>
+                  <textarea
+                    rows={4}
+                    required
+                    placeholder="Jelaskan secara runtut kejadian, kendala, atau saran konstruktif yang Anda temukan di lokasi..."
+                    value={reportForm.isi_laporan}
+                    onChange={(e) => setReportForm({ ...reportForm, isi_laporan: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed"
+                  />
+                  <div className="flex items-center gap-1.5 text-[11px] text-[#6C757D] mt-1.5">
+                    <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                    <span>Dilengkapi Sensor Otomatis: Kata tidak pantas akan difilter demi etika komunikasi publik.</span>
+                  </div>
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1.5">Judul Ringkas Laporan</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Rambu keselamatan malam hari perlu ditambah"
-                  value={reportForm.judul}
-                  onChange={(e) => setReportForm({ ...reportForm, judul: e.target.value })}
-                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1.5">Uraian Detail Laporan</label>
-                <textarea
-                  rows={6}
-                  required
-                  placeholder="Jelaskan secara runtut kejadian, kendala, atau saran konstruktif yang Anda temukan di lokasi..."
-                  value={reportForm.isi_laporan}
-                  onChange={(e) => setReportForm({ ...reportForm, isi_laporan: e.target.value })}
-                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed"
-                />
-                <div className="flex items-center gap-1.5 text-[11px] text-[#6C757D] mt-2">
-                  <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-                  <span>Dilengkapi Sensor Otomatis: Kata tidak pantas akan difilter demi etika komunikasi publik.</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-[#DCE0E6]">
+              {/* Sticky Footer */}
+              <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsNewReportModalOpen(false)}
-                  className="w-full sm:w-auto px-5 py-2.5 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl transition-colors cursor-pointer text-center"
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={!!existingReportForSelected}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-[#184C78] hover:bg-[#12395b] text-white font-bold rounded-xl shadow-xs hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {existingReportForSelected ? 'Proyek Sudah Diadukan' : 'Kirim Laporan Sekarang'}
                 </button>
@@ -573,106 +820,95 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         </div>
       )}
 
-      {/* ── SUB-HALAMAN KHUSUS: EDIT PENGADUAN WARGA ── */}
+      {/* ── MODAL 3: EDIT PENGADUAN WARGA (GAYA ETHOL) ── */}
       {editingAduan && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-edit-title"
-          className="space-y-6 animate-hero-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          onClick={() => setEditingAduan(null)}
         >
-          {/* Top Header & Breadcrumb Navigation */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setEditingAduan(null)}
-                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
-                title="Kembali ke Dashboard"
-                aria-label="Kembali ke Dashboard"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali</span>
-              </button>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
-                    #EDIT-ADUAN-{editingAduan.id}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
-                    <Edit3 className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Koreksi Informasi Laporan</span>
-                  </span>
+          <div
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-hero-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: Dark Blue #184C78 */}
+            <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                  <Edit3 className="w-4 h-4 text-amber-300" />
                 </div>
-                <h1 id="modal-edit-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
-                  Edit Pengaduan Warga
-                </h1>
+                <div>
+                  <h3 id="modal-edit-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                    Edit Pengaduan Warga
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
+                    Terkait Proyek: {editingAduan.nama_proyek}
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center justify-between sm:justify-end gap-3">
-              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
-                Terkait Proyek: <strong className="text-[#184C78]">{editingAduan.nama_proyek}</strong>
-              </p>
               <button
                 type="button"
                 onClick={() => setEditingAduan(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
                 title="Tutup Modal"
                 aria-label="Tutup Modal"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
-          </div>
 
-          {/* Main Card Formulir Selayar Penuh */}
-          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
-            <div className="p-4 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-xs font-medium flex items-center gap-2.5">
-              <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
-              <span>Pengaduan hanya dapat diedit sebelum petugas dinas memberikan tanggapan resmi.</span>
-            </div>
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleSaveEditAduan} className="flex flex-col flex-1 overflow-hidden min-h-0">
+              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
+                <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-xs font-medium flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0 text-amber-600" />
+                  <span>Pengaduan hanya dapat diedit sebelum petugas dinas memberikan tanggapan resmi.</span>
+                </div>
 
-            {editError && (
-              <div className="p-4 bg-rose-50 rounded-xl border border-rose-200 text-rose-800 font-semibold text-xs">
-                {editError}
+                {editError && (
+                  <div className="p-3 bg-rose-50 rounded-xl border border-rose-200 text-rose-800 font-semibold text-xs">
+                    {editError}
+                  </div>
+                )}
+
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">Judul Ringkas</label>
+                  <input
+                    type="text"
+                    required
+                    value={editJudul}
+                    onChange={(e) => setEditJudul(e.target.value)}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">Uraian Detail Laporan</label>
+                  <textarea
+                    rows={5}
+                    required
+                    value={editIsi}
+                    onChange={(e) => setEditIsi(e.target.value)}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed"
+                  />
+                </div>
               </div>
-            )}
 
-            <form onSubmit={handleSaveEditAduan} className="space-y-5 text-xs">
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1.5">Judul Ringkas</label>
-                <input
-                  type="text"
-                  required
-                  value={editJudul}
-                  onChange={(e) => setEditJudul(e.target.value)}
-                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1.5">Uraian Detail Laporan</label>
-                <textarea
-                  rows={6}
-                  required
-                  value={editIsi}
-                  onChange={(e) => setEditIsi(e.target.value)}
-                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed"
-                />
-              </div>
-
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-[#DCE0E6]">
+              {/* Sticky Footer */}
+              <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingAduan(null)}
-                  className="w-full sm:w-auto px-5 py-2.5 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl transition-colors cursor-pointer text-center"
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingEdit}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-[#184C78] hover:bg-[#12395b] text-white font-bold rounded-xl shadow-xs hover:shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
                 >
                   {isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
@@ -682,131 +918,120 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         </div>
       )}
 
-      {/* ── SUB-HALAMAN KHUSUS: EVALUASI CACAT FISIK PASCA-PROYEK ── */}
+      {/* ── MODAL 4: EVALUASI CACAT FISIK PASCA-PROYEK (GAYA ETHOL) ── */}
       {isEvaluasiModalOpen && (
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-evaluasi-title"
-          className="space-y-6 animate-hero-in"
+          className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          onClick={() => setIsEvaluasiModalOpen(false)}
         >
-          {/* Top Header & Breadcrumb Navigation */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsEvaluasiModalOpen(false)}
-                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
-                title="Kembali ke Dashboard"
-                aria-label="Kembali ke Dashboard"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali</span>
-              </button>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
-                    #FORMULIR-EVALUASI-FHO
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
-                    <Sparkles className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Didukung Groq AI Analysis</span>
-                  </span>
+          <div
+            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-hero-in"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Header: Dark Blue #184C78 */}
+            <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                  <Sparkles className="w-4 h-4 text-amber-300" />
                 </div>
-                <h1 id="modal-evaluasi-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
-                  Laporkan Cacat Fisik Pasca-Proyek
-                </h1>
+                <div>
+                  <h3 id="modal-evaluasi-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                    Laporkan Cacat Fisik Pasca-Proyek
+                  </h3>
+                  <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
+                    Pengaduan kerusakan fisik proyek selesai dengan analisis urgensi otomatis Groq AI untuk masa pemeliharaan.
+                  </p>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center justify-between sm:justify-end gap-3">
-              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
-                Pengaduan kerusakan fisik proyek selesai dengan analisis urgensi otomatis Groq AI untuk masa pemeliharaan.
-              </p>
               <button
                 type="button"
                 onClick={() => setIsEvaluasiModalOpen(false)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
                 title="Tutup Modal"
                 aria-label="Tutup Modal"
               >
-                <X className="w-5 h-5" />
+                <X className="w-4 h-4" />
               </button>
             </div>
-          </div>
 
-          {/* Main Card Formulir Selayar Penuh */}
-          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
-            <form onSubmit={handleSubmitEvaluasi} className="space-y-5 text-xs">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block font-semibold text-[#184C78] mb-1.5">Proyek Selesai</label>
-                  <select
-                    value={evaluasiForm.proyek_id}
-                    onChange={(e) => setEvaluasiForm({ ...evaluasiForm, proyek_id: Number(e.target.value) })}
-                    className="w-full p-3 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
-                  >
-                    {completedProjects.length > 0 ? (
-                      completedProjects.map((p) => (
-                        <option key={p.id} value={p.id}>{p.nama_proyek}</option>
-                      ))
-                    ) : (
-                      <option value={3}>Normalisasi Drainase Jl. MT. Haryono</option>
-                    )}
-                  </select>
+            {/* Scrollable Form Body */}
+            <form onSubmit={handleSubmitEvaluasi} className="flex flex-col flex-1 overflow-hidden min-h-0">
+              <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Proyek Selesai</label>
+                    <select
+                      value={evaluasiForm.proyek_id}
+                      onChange={(e) => setEvaluasiForm({ ...evaluasiForm, proyek_id: Number(e.target.value) })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
+                    >
+                      {completedProjects.length > 0 ? (
+                        completedProjects.map((p) => (
+                          <option key={p.id} value={p.id}>{p.nama_proyek}</option>
+                        ))
+                      ) : (
+                        <option value={3}>Normalisasi Drainase Jl. MT. Haryono</option>
+                      )}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Kategori Cacat Fisik</label>
+                    <select
+                      value={evaluasiForm.kategori_cacat}
+                      onChange={(e) => setEvaluasiForm({ ...evaluasiForm, kategori_cacat: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
+                    >
+                      <option value="Struktur Beton / Retak">Struktur Beton / Retak Ambles</option>
+                      <option value="Endapan / Saluran Tersumbat">Endapan / Saluran Tersumbat</option>
+                      <option value="Aspal Mengelupas / Lubang Jalan">Aspal Mengelupas / Lubang Jalan</option>
+                      <option value="Fasilitas / Lampu / Rambu Rusak">Fasilitas / Lampu / Rambu Rusak</option>
+                    </select>
+                  </div>
                 </div>
 
                 <div>
-                  <label className="block font-semibold text-[#184C78] mb-1.5">Kategori Cacat Fisik</label>
-                  <select
-                    value={evaluasiForm.kategori_cacat}
-                    onChange={(e) => setEvaluasiForm({ ...evaluasiForm, kategori_cacat: e.target.value })}
-                    className="w-full p-3 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
-                  >
-                    <option value="Struktur Beton / Retak">Struktur Beton / Retak Ambles</option>
-                    <option value="Endapan / Saluran Tersumbat">Endapan / Saluran Tersumbat</option>
-                    <option value="Aspal Mengelupas / Lubang Jalan">Aspal Mengelupas / Lubang Jalan</option>
-                    <option value="Fasilitas / Lampu / Rambu Rusak">Fasilitas / Lampu / Rambu Rusak</option>
-                  </select>
+                  <label className="block font-semibold text-[#184C78] mb-1">Titik Patokan Lokasi</label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Contoh: Depan Ruko No. 42 / Dekat Halte Busway"
+                    value={evaluasiForm.lokasi_titik}
+                    onChange={(e) => setEvaluasiForm({ ...evaluasiForm, lokasi_titik: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">Deskripsi Kerusakan Fisik</label>
+                  <textarea
+                    rows={5}
+                    required
+                    placeholder="Jelaskan jenis kerusakan, ukuran retakan/amblesan, dan potensi bahaya keselamatan bagi pejalan kaki atau kendaraan..."
+                    value={evaluasiForm.deskripsi}
+                    onChange={(e) => setEvaluasiForm({ ...evaluasiForm, deskripsi: e.target.value })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed"
+                  />
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1.5">Titik Patokan Lokasi</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Depan Ruko No. 42 / Dekat Halte Busway"
-                  value={evaluasiForm.lokasi_titik}
-                  onChange={(e) => setEvaluasiForm({ ...evaluasiForm, lokasi_titik: e.target.value })}
-                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1.5">Deskripsi Kerusakan Fisik</label>
-                <textarea
-                  rows={6}
-                  required
-                  placeholder="Jelaskan jenis kerusakan, ukuran retakan/amblesan, dan potensi bahaya keselamatan bagi pejalan kaki atau kendaraan..."
-                  value={evaluasiForm.deskripsi}
-                  onChange={(e) => setEvaluasiForm({ ...evaluasiForm, deskripsi: e.target.value })}
-                  className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed"
-                />
-              </div>
-
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-3 pt-4 border-t border-[#DCE0E6]">
+              {/* Sticky Footer */}
+              <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsEvaluasiModalOpen(false)}
-                  className="w-full sm:w-auto px-5 py-2.5 border border-slate-200 hover:bg-slate-100 text-slate-700 font-semibold rounded-xl transition-colors cursor-pointer text-center"
+                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="w-full sm:w-auto px-6 py-2.5 bg-[#184C78] hover:bg-[#12395b] text-white font-bold rounded-xl shadow-xs hover:shadow-sm transition-all cursor-pointer text-center flex items-center justify-center gap-2"
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
                 >
-                  <Sparkles className="w-4 h-4 text-amber-300" />
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   <span>Analisis AI &amp; Kirimkan</span>
                 </button>
               </div>
@@ -815,8 +1040,8 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         </div>
       )}
 
-      {/* ── KONTEN UTAMA DASHBOARD (DISEMBUNYIKAN KETIKA SUB-HALAMAN FORMULIR AKTIF) ── */}
-      <div className={isAnyFormOpen ? 'hidden' : 'space-y-6'}>
+      {/* ── KONTEN UTAMA DASHBOARD ── */}
+      <div className="space-y-6">
       {/* ── TAB CONTENT 1: DASHBOARD OVERVIEW (RINGKASAN & MONITORING) ── */}
       {activeTab === 'overview' && (
         <>
@@ -1032,15 +1257,13 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                         <span>Lihat Linimasa &amp; Foto</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
-                      {p.kategori === 'jalan' && (
-                        <button
-                          onClick={() => onOpenAIRoute(p.nama_proyek)}
-                          className="px-3 py-2 bg-[#FEF3E7] hover:bg-[#FDEBD0] text-[#E67E22] text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                          title="Rute Alternatif AI"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => onOpenAIRoute(p.nama_proyek, p)}
+                        className="px-3 py-2 bg-[#FEF3E7] hover:bg-[#FDEBD0] text-[#E67E22] text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                        title="Rute Alternatif AI"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -1152,15 +1375,13 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                         <span>Lihat Linimasa &amp; Foto</span>
                         <ChevronRight className="w-3.5 h-3.5" />
                       </button>
-                      {p.kategori === 'jalan' && (
-                        <button
-                          onClick={() => onOpenAIRoute(p.nama_proyek)}
-                          className="px-3 py-2 bg-[#FEF3E7] hover:bg-[#FDEBD0] text-[#E67E22] text-xs font-semibold rounded-lg transition-colors cursor-pointer"
-                          title="Rute Alternatif AI"
-                        >
-                          <Sparkles className="w-4 h-4" />
-                        </button>
-                      )}
+                      <button
+                        onClick={() => onOpenAIRoute(p.nama_proyek, p)}
+                        className="px-3 py-2 bg-[#FEF3E7] hover:bg-[#FDEBD0] text-[#E67E22] text-xs font-semibold rounded-lg transition-colors cursor-pointer"
+                        title="Rute Alternatif AI"
+                      >
+                        <Sparkles className="w-4 h-4" />
+                      </button>
                     </div>
                   </div>
                 );
@@ -1249,7 +1470,8 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
               return (
                 <div
                   key={lap.id}
-                  className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs hover:border-[#2980B9]/40 transition-all space-y-3"
+                  onClick={() => setSelectedAduanDetail(lap)}
+                  className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs hover:border-[#184C78]/50 hover:shadow-md transition-all space-y-3 cursor-pointer group"
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div>
@@ -1268,7 +1490,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                   </div>
 
                   <div>
-                    <h3 className="font-['DM_Sans'] font-bold text-base text-[#212529]">
+                    <h3 className="font-['DM_Sans'] font-bold text-base text-[#212529] group-hover:text-[#184C78] transition-colors">
                       {lap.judul}
                     </h3>
                     <div className="text-xs font-semibold text-[#184C78] mt-0.5">
@@ -1301,15 +1523,21 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
                   <div className="pt-2 flex flex-wrap items-center justify-between gap-2 border-t border-[#DCE0E6]/50">
                     <button
-                      onClick={() => setSelectedAduanDetail(lap)}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setSelectedAduanDetail(lap);
+                      }}
                       className="text-xs font-bold text-[#184C78] hover:text-[#2980B9] flex items-center gap-1.5 cursor-pointer py-1"
                     >
-                      <span>Lihat Halaman Detail &amp; Tanggapan Lengkap &rarr;</span>
+                      <span>Lihat Detail Aduan &amp; Tanggapan &rarr;</span>
                     </button>
 
                     {!lap.tanggapan_dinas && lap.status === 'menunggu' && (
                       <button
-                        onClick={() => {
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
                           setEditingAduan(lap);
                           setEditJudul(lap.judul);
                           setEditIsi(lap.isi_laporan);

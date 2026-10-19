@@ -267,15 +267,14 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               {isSubscribing ? 'Memproses...' : isSubscribed ? 'Mengikuti' : 'Ikuti Notifikasi'}
             </button>
 
-            {project.kategori === 'jalan' && (
-              <button
-                onClick={() => onOpenAIRoute(project.nama_proyek)}
-                className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-[#7C3AED] hover:bg-[#6D28D9] text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
-              >
-                <Sparkles className="w-3.5 h-3.5" />
-                Rute AI Alternatif
-              </button>
-            )}
+            <button
+              onClick={() => onOpenAIRoute(project.nama_proyek)}
+              className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-[#7C3AED] hover:bg-[#6D28D9] text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+              title="Cek & Generate Rute AI Alternatif"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              Rute AI Alternatif
+            </button>
           </div>
         </div>
 

@@ -160,4 +160,25 @@ describe('WargaDashboard', () => {
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
   });
+
+  it('renders Rute Alternatif AI button on all subscribed projects and calls onOpenAIRoute when clicked', async () => {
+    const handleOpenAIRoute = vi.fn();
+    render(
+      <WargaDashboard
+        currentUser={mockUser}
+        projects={mockProjects}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={handleOpenAIRoute}
+        activeSection="langganan"
+      />
+    );
+
+    // All 3 mock subscribed projects should have the AI route button
+    const routeButtons = screen.getAllByTitle('Rute Alternatif AI');
+    expect(routeButtons.length).toBe(3);
+
+    // Click the second route button (which is a 'taman' category project)
+    fireEvent.click(routeButtons[1]);
+    expect(handleOpenAIRoute).toHaveBeenCalled();
+  });
 });

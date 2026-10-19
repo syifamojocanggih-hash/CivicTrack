@@ -13,7 +13,7 @@ interface DashboardMainProps {
   onLogout: () => void;
   onSwitchRole?: (role: UserRole) => void;
   onOpenProjectDetail: (project: ProyekItem) => void;
-  onOpenAIRoute: (projectName: string) => void;
+  onOpenAIRoute: (projectName: string, project?: ProyekItem | null) => void;
   onOpenOpenDataModal: () => void;
   onProjectCreated?: (project: ProyekItem) => void;
   onProjectUpdated?: (project: ProyekItem) => void;

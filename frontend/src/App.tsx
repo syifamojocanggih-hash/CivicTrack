@@ -315,9 +315,8 @@ export function App() {
           onLogout={handleLogout}
           onSwitchRole={handleSwitchRole}
           onOpenProjectDetail={(proj) => setSelectedProject(proj)}
-          onOpenAIRoute={(name) => {
-            navigateToView('map-explorer');
-            handleOpenAIRoute(name);
+          onOpenAIRoute={(name, proj) => {
+            handleOpenAIRoute(name, proj);
           }}
           onOpenOpenDataModal={() => setIsOpenDataModalOpen(true)}
           onProjectCreated={handleProjectCreated}
