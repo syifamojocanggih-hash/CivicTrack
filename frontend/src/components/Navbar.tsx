@@ -53,18 +53,29 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => clearInterval(interval);
   }, [currentUser]);
 
-  // Tutup dropdown saat klik di luar area notifikasi
+  // Tutup dropdown saat klik di luar area notifikasi (sembarang arah) atau tombol Escape
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
         setShowNotifMenu(false);
       }
     };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowNotifMenu(false);
+      }
+    };
+
     if (showNotifMenu) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
   }, [showNotifMenu]);
 
