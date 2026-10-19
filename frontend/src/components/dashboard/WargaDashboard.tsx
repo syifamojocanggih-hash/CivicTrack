@@ -202,10 +202,10 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   const [evaluasiList, setEvaluasiList] = useState<EvaluasiCacatItem[]>(MOCK_EVALUASI_CACAT);
   const [isEvaluasiModalOpen, setIsEvaluasiModalOpen] = useState(false);
   const [evaluasiForm, setEvaluasiForm] = useState({
-    proyek_id: 3,
+    proyek_id: 2,
     deskripsi: '',
     lokasi_titik: '',
-    kategori_cacat: 'Struktur Beton / Retak',
+    kategori_cacat: 'Struktur Beton / Retak Ambles',
   });
 
   // Lock body scroll and support Escape key when any modal is open
@@ -265,31 +265,62 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isNewReportModalOpen, editingAduan, isEvaluasiModalOpen, selectedAduanDetail]);
 
-  // Sync real evaluations and citizen reports from database on mount
+  // Sync real evaluations and citizen reports from database on mount & listen to real-time events
   useEffect(() => {
-    apiService
-      .getEvaluations()
-      .then((apiEvals) => {
-        if (apiEvals && apiEvals.length > 0) {
-          const mapped: EvaluasiCacatItem[] = apiEvals.map((e) => ({
-            id: e.id,
-            proyek_id: e.proyek_id,
-            nama_proyek: e.nama_proyek,
-            user_id: e.user_id,
-            nama_pelapor: e.pelapor?.nama || 'Warga Masyarakat',
-            deskripsi: e.deskripsi,
-            lokasi_titik: 'Lokasi Proyek',
-            skor_urgensi_ai: e.skor_urgensi_ai || 3,
-            analisis_ai: e.ringkasan_analisis_ai || 'Analisis AI Groq',
-            kategori_cacat: e.kategori_masalah,
-            status_verifikasi: e.status,
-            catatan_dinas: e.status_logs?.[0]?.catatan || undefined,
-            tanggal_lapor: String(e.created_at).split('T')[0],
-          }));
-          setEvaluasiList(mapped);
-        }
-      })
-      .catch(() => {});
+    const loadEvaluations = () => {
+      apiService
+        .getEvaluations()
+        .then((apiEvals) => {
+          if (apiEvals && apiEvals.length > 0) {
+            const mapped: EvaluasiCacatItem[] = apiEvals.map((e) => {
+              let cleanDesc = e.deskripsi || '';
+              let lokasi = (e as any).lokasi_titik || 'Lokasi Proyek';
+              const patokanMatch = cleanDesc.match(/^\[Patokan:\s*([^\]]+)\]\s*/);
+              if (patokanMatch) {
+                lokasi = patokanMatch[1].trim();
+                cleanDesc = cleanDesc.replace(/^\[Patokan:\s*([^\]]+)\]\s*/, '').trim();
+              }
+              const dinasLog = e.status_logs?.slice().reverse().find((l) => l.status_baru !== 'menunggu_verifikasi');
+              const catatan_dinas = dinasLog?.catatan || (e.status !== 'menunggu_verifikasi' ? (e as any).catatan_dinas : undefined);
+              const tanggal_tindakan = dinasLog?.created_at
+                ? new Date(dinasLog.created_at).toLocaleDateString('id-ID')
+                : (catatan_dinas ? 'Telah diverifikasi' : undefined);
+
+              return {
+                id: e.id,
+                proyek_id: e.proyek_id,
+                nama_proyek: e.nama_proyek,
+                user_id: e.user_id,
+                nama_pelapor: e.pelapor?.nama || (e as any).nama_pelapor || 'Warga Masyarakat',
+                deskripsi: cleanDesc,
+                lokasi_titik: lokasi,
+                skor_urgensi_ai: e.skor_urgensi_ai || 3,
+                analisis_ai: e.ringkasan_analisis_ai || 'Analisis AI Groq',
+                kategori_cacat: e.kategori_masalah,
+                status_verifikasi: e.status,
+                catatan_dinas,
+                tanggal_tindakan,
+                tanggal_lapor: String(e.created_at).split('T')[0],
+              };
+            });
+            setEvaluasiList(mapped);
+          }
+        })
+        .catch(() => {});
+    };
+
+    loadEvaluations();
+
+    const handleEvaluasiVerified = () => {
+      loadEvaluations();
+    };
+
+    const handleNewEvaluasi = () => {
+      loadEvaluations();
+    };
+
+    window.addEventListener('civictrack_evaluasi_verified', handleEvaluasiVerified);
+    window.addEventListener('civictrack_new_evaluasi', handleNewEvaluasi);
 
     if (typeof apiService.getAllReports === 'function') {
       apiService
@@ -330,7 +361,10 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
     window.addEventListener('civictrack_new_aduan', handleNewAduan);
     window.addEventListener('civictrack_new_rating', handleNewRating);
+
     return () => {
+      window.removeEventListener('civictrack_evaluasi_verified', handleEvaluasiVerified);
+      window.removeEventListener('civictrack_new_evaluasi', handleNewEvaluasi);
       window.removeEventListener('civictrack_new_aduan', handleNewAduan);
       window.removeEventListener('civictrack_new_rating', handleNewRating);
     };
@@ -494,10 +528,27 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     const selProj = projects.find((p) => p.id === pId);
 
     try {
-      const evalRes = await apiService.submitEvaluasi(pId, {
-        kategori_masalah: evaluasiForm.kategori_cacat,
-        deskripsi: evaluasiForm.deskripsi.trim(),
-      });
+      const evalRes = await apiService.submitEvaluasi(
+        pId,
+        {
+          kategori_masalah: evaluasiForm.kategori_cacat,
+          deskripsi: evaluasiForm.deskripsi.trim(),
+        },
+        {
+          nama_proyek: selProj?.nama_proyek,
+          nama_pelapor: currentUser.nama,
+          lokasi_titik: evaluasiForm.lokasi_titik.trim(),
+          user_id: currentUser.id,
+        }
+      );
+
+      let cleanDesc = evalRes.deskripsi || evaluasiForm.deskripsi.trim();
+      let lokasi = evaluasiForm.lokasi_titik.trim() || 'Lokasi Proyek';
+      const patokanMatch = cleanDesc.match(/^\[Patokan:\s*([^\]]+)\]\s*/);
+      if (patokanMatch) {
+        lokasi = patokanMatch[1].trim();
+        cleanDesc = cleanDesc.replace(/^\[Patokan:\s*([^\]]+)\]\s*/, '').trim();
+      }
 
       const newEval: EvaluasiCacatItem = {
         id: evalRes.id,
@@ -505,8 +556,8 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         nama_proyek: selProj?.nama_proyek || evalRes.nama_proyek || 'Proyek Fisik Selesai',
         user_id: currentUser.id,
         nama_pelapor: currentUser.nama,
-        deskripsi: evalRes.deskripsi,
-        lokasi_titik: evaluasiForm.lokasi_titik || 'Lokasi Proyek',
+        deskripsi: cleanDesc,
+        lokasi_titik: lokasi,
         skor_urgensi_ai: evalRes.skor_urgensi_ai || 3,
         analisis_ai: evalRes.ringkasan_analisis_ai || 'Telah dianalisis oleh AI CivicTrack.',
         kategori_cacat: evalRes.kategori_masalah,
@@ -514,14 +565,13 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         tanggal_lapor: new Date().toLocaleString('id-ID', { dateStyle: 'short', timeStyle: 'short' }),
       };
 
-      setEvaluasiList([newEval, ...evaluasiList]);
+      setEvaluasiList((prev) => [newEval, ...prev.filter((it) => it.id !== newEval.id)]);
       setIsEvaluasiModalOpen(false);
-      setEvaluasiForm({
-        proyek_id: 3,
+      setEvaluasiForm((prev) => ({
+        ...prev,
         deskripsi: '',
         lokasi_titik: '',
-        kategori_cacat: 'Struktur Beton / Retak',
-      });
+      }));
 
       if (onProjectUpdated) {
         apiService.getProjectDetail(pId).then((updated) => onProjectUpdated(updated)).catch(() => {});
@@ -537,6 +587,13 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   });
 
   const completedProjects = projects.filter((p) => p.status === 'selesai');
+
+  // Auto-select first completed project if current selection is invalid
+  useEffect(() => {
+    if (completedProjects.length > 0 && !completedProjects.some((p) => p.id === evaluasiForm.proyek_id)) {
+      setEvaluasiForm((prev) => ({ ...prev, proyek_id: completedProjects[0].id }));
+    }
+  }, [completedProjects, evaluasiForm.proyek_id]);
 
   if (showFullDetailView && selectedAduanDetail) {
     return (
@@ -576,13 +633,14 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-detail-aduan-title"
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
           onClick={() => setSelectedAduanDetail(null)}
         >
-          <div
-            className="relative w-full max-w-2xl sm:max-w-3xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-fade-in"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+            <div
+              className="relative w-full max-w-lg sm:max-w-2xl lg:max-w-3xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Header: Dark Blue #184C78 */}
             <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
@@ -752,17 +810,17 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
             </div>
 
             {/* Footer */}
-            <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex flex-wrap items-center justify-between gap-2.5 shrink-0">
+            <div className="px-4 sm:px-6 py-3 sm:py-3.5 bg-slate-50 border-t border-slate-200 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2.5 shrink-0">
               <button
                 type="button"
                 onClick={() => setShowFullDetailView(true)}
-                className="text-xs font-semibold text-[#184C78] hover:text-[#2980B9] flex items-center gap-1 cursor-pointer"
+                className="text-xs font-semibold text-[#184C78] hover:text-[#2980B9] flex items-center justify-center sm:justify-start gap-1 cursor-pointer"
               >
                 <span>Buka Halaman Audit Trail Lengkap</span>
                 <ExternalLink className="w-3.5 h-3.5" />
               </button>
 
-              <div className="flex items-center gap-2">
+              <div className="flex items-center justify-end gap-2">
                 {!selectedAduanDetail.tanggapan_dinas && selectedAduanDetail.status === 'menunggu' && (
                   <button
                     type="button"
@@ -774,7 +832,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                       setEditIsi(cur.isi_laporan);
                       setEditError(null);
                     }}
-                    className="px-3.5 py-2 text-xs font-semibold rounded-xl bg-[#EBF4FB] text-[#184C78] hover:bg-[#d8eaf7] border border-[#c5def2] flex items-center gap-1.5 cursor-pointer transition-colors"
+                    className="flex-1 sm:flex-none px-3.5 py-2 text-xs font-semibold rounded-xl bg-[#EBF4FB] text-[#184C78] hover:bg-[#d8eaf7] border border-[#c5def2] flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
                   >
                     <Edit3 className="w-3.5 h-3.5 text-[#2980B9]" />
                     <span>Edit Pengaduan</span>
@@ -783,7 +841,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setSelectedAduanDetail(null)}
-                  className="px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors cursor-pointer"
+                  className="flex-1 sm:flex-none px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors cursor-pointer text-center"
                 >
                   Tutup
                 </button>
@@ -791,6 +849,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
             </div>
           </div>
         </div>
+      </div>
       )}
 
       {/* ── MODAL 2: KIRIM LAPORAN / TANGGAPAN WARGA (GAYA ETHOL) ── */}
@@ -799,13 +858,14 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-report-title"
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
           onClick={() => setIsNewReportModalOpen(false)}
         >
-          <div
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-fade-in"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+            <div
+              className="relative w-full max-w-lg sm:max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Header: Dark Blue #184C78 */}
             <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
@@ -911,19 +971,19 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Sticky Footer */}
-              <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
+              {/* Sticky Responsive Footer */}
+              <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsNewReportModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={!!existingReportForSelected}
-                  className="px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer text-center"
                 >
                   {existingReportForSelected ? 'Proyek Sudah Diadukan' : 'Kirim Laporan Sekarang'}
                 </button>
@@ -931,6 +991,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
             </form>
           </div>
         </div>
+      </div>
       )}
 
       {/* ── MODAL 3: EDIT PENGADUAN WARGA (GAYA ETHOL) ── */}
@@ -939,13 +1000,14 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-edit-title"
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
           onClick={() => setEditingAduan(null)}
         >
-          <div
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-fade-in"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+            <div
+              className="relative w-full max-w-lg sm:max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Header: Dark Blue #184C78 */}
             <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
@@ -1009,19 +1071,19 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Sticky Footer */}
-              <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
+              {/* Sticky Responsive Footer */}
+              <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setEditingAduan(null)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmittingEdit}
-                  className="px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer"
+                  className="w-full sm:w-auto px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors disabled:opacity-50 cursor-pointer text-center"
                 >
                   {isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
                 </button>
@@ -1029,6 +1091,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
             </form>
           </div>
         </div>
+      </div>
       )}
 
       {/* ── MODAL 4: EVALUASI CACAT FISIK PASCA-PROYEK (GAYA ETHOL) ── */}
@@ -1037,13 +1100,14 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-evaluasi-title"
-          className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-xs overflow-y-auto animate-fade-in"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
           onClick={() => setIsEvaluasiModalOpen(false)}
         >
-          <div
-            className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col my-auto max-h-[90vh] sm:max-h-[85vh] border border-[#DCE0E6] animate-fade-in"
-            onClick={(e) => e.stopPropagation()}
-          >
+          <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+            <div
+              className="relative w-full max-w-lg sm:max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            >
             {/* Header: Dark Blue #184C78 */}
             <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
               <div className="flex items-center gap-2.5">
@@ -1098,8 +1162,8 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                       onChange={(e) => setEvaluasiForm({ ...evaluasiForm, kategori_cacat: e.target.value })}
                       className="w-full p-2.5 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs font-medium"
                     >
-                      <option value="Struktur Beton / Retak">Struktur Beton / Retak Ambles</option>
-                      <option value="Endapan / Saluran Tersumbat">Endapan / Saluran Tersumbat</option>
+                      <option value="Struktur Beton / Retak Ambles">Struktur Beton / Retak Ambles</option>
+                      <option value="Drainase / Saluran Tersumbat">Drainase / Saluran Tersumbat</option>
                       <option value="Aspal Mengelupas / Lubang Jalan">Aspal Mengelupas / Lubang Jalan</option>
                       <option value="Fasilitas / Lampu / Rambu Rusak">Fasilitas / Lampu / Rambu Rusak</option>
                     </select>
@@ -1121,28 +1185,28 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <div>
                   <label className="block font-semibold text-[#184C78] mb-1">Deskripsi Kerusakan Fisik</label>
                   <textarea
-                    rows={5}
+                    rows={3}
                     required
                     placeholder="Jelaskan jenis kerusakan, ukuran retakan/amblesan, dan potensi bahaya keselamatan bagi pejalan kaki atau kendaraan..."
                     value={evaluasiForm.deskripsi}
                     onChange={(e) => setEvaluasiForm({ ...evaluasiForm, deskripsi: e.target.value })}
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed"
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed resize-y min-h-[70px] sm:min-h-[90px]"
                   />
                 </div>
               </div>
 
-              {/* Sticky Footer */}
-              <div className="px-5 sm:px-6 py-3.5 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-2.5 shrink-0">
+              {/* Sticky Responsive Footer */}
+              <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
                 <button
                   type="button"
                   onClick={() => setIsEvaluasiModalOpen(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+                  className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
                 >
                   Batal
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors cursor-pointer flex items-center gap-1.5"
+                  className="w-full sm:w-auto px-5 py-2 text-xs font-bold text-white bg-[#184C78] hover:bg-[#12395b] rounded-xl shadow-xs transition-colors cursor-pointer flex items-center justify-center gap-1.5 text-center"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-300" />
                   <span>Analisis AI &amp; Kirimkan</span>
@@ -1151,7 +1215,8 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
             </form>
           </div>
         </div>
-      )}
+      </div>
+    )}
 
       {/* ── KONTEN UTAMA DASHBOARD ── */}
       <div className="space-y-6">
@@ -1999,11 +2064,11 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 </div>
 
                 {/* Tindak Lanjut Dinas */}
-                {item.catatan_dinas && (
+                {item.catatan_dinas && item.status_verifikasi !== 'menunggu_verifikasi' && (
                   <div className="p-3 bg-[#E6F7F1] rounded-xl border border-[#B7EBD8] text-xs space-y-1">
                     <div className="font-bold text-[#1A9E6E] flex items-center gap-1.5">
                       <ShieldCheck className="w-4 h-4" />
-                      <span>Respon Tim Pemeliharaan Dinas ({item.tanggal_tindakan}):</span>
+                      <span>Respon Tim Pemeliharaan Dinas{item.tanggal_tindakan ? ` (${item.tanggal_tindakan})` : ''}:</span>
                     </div>
                     <p className="text-[#0E6243] text-[11px] leading-relaxed">
                       {item.catatan_dinas}

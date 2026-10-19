@@ -46,10 +46,11 @@ def submit_post_project_evaluation(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyek tidak ditemukan.")
 
     if proyek.status not in [ProyekStatus.selesai, ProyekStatus.dalam_peninjauan_ulang]:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Evaluasi cacat pembangunan hanya dapat diajukan untuk proyek yang telah berstatus 'Selesai' atau 'Dalam Peninjauan Ulang'."
-        )
+        # Jika warga melaporkan cacat fisik pasca-proyek/finishing, otomatis beralih ke peninjauan ulang
+        proyek.status = ProyekStatus.dalam_peninjauan_ulang
+        db.add(proyek)
+        db.commit()
+        db.refresh(proyek)
 
     # Analisis otomatis dengan AI (Groq)
     ai_result = analyze_evaluation_with_ai(

@@ -210,48 +210,51 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-project-detail-title"
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
       onClick={onClose}
     >
-      <div
-        className="bg-white rounded-2xl w-full max-w-3xl overflow-hidden shadow-2xl border border-[#DCE0E6] my-auto max-h-[90vh] flex flex-col animate-fade-in"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Header */}
-        <div className="bg-[#184C78] text-white p-6 relative shrink-0">
-          <button
-            onClick={onClose}
-            className="absolute top-4 right-4 text-white/70 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+      <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+        <div
+          className="relative w-full max-w-3xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="bg-[#184C78] text-white p-4 sm:p-6 relative shrink-0">
+            <button
+              onClick={onClose}
+              className="absolute top-3 right-3 sm:top-4 sm:right-4 text-white/70 hover:text-white p-1 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+              aria-label="Tutup Detail Proyek"
+              title="Tutup Detail Proyek"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
-              project.status === 'selesai'
-                ? 'bg-[#E6F7F1] text-[#1A9E6E]'
-                : project.status === 'dalam_peninjauan_ulang'
-                ? 'bg-amber-100 text-amber-800 border border-amber-300'
-                : project.status === 'ditangguhkan'
-                ? 'bg-slate-200 text-slate-700'
-                : 'bg-[#FEF3E7] text-[#E67E22]'
-            }`}>
-              {project.status === 'berjalan'
-                ? 'Sedang Berjalan'
-                : project.status === 'selesai'
-                ? 'Selesai'
-                : project.status === 'dalam_peninjauan_ulang'
-                ? 'Dalam Peninjauan Ulang'
-                : 'Ditangguhkan'}
-            </span>
-            <span className="text-xs text-white/70">ID #{project.id.toString().padStart(4, '0')}</span>
-          </div>
+            <div className="flex flex-wrap items-center gap-2 mb-2 pr-8 sm:pr-0">
+              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
+                project.status === 'selesai'
+                  ? 'bg-[#E6F7F1] text-[#1A9E6E]'
+                  : project.status === 'dalam_peninjauan_ulang'
+                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
+                  : project.status === 'ditangguhkan'
+                  ? 'bg-slate-200 text-slate-700'
+                  : 'bg-[#FEF3E7] text-[#E67E22]'
+              }`}>
+                {project.status === 'berjalan'
+                  ? 'Sedang Berjalan'
+                  : project.status === 'selesai'
+                  ? 'Selesai'
+                  : project.status === 'dalam_peninjauan_ulang'
+                  ? 'Dalam Peninjauan Ulang'
+                  : 'Ditangguhkan'}
+              </span>
+              <span className="text-xs text-white/70">ID #{project.id.toString().padStart(4, '0')}</span>
+            </div>
 
-          <h2 className="font-['DM_Sans'] text-xl sm:text-2xl font-bold tracking-tight mb-2">
-            {project.nama_proyek}
-          </h2>
+            <h2 id="modal-project-detail-title" className="font-['DM_Sans'] text-lg sm:text-2xl font-bold tracking-tight mb-2 pr-8 sm:pr-0">
+              {project.nama_proyek}
+            </h2>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-white/80 pt-2 border-t border-white/15">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-xs text-white/80 pt-2 border-t border-white/15">
             <div className="flex items-center gap-1.5">
               <MapPin className="w-3.5 h-3.5 text-[#2980B9]" />
               <span className="truncate">{project.nama_wilayah || 'Kota Malang'}</span>
@@ -268,10 +271,10 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         </div>
 
         {/* Action quick bar */}
-        <div className="bg-[#F5F7FA] border-b border-[#DCE0E6] px-6 py-3 flex items-center justify-between flex-wrap gap-2 shrink-0">
-          <div className="flex items-center gap-3">
+        <div className="bg-[#F5F7FA] border-b border-[#DCE0E6] px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between flex-wrap gap-2.5 shrink-0">
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap">
             <span className="text-xs font-semibold text-[#184C78]">Progres Fisik:</span>
-            <div className="w-32 sm:w-44 h-2 bg-[#DCE0E6] rounded-full overflow-hidden">
+            <div className="w-28 sm:w-44 h-2 bg-[#DCE0E6] rounded-full overflow-hidden">
               <div
                 className="h-full bg-gradient-to-r from-[#2980B9] to-[#184C78] rounded-full"
                 style={{ width: `${project.progres_persen}%` }}
@@ -280,11 +283,11 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             <span className="text-xs font-bold text-[#184C78]">{project.progres_persen}%</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               onClick={handleToggleSubscribe}
               disabled={isSubscribing}
-              className={`text-xs px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
+              className={`text-xs px-2.5 sm:px-3 py-1.5 rounded-lg font-semibold flex items-center gap-1.5 transition-colors cursor-pointer ${
                 isSubscribed
                   ? 'bg-emerald-100 text-emerald-800 border border-emerald-300 hover:bg-emerald-200'
                   : 'bg-white text-[#184C78] border border-[#DCE0E6] hover:bg-[#EBF4FB]'
@@ -297,20 +300,20 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
             <button
               onClick={() => onOpenAIRoute(project.nama_proyek)}
-              className="text-xs px-3 py-1.5 rounded-lg font-semibold bg-[#7C3AED] hover:bg-[#6D28D9] text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+              className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg font-semibold bg-[#7C3AED] hover:bg-[#6D28D9] text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
               title="Cek & Generate Rute AI Alternatif"
             >
               <Sparkles className="w-3.5 h-3.5" />
-              Rute AI Alternatif
+              <span>Rute AI</span>
             </button>
           </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-[#DCE0E6] bg-white px-6 shrink-0">
+        <div className="flex border-b border-[#DCE0E6] bg-white px-3 sm:px-6 shrink-0 overflow-x-auto scrollbar-thin whitespace-nowrap">
           <button
             onClick={() => setActiveTab('timeline')}
-            className={`py-3 px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
+            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
               activeTab === 'timeline'
                 ? 'border-[#184C78] text-[#184C78]'
                 : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
@@ -320,7 +323,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('gallery')}
-            className={`py-3 px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
+            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
               activeTab === 'gallery'
                 ? 'border-[#184C78] text-[#184C78]'
                 : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
@@ -330,7 +333,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('report')}
-            className={`py-3 px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
+            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
               activeTab === 'report'
                 ? 'border-[#184C78] text-[#184C78]'
                 : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
@@ -340,7 +343,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('rating')}
-            className={`py-3 px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
+            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
               activeTab === 'rating'
                 ? 'border-[#184C78] text-[#184C78]'
                 : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
@@ -351,7 +354,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         </div>
 
         {/* Modal Body Content */}
-        <div className="p-6 overflow-y-auto flex-1 space-y-6">
+        <div className="p-4 sm:p-6 overflow-y-auto flex-1 min-h-0 space-y-5 sm:space-y-6 scrollbar-thin">
           {/* TAB 1: LINIMASA TIMELINE */}
           {activeTab === 'timeline' && (
             <div className="space-y-4">
@@ -614,6 +617,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         </div>
       </div>
     </div>
+  </div>
   );
 
   return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;

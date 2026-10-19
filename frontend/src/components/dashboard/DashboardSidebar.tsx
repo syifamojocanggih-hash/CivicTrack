@@ -63,6 +63,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
           { id: 'sebaran_wilayah', label: 'Sebaran Wilayah & Agregat', icon: MapPin, desc: 'Bagan rekapitulasi per kecamatan' },
           { id: 'proyek', label: 'Kelola & Input Proyek', icon: FolderKanban, desc: 'Input proyek baru & status pengerjaan' },
           { id: 'aduan', label: 'Tanggapan Aduan Warga', icon: MessageSquarePlus, desc: 'Respon tiket & aspirasi publik' },
+          { id: 'evaluasi', label: 'Verifikasi Evaluasi Cacat', icon: AlertTriangle, desc: 'Tindak lanjut laporan kerusakan' },
           { id: 'sentimen_ai', label: 'Analisis Aspirasi (AI)', icon: Sparkles, desc: 'AI sentimen kepuasan warga' },
           { id: 'laporan_eksekutif', label: 'Unduh Laporan Eksekutif', icon: FileSpreadsheet, desc: 'Ekspor data CSV dan cetak PDF' },
         ];

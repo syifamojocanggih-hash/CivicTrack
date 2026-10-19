@@ -19,9 +19,12 @@ def _clean_json_markdown(text: str) -> str:
     match = re.search(r"```(?:json)?\s*([\s\S]*?)\s*```", text)
     if match:
         return match.group(1).strip()
+    brace_match = re.search(r"(\{[\s\S]*\})", text)
+    if brace_match:
+        return brace_match.group(1).strip()
     return text
 
-def _call_groq_chat(prompt: str, system_message: str = "Anda adalah asisten AI tata kota.") -> str:
+def _call_groq_chat(prompt: str, system_message: str = "Anda adalah asisten AI tata kota. Hasilkan output dalam format json valid.") -> str:
     """
     Memanggil Groq Cloud REST API (OpenAI-compatible) untuk model yang dikonfigurasi.
     """
@@ -43,7 +46,7 @@ def _call_groq_chat(prompt: str, system_message: str = "Anda adalah asisten AI t
         "response_format": {"type": "json_object"}
     }
 
-    with httpx.Client(timeout=10.0) as client:
+    with httpx.Client(timeout=15.0) as client:
         resp = client.post(url, json=payload, headers=headers)
         if resp.status_code != 200:
             raise RuntimeError(f"Groq API error HTTP {resp.status_code}: {resp.text}")
@@ -302,26 +305,33 @@ def analyze_evaluation_with_ai(
     Menghasilkan skor urgensi (1-5) dan ringkasan indikasi teknis masalah.
     """
     prompt = f"""
-Anda adalah insinyur sipil dan pengawas mutu infrastruktur publik pemerintah.
-Lakukan asesmen teknis awal terhadap aduan kerusakan/cacat pasca-proyek dari masyarakat:
+Anda adalah insinyur sipil senior dan auditor mutu infrastruktur publik daerah (Dinas PU Bina Marga & Cipta Karya).
+Lakukan asesmen teknis mendalam dan tentukan skor urgensi aduan kerusakan fisik pasca-proyek (FHO/masa pemeliharaan) dari masyarakat berikut:
 - Nama Proyek Selesai: {nama_proyek} ({kategori_proyek})
-- Kategori Cacat: {kategori_masalah}
-- Deskripsi Temuan Warga: {deskripsi}
+- Kategori Cacat Fisik: {kategori_masalah}
+- Deskripsi Temuan Lapangan: {deskripsi}
 
-Berikan skor urgensi risiko keselamatan dan kerusakan struktural dari 1 (Sangat Ringan/Kosmetik) hingga 5 (Sangat Kritis/Berbahaya/Risiko Korban Jiwa).
-Serta berikan ringkasan analisis teknis rekomendasi penanganan singkat (1-3 kalimat).
+Panduan Penentuan Skor Urgensi (1 - 5):
+- Skor 5 (Kritis/Darurat): Risiko runtuh, jalan/jembatan ambles, retak struktur parah, patah konstruksi beton, longsor, membahayakan keselamatan jiwa secara langsung. Perlu tindakan darurat 1x24 jam.
+- Skor 4 (Tinggi/Struktural): Retak lebar pada beton, jalan berlubang dalam, aspal amblas/mengelupas parah, struktur pondasi miring/tergerus erosi. Kontraktor harus dipanggil untuk perbaikan garansi segera.
+- Skor 3 (Sedang/Fungsional): Saluran drainase tersumbat sedimen, genangan air berulang saat hujan deras, paving lepas, rambu/penerangan jalan padam.
+- Skor 2 (Ringan/Kosmetik): Retak rambut minor, cat terkelupas, sisa agregat bahu jalan belum rapi.
+- Skor 1 (Sangat Ringan): Saran estetika atau penataan minor tanpa dampak fisik fungsi.
 
-Format JSON wajib:
+PENTING:
+Jika deskripsi warga sangat singkat atau bernada santai (contoh: "ya begitulah", "rusak ini", "ambles jalannya"), Anda WAJIB memprioritaskan kategori cacat ({kategori_masalah}) dan potensi bahaya nyata pada proyek ({nama_proyek}). Jika kategori adalah retak/ambles atau aspal berlubang, jangan beri skor rendah; berikan skor proporsional (skor 4 atau 5).
+
+Format respons dalam bentuk json object valid tanpa teks lain di luar json:
 {{
   "skor_urgensi_ai": 4,
-  "ringkasan_analisis_ai": "Analisis teknis singkat dan rekomendasi aksi dinas terkait"
+  "ringkasan_analisis_ai": "Analisis teknis komprehensif (2-3 kalimat) mencakup potensi risiko struktur/keselamatan dan instruksi tindakan konkret untuk dinas pengawas/kontraktor."
 }}
 """
 
     # 1. Coba Groq API
     if settings.GROQ_API_KEY and settings.GROQ_API_KEY.strip():
         try:
-            content = _call_groq_chat(prompt, system_message="Anda adalah insinyur sipil pengawas mutu infrastruktur. Hasilkan format JSON valid.")
+            content = _call_groq_chat(prompt, system_message="Anda adalah insinyur sipil pengawas mutu infrastruktur. Hasilkan format json valid.")
             clean_text = _clean_json_markdown(content)
             parsed = json.loads(clean_text)
 
@@ -342,19 +352,36 @@ Format JSON wajib:
             logger.warning(f"Gagal memanggil Groq API untuk evaluasi: {e}. Mengalihkan ke cadangan heuristik...")
 
     # 2. Rule-based fallback deterministik jika AI belum dikonfigurasi atau respons tidak valid
-    desc_lower = deskripsi.lower() + " " + kategori_masalah.lower()
-    urgent_keywords = ["ambles", "runtuh", "retak besar", "patah", "banjir parah", "bahaya", "korban", "longsor", "lubang dalam"]
-    medium_keywords = ["genangan", "retak rambut", "paving lepas", "cat terkelupas", "tersumbat", "gelombang"]
+    desc_lower = (deskripsi + " " + kategori_masalah).lower()
+    
+    # 1. Kritis (Skor 5)
+    urgent_critical = [
+        "ambles", "amblas", "runtuh", "ambrol", "ambruk", "jebol", "patah", "roboh", 
+        "longsor", "lubang dalam", "bahaya", "korban", "kritis", "hancur", "putus", "fatal"
+    ]
+    # 2. Tinggi (Skor 4)
+    urgent_high = [
+        "retak", "beton", "struktur", "lubang", "pondasi", "miring", "pecah", 
+        "mengelupas", "aspal", "terkelupas", "berlubang", "anjlok", "retak ambles"
+    ]
+    # 3. Sedang (Skor 3)
+    urgent_medium = [
+        "genangan", "tersumbat", "saluran", "drainase", "endapan", "sedimen", 
+        "paving", "gelombang", "lampu", "rambu", "bahu jalan", "kisi-kisi", "inlet"
+    ]
 
-    if any(k in desc_lower for k in urgent_keywords):
+    if any(k in desc_lower for k in urgent_critical):
         skor = 5
-        summary = "Indikasi kerusakan struktural kritis yang berpotensi membahayakan keselamatan pengguna. Perlu inspeksi darurat tim teknis dalam 1x24 jam."
-    elif any(k in desc_lower for k in medium_keywords):
+        summary = f"Indikasi kerusakan struktural kritis pada {nama_proyek}. Potensi bahaya keselamatan tinggi bagi pengguna. Rekomendasi: Inspeksi darurat tim teknis Dinas PU dalam 1x24 jam dan pemasangan rambu peringatan darurat."
+    elif any(k in desc_lower for k in urgent_high):
+        skor = 4
+        summary = f"Terdeteksi degradasi struktural signifikan pada {kategori_masalah}. Berisiko memperparah kerusakan akibat beban lalu lintas harian. Rekomendasi: Pemanggilan rekanan kontraktor pelaksana untuk perbaikan garansi masa pemeliharaan (FHO)."
+    elif any(k in desc_lower for k in urgent_medium):
         skor = 3
-        summary = "Indikasi penurunan mutu pekerjaan atau pemeliharaan awal pasca-serah terima. Direkomendasikan pemanggilan kontraktor pelaksana untuk perbaikan garansi."
+        summary = f"Indikasi penurunan fungsi fungsional pasca-proyek ({kategori_masalah}). Rekomendasi: Penjadwalan pembersihan saluran atau perbaikan minor dalam agenda pemeliharaan rutin dinas teknis."
     else:
-        skor = 2
-        summary = "Laporan cacat non-struktural minor. Dapat dijadwalkan dalam agenda pemeliharaan rutin dinas terkait."
+        skor = 3 if ("cacat" in desc_lower or "rusak" in desc_lower) else 2
+        summary = f"Laporan temuan fisik pada {nama_proyek}. Rekomendasi: Verifikasi visual lapangan oleh petugas pengawas dinas teknis untuk evaluasi tindak lanjut."
 
     fallback_payload = {
         "skor_urgensi_ai": skor,

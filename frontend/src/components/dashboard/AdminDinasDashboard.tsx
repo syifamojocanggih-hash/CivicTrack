@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import {
   Building2,
   FolderKanban,
@@ -24,7 +25,6 @@ import {
   Eye,
   EyeOff,
   Layers,
-  ArrowLeft,
   Edit3,
   X,
 } from 'lucide-react';
@@ -150,6 +150,11 @@ interface AdminDinasDashboardProps {
   onProjectCreated?: (project: ProyekItem) => void;
   onProjectUpdated?: (project: ProyekItem) => void;
 }
+
+const renderPortal = (modal: React.ReactNode) => {
+  if (typeof document === 'undefined') return modal;
+  return createPortal(modal, document.body);
+};
 
 export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   currentUser,
@@ -440,32 +445,66 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   const [evalStatusLogs, setEvalStatusLogs] = useState<any[]>([]);
 
   React.useEffect(() => {
-    // Load real evaluations from database
-    apiService
-      .getEvaluations()
-      .then((apiEvals) => {
-        if (apiEvals && apiEvals.length > 0) {
-          const mapped: EvaluasiCacatItem[] = apiEvals.map((e) => ({
-            id: e.id,
-            proyek_id: e.proyek_id,
-            nama_proyek: e.nama_proyek,
-            user_id: e.user_id,
-            nama_pelapor: e.pelapor?.nama || 'Warga Masyarakat',
-            deskripsi: e.deskripsi,
-            lokasi_titik: 'Lokasi Proyek',
-            skor_urgensi_ai: e.skor_urgensi_ai || 3,
-            analisis_ai: e.ringkasan_analisis_ai || 'Analisis AI Groq',
-            kategori_cacat: e.kategori_masalah,
-            status_verifikasi: e.status,
-            catatan_dinas: (e.status_logs && e.status_logs.length > 0
-              ? e.status_logs[e.status_logs.length - 1]?.catatan
-              : undefined) || undefined,
-            tanggal_lapor: String(e.created_at).split('T')[0],
-          }));
-          setEvaluasiList(mapped);
-        }
-      })
-      .catch(() => {});
+    // Load real evaluations from database and localStorage
+    const loadEvaluations = () => {
+      apiService
+        .getEvaluations()
+        .then((apiEvals) => {
+          if (apiEvals && apiEvals.length > 0) {
+            const mapped: EvaluasiCacatItem[] = apiEvals.map((e) => {
+              let cleanDesc = e.deskripsi || '';
+              let lokasi = (e as any).lokasi_titik || 'Lokasi Proyek';
+              const patokanMatch = cleanDesc.match(/^\[Patokan:\s*([^\]]+)\]\s*/);
+              if (patokanMatch) {
+                lokasi = patokanMatch[1].trim();
+                cleanDesc = cleanDesc.replace(/^\[Patokan:\s*([^\]]+)\]\s*/, '').trim();
+              }
+              const dinasLog = e.status_logs?.slice().reverse().find((l) => l.status_baru !== 'menunggu_verifikasi');
+              const catatan_dinas = dinasLog?.catatan || (e.status !== 'menunggu_verifikasi' ? (e as any).catatan_dinas : undefined);
+              const tanggal_tindakan = dinasLog?.created_at
+                ? new Date(dinasLog.created_at).toLocaleDateString('id-ID')
+                : (catatan_dinas ? 'Telah diverifikasi' : undefined);
+
+              return {
+                id: e.id,
+                proyek_id: e.proyek_id,
+                nama_proyek: e.nama_proyek,
+                user_id: e.user_id,
+                nama_pelapor: e.pelapor?.nama || (e as any).nama_pelapor || 'Warga Masyarakat',
+                deskripsi: cleanDesc,
+                lokasi_titik: lokasi,
+                skor_urgensi_ai: e.skor_urgensi_ai || 3,
+                analisis_ai: e.ringkasan_analisis_ai || 'Analisis AI Groq',
+                kategori_cacat: e.kategori_masalah,
+                status_verifikasi: e.status,
+                catatan_dinas,
+                tanggal_tindakan,
+                tanggal_lapor: String(e.created_at).split('T')[0],
+              };
+            });
+            setEvaluasiList(mapped);
+          }
+        })
+        .catch(() => {});
+    };
+
+    loadEvaluations();
+
+    const handleNewEvaluasi = () => {
+      loadEvaluations();
+    };
+
+    const handleEvaluasiVerified = () => {
+      loadEvaluations();
+    };
+
+    window.addEventListener('civictrack_new_evaluasi', handleNewEvaluasi);
+    window.addEventListener('civictrack_evaluasi_verified', handleEvaluasiVerified);
+
+    return () => {
+      window.removeEventListener('civictrack_new_evaluasi', handleNewEvaluasi);
+      window.removeEventListener('civictrack_evaluasi_verified', handleEvaluasiVerified);
+    };
   }, []);
 
   React.useEffect(() => {
@@ -935,7 +974,12 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     !!selectedEvalToVerify;
 
   useEffect(() => {
-    if (!isAnyFormOpen) return;
+    if (isAnyFormOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         if (isNewProjectModalOpen) {
@@ -949,7 +993,10 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       }
     };
     window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
   }, [isAnyFormOpen, isNewProjectModalOpen, editingProject, isNewStageModalOpen, isNewDocModalOpen, selectedEvalToVerify]);
 
   return (
@@ -962,67 +1009,55 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         </div>
       )}
 
-      {/* ── SUB-HALAMAN KHUSUS: INPUT PROYEK BARU ── */}
-      {isNewProjectModalOpen && (
+      {/* ── MODAL: INPUT PROYEK BARU ── */}
+      {isNewProjectModalOpen && renderPortal(
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-new-project-title"
-          className="space-y-6 animate-hero-in"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
+          onClick={() => {
+            setIsNewProjectModalOpen(false);
+            setCreateProjError(null);
+          }}
         >
-          {/* Top Header & Breadcrumb Navigation */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsNewProjectModalOpen(false);
-                  setCreateProjError(null);
-                }}
-                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
-                title="Kembali ke Dashboard"
-                aria-label="Kembali ke Dashboard"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali</span>
-              </button>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
-                    #INPUT-PROYEK-BARU
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-blue-50 text-[#184C78] border-blue-200">
-                    <FolderKanban className="w-3.5 h-3.5 text-[#2980B9]" />
-                    <span>Registrasi Infrastruktur Daerah</span>
-                  </span>
+          <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+            <div
+              className="relative w-full max-w-lg sm:max-w-2xl lg:max-w-4xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header: Dark Blue #184C78 */}
+              <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                    <FolderKanban className="w-4 h-4 text-cyan-300" />
+                  </div>
+                  <div>
+                    <h3 id="modal-new-project-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                      Input Data Proyek Pembangunan Baru
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
+                      Proyek akan langsung terindeks di peta interaktif dan dapat dipantau oleh warga masyarakat.
+                    </p>
+                  </div>
                 </div>
-                <h1 id="modal-new-project-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
-                  Input Data Proyek Pembangunan Baru
-                </h1>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsNewProjectModalOpen(false);
+                    setCreateProjError(null);
+                  }}
+                  className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                  title="Tutup Modal"
+                  aria-label="Tutup Modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            </div>
-            <div className="flex items-center justify-between sm:justify-end gap-3">
-              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
-                Proyek akan langsung terindeks di peta interaktif dan dapat dipantau oleh warga masyarakat.
-              </p>
-              <button
-                type="button"
-                onClick={() => {
-                  setIsNewProjectModalOpen(false);
-                  setCreateProjError(null);
-                }}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                title="Tutup Modal"
-                aria-label="Tutup Modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
 
-          {/* Main Card Formulir Selayar Penuh */}
-          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
-            <form onSubmit={handleCreateProject} className="space-y-4 text-xs">
+              {/* Scrollable Form Body */}
+              <form onSubmit={handleCreateProject} className="flex flex-col flex-1 overflow-hidden min-h-0">
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
               <div>
                 <label htmlFor="nama_proyek" className="block font-semibold text-[#184C78] mb-1">Nama Proyek</label>
                 <input
@@ -1524,86 +1559,79 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
               )}
 
-              <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setIsNewProjectModalOpen(false);
-                    setCreateProjError(null);
-                  }}
-                  className="btn-ghost"
-                  disabled={isSubmittingNewProj}
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingNewProj}
-                  className="btn-primary"
-                >
-                  {isSubmittingNewProj ? 'Menyimpan ke Database...' : 'Simpan & Publikasikan'}
-                </button>
-              </div>
-            </form>
+                </div>
+
+                {/* Sticky Responsive Footer */}
+                <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsNewProjectModalOpen(false);
+                      setCreateProjError(null);
+                    }}
+                    className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
+                    disabled={isSubmittingNewProj}
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingNewProj}
+                    className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>{isSubmittingNewProj ? 'Menyimpan ke Database...' : 'Simpan & Publikasikan'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── SUB-HALAMAN KHUSUS: SUNTING DATA PROYEK ── */}
-      {editingProject && (
+      {/* ── MODAL: SUNTING DATA PROYEK ── */}
+      {editingProject && renderPortal(
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-edit-project-title"
-          className="space-y-6 animate-hero-in"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
+          onClick={() => setEditingProject(null)}
         >
-          {/* Top Header & Breadcrumb Navigation */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setEditingProject(null)}
-                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
-                title="Kembali ke Dashboard"
-                aria-label="Kembali ke Dashboard"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali</span>
-              </button>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
-                    #{editingProject.kode_proyek || `PROYEK-${editingProject.id}`}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
-                    <Edit3 className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Sunting Spesifikasi &amp; Progres</span>
-                  </span>
+          <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+            <div
+              className="relative w-full max-w-lg sm:max-w-2xl lg:max-w-4xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header: Dark Blue #184C78 */}
+              <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                    <Edit3 className="w-4 h-4 text-amber-300" />
+                  </div>
+                  <div>
+                    <h3 id="modal-edit-project-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                      Sunting Data Proyek: {editingProject.nama_proyek}
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
+                      Perbarui spesifikasi teknis, pagu anggaran, jadwal pelaksanaan, dan capaian progres fisik.
+                    </p>
+                  </div>
                 </div>
-                <h1 id="modal-edit-project-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
-                  Sunting Data Proyek: {editingProject.nama_proyek}
-                </h1>
+                <button
+                  type="button"
+                  onClick={() => setEditingProject(null)}
+                  className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                  title="Tutup Modal"
+                  aria-label="Tutup Modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
               </div>
-            </div>
-            <div className="flex items-center justify-between sm:justify-end gap-3">
-              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
-                Perbarui spesifikasi teknis, pagu anggaran, jadwal pelaksanaan, dan capaian progres fisik.
-              </p>
-              <button
-                type="button"
-                onClick={() => setEditingProject(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                title="Tutup Modal"
-                aria-label="Tutup Modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
 
-          {/* Main Card Formulir Selayar Penuh */}
-          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-4xl mx-auto space-y-6">
-            <form onSubmit={handleUpdateProject} className="space-y-4 text-xs">
+              {/* Scrollable Form Body */}
+              <form onSubmit={handleUpdateProject} className="flex flex-col flex-1 overflow-hidden min-h-0">
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
               {editError && (
                 <div role="alert" className="p-3 bg-red-50 border border-red-200 text-red-700 rounded-xl text-xs flex items-start gap-2">
                   <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
@@ -1744,77 +1772,75 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
               )}
 
-              <div className="pt-3 border-t border-[#DCE0E6] flex items-center justify-end gap-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingProject(null)}
-                  className="px-4 py-2 border border-[#DCE0E6] text-[#6C757D] font-semibold rounded-lg hover:bg-slate-50 transition-colors cursor-pointer"
-                >
-                  Batal
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingEdit}
-                  className="px-4 py-2 bg-[#184C78] hover:bg-[#0f3252] disabled:opacity-70 text-white font-bold rounded-lg transition-colors cursor-pointer shadow-xs flex items-center gap-1.5"
-                >
-                  {isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}
-                </button>
-              </div>
-            </form>
+                </div>
+
+                {/* Sticky Responsive Footer */}
+                <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setEditingProject(null)}
+                    className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSubmittingEdit}
+                    className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── SUB-HALAMAN KHUSUS: TAMBAH TAHAP LINIMASA ── */}
-      {isNewStageModalOpen && (
+      {/* ── MODAL: TAMBAH TAHAP LINIMASA ── */}
+      {isNewStageModalOpen && renderPortal(
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-stage-title"
-          className="space-y-6 animate-hero-in"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
+          onClick={() => setIsNewStageModalOpen(false)}
         >
-          {/* Top Header & Breadcrumb Navigation */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsNewStageModalOpen(false)}
-                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
-                title="Kembali ke Dashboard"
-                aria-label="Kembali ke Dashboard"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali</span>
-              </button>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
-                    #TAHAP-LINIMASA-BARU
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-emerald-50 text-emerald-800 border-emerald-200">
-                    <Clock className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>Manajemen Linimasa Konstruksi</span>
-                  </span>
-                </div>
-                <h1 id="modal-stage-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
-                  Tambah Tahapan Pengerjaan Baru
-                </h1>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsNewStageModalOpen(false)}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-              title="Tutup Modal"
-              aria-label="Tutup Modal"
+          <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+            <div
+              className="relative w-full max-w-lg sm:max-w-xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
+              {/* Header: Dark Blue #184C78 */}
+              <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                    <Clock className="w-4 h-4 text-emerald-300" />
+                  </div>
+                  <div>
+                    <h3 id="modal-stage-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                      Tambah Tahapan Pengerjaan Baru
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
+                      Catat milestone mingguan dan bobot pengerjaan kurva-S proyek.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsNewStageModalOpen(false)}
+                  className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                  title="Tutup Modal"
+                  aria-label="Tutup Modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
 
-          {/* Main Card Formulir Selayar Penuh */}
-          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
-            <form onSubmit={handleAddTimelineStage} className="space-y-4 text-xs">
+              {/* Scrollable Form Body */}
+              <form onSubmit={handleAddTimelineStage} className="flex flex-col flex-1 overflow-hidden min-h-0">
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
               <div>
                 <label className="block font-semibold text-[#184C78] mb-1">Nama Tahapan</label>
                 <input
@@ -1874,284 +1900,319 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                <button
-                  type="button"
-                  onClick={() => setIsNewStageModalOpen(false)}
-                  className="btn-ghost"
-                >
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary">
-                  Simpan Tahap
-                </button>
-              </div>
-            </form>
+                </div>
+
+                {/* Sticky Responsive Footer */}
+                <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsNewStageModalOpen(false)}
+                    className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <Plus className="w-3.5 h-3.5" />
+                    <span>Tambahkan Tahapan</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── SUB-HALAMAN KHUSUS: UPLOAD DOKUMENTASI FISIK ── */}
-      {isNewDocModalOpen && (
+      {/* ── MODAL: UPLOAD DOKUMENTASI FISIK ── */}
+      {isNewDocModalOpen && renderPortal(
         <div
           role="dialog"
           aria-modal="true"
           aria-labelledby="modal-doc-title"
-          className="space-y-6 animate-hero-in"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
+          onClick={() => setIsNewDocModalOpen(false)}
         >
-          {/* Top Header & Breadcrumb Navigation */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsNewDocModalOpen(false)}
-                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
-                title="Kembali ke Dashboard"
-                aria-label="Kembali ke Dashboard"
-              >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali</span>
-              </button>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
-                    #DOKUMENTASI-FISIK-BARU
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-blue-50 text-[#184C78] border-blue-200">
-                    <Upload className="w-3.5 h-3.5 text-[#2980B9]" />
-                    <span>Upload Bukti Dokumentasi Fisik</span>
-                  </span>
-                </div>
-                <h1 id="modal-doc-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
-                  Upload Bukti Dokumentasi Fisik
-                </h1>
-              </div>
-            </div>
-            <button
-              type="button"
-              onClick={() => setIsNewDocModalOpen(false)}
-              className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-              title="Tutup Modal"
-              aria-label="Tutup Modal"
+          <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+            <div
+              className="relative w-full max-w-lg sm:max-w-xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
             >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Main Card Formulir Selayar Penuh */}
-          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
-            <form onSubmit={handleAddDocumentation} className="space-y-4 text-xs">
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Proyek Terkait</label>
-                <select
-                  value={newDocForm.proyek_id}
-                  onChange={(e) => setNewDocForm({ ...newDocForm, proyek_id: Number(e.target.value) })}
-                  disabled={currentUser.role === 'penanggung_jawab' && !!unlockedProject}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none disabled:bg-slate-100 font-medium"
-                >
-                  {(currentUser.role === 'penanggung_jawab' && unlockedProject
-                    ? [unlockedProject]
-                    : projectList
-                  ).map((p) => (
-                    <option key={p.id} value={p.id}>
-                      {p.kode_proyek ? `[${p.kode_proyek}] ` : ''}{p.nama_proyek}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Judul Dokumentasi</label>
-                <input
-                  type="text"
-                  required
-                  placeholder="Contoh: Uji Kuat Tekan Beton Silinder Sta 2+400"
-                  value={newDocForm.judul}
-                  onChange={(e) => setNewDocForm({ ...newDocForm, judul: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">URL Foto Bukti / File</label>
-                <input
-                  type="text"
-                  required
-                  value={newDocForm.foto_url}
-                  onChange={(e) => setNewDocForm({ ...newDocForm, foto_url: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Catatan Teknis Pengawas</label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="Keterangan kondisi visual dan hasil uji laboratorium..."
-                  value={newDocForm.deskripsi}
-                  onChange={(e) => setNewDocForm({ ...newDocForm, deskripsi: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
+              {/* Header: Dark Blue #184C78 */}
+              <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                    <Upload className="w-4 h-4 text-emerald-300" />
+                  </div>
+                  <div>
+                    <h3 id="modal-doc-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                      Upload Bukti Dokumentasi Fisik
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
+                      Unggah dokumentasi foto lapangan atau video drone untuk transparansi progres proyek.
+                    </p>
+                  </div>
+                </div>
                 <button
                   type="button"
                   onClick={() => setIsNewDocModalOpen(false)}
-                  className="btn-ghost"
+                  className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                  title="Tutup Modal"
+                  aria-label="Tutup Modal"
                 >
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary">
-                  Unggah Sekarang
+                  <X className="w-4 h-4" />
                 </button>
               </div>
-            </form>
+
+              {/* Scrollable Form Body */}
+              <form onSubmit={handleAddDocumentation} className="flex flex-col flex-1 overflow-hidden min-h-0">
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Proyek Terkait</label>
+                    <select
+                      value={newDocForm.proyek_id}
+                      onChange={(e) => setNewDocForm({ ...newDocForm, proyek_id: Number(e.target.value) })}
+                      disabled={currentUser.role === 'penanggung_jawab' && !!unlockedProject}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] disabled:bg-slate-100 font-medium text-xs"
+                    >
+                      {(currentUser.role === 'penanggung_jawab' && unlockedProject
+                        ? [unlockedProject]
+                        : projectList
+                      ).map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.kode_proyek ? `[${p.kode_proyek}] ` : ''}{p.nama_proyek}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Judul Dokumentasi</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="Contoh: Uji Kuat Tekan Beton Silinder Sta 2+400"
+                      value={newDocForm.judul}
+                      onChange={(e) => setNewDocForm({ ...newDocForm, judul: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">URL Foto Bukti / Berkas File</label>
+                    <input
+                      type="text"
+                      required
+                      placeholder="https://... atau path berkas foto"
+                      value={newDocForm.foto_url}
+                      onChange={(e) => setNewDocForm({ ...newDocForm, foto_url: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
+                    />
+                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                      <span className="text-[10px] text-slate-400">Contoh Cepat:</span>
+                      <button
+                        type="button"
+                        onClick={() => setNewDocForm({ ...newDocForm, foto_url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18fe111?w=800' })}
+                        className="text-[10px] text-[#2980B9] hover:underline cursor-pointer"
+                      >
+                        [Foto Aspal]
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewDocForm({ ...newDocForm, foto_url: 'https://images.unsplash.com/photo-1590496793929-36417d3117de?w=800' })}
+                        className="text-[10px] text-[#2980B9] hover:underline cursor-pointer"
+                      >
+                        [Foto Beton]
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setNewDocForm({ ...newDocForm, foto_url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800' })}
+                        className="text-[10px] text-[#2980B9] hover:underline cursor-pointer"
+                      >
+                        [Foto Drainase]
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Catatan Teknis Pengawas</label>
+                    <textarea
+                      rows={3}
+                      required
+                      placeholder="Keterangan kondisi visual dan hasil uji laboratorium..."
+                      value={newDocForm.deskripsi}
+                      onChange={(e) => setNewDocForm({ ...newDocForm, deskripsi: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs leading-relaxed resize-y min-h-[70px]"
+                    />
+                  </div>
+                </div>
+
+                {/* Sticky Responsive Footer */}
+                <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setIsNewDocModalOpen(false)}
+                    className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>Unggah Sekarang</span>
+                  </button>
+                </div>
+              </form>
+            </div>
           </div>
         </div>
       )}
 
-      {/* ── SUB-HALAMAN KHUSUS: VERIFIKASI TINDAKAN CACAT FHO ── */}
-      {selectedEvalToVerify && (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="modal-verify-title"
-          className="space-y-6 animate-hero-in"
-        >
-          {/* Top Header & Breadcrumb Navigation */}
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-4 sm:p-5 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="flex items-center gap-3">
-              <button
-                type="button"
-                onClick={() => setSelectedEvalToVerify(null)}
-                className="p-2.5 rounded-xl bg-[#F5F7FA] text-[#184C78] hover:bg-[#EBF4FB] transition-all cursor-pointer border border-[#DCE0E6] flex items-center gap-2 font-bold text-xs"
-                title="Kembali ke Dashboard"
-                aria-label="Kembali ke Dashboard"
+      {/* ── MODAL: VERIFIKASI TINDAKAN CACAT FHO ── */}
+      {selectedEvalToVerify &&
+        renderPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-verify-title"
+            className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
+            onClick={() => setSelectedEvalToVerify(null)}
+          >
+            <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+              <div
+                className="relative w-full max-w-2xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+                onClick={(e) => e.stopPropagation()}
               >
-                <ArrowLeft className="w-4 h-4" />
-                <span>Kembali</span>
-              </button>
-              <div>
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-xs font-mono font-bold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg border border-[#c5def2]">
-                    #VERIFIKASI-FHO-{selectedEvalToVerify.id}
-                  </span>
-                  <span className="inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full border bg-amber-50 text-amber-800 border-amber-200">
-                    <CheckCircle2 className="w-3.5 h-3.5 text-amber-600" />
-                    <span>Tinjauan Mutu &amp; Audit Trail</span>
-                  </span>
-                </div>
-                <h1 id="modal-verify-title" className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
-                  Verifikasi Tindakan Perbaikan FHO
-                </h1>
-              </div>
-            </div>
-            <div className="flex items-center justify-between sm:justify-end gap-3">
-              <p className="text-xs text-[#6C757D] max-w-sm sm:text-right hidden sm:block">
-                Tinjauan mutu &amp; jejak audit laporan evaluasi masa pemeliharaan.
-              </p>
-              <button
-                type="button"
-                onClick={() => setSelectedEvalToVerify(null)}
-                className="p-2 rounded-xl text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
-                title="Tutup Modal"
-                aria-label="Tutup Modal"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-
-          {/* Main Card Formulir Selayar Penuh */}
-          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-sm p-6 sm:p-8 max-w-3xl mx-auto space-y-6">
-            <form onSubmit={handleVerifyDefect} className="space-y-4 text-xs">
-              <div className="p-3.5 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6]/60">
-                <div className="font-bold text-[#184C78] text-sm">{selectedEvalToVerify.nama_proyek}</div>
-                <div className="text-[11px] text-[#6C757D] mt-0.5">{selectedEvalToVerify.lokasi_titik}</div>
-                <p className="text-[#495057] mt-1.5 italic bg-white p-2.5 rounded-lg border border-[#DCE0E6]">"{selectedEvalToVerify.deskripsi}"</p>
-              </div>
-
-              {/* Riwayat Jejak Audit Status (Audit Trail) */}
-              <div className="p-3.5 bg-[#f8fafc] rounded-xl border border-slate-200 space-y-2">
-                <div className="flex items-center gap-1.5 font-bold text-[#184C78]">
-                  <Clock className="w-3.5 h-3.5 text-[#2980B9]" />
-                  <span>Riwayat Jejak Audit Status (Linimasa Log)</span>
-                </div>
-                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                  {evalStatusLogs.length > 0 ? (
-                    evalStatusLogs.map((log: any, idx: number) => (
-                      <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-[11px] space-y-0.5">
-                        <div className="flex items-center justify-between font-semibold text-[#184C78]">
-                          <span>
-                            {log.status_sebelumnya ? `${log.status_sebelumnya} ➔ ` : ''}
-                            <span className="text-emerald-700 font-bold">{log.status_baru}</span>
-                          </span>
-                          <span className="text-[10px] text-slate-400 font-mono">
-                            {log.created_at ? new Date(log.created_at).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' }) : log.waktu || ''}
-                          </span>
-                        </div>
-                        <p className="text-slate-600 text-[10.5px]">
-                          <strong className="text-slate-700">{log.nama_pengubah || log.diubah_oleh}:</strong> {log.catatan || '-'}
-                        </p>
+                {/* Header: Dark Blue #184C78 */}
+                <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                      <Wrench className="w-4 h-4 text-amber-300" />
+                    </div>
+                    <div>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-mono font-bold text-white bg-white/15 px-2 py-0.5 rounded border border-white/20">
+                          #FHO-{selectedEvalToVerify.id}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-200 border border-emerald-400/30">
+                          Tinjauan Mutu
+                        </span>
                       </div>
-                    ))
-                  ) : (
-                    <p className="text-[11px] text-slate-400 italic">Belum ada riwayat perubahan status</p>
-                  )}
+                      <h3 id="modal-verify-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight text-white mt-0.5">
+                        Verifikasi Tindakan Perbaikan FHO
+                      </h3>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedEvalToVerify(null)}
+                    className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                    title="Tutup Modal"
+                    aria-label="Tutup Modal"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
                 </div>
-              </div>
 
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Keputusan Status Verifikasi</label>
-                <select
-                  value={verifyStatus}
-                  onChange={(e) => setVerifyStatus(e.target.value as EvaluasiStatusType)}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
-                >
-                  <option value="terverifikasi_perlu_tindak_lanjut">
-                    Terverifikasi - Perlu Tindak Lanjut (Proyek beralih ke masa peninjauan ulang)
-                  </option>
-                  <option value="selesai_ditindaklanjuti">
-                    Selesai Ditindaklanjuti (Perbaikan tuntas)
-                  </option>
-                  <option value="ditolak_tidak_terbukti">
-                    Ditolak - Tidak Terbukti (Laporan tidak valid)
-                  </option>
-                </select>
-              </div>
+                {/* Scrollable Form Body */}
+                <form onSubmit={handleVerifyDefect} className="flex flex-col flex-1 overflow-hidden min-h-0">
+                  <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
+                    <div className="p-3.5 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6]/60">
+                      <div className="font-bold text-[#184C78] text-sm">{selectedEvalToVerify.nama_proyek}</div>
+                      <div className="text-[11px] text-[#6C757D] mt-0.5">{selectedEvalToVerify.lokasi_titik}</div>
+                      <p className="text-[#495057] mt-1.5 italic bg-white p-2.5 rounded-lg border border-[#DCE0E6]">"{selectedEvalToVerify.deskripsi}"</p>
+                    </div>
 
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Catatan Tindakan Tim Lapangan</label>
-                <textarea
-                  rows={3}
-                  required
-                  value={tindakanDinasText}
-                  onChange={(e) => setTindakanDinasText(e.target.value)}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
+                    {/* Riwayat Jejak Audit Status (Audit Trail) */}
+                    <div className="p-3.5 bg-[#f8fafc] rounded-xl border border-slate-200 space-y-2">
+                      <div className="flex items-center gap-1.5 font-bold text-[#184C78]">
+                        <Clock className="w-3.5 h-3.5 text-[#2980B9]" />
+                        <span>Riwayat Jejak Audit Status (Linimasa Log)</span>
+                      </div>
+                      <div className="space-y-2 max-h-36 overflow-y-auto pr-1 scrollbar-thin">
+                        {evalStatusLogs.length > 0 ? (
+                          evalStatusLogs.map((log: any, idx: number) => (
+                            <div key={idx} className="bg-white p-2.5 rounded-lg border border-slate-200 text-[11px] space-y-0.5">
+                              <div className="flex items-center justify-between font-semibold text-[#184C78]">
+                                <span>
+                                  {log.status_sebelumnya ? `${log.status_sebelumnya} ➔ ` : ''}
+                                  <span className="text-emerald-700 font-bold">{log.status_baru}</span>
+                                </span>
+                                <span className="text-[10px] text-slate-400 font-mono">
+                                  {log.created_at ? new Date(log.created_at).toLocaleDateString('id-ID', { hour: '2-digit', minute: '2-digit' }) : log.waktu || ''}
+                                </span>
+                              </div>
+                              <p className="text-slate-600 text-[10.5px]">
+                                <strong className="text-slate-700">{log.nama_pengubah || log.diubah_oleh}:</strong> {log.catatan || '-'}
+                              </p>
+                            </div>
+                          ))
+                        ) : (
+                          <p className="text-[11px] text-slate-400 italic">Belum ada riwayat perubahan status</p>
+                        )}
+                      </div>
+                    </div>
 
-              <div className="flex items-center justify-end gap-2 pt-3 border-t border-[#DCE0E6]">
-                <button
-                  type="button"
-                  onClick={() => setSelectedEvalToVerify(null)}
-                  className="btn-ghost"
-                >
-                  Batal
-                </button>
-                <button type="submit" className="btn-primary">
-                  Konfirmasi Penanganan
-                </button>
+                    <div>
+                      <label htmlFor="verify-status-select" className="block font-semibold text-[#184C78] mb-1">Keputusan Status Verifikasi</label>
+                      <select
+                        id="verify-status-select"
+                        value={verifyStatus}
+                        onChange={(e) => setVerifyStatus(e.target.value as EvaluasiStatusType)}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] text-xs"
+                      >
+                        <option value="terverifikasi_perlu_tindak_lanjut">
+                          Terverifikasi - Perlu Tindak Lanjut (Proyek beralih ke masa peninjauan ulang)
+                        </option>
+                        <option value="selesai_ditindaklanjuti">
+                          Selesai Ditindaklanjuti (Perbaikan tuntas)
+                        </option>
+                        <option value="ditolak_tidak_terbukti">
+                          Ditolak - Tidak Terbukti (Laporan tidak valid)
+                        </option>
+                      </select>
+                    </div>
+
+                    <div>
+                      <label className="block font-semibold text-[#184C78] mb-1">Catatan Tindakan Tim Lapangan</label>
+                      <textarea
+                        rows={3}
+                        required
+                        value={tindakanDinasText}
+                        onChange={(e) => setTindakanDinasText(e.target.value)}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs resize-y min-h-[70px]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Sticky Responsive Footer */}
+                  <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedEvalToVerify(null)}
+                      className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5"
+                    >
+                      <CheckCircle2 className="w-3.5 h-3.5" />
+                      <span>Konfirmasi Penanganan</span>
+                    </button>
+                  </div>
+                </form>
               </div>
-            </form>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ── KONTEN UTAMA DASHBOARD (DISEMBUNYIKAN KETIKA SUB-HALAMAN FORMULIR AKTIF) ── */}
-      <div className={isAnyFormOpen ? 'hidden' : 'space-y-6'}>
+      {/* ── KONTEN UTAMA DASHBOARD ── */}
+      <div className="space-y-6">
       {/* ── BANNER LEMBAR KERJA PROYEK AKTIF (KHUSUS PENANGGUNG JAWAB TERVERIFIKASI) ── */}
       {currentUser.role === 'penanggung_jawab' && unlockedProject && (
         <div className="bg-gradient-to-r from-[#0f3252] via-[#184C78] to-[#1F5F94] rounded-2xl p-6 text-white shadow-lg border border-[#184C78] flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -2954,7 +3015,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                   <p className="text-[#495057] text-[11px] mt-0.5">{item.analisis_ai.split('\n\n[RAW_AI_DEBUG]:')[0]}</p>
                 </div>
 
-                {item.catatan_dinas ? (
+                {item.status_verifikasi !== 'menunggu_verifikasi' && item.catatan_dinas ? (
                   <div className="p-3 bg-[#E6F7F1] rounded-xl border border-[#B7EBD8] text-xs">
                     <div className="font-bold text-[#1A9E6E]">Tindakan Verifikasi Dinas:</div>
                     <p className="text-[#0E6243] text-[11px] mt-0.5">{item.catatan_dinas}</p>

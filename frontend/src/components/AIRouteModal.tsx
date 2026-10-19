@@ -571,44 +571,46 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-ai-route-title"
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-2 sm:p-4 bg-black/75 backdrop-blur-md animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-black/75 backdrop-blur-md animate-fade-in"
       onClick={onClose}
     >
-      <div
-        className="bg-white rounded-3xl w-full max-w-6xl overflow-hidden shadow-2xl border border-slate-200 my-auto flex flex-col max-h-[92vh] animate-fade-in"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* ── HEADER ── */}
-        <div className="bg-gradient-to-r from-[#5B21B6] via-[#1E40AF] to-[#0F172A] text-white p-5 sm:p-6 relative shrink-0">
-          <button
-            onClick={onClose}
-            className="absolute top-5 right-5 text-white/70 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
-            title="Tutup Modal"
-          >
-            <X className="w-5 h-5" />
-          </button>
+      <div className="flex min-h-full items-center justify-center p-2 sm:p-4 md:p-6 text-center">
+        <div
+          className="relative w-full max-w-6xl bg-white rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl border border-slate-200 my-auto flex flex-col max-h-[calc(100dvh-1rem)] sm:max-h-[calc(100dvh-2.5rem)] text-left animate-fade-in"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* ── HEADER ── */}
+          <div className="bg-gradient-to-r from-[#5B21B6] via-[#1E40AF] to-[#0F172A] text-white p-4 sm:p-6 relative shrink-0">
+            <button
+              onClick={onClose}
+              className="absolute top-3.5 right-3.5 sm:top-5 sm:right-5 text-white/70 hover:text-white p-1.5 rounded-full hover:bg-white/10 transition-colors cursor-pointer"
+              title="Tutup Modal"
+              aria-label="Tutup Modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
 
-          <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-300 border border-amber-400/30 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-xs">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-              Groq AI Route Engine
-            </span>
-            <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-3 py-1 rounded-full text-xs font-semibold backdrop-blur-xs">
-              <Globe className="w-3.5 h-3.5 text-emerald-300" />
-              OpenStreetMap Overpass Geometry
-            </span>
-            <span className="bg-white/10 text-white/90 px-2.5 py-0.5 rounded-full text-[11px] font-medium border border-white/15">
-              Simulasi Mitigasi Rekayasa Lalu Lintas
-            </span>
+            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2 pr-8 sm:pr-0">
+              <span className="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold backdrop-blur-xs">
+                <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
+                Groq AI Route Engine
+              </span>
+              <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold backdrop-blur-xs">
+                <Globe className="w-3.5 h-3.5 text-emerald-300" />
+                OpenStreetMap Overpass Geometry
+              </span>
+              <span className="bg-white/10 text-white/90 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium border border-white/15">
+                Simulasi Mitigasi Rekayasa Lalu Lintas
+              </span>
+            </div>
+
+            <h2 id="modal-ai-route-title" className="font-['DM_Sans'] text-lg sm:text-2xl font-bold tracking-tight pr-8 sm:pr-0">
+              Visualisasi &amp; Generator Rute Alternatif Cerdas
+            </h2>
+            <p className="text-xs text-white/80 mt-1 max-w-2xl leading-relaxed">
+              Menyajikan pengalihan arus lalu lintas terstruktur dengan pemetaan visual langsung pada jaringan jalan Kab. Lamongan untuk proyek: <strong className="text-white underline decoration-amber-400 underline-offset-2">{projectName || 'Pelebaran Jalan Konstruksi'}</strong>
+            </p>
           </div>
-
-          <h2 className="font-['DM_Sans'] text-xl sm:text-2xl font-bold tracking-tight">
-            Visualisasi &amp; Generator Rute Alternatif Cerdas
-          </h2>
-          <p className="text-xs text-white/80 mt-1 max-w-2xl leading-relaxed">
-            Menyajikan pengalihan arus lalu lintas terstruktur dengan pemetaan visual langsung pada jaringan jalan Kab. Lamongan untuk proyek: <strong className="text-white underline decoration-amber-400 underline-offset-2">{projectName || 'Pelebaran Jalan Konstruksi'}</strong>
-          </p>
-        </div>
 
         {/* ── MOBILE TAB SWITCHER ── */}
         <div className="lg:hidden flex border-b border-slate-200 bg-slate-50 px-4 py-2 gap-2 shrink-0">
@@ -980,16 +982,16 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         </div>
 
         {/* ── FOOTER ACTIONS ── */}
-        <div className="p-4 border-t border-slate-200 bg-white flex flex-wrap items-center justify-between gap-3 shrink-0">
-          <div className="flex items-center gap-2 text-xs text-slate-500">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span>Data Peta &amp; Geometri: OpenStreetMap contributors (Overpass API) • CivicTrack Grounding Engine</span>
+        <div className="p-3 sm:p-4 border-t border-slate-200 bg-white flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2.5 sm:gap-3 shrink-0">
+          <div className="flex items-center gap-2 text-[11px] sm:text-xs text-slate-500">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shrink-0"></span>
+            <span className="truncate sm:whitespace-normal">Data Peta &amp; Geometri: OpenStreetMap contributors (Overpass API) • CivicTrack Grounding Engine</span>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 justify-end">
             <button
               onClick={onClose}
-              className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-all cursor-pointer"
+              className="w-full sm:w-auto px-5 py-2 sm:py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold rounded-xl transition-all cursor-pointer text-center"
             >
               Tutup Jendela
             </button>
@@ -997,6 +999,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         </div>
       </div>
     </div>
+  </div>
   );
 
   return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;

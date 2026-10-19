@@ -75,22 +75,24 @@ export const AuthModal: React.FC<AuthModalProps> = ({
       role="dialog"
       aria-modal="true"
       aria-labelledby="modal-auth-title"
-      className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 bg-black/60 backdrop-blur-sm animate-fade-in overflow-y-auto"
+      className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
       onClick={onClose}
     >
-      {/* ── CARD CONTAINER: MATCHES MOCKUP ASPECT RATIO & ROUNDED CORNERS ── */}
-      <div
-        className="bg-white rounded-[32px] w-full max-w-[860px] md:h-[500px] shadow-2xl overflow-hidden relative flex flex-col md:flex-row my-auto transition-all animate-fade-in"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {/* Close Button */}
-        <button
-          onClick={onClose}
-          aria-label="Tutup dialog"
-          className="absolute top-4 right-4 z-40 w-8 h-8 rounded-full bg-slate-100/90 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer shadow-xs"
+      <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+        {/* ── CARD CONTAINER: MATCHES MOCKUP ASPECT RATIO & ROUNDED CORNERS ── */}
+        <div
+          className="relative bg-white rounded-2xl sm:rounded-3xl md:rounded-[32px] w-full max-w-[860px] md:min-h-[500px] max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] shadow-2xl overflow-hidden flex flex-col md:flex-row my-auto transition-all animate-fade-in text-left border border-slate-200"
+          onClick={(e) => e.stopPropagation()}
         >
-          <X className="w-4 h-4" />
-        </button>
+          {/* Close Button */}
+          <button
+            onClick={onClose}
+            aria-label="Tutup dialog"
+            title="Tutup dialog"
+            className="absolute top-3 right-3 sm:top-4 sm:right-4 z-40 w-8 h-8 rounded-full bg-slate-100/90 hover:bg-slate-200 text-slate-500 hover:text-slate-800 flex items-center justify-center transition-all cursor-pointer shadow-xs"
+          >
+            <X className="w-4 h-4" />
+          </button>
 
         {/* ── 1. DESKTOP LEFT PANEL: OFFICIAL CIVIC NAVY GRADIENT ── */}
         <div
@@ -215,10 +217,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
 
         {/* ── 3. RIGHT PANEL: CLEAN UNDERLINE FORM (IDENTICAL TO MOCKUP) ── */}
-        <div className="flex-1 bg-white p-8 sm:p-12 flex flex-col justify-center overflow-y-auto">
+        <div className="flex-1 bg-white p-6 sm:p-10 md:p-12 flex flex-col justify-center overflow-y-auto min-h-0 scrollbar-thin">
           <div className="max-w-[340px] w-full mx-auto">
             {/* Title */}
-            <h3 className="text-2xl font-bold text-[#184C78] tracking-tight mb-7 text-center font-['DM_Sans']">
+            <h3 id="modal-auth-title" className="text-xl sm:text-2xl font-bold text-[#184C78] tracking-tight mb-5 sm:mb-7 text-center font-['DM_Sans']">
               {mode === 'login' ? 'Masuk ke Akun' : 'Daftar Akun Baru'}
             </h3>
 
@@ -333,11 +335,11 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
 
               {/* Buttons: Pill Sign Up & Sign In Side by Side */}
-              <div className="pt-2 flex items-center gap-3">
+              <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
                 <button
                   type="submit"
                   disabled={isLoading || !agreeTerms}
-                  className="flex-1 py-2.5 px-6 rounded-full bg-gradient-to-r from-[#184C78] to-[#2980B9] hover:from-[#0f3252] hover:to-[#184C78] text-white font-bold text-sm shadow-[0_4px_14px_rgba(24,76,120,0.3)] hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
+                  className="w-full sm:flex-1 py-2.5 px-6 rounded-full bg-gradient-to-r from-[#184C78] to-[#2980B9] hover:from-[#0f3252] hover:to-[#184C78] text-white font-bold text-sm shadow-[0_4px_14px_rgba(24,76,120,0.3)] hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
                   <span>{mode === 'login' ? 'Masuk Sekarang' : 'Daftar Akun'}</span>
@@ -349,7 +351,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     setMode(mode === 'login' ? 'register' : 'login');
                     setErrorMsg(null);
                   }}
-                  className="flex-1 py-2.5 px-6 rounded-full bg-white border border-[#DCE0E6] hover:border-[#184C78] text-[#184C78] hover:bg-[#EBF4FB] font-semibold text-sm transition-all cursor-pointer text-center"
+                  className="w-full sm:flex-1 py-2.5 px-6 rounded-full bg-white border border-[#DCE0E6] hover:border-[#184C78] text-[#184C78] hover:bg-[#EBF4FB] font-semibold text-sm transition-all cursor-pointer text-center"
                 >
                   {mode === 'login' ? 'Daftar Akun' : 'Masuk'}
                 </button>
@@ -359,6 +361,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         </div>
       </div>
     </div>
+  </div>
   );
 
   return typeof document !== 'undefined' ? createPortal(modalContent, document.body) : modalContent;
