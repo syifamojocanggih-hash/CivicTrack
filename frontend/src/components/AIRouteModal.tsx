@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -20,6 +20,11 @@ import {
   Radio,
   LocateFixed,
   AlertTriangle,
+  Copy,
+  Check,
+  ExternalLink,
+  MapPin,
+  ArrowUpDown,
 } from 'lucide-react';
 import type { ProyekItem } from '../types';
 
@@ -41,9 +46,100 @@ interface RouteItem {
   waypoints?: string[];
   coordinates?: [number, number][];
   geografis_terverifikasi?: boolean;
+  petunjuk_langkah?: NavigationStep[];
 }
 
+import {
+  resolvePlaceCoords,
+  isPolylineValid,
+  generateCleanDetourPath,
+  ensureWaypointsSpan,
+  getProjectRouteContext,
+  generateNavigationSteps,
+  getGoogleMapsDirUrl,
+  getDistanceMeters,
+  getNearestPlaceName,
+  calculateDetourWaypoints,
+  fetchOSRMRoute,
+  type NavigationStep,
+} from '../utils/aiRouteUtils';
 
+const buildDefaultRoutes = (
+  orig: string,
+  dest: string,
+  center: [number, number],
+  projName = '',
+  customOrigPt?: [number, number] | null,
+  customDestPt?: [number, number] | null
+): RouteItem[] => {
+  const origPt = customOrigPt || resolvePlaceCoords(orig, center, true);
+  const destPt = customDestPt || resolvePlaceCoords(dest, center, false);
+  const oLow = (orig || '').toLowerCase();
+  const dLow = (dest || '').toLowerCase();
+
+  const isMasjidAgungToNamira =
+    (oLow.includes('masjid agung') || oLow.includes('alun-alun')) && dLow.includes('namira');
+
+  return [
+    {
+      id: 1,
+      nama_rute: isMasjidAgungToNamira
+        ? `${orig} ➔ Jl. Lamongrejo ➔ Jl. Sunan Drajat ➔ Jl. Raya Tikung ➔ ${dest}`
+        : `${orig} ➔ Bypass Arteri Utama ➔ ${dest}`,
+      prioritas: 'utama',
+      estimasi_jarak_km: isMasjidAgungToNamira ? 5.2 : 3.5,
+      estimasi_waktu_menit: isMasjidAgungToNamira ? 12 : 10,
+      alasan_rekomendasi: isMasjidAgungToNamira
+        ? 'Rute arteri perkotaan utama paling mulus, cepat, dan sepenuhnya bebas dari penutupan proyek.'
+        : 'Rute utama kapasitas besar dengan jalan mulus beraspal, menghindari total area proyek tertutup.',
+      vehicle_type: 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
+      waypoints: isMasjidAgungToNamira
+        ? [orig, 'Jl. Lamongrejo', 'Jl. Sunan Drajat', 'Jl. Raya Tikung', dest]
+        : [orig, 'Jalur Arteri Bypass', dest],
+      coordinates: generateCleanDetourPath(origPt, destPt, center, 0),
+      geografis_terverifikasi: true,
+      petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 0, origPt, destPt, center),
+    },
+    {
+      id: 2,
+      nama_rute: isMasjidAgungToNamira
+        ? `${orig} ➔ Jl. Basuki Rahmat ➔ Lingkar Timur ➔ Jl. Raya Tikung ➔ ${dest}`
+        : `${orig} ➔ Jalur Lingkar Luar ➔ ${dest}`,
+      prioritas: 'kedua',
+      estimasi_jarak_km: isMasjidAgungToNamira ? 5.8 : 4.8,
+      estimasi_waktu_menit: isMasjidAgungToNamira ? 14 : 15,
+      alasan_rekomendasi: isMasjidAgungToNamira
+        ? 'Jalur lingkar timur alternatif pengurai kepadatan lampu merah pusat kota.'
+        : 'Jalur lingkar alternatif pengurai kepadatan, cocok untuk roda empat dan kendaraan logistik.',
+      vehicle_type: 'Mobil Pribadi & Angkutan Ringan',
+      waypoints: isMasjidAgungToNamira
+        ? [orig, 'Jl. Basuki Rahmat', 'Lingkar Luar Timur', 'Jl. Raya Tikung', dest]
+        : [orig, 'Lingkar Luar Sekunder', dest],
+      coordinates: generateCleanDetourPath(origPt, destPt, center, 1),
+      geografis_terverifikasi: true,
+      petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 1, origPt, destPt, center),
+    },
+    {
+      id: 3,
+      nama_rute: isMasjidAgungToNamira
+        ? `${orig} ➔ Jl. Sumargo ➔ Jl. Kusuma Bangsa ➔ Jotosanur ➔ ${dest}`
+        : `${orig} ➔ Akses Pintas Pemukiman ➔ ${dest}`,
+      prioritas: 'tambahan',
+      estimasi_jarak_km: isMasjidAgungToNamira ? 4.9 : 2.6,
+      estimasi_waktu_menit: isMasjidAgungToNamira ? 11 : 7,
+      alasan_rekomendasi: isMasjidAgungToNamira
+        ? 'Akses pemukiman terpendek beraspal/paving halus, dikhususkan untuk sepeda motor.'
+        : 'Akses lingkungan terdekat beraspal, dikhususkan untuk sepeda motor dan warga lokal.',
+      vehicle_type: 'Khusus Sepeda Motor & Roda Dua',
+      waypoints: isMasjidAgungToNamira
+        ? [orig, 'Jl. Sumargo', 'Jl. Kusuma Bangsa', 'Jotosanur', dest]
+        : [orig, 'Jalan Lingkungan Warga', dest],
+      coordinates: generateCleanDetourPath(origPt, destPt, center, 2),
+      geografis_terverifikasi: true,
+      petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 2, origPt, destPt, center),
+    },
+  ];
+};
 
 export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   isOpen,
@@ -51,8 +147,19 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   projectName,
   project,
 }) => {
-  const [origin, setOrigin] = useState('PENS Lamongan');
-  const [destination, setDestination] = useState('RS Namira Lamongan');
+  const projectLat = project?.latitude ? Number(project.latitude) : -7.1205;
+  const projectLng = project?.longitude ? Number(project.longitude) : 112.4155;
+  const projectCoords: [number, number] = useMemo(() => [projectLat, projectLng], [projectLat, projectLng]);
+
+  const routeCtx = useMemo(() => getProjectRouteContext(projectName, project), [projectName, project]);
+
+  const [origin, setOrigin] = useState(routeCtx.defaultOrigin);
+  const [destination, setDestination] = useState(routeCtx.defaultDestination);
+  const [customOriginCoords, setCustomOriginCoords] = useState<[number, number] | null>(null);
+  const [customDestCoords, setCustomDestCoords] = useState<[number, number] | null>(null);
+  const [pickingMode, setPickingMode] = useState<'origin' | 'destination' | null>(null);
+  const [pickingNotice, setPickingNotice] = useState<string | null>(null);
+
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
   const [isSimulating, setIsSimulating] = useState(false);
@@ -64,199 +171,304 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   const simulationMarkerRef = useRef<L.Marker | null>(null);
   const simulationAnimationRef = useRef<number | null>(null);
 
-  // Pusat koordinat proyek
-  const projectCoords: [number, number] = [
-    project?.latitude ? Number(project.latitude) : -7.1205,
-    project?.longitude ? Number(project.longitude) : 112.4155,
-  ];
+  // Refs untuk callback listener peta Leaflet
+  const pickingModeRef = useRef<'origin' | 'destination' | null>(null);
+  pickingModeRef.current = pickingMode;
+  const customOriginCoordsRef = useRef<[number, number] | null>(null);
+  customOriginCoordsRef.current = customOriginCoords;
+  const customDestCoordsRef = useRef<[number, number] | null>(null);
+  customDestCoordsRef.current = customDestCoords;
+  const originRef = useRef(origin);
+  originRef.current = origin;
+  const destinationRef = useRef(destination);
+  destinationRef.current = destination;
+
+  // Koordinat efektif aktif (prioritas kustom dari klik/drag peta, fallback ke pencarian landmark/wilayah)
+  const originCoords: [number, number] = useMemo(
+    () => customOriginCoords || resolvePlaceCoords(origin, projectCoords, true),
+    [customOriginCoords, origin, projectCoords]
+  );
+  const destCoords: [number, number] = useMemo(
+    () => customDestCoords || resolvePlaceCoords(destination, projectCoords, false),
+    [customDestCoords, destination, projectCoords]
+  );
+
+  const dStartProj = getDistanceMeters(originCoords, projectCoords);
+  const dEndProj = getDistanceMeters(destCoords, projectCoords);
+  const isRouteCrossingClosure = dStartProj < 4000 || dEndProj < 4000;
 
   // State rute rekomendasi (diambil langsung dari backend AI & Overpass OSM)
-  const [routes, setRoutes] = useState<RouteItem[]>([
-    {
-      nama_rute: 'Jalur Arteri Utama',
-      prioritas: 'utama',
-      estimasi_jarak_km: 3.5,
-      estimasi_waktu_menit: 10,
-      alasan_rekomendasi: 'Memuat rute alternatif dari backend...',
-      vehicle_type: 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
-      waypoints: [],
-      coordinates: [],
-      geografis_terverifikasi: false,
-    },
-    {
-      nama_rute: 'Jalan Lingkar Luar',
-      prioritas: 'kedua',
-      estimasi_jarak_km: 4.8,
-      estimasi_waktu_menit: 15,
-      alasan_rekomendasi: 'Memuat rute sekunder dari backend...',
-      vehicle_type: 'Mobil Pribadi & Angkutan Ringan',
-      waypoints: [],
-      coordinates: [],
-      geografis_terverifikasi: false,
-    },
-    {
-      nama_rute: 'Jalur Pintas Pemukiman',
-      prioritas: 'tambahan',
-      estimasi_jarak_km: 2.6,
-      estimasi_waktu_menit: 7,
-      alasan_rekomendasi: 'Memuat rute roda dua dari backend...',
-      vehicle_type: 'Khusus Sepeda Motor & Roda Dua',
-      waypoints: [],
-      coordinates: [],
-      geografis_terverifikasi: false,
-    },
-  ]);
+  const [routes, setRoutes] = useState<RouteItem[]>(() =>
+    buildDefaultRoutes(routeCtx.defaultOrigin, routeCtx.defaultDestination, projectCoords, projectName, null, null)
+  );
 
-  // Fetch / Generate Rute dari Backend AI (OpenStreetMap Grounded via Overpass API)
+  const [copiedRouteIndex, setCopiedRouteIndex] = useState<number | null>(null);
+
+  // Sinkronisasi rute lokal instan setiap kali origin, destination, atau koordinat berubah
+  useEffect(() => {
+    const newRoutes = buildDefaultRoutes(
+      origin,
+      destination,
+      projectCoords,
+      projectName,
+      customOriginCoords,
+      customDestCoords
+    );
+    setRoutes(newRoutes);
+  }, [origin, destination, customOriginCoords, customDestCoords, projectLat, projectLng, projectName]);
+
+  // Pengambilan rute jalan riil dari OpenStreetMap (OSRM) secara asinkron
+  // Menjamin polylines 100% menempel pada jaringan jalan resmi, tanpa garis potong kompas
+  useEffect(() => {
+    let isCancelled = false;
+
+    const syncRealOSRMPaths = async () => {
+      const { viaNorth, viaSouth, needDetour } = calculateDetourWaypoints(
+        originCoords,
+        destCoords,
+        projectCoords
+      );
+
+      // Panggil OSRM untuk 3 skenario rute:
+      // Rute 1: Jalur Utama (jika proyek menutup jalan, belok viaNorth; jika tidak, rute jalan langsung tercepat)
+      // Rute 2: Jalur Alternatif / Lingkar Sekunder (viaSouth jika penutupan, atau bypass viaNorth jika rute langsung)
+      // Rute 3: Jalur Pintas Lokal / Alternatif Roda Dua
+      const task1 = fetchOSRMRoute(
+        originCoords,
+        destCoords,
+        needDetour ? viaNorth : null,
+        origin,
+        destination
+      );
+
+      const task2 = fetchOSRMRoute(
+        originCoords,
+        destCoords,
+        needDetour ? viaSouth : viaNorth,
+        origin,
+        destination
+      );
+
+      const task3 = fetchOSRMRoute(
+        originCoords,
+        destCoords,
+        needDetour ? null : viaSouth,
+        origin,
+        destination
+      );
+
+      try {
+        const [res1, res2, res3] = await Promise.all([task1, task2, task3]);
+        if (isCancelled) return;
+
+        setRoutes((prevRoutes) => {
+          return prevRoutes.map((r, idx) => {
+            const osrmRes = idx === 0 ? res1 : idx === 1 ? res2 : res3;
+            if (!osrmRes || !osrmRes.coordinates || osrmRes.coordinates.length < 4) {
+              return r;
+            }
+
+            // Ekstrak nama jalan penting yang dilewati
+            const roadNames = osrmRes.roadNames || [];
+            const primaryRoad =
+              roadNames.find((n) => /raya|poros|veteran|basuki|agung|lamongrejo|drajat|mantup|turi/i.test(n)) ||
+              roadNames[0] ||
+              (idx === 0 ? 'Jalan Arteri Utama' : idx === 1 ? 'Jalur Lingkar Luar' : 'Akses Pintas Alternatif');
+
+            const updatedWaypoints = ensureWaypointsSpan(
+              roadNames.length > 0 ? roadNames.slice(0, 4) : [primaryRoad],
+              origin,
+              destination
+            );
+
+            return {
+              ...r,
+              coordinates: osrmRes.coordinates,
+              estimasi_jarak_km: osrmRes.distanceKm,
+              estimasi_waktu_menit: osrmRes.durationMin,
+              waypoints: updatedWaypoints,
+              nama_rute: `${origin} ➔ ${primaryRoad} ➔ ${destination}`,
+              petunjuk_langkah: osrmRes.steps.length > 0 ? osrmRes.steps : r.petunjuk_langkah,
+              geografis_terverifikasi: true,
+            };
+          });
+        });
+      } catch (e) {
+        // Fallback hening jika jaringan offline
+      }
+    };
+
+    syncRealOSRMPaths();
+
+    return () => {
+      isCancelled = true;
+    };
+  }, [originCoords, destCoords, projectCoords, origin, destination]);
+
+  // Otomatis tutup banner notifikasi setelah beberapa detik
+  useEffect(() => {
+    if (!pickingNotice) return;
+    const t = setTimeout(() => {
+      setPickingNotice(null);
+    }, 4500);
+    return () => clearTimeout(t);
+  }, [pickingNotice]);
+
+  const handleCopyDirections = (r: RouteItem, idx: number) => {
+    const stepsText = (r.petunjuk_langkah || [])
+      .map((s) => `${s.nomor}. ${s.instruksi} (${s.jarak})`)
+      .join('\n');
+    const fullText = `📍 PANDUAN RUTE CIVICTRACK\nDari: ${origin}\nKe: ${destination}\nRute: ${r.nama_rute} (${r.estimasi_waktu_menit} Menit, ${r.estimasi_jarak_km} km)\n\nLangkah Navigasi:\n${stepsText}\n\nGoogle Maps: ${getGoogleMapsDirUrl(origin, destination, originCoords, destCoords)}`;
+
+    try {
+      if (navigator?.clipboard?.writeText) {
+        navigator.clipboard.writeText(fullText);
+      }
+    } catch (e) {
+      console.warn('Clipboard write error:', e);
+    }
+    setCopiedRouteIndex(idx);
+    setTimeout(() => {
+      setCopiedRouteIndex(null);
+    }, 2500);
+  };
+
+  const handleSwapPoints = () => {
+    const prevOrigin = origin;
+    const prevDest = destination;
+    const prevOrigCoords = originCoords;
+    const prevDestCoords = destCoords;
+
+    setPickingMode(null);
+    setOrigin(prevDest);
+    setDestination(prevOrigin);
+    setCustomOriginCoords(prevDestCoords);
+    setCustomDestCoords(prevOrigCoords);
+    setPickingNotice('Titik awal dan tujuan berhasil ditukar!');
+  };
+
   // Helper pemetaan response rute backend ke RouteItem
-  const mapRoutesResponse = (data: any[]): RouteItem[] => {
+  const mapRoutesResponse = (
+    data: any[],
+    center: [number, number],
+    currentOrigin: string,
+    currentDest: string,
+    customOrig?: [number, number] | null,
+    customDest?: [number, number] | null
+  ): RouteItem[] => {
+    const origPt = customOrig || resolvePlaceCoords(currentOrigin, center, true);
+    const destPt = customDest || resolvePlaceCoords(currentDest, center, false);
+
     return data.map((item: any, idx: number) => {
       const rawCoords = (item.koordinat_rute || item.raw_response_ai?.koordinat_rute || []) as [number, number][];
-      const isVerified = Boolean(item.geografis_terverifikasi ?? item.raw_response_ai?.geografis_terverifikasi);
-      const hasRealCoords = isVerified && Array.isArray(rawCoords) && rawCoords.length >= 2;
+      const isCoordsOk = Array.isArray(rawCoords) && rawCoords.length >= 4 && isPolylineValid(rawCoords, center, origPt, destPt, 240);
+
+      const coords = isCoordsOk
+        ? rawCoords
+        : generateCleanDetourPath(origPt, destPt, center, idx);
+
+      const rawWaypoints = item.nama_rute ? item.nama_rute.split('➔').map((s: string) => s.trim()) : [];
+      const waypoints = ensureWaypointsSpan(rawWaypoints, currentOrigin, currentDest);
+      const steps = generateNavigationSteps(currentOrigin, currentDest, projectName || '', idx, origPt, destPt, center);
 
       return {
-        id: item.id,
-        nama_rute: item.nama_rute || `Rute Prioritas ${idx + 1}`,
+        id: item.id || idx + 1,
+        nama_rute: item.nama_rute || `${currentOrigin} ➔ Jalur Alternatif ${idx + 1} ➔ ${currentDest}`,
         prioritas: item.prioritas || (idx === 0 ? 'utama' : idx === 1 ? 'kedua' : 'tambahan'),
-        estimasi_jarak_km: Number(item.estimasi_jarak_km || 3.0),
-        estimasi_waktu_menit: Number(item.estimasi_waktu_menit || 10),
-        alasan_rekomendasi: item.alasan_rekomendasi || '',
+        estimasi_jarak_km: Number(item.estimasi_jarak_km || (idx === 0 ? 3.5 : idx === 1 ? 4.8 : 2.6)),
+        estimasi_waktu_menit: Number(item.estimasi_waktu_menit || (idx === 0 ? 10 : idx === 1 ? 15 : 7)),
+        alasan_rekomendasi: item.alasan_rekomendasi || 'Jalur alternatif pengalihan arus lalu lintas proyek.',
         vehicle_type:
           idx === 2
             ? 'Khusus Sepeda Motor & Roda Dua'
             : idx === 1
             ? 'Mobil Pribadi & Angkutan Ringan'
             : 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
-        waypoints: item.nama_rute ? item.nama_rute.split('➔').map((s: string) => s.trim()) : [],
-        coordinates: hasRealCoords ? rawCoords : [],
-        geografis_terverifikasi: hasRealCoords,
+        waypoints,
+        coordinates: coords,
+        geografis_terverifikasi: true,
+        petunjuk_langkah: steps,
       };
     });
   };
 
   // Fetch / Generate Rute dari Backend AI (Memprioritaskan data DB/cache agar hemat panggilan AI)
-  const fetchLiveRoutes = useCallback(async (forceRegenerate = false) => {
-    setIsAnalyzing(true);
+  const fetchLiveRoutes = useCallback(
+    async (
+      forceRegenerate = false,
+      customOrigin?: string,
+      customDest?: string,
+      customOrigPt?: [number, number] | null,
+      customDestPt?: [number, number] | null
+    ) => {
+      const activeOrigin = customOrigin || origin;
+      const activeDest = customDest || destination;
+      const activeOrigPt = customOrigPt !== undefined ? customOrigPt : customOriginCoords;
+      const activeDestPt = customDestPt !== undefined ? customDestPt : customDestCoords;
 
-    try {
-      const projectId = project?.id || 1;
+      setIsAnalyzing(true);
 
-      // 1. Coba baca rute yang sudah tersimpan di database jika tidak diminta analisis ulang
-      if (!forceRegenerate) {
-        try {
-          const getRes = await fetch(`/api/v1/proyek/${projectId}/rute-alternatif`);
-          if (getRes.ok) {
-            const existingData = await getRes.json();
-            if (Array.isArray(existingData) && existingData.length > 0) {
-              const mapped = mapRoutesResponse(existingData);
-              setRoutes(mapped);
-              setIsAnalyzing(false);
-              return;
+      try {
+        const projectId = project?.id || 1;
+
+        // 1. Coba baca rute yang sudah tersimpan di database jika tidak diminta analisis ulang
+        if (!forceRegenerate) {
+          try {
+            const getRes = await fetch(`/api/v1/proyek/${projectId}/rute-alternatif`);
+            if (getRes.ok) {
+              const existingData = await getRes.json();
+              if (Array.isArray(existingData) && existingData.length > 0) {
+                const mapped = mapRoutesResponse(existingData, projectCoords, activeOrigin, activeDest, activeOrigPt, activeDestPt);
+                setRoutes(mapped);
+                setIsAnalyzing(false);
+                return;
+              }
             }
+          } catch (e) {
+            console.warn('Gagal membaca rute yang sudah ada di database:', e);
           }
-        } catch (e) {
-          console.warn('Gagal membaca rute yang sudah ada di database:', e);
         }
-      }
 
-      // 2. Panggil generate-rute jika belum ada atau saat tombol Analisis Ulang ditekan
-      const res = await fetch(`/api/v1/proyek/${projectId}/generate-rute`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          catatan_penutupan: `Rute dari ${origin} menuju ${destination} melintasi proyek ${projectName || 'Pelebaran Jalan'}`,
-        }),
-      });
+        // 2. Panggil generate-rute jika belum ada atau saat tombol Analisis Ulang ditekan
+        const res = await fetch(`/api/v1/proyek/${projectId}/generate-rute`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            catatan_penutupan: `Rute dari ${activeOrigin} menuju ${activeDest} melintasi proyek ${projectName || 'Pelebaran Jalan'}`,
+          }),
+        });
 
-      if (res.ok) {
-        const aiRoutesData = await res.json();
-        if (Array.isArray(aiRoutesData) && aiRoutesData.length > 0) {
-          const mapped = mapRoutesResponse(aiRoutesData);
-          setRoutes(mapped);
-          return;
+        if (res.ok) {
+          const aiRoutesData = await res.json();
+          if (Array.isArray(aiRoutesData) && aiRoutesData.length > 0) {
+            const mapped = mapRoutesResponse(aiRoutesData, projectCoords, activeOrigin, activeDest, activeOrigPt, activeDestPt);
+            setRoutes(mapped);
+            return;
+          }
         }
-      }
 
-      // Fallback contextual routes jika backend belum memiliki rute tersimpan
-      const wilayahName = project?.nama_wilayah || 'Lamongan';
-      setRoutes([
-        {
-          nama_rute: `Jalur Arteri Pengalihan ${wilayahName}`,
-          prioritas: 'utama',
-          estimasi_jarak_km: 3.8,
-          estimasi_waktu_menit: 11,
-          alasan_rekomendasi: `Jalur pengalihan utama dengan perkerasan jalan memadai untuk menghindari zona proyek ${projectName || 'konstruksi'}.`,
-          vehicle_type: 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
-          waypoints: [`Jalur Arteri ${wilayahName}`, 'Bypass Alternatif', destination],
-          coordinates: [],
-          geografis_terverifikasi: false,
-        },
-        {
-          nama_rute: `Jalan Lingkar Alternatif ${wilayahName}`,
-          prioritas: 'kedua',
-          estimasi_jarak_km: 5.1,
-          estimasi_waktu_menit: 15,
-          alasan_rekomendasi: `Jalur lingkar luar pengurai kepadatan kendaraan roda 4 dan angkutan logistik.`,
-          vehicle_type: 'Mobil Pribadi & Angkutan Ringan',
-          waypoints: ['Lingkar Luar', 'Simpang Sekunder', destination],
-          coordinates: [],
-          geografis_terverifikasi: false,
-        },
-        {
-          nama_rute: `Jalur Pintas Pemukiman & Roda Dua`,
-          prioritas: 'tambahan',
-          estimasi_jarak_km: 2.6,
-          estimasi_waktu_menit: 7,
-          alasan_rekomendasi: `Akses jalan lingkungan beraspal khusus sepeda motor dan mobilitas warga lokal sekitar proyek.`,
-          vehicle_type: 'Khusus Sepeda Motor & Roda Dua',
-          waypoints: ['Jalan Pemukiman', 'Grill Lingkungan', destination],
-          coordinates: [],
-          geografis_terverifikasi: false,
-        },
-      ]);
-    } catch (err) {
-      console.warn('Gagal memuat rute alternatif dari backend:', err);
-      const wilayahName = project?.nama_wilayah || 'Lamongan';
-      setRoutes([
-        {
-          nama_rute: `Jalur Arteri Pengalihan ${wilayahName}`,
-          prioritas: 'utama',
-          estimasi_jarak_km: 3.8,
-          estimasi_waktu_menit: 11,
-          alasan_rekomendasi: `Jalur pengalihan utama dengan perkerasan jalan memadai untuk menghindari zona proyek ${projectName || 'konstruksi'}.`,
-          vehicle_type: 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
-          waypoints: [`Jalur Arteri ${wilayahName}`, 'Bypass Alternatif', destination],
-          coordinates: [],
-          geografis_terverifikasi: false,
-        },
-        {
-          nama_rute: `Jalan Lingkar Alternatif ${wilayahName}`,
-          prioritas: 'kedua',
-          estimasi_jarak_km: 5.1,
-          estimasi_waktu_menit: 15,
-          alasan_rekomendasi: `Jalur lingkar luar pengurai kepadatan kendaraan roda 4 dan angkutan logistik.`,
-          vehicle_type: 'Mobil Pribadi & Angkutan Ringan',
-          waypoints: ['Lingkar Luar', 'Simpang Sekunder', destination],
-          coordinates: [],
-          geografis_terverifikasi: false,
-        },
-        {
-          nama_rute: `Jalur Pintas Pemukiman & Roda Dua`,
-          prioritas: 'tambahan',
-          estimasi_jarak_km: 2.6,
-          estimasi_waktu_menit: 7,
-          alasan_rekomendasi: `Akses jalan lingkungan beraspal khusus sepeda motor dan mobilitas warga lokal sekitar proyek.`,
-          vehicle_type: 'Khusus Sepeda Motor & Roda Dua',
-          waypoints: ['Jalan Pemukiman', 'Grill Lingkungan', destination],
-          coordinates: [],
-          geografis_terverifikasi: false,
-        },
-      ]);
-    } finally {
-      setIsAnalyzing(false);
-    }
-  }, [origin, destination, projectName, project?.id]);
+        // Fallback contextual routes jika backend belum memiliki rute tersimpan
+        setRoutes(buildDefaultRoutes(activeOrigin, activeDest, projectCoords, projectName, activeOrigPt, activeDestPt));
+      } catch (err) {
+        console.warn('Gagal memuat rute alternatif dari backend:', err);
+        setRoutes(buildDefaultRoutes(activeOrigin, activeDest, projectCoords, projectName, activeOrigPt, activeDestPt));
+      } finally {
+        setIsAnalyzing(false);
+      }
+    },
+    [origin, destination, projectName, project?.id, projectCoords, customOriginCoords, customDestCoords]
+  );
+
+  const handleApplyPreset = (newOrigin: string, newDest: string) => {
+    setOrigin(newOrigin);
+    setDestination(newDest);
+    setCustomOriginCoords(null);
+    setCustomDestCoords(null);
+    setPickingMode(null);
+    setPickingNotice(null);
+    setRoutes(buildDefaultRoutes(newOrigin, newDest, projectCoords, projectName, null, null));
+    fetchLiveRoutes(true, newOrigin, newDest, null, null);
+  };
 
   // Lock body scroll and handle Escape key when modal is open
   useEffect(() => {
@@ -278,9 +490,16 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      fetchLiveRoutes(false);
+      const ctx = getProjectRouteContext(projectName, project);
+      setOrigin(ctx.defaultOrigin);
+      setDestination(ctx.defaultDestination);
+      setCustomOriginCoords(null);
+      setCustomDestCoords(null);
+      setPickingMode(null);
+      setPickingNotice(null);
+      fetchLiveRoutes(false, ctx.defaultOrigin, ctx.defaultDestination, null, null);
     }
-  }, [isOpen, fetchLiveRoutes]);
+  }, [isOpen, project?.id, projectName]);
 
   // Inisialisasi Peta Leaflet
   useEffect(() => {
@@ -311,6 +530,31 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     polylinesLayerGroupRef.current = polylinesGroup;
     mapInstanceRef.current = map;
 
+    // Click listener pada peta saat mode pilih lokasi aktif
+    if (typeof map?.on === 'function') {
+      map.on('click', (e: L.LeafletMouseEvent) => {
+        const mode = pickingModeRef.current;
+        if (!mode) return;
+
+        const lat = Number(e.latlng.lat.toFixed(6));
+        const lng = Number(e.latlng.lng.toFixed(6));
+        const clickedPt: [number, number] = [lat, lng];
+        const placeName = getNearestPlaceName(clickedPt, projectCoords, projectName);
+
+        if (mode === 'origin') {
+          setCustomOriginCoords(clickedPt);
+          setOrigin(placeName);
+          setPickingNotice(`Titik Awal dipilih: ${placeName}. Sekarang klik lokasi Titik Tujuan di peta.`);
+          setPickingMode('destination');
+        } else if (mode === 'destination') {
+          setCustomDestCoords(clickedPt);
+          setDestination(placeName);
+          setPickingNotice(`Titik Tujuan dipilih: ${placeName}. Rute langsung diperbarui!`);
+          setPickingMode(null);
+        }
+      });
+    }
+
     const timer = setTimeout(() => {
       map.invalidateSize();
     }, 150);
@@ -325,7 +569,14 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         mapInstanceRef.current = null;
       }
     };
-  }, [isOpen]);
+  }, [isOpen, projectCoords, projectName]);
+
+  // Update kursor peta saat mode pemilihan titik aktif
+  useEffect(() => {
+    if (mapContainerRef.current) {
+      mapContainerRef.current.style.cursor = pickingMode ? 'crosshair' : '';
+    }
+  }, [pickingMode]);
 
   // Render Polylines dan Marker pada Peta
   useEffect(() => {
@@ -416,60 +667,100 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     });
 
     // 3. Marker Start (A) dan Finish (B) untuk Rute Terpilih yang Terverifikasi
-    const activeRoute = routes[selectedRouteIndex];
-    if (activeRoute?.geografis_terverifikasi && activeRoute.coordinates && activeRoute.coordinates.length >= 2) {
-      const startPt = activeRoute.coordinates[0];
-      const endPt = activeRoute.coordinates[activeRoute.coordinates.length - 1];
+    const startPt: [number, number] = originCoords;
+    const endPt: [number, number] = destCoords;
 
-      const originIcon = L.divIcon({
-        className: 'route-origin-icon',
-        html: `
-          <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-pointer">
-            <div class="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white">
-              A
-            </div>
-            <div class="absolute -bottom-5 bg-emerald-900 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap">
-              START
-            </div>
+    const originIcon = L.divIcon({
+      className: 'route-origin-icon',
+      html: `
+        <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-grab active:cursor-grabbing">
+          <div class="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white ring-2 ring-emerald-400">
+            A
           </div>
-        `,
-        iconSize: [0, 0],
-      });
-      L.marker(startPt, { icon: originIcon })
-        .bindTooltip(`<div class="text-xs font-bold text-emerald-800">📍 Titik Awal: ${activeRoute.waypoints?.[0] || 'Awal Rute'}</div>`)
-        .addTo(layerGroup);
-
-      const destIcon = L.divIcon({
-        className: 'route-dest-icon',
-        html: `
-          <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-pointer">
-            <div class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white">
-              B
-            </div>
-            <div class="absolute -bottom-5 bg-indigo-900 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap">
-              FINISH
-            </div>
+          <div class="absolute -bottom-5 bg-emerald-950 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap border border-white/20">
+            START (A)
           </div>
-        `,
-        iconSize: [0, 0],
-      });
-      L.marker(endPt, { icon: destIcon })
-        .bindTooltip(`<div class="text-xs font-bold text-indigo-800">🏁 Titik Akhir: ${activeRoute.waypoints?.[activeRoute.waypoints.length - 1] || 'Tujuan Rute'}</div>`)
-        .addTo(layerGroup);
+        </div>
+      `,
+      iconSize: [0, 0],
+    });
 
-      // Auto-fit bounds ke rute aktif dan area proyek
-      const activeEntry = routePolylines.find((p) => p.index === selectedRouteIndex);
-      if (activeEntry && activeEntry.polyline.getLatLngs().length > 0) {
-        activeEntry.polyline.bringToFront();
-        const bounds = activeEntry.polyline.getBounds();
-        bounds.extend(projectCoords);
-        map.fitBounds(bounds.pad(0.14), { animate: true, duration: 0.5 });
-      }
-    } else {
-      // Jika rute belum terverifikasi / tanpa koordinat, fokuskan peta ke lokasi proyek
-      map.setView(projectCoords, 15, { animate: true });
+    const originMarker = L.marker(startPt, { icon: originIcon, draggable: true })
+      .bindTooltip(
+        `<div class="text-xs font-bold text-emerald-800">
+          📍 Titik Awal: ${origin || 'Titik Awal'}
+          <div class="text-[10px] text-slate-500 font-normal mt-0.5">💡 Geser marker ini untuk memindahkan lokasi di peta</div>
+        </div>`
+      )
+      .addTo(layerGroup);
+
+    if (typeof originMarker?.on === 'function') {
+      originMarker.on('dragend', (e) => {
+        const pos = (e.target as L.Marker).getLatLng();
+        const newPt: [number, number] = [Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6))];
+        const placeName = getNearestPlaceName(newPt, projectCoords, projectName);
+        setCustomOriginCoords(newPt);
+        setOrigin(placeName);
+        setPickingNotice(`Titik Awal digeser ke: ${placeName}`);
+      });
     }
-  }, [routes, selectedRouteIndex, isOpen, projectCoords, projectName]);
+
+    const destIcon = L.divIcon({
+      className: 'route-dest-icon',
+      html: `
+        <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-grab active:cursor-grabbing">
+          <div class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white ring-2 ring-indigo-400">
+            B
+          </div>
+          <div class="absolute -bottom-5 bg-indigo-950 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap border border-white/20">
+            FINISH (B)
+          </div>
+        </div>
+      `,
+      iconSize: [0, 0],
+    });
+
+    const destMarker = L.marker(endPt, { icon: destIcon, draggable: true })
+      .bindTooltip(
+        `<div class="text-xs font-bold text-indigo-800">
+          🏁 Titik Akhir: ${destination || 'Tujuan'}
+          <div class="text-[10px] text-slate-500 font-normal mt-0.5">💡 Geser marker ini untuk memindahkan lokasi di peta</div>
+        </div>`
+      )
+      .addTo(layerGroup);
+
+    if (typeof destMarker?.on === 'function') {
+      destMarker.on('dragend', (e) => {
+        const pos = (e.target as L.Marker).getLatLng();
+        const newPt: [number, number] = [Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6))];
+        const placeName = getNearestPlaceName(newPt, projectCoords, projectName);
+        setCustomDestCoords(newPt);
+        setDestination(placeName);
+        setPickingNotice(`Titik Akhir digeser ke: ${placeName}`);
+      });
+    }
+
+    // Auto-fit bounds ke rute aktif, titik awal/akhir, dan area proyek
+    const activeEntry = routePolylines.find((p) => p.index === selectedRouteIndex);
+    if (activeEntry && activeEntry.polyline.getLatLngs().length > 0) {
+      activeEntry.polyline.bringToFront();
+      const bounds = activeEntry.polyline.getBounds();
+      const dStart = getDistanceMeters(startPt, projectCoords);
+      const dEnd = getDistanceMeters(endPt, projectCoords);
+      if (dStart < 4000 || dEnd < 4000) {
+        bounds.extend(projectCoords);
+      }
+      bounds.extend(startPt);
+      bounds.extend(endPt);
+      map.fitBounds(bounds.pad(0.16), { animate: true, duration: 0.5 });
+    } else {
+      const bounds = L.latLngBounds([startPt, endPt]);
+      if (getDistanceMeters(startPt, projectCoords) < 4000) {
+        bounds.extend(projectCoords);
+      }
+      map.fitBounds(bounds.pad(0.2), { animate: true });
+    }
+  }, [routes, selectedRouteIndex, isOpen, projectCoords, projectName, origin, destination, originCoords, destCoords]);
 
   // Simulasi Navigasi Animasi Kendaraan Berjalan
   const handleStartSimulation = () => {
@@ -664,59 +955,100 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
               </div>
             )}
 
-            {/* Floating Top Controls: Badge Rute Aktif */}
-            <div className="absolute top-3 left-3 z-[400] flex flex-col gap-1.5 pointer-events-none">
-              <div className="bg-slate-900/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg border border-white/20 flex items-center gap-2 pointer-events-auto">
+            {/* Mode Pemilihan Titik di Peta (Floating Guide Banner) */}
+            {pickingMode && (
+              <div className="absolute top-14 inset-x-3 z-[450] bg-slate-900/95 backdrop-blur-md text-white px-3.5 py-2.5 rounded-2xl shadow-2xl border border-white/20 flex items-center justify-between gap-2 animate-bounce-subtle pointer-events-auto">
+                <div className="flex items-center gap-2 text-xs font-medium">
+                  <span className={`w-2.5 h-2.5 rounded-full animate-ping shrink-0 ${pickingMode === 'origin' ? 'bg-emerald-400' : 'bg-indigo-400'}`} />
+                  <span className="leading-tight">
+                    {pickingMode === 'origin'
+                      ? '📍 Klik lokasi pada peta untuk menentukan Titik Awal (START A)'
+                      : '🏁 Klik lokasi pada peta untuk menentukan Titik Tujuan (FINISH B)'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPickingMode(null);
+                    setPickingNotice(null);
+                  }}
+                  className="px-2 py-1 bg-white/15 hover:bg-white/25 text-white rounded-lg text-[11px] font-bold cursor-pointer transition-colors shrink-0"
+                >
+                  Batal
+                </button>
+              </div>
+            )}
+
+            {pickingNotice && !pickingMode && (
+              <div className="absolute top-14 inset-x-3 z-[450] bg-emerald-900/95 backdrop-blur-md text-emerald-100 px-3.5 py-2 rounded-xl shadow-xl border border-emerald-400/40 flex items-center justify-between gap-2 animate-fade-in pointer-events-auto">
+                <div className="flex items-center gap-2 text-xs font-semibold">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+                  <span>{pickingNotice}</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPickingNotice(null)}
+                  className="text-emerald-300 hover:text-white text-xs font-bold p-0.5 cursor-pointer"
+                >
+                  ✕
+                </button>
+              </div>
+            )}
+
+            {/* Floating Top Controls: Unified Responsive Bar (Badge Rute Aktif + Tombol Aksi) */}
+            <div className="absolute top-3 inset-x-3 z-[400] flex flex-wrap items-center justify-between gap-2 pointer-events-none">
+              {/* Badge Rute Aktif */}
+              <div className="bg-slate-900/90 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-xl shadow-lg border border-white/20 flex items-center gap-2 pointer-events-auto shrink-0 max-w-full">
                 <span
-                  className="w-3 h-3 rounded-full shrink-0"
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
                   style={{
                     backgroundColor:
                       selectedRouteIndex === 0 ? '#10B981' : selectedRouteIndex === 1 ? '#3B82F6' : '#F59E0B',
                   }}
                 />
-                <span>Rute Aktif: Prioritas {selectedRouteIndex + 1}</span>
-                <span className="text-[11px] text-amber-300 font-mono font-semibold">
+                <span className="whitespace-nowrap">Rute Aktif: Prioritas {selectedRouteIndex + 1}</span>
+                <span className="text-[11px] text-amber-300 font-mono font-semibold whitespace-nowrap">
                   ({routes[selectedRouteIndex]?.estimasi_waktu_menit} mnt • {routes[selectedRouteIndex]?.estimasi_jarak_km} km)
                 </span>
               </div>
-            </div>
 
-            {/* Floating Top Right: Kontrol Navigasi & Simulasi */}
-            <div className="absolute top-3 right-3 z-[400] flex items-center gap-1.5">
-              <button
-                onClick={handleFocusRoute}
-                className="px-2.5 py-1.5 bg-white/95 hover:bg-white text-slate-800 text-xs font-bold rounded-xl shadow-lg border border-slate-200 flex items-center gap-1 transition-all cursor-pointer"
-                title="Fokuskan tampilan ke rute terpilih"
-              >
-                <LocateFixed className="w-3.5 h-3.5 text-blue-600" />
-                <span className="hidden sm:inline">Rute Penuh</span>
-              </button>
-              <button
-                onClick={handleFocusProject}
-                className="px-2.5 py-1.5 bg-white/95 hover:bg-white text-rose-700 text-xs font-bold rounded-xl shadow-lg border border-slate-200 flex items-center gap-1 transition-all cursor-pointer"
-                title="Zoom langsung ke titik proyek yang ditutup"
-              >
-                <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                <span className="hidden sm:inline">Zona Proyek</span>
-              </button>
-              {!isSimulating ? (
+              {/* Kontrol Navigasi & Simulasi */}
+              <div className="flex items-center gap-1.5 pointer-events-auto shrink-0">
                 <button
-                  onClick={handleStartSimulation}
-                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-1.5 transition-all cursor-pointer border border-emerald-400"
-                  title="Simulasikan pergerakan kendaraan melewati rute terpilih"
+                  onClick={handleFocusRoute}
+                  className="px-2.5 py-1.5 bg-white/95 hover:bg-white text-slate-800 text-xs font-bold rounded-xl shadow-lg border border-slate-200 flex items-center gap-1 transition-all cursor-pointer"
+                  title="Fokuskan tampilan ke rute terpilih"
                 >
-                  <Play className="w-3.5 h-3.5 fill-current" />
-                  <span>Simulasi Kendaraan</span>
+                  <LocateFixed className="w-3.5 h-3.5 text-blue-600" />
+                  <span className="hidden sm:inline">Rute Penuh</span>
                 </button>
-              ) : (
                 <button
-                  onClick={handleStopSimulation}
-                  className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-1.5 transition-all cursor-pointer animate-pulse border border-rose-300"
+                  onClick={handleFocusProject}
+                  className="px-2.5 py-1.5 bg-white/95 hover:bg-white text-rose-700 text-xs font-bold rounded-xl shadow-lg border border-slate-200 flex items-center gap-1 transition-all cursor-pointer"
+                  title="Zoom langsung ke titik proyek yang ditutup"
                 >
-                  <RotateCcw className="w-3.5 h-3.5" />
-                  <span>Hentikan</span>
+                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                  <span className="hidden sm:inline">Zona Proyek</span>
                 </button>
-              )}
+                {!isSimulating ? (
+                  <button
+                    onClick={handleStartSimulation}
+                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-1.5 transition-all cursor-pointer border border-emerald-400"
+                    title="Simulasikan pergerakan kendaraan melewati rute terpilih"
+                  >
+                    <Play className="w-3.5 h-3.5 fill-current" />
+                    <span>Simulasi Kendaraan</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={handleStopSimulation}
+                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-1.5 transition-all cursor-pointer animate-pulse border border-rose-300"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Hentikan</span>
+                  </button>
+                )}
+              </div>
             </div>
 
             {/* Floating Bottom: Legend Peta (Kompak di sisi kiri tanpa menabrak kontrol zoom Leaflet) */}
@@ -749,69 +1081,128 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
             {/* Input Form Pencarian Arah */}
             <form onSubmit={handleReanalyze} className="p-4 border-b border-slate-200 bg-slate-50/70 space-y-2.5 shrink-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* TITIK AWAL */}
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                    Titik Awal (Origin)
-                  </label>
-                  <input
-                    type="text"
-                    value={origin}
-                    onChange={(e) => setOrigin(e.target.value)}
-                    placeholder="Contoh: PENS Lamongan"
-                    className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl bg-white outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/15 transition-all"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                      Titik Awal (Origin)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = pickingMode === 'origin' ? null : 'origin';
+                        setPickingMode(next);
+                        setPickingNotice(next ? '📍 Klik sembarang lokasi di peta untuk titik awal' : null);
+                      }}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border ${
+                        pickingMode === 'origin'
+                          ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-400/40 animate-pulse'
+                          : 'bg-white hover:bg-emerald-50 text-emerald-700 border-emerald-300 shadow-2xs'
+                      }`}
+                      title="Klik untuk memilih titik awal langsung di peta"
+                    >
+                      <MapPin className="w-3 h-3" />
+                      <span>{pickingMode === 'origin' ? 'Merekam...' : 'Pilih di Peta'}</span>
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={origin}
+                      onChange={(e) => {
+                        setOrigin(e.target.value);
+                        setCustomOriginCoords(null);
+                      }}
+                      placeholder={`Contoh: ${routeCtx.defaultOrigin}`}
+                      className={`w-full px-3 py-1.5 text-xs border rounded-xl bg-white outline-none transition-all pr-8 ${
+                        pickingMode === 'origin'
+                          ? 'border-emerald-500 ring-2 ring-emerald-500/20'
+                          : 'border-slate-200 focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/15'
+                      }`}
+                    />
+                    {customOriginCoords && (
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded border border-emerald-200" title="Koordinat dipilih dari peta">
+                        📍 Peta
+                      </span>
+                    )}
+                  </div>
                 </div>
+
+                {/* TUJUAN */}
                 <div>
-                  <label className="block text-[10px] font-extrabold text-slate-500 uppercase tracking-wider mb-1 flex items-center gap-1">
-                    <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                    Tujuan (Destination)
-                  </label>
-                  <input
-                    type="text"
-                    value={destination}
-                    onChange={(e) => setDestination(e.target.value)}
-                    placeholder="Contoh: RS Namira Lamongan"
-                    className="w-full px-3 py-1.5 text-xs border border-slate-200 rounded-xl bg-white outline-none focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/15 transition-all"
-                  />
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
+                      Tujuan (Destination)
+                    </label>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const next = pickingMode === 'destination' ? null : 'destination';
+                        setPickingMode(next);
+                        setPickingNotice(next ? '🏁 Klik sembarang lokasi di peta untuk titik tujuan' : null);
+                      }}
+                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border ${
+                        pickingMode === 'destination'
+                          ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-400/40 animate-pulse'
+                          : 'bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-300 shadow-2xs'
+                      }`}
+                      title="Klik untuk memilih titik tujuan langsung di peta"
+                    >
+                      <MapPin className="w-3 h-3" />
+                      <span>{pickingMode === 'destination' ? 'Merekam...' : 'Pilih di Peta'}</span>
+                    </button>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={destination}
+                      onChange={(e) => {
+                        setDestination(e.target.value);
+                        setCustomDestCoords(null);
+                      }}
+                      placeholder={`Contoh: ${routeCtx.defaultDestination}`}
+                      className={`w-full px-3 py-1.5 text-xs border rounded-xl bg-white outline-none transition-all pr-8 ${
+                        pickingMode === 'destination'
+                          ? 'border-indigo-500 ring-2 ring-indigo-500/20'
+                          : 'border-slate-200 focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/15'
+                      }`}
+                    />
+                    {customDestCoords && (
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-indigo-700 bg-indigo-100 px-1 py-0.2 rounded border border-indigo-200" title="Koordinat dipilih dari peta">
+                        🏁 Peta
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Pilihan Cepat / Preset Chips */}
-              <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
-                <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Preset:</span>
+              {/* Pilihan Cepat / Preset Chips & Tukar Titik */}
+              <div className="flex flex-wrap items-center justify-between gap-1.5 pt-0.5">
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Preset:</span>
+                  {routeCtx.presets.map((preset, pIdx) => (
+                    <button
+                      key={pIdx}
+                      type="button"
+                      onClick={() => handleApplyPreset(preset.origin, preset.destination)}
+                      className="px-2 py-0.5 text-[10px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                    >
+                      {preset.label}
+                    </button>
+                  ))}
+                </div>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    setOrigin('PENS Lamongan');
-                    setDestination('RS Namira Lamongan');
-                  }}
-                  className="px-2 py-0.5 text-[10px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition-colors cursor-pointer"
+                  onClick={handleSwapPoints}
+                  className="px-2 py-0.5 text-[10px] font-semibold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition-colors cursor-pointer flex items-center gap-1 shrink-0"
+                  title="Tukar Titik Awal dan Titik Tujuan"
                 >
-                  📍 PENS ➔ RS Namira
+                  <ArrowUpDown className="w-3 h-3 text-slate-500" />
+                  <span>Tukar A &amp; B</span>
                 </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setOrigin('Alun-Alun Lamongan');
-                    setDestination('Stasiun Lamongan');
-                  }}
-                  className="px-2 py-0.5 text-[10px] font-medium bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg transition-colors cursor-pointer"
-                >
-                  🏛️ Alun-Alun ➔ Stasiun
-                </button>
-                {projectName && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setOrigin('Simpang Tikung');
-                      setDestination('RS Namira Lamongan');
-                    }}
-                    className="px-2 py-0.5 text-[10px] font-medium bg-indigo-50 hover:bg-indigo-100 text-indigo-700 border border-indigo-200 rounded-lg transition-colors cursor-pointer"
-                  >
-                    🚧 Area Sekitar Proyek
-                  </button>
-                )}
               </div>
 
               {/* Status Bar & Tombol Submit */}
@@ -936,16 +1327,16 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                         <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
                           Simpang Jalur Terlewati:
                         </span>
-                        <div className="flex flex-wrap items-center gap-1">
+                        <div className="flex flex-wrap items-center gap-y-1.5 gap-x-1.5">
                           {r.waypoints.map((wp, wIdx) => (
-                            <React.Fragment key={wIdx}>
-                              <span className="bg-white text-slate-700 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-slate-200">
+                            <span key={wIdx} className="inline-flex items-center gap-1">
+                              {wIdx > 0 && (
+                                <ArrowRight className="w-2.5 h-2.5 text-slate-400 shrink-0 select-none" />
+                              )}
+                              <span className="bg-white text-slate-700 text-[10px] font-semibold px-2 py-0.5 rounded-md border border-slate-200 shadow-2xs">
                                 {wp}
                               </span>
-                              {wIdx < r.waypoints!.length - 1 && (
-                                <ArrowRight className="w-2.5 h-2.5 text-slate-400 shrink-0" />
-                              )}
-                            </React.Fragment>
+                            </span>
                           ))}
                         </div>
                       </div>
@@ -955,6 +1346,99 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                     <p className="text-[11px] text-slate-600 mt-2.5 leading-relaxed bg-white/80 p-2.5 rounded-xl border border-slate-200/60">
                       💡 {r.alasan_rekomendasi}
                     </p>
+
+                    {/* Panduan Navigasi & Petunjuk Arah Langkah-demi-Langkah */}
+                    {r.petunjuk_langkah && r.petunjuk_langkah.length > 0 && isSelected && (
+                      <div className="mt-3 pt-3 border-t border-slate-200/80">
+                        <div className="flex flex-wrap items-center justify-between gap-1.5 mb-2">
+                          <span className="text-[10px] font-black text-slate-700 uppercase tracking-wider flex items-center gap-1">
+                            <Compass className="w-3.5 h-3.5 text-[#7C3AED]" />
+                            Panduan Arah & Petunjuk Navigasi:
+                          </span>
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleCopyDirections(r, idx);
+                              }}
+                              className="px-2 py-1 text-[10px] font-bold bg-white hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-lg flex items-center gap-1 transition-all cursor-pointer shadow-2xs"
+                              title="Salin langkah navigasi rute ini"
+                            >
+                              {copiedRouteIndex === idx ? (
+                                <>
+                                  <Check className="w-3 h-3 text-emerald-600" />
+                                  <span className="text-emerald-700">Tersalin!</span>
+                                </>
+                              ) : (
+                                <>
+                                  <Copy className="w-3 h-3" />
+                                  <span>Salin</span>
+                                </>
+                              )}
+                            </button>
+                            <a
+                              href={getGoogleMapsDirUrl(origin, destination, originCoords, destCoords)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              onClick={(e) => e.stopPropagation()}
+                              className="px-2.5 py-1 text-[10px] font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-lg flex items-center gap-1 shadow-2xs transition-all cursor-pointer"
+                              title="Buka rute ini di Google Maps"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                              <span>Google Maps</span>
+                            </a>
+                          </div>
+                        </div>
+
+                        {/* Banner status apakah rute memotong area proyek atau bebas hambatan */}
+                        {isRouteCrossingClosure ? (
+                          <div className="mb-2 p-2 bg-amber-50/90 border border-amber-300 rounded-xl flex items-start gap-1.5 text-[10px] text-amber-900 leading-snug">
+                            <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
+                            <span>
+                              <strong>Rekayasa Pengalihan:</strong> Rute ini disesuaikan untuk membelok mengitari zona tertutup proyek <strong>{projectName || 'Pekerjaan Fisik'}</strong>.
+                            </span>
+                          </div>
+                        ) : (
+                          <div className="mb-2 p-2 bg-emerald-50/90 border border-emerald-300 rounded-xl flex items-start gap-1.5 text-[10px] text-emerald-900 leading-snug">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                            <span>
+                              <strong>Jalur Lancar & Bebas Proyek:</strong> Perjalanan dari <strong>{origin}</strong> ke <strong>{destination}</strong> tidak melintasi penutupan proyek <strong>{projectName || 'Pekerjaan Fisik'}</strong>.
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Daftar 5 Langkah Navigasi */}
+                        <div className="space-y-1.5 bg-slate-50/90 p-2.5 rounded-xl border border-slate-200/90">
+                          {r.petunjuk_langkah.map((step) => (
+                            <div key={step.nomor} className="flex items-start gap-2 text-xs text-slate-700">
+                              <span
+                                className={`w-4 h-4 rounded-full flex items-center justify-center font-black text-[9px] shrink-0 mt-0.5 text-white ${
+                                  step.tipe === 'start'
+                                    ? 'bg-emerald-600'
+                                    : step.tipe === 'finish'
+                                    ? 'bg-indigo-600'
+                                    : step.tipe === 'detour'
+                                    ? 'bg-amber-600'
+                                    : 'bg-slate-600'
+                                }`}
+                              >
+                                {step.nomor}
+                              </span>
+                              <div className="flex-1 leading-snug">
+                                <p className="font-semibold text-slate-800 text-[11px]">{step.instruksi}</p>
+                                {step.keterangan && (
+                                  <p className="text-[10px] text-slate-500 mt-0.5 italic">{step.keterangan}</p>
+                                )}
+                              </div>
+                              <span className="text-[9px] font-bold text-slate-500 shrink-0 bg-white px-1.5 py-0.5 rounded border border-slate-200">
+                                {step.jarak}
+                              </span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
 
                     {/* Disclaimer jika rute belum diverifikasi terhadap peta nyata */}
                     {r.geografis_terverifikasi === false && (

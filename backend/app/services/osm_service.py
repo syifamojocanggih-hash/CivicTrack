@@ -4,7 +4,7 @@ import time
 import math
 import logging
 import re
-from typing import List, Dict, Tuple, Optional
+from typing import List, Dict, Tuple, Optional, Any
 import httpx
 from app.core.config import settings
 
@@ -71,7 +71,7 @@ def get_nearby_osm_data(
     lat: float,
     lon: float,
     radius_deg: float = 0.02,
-    timeout_sec: float = 12.0
+    timeout_sec: float = 3.0
 ) -> Tuple[List[str], Dict[str, List[List[List[float]]]]]:
     """
     Mengambil daftar nama jalan nyata DAN geometri garis koordinat di sekitar (lat, lon)
@@ -102,7 +102,7 @@ def get_nearby_osm_data(
     e = lon + radius_deg
 
     query = f"""
-    [out:json][timeout:15];
+    [out:json][timeout:5];
     way["highway"~"primary|secondary|tertiary|residential|unclassified"]["name"]({s},{w},{n},{e});
     out geom;
     """
@@ -248,14 +248,72 @@ def chain_road_geometries(
 
         if dist_reverse < dist_forward:
             oriented_seg = list(reversed(seg))
+            min_dist = dist_reverse
         else:
             oriented_seg = list(seg)
+            min_dist = dist_forward
+
+        # HANYA sambungkan jika jarak antar ujung segmen wajar (<= 0.00000625 deg² ≈ 250 meter).
+        # Jika gap terlalu jauh (> 250m), segmen tidak bersebelahan secara fisik sehingga
+        # dilarang menarik garis lurus melompat memotong kota (teleportasi/zigzag).
+        if min_dist > 0.00000625:
+            continue
 
         # Hindari duplikasi titik jika sangat dekat (< 1e-7 deg² ≈ 30 meter)
-        if _dist_sq(current_end, oriented_seg[0]) < 1e-7:
+        if min_dist < 1e-7:
             chained.extend(oriented_seg[1:])
         else:
             chained.extend(oriented_seg)
 
     return chained
+
+def fetch_osrm_driving_route(
+    orig_lat: float,
+    orig_lon: float,
+    dest_lat: float,
+    dest_lon: float,
+    via_lat: Optional[float] = None,
+    via_lon: Optional[float] = None,
+    timeout_sec: float = 3.5
+) -> Optional[Dict[str, Any]]:
+    """
+    Mengambil rute jalan berkendara riil dari Open Source Routing Machine (OSRM)
+    yang terjamin 100% menempel pada jaringan jalan resmi OpenStreetMap.
+    """
+    try:
+        if via_lat is not None and via_lon is not None:
+            coords_str = f"{orig_lon},{orig_lat};{via_lon},{via_lat};{dest_lon},{dest_lat}"
+        else:
+            coords_str = f"{orig_lon},{orig_lat};{dest_lon},{dest_lat}"
+
+        url = f"https://router.project-osrm.org/route/v1/driving/{coords_str}?overview=full&geometries=geojson&steps=true"
+        headers = {"User-Agent": "CivicTrack/1.0 (Public Infrastructure Transparency; contact@civictrack.id)"}
+
+        with httpx.Client(timeout=timeout_sec) as client:
+            resp = client.get(url, headers=headers)
+            if resp.status_code == 200:
+                data = resp.json()
+                if data.get("code") == "Ok" and data.get("routes"):
+                    route = data["routes"][0]
+                    geojson_coords = route.get("geometry", {}).get("coordinates", [])
+                    lat_lon_coords = [[round(pt[1], 6), round(pt[0], 6)] for pt in geojson_coords if len(pt) >= 2]
+                    dist_km = round(route.get("distance", 0) / 1000.0, 1)
+                    dur_min = max(1, round(route.get("duration", 0) / 60.0))
+
+                    road_names = []
+                    for leg in route.get("legs", []):
+                        for step in leg.get("steps", []):
+                            name = step.get("name", "").strip()
+                            if name and name not in road_names:
+                                road_names.append(name)
+
+                    return {
+                        "coordinates": lat_lon_coords,
+                        "distance_km": dist_km,
+                        "duration_min": dur_min,
+                        "road_names": road_names,
+                    }
+    except Exception as e:
+        logger.warning(f"OSRM driving route query error: {e}")
+    return None
 
