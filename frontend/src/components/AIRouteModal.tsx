@@ -59,8 +59,10 @@ import {
   getGoogleMapsDirUrl,
   getDistanceMeters,
   getNearestPlaceName,
+  reverseGeocodeCoords,
   calculateDetourWaypoints,
   fetchOSRMRoute,
+  doesRouteIntersectClosure,
   type NavigationStep,
 } from '../utils/aiRouteUtils';
 
@@ -182,6 +184,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   originRef.current = origin;
   const destinationRef = useRef(destination);
   destinationRef.current = destination;
+  const currentRequestIdRef = useRef<number>(0);
 
   // Koordinat efektif aktif (prioritas kustom dari klik/drag peta, fallback ke pencarian landmark/wilayah)
   const originCoords: [number, number] = useMemo(
@@ -223,7 +226,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     let isCancelled = false;
 
     const syncRealOSRMPaths = async () => {
-      const { viaNorth, viaSouth, needDetour } = calculateDetourWaypoints(
+      const { viaNorth, viaSouth, viaLocal, needDetour } = calculateDetourWaypoints(
         originCoords,
         destCoords,
         projectCoords
@@ -232,29 +235,32 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       // Panggil OSRM untuk 3 skenario rute:
       // Rute 1: Jalur Utama (jika proyek menutup jalan, belok viaNorth; jika tidak, rute jalan langsung tercepat)
       // Rute 2: Jalur Alternatif / Lingkar Sekunder (viaSouth jika penutupan, atau bypass viaNorth jika rute langsung)
-      // Rute 3: Jalur Pintas Lokal / Alternatif Roda Dua
+      // Rute 3: Jalur Pintas Lokal / Alternatif Roda Dua (viaLocal jika penutupan; langsung rute lokal jika tidak)
       const task1 = fetchOSRMRoute(
         originCoords,
         destCoords,
         needDetour ? viaNorth : null,
         origin,
-        destination
+        destination,
+        'driving'
       );
 
       const task2 = fetchOSRMRoute(
         originCoords,
         destCoords,
-        needDetour ? viaSouth : viaNorth,
+        viaSouth,
         origin,
-        destination
+        destination,
+        'driving'
       );
 
       const task3 = fetchOSRMRoute(
         originCoords,
         destCoords,
-        needDetour ? null : viaSouth,
+        needDetour ? viaLocal : null,
         origin,
-        destination
+        destination,
+        'bicycle'
       );
 
       try {
@@ -271,9 +277,13 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
             // Ekstrak nama jalan penting yang dilewati
             const roadNames = osrmRes.roadNames || [];
             const primaryRoad =
-              roadNames.find((n) => /raya|poros|veteran|basuki|agung|lamongrejo|drajat|mantup|turi/i.test(n)) ||
-              roadNames[0] ||
-              (idx === 0 ? 'Jalan Arteri Utama' : idx === 1 ? 'Jalur Lingkar Luar' : 'Akses Pintas Alternatif');
+              idx === 2
+                ? roadNames.find((n) => /kyai|amien|merpati|gang|lingkungan|pintas|desa|ki nameng/i.test(n)) ||
+                  roadNames[0] ||
+                  'Jalan Lokal Lingkungan'
+                : roadNames.find((n) => /raya|poros|veteran|basuki|agung|lamongrejo|drajat|mantup|turi/i.test(n)) ||
+                  roadNames[0] ||
+                  (idx === 0 ? 'Jalan Arteri Utama' : 'Jalur Lingkar Luar');
 
             const updatedWaypoints = ensureWaypointsSpan(
               roadNames.length > 0 ? roadNames.slice(0, 4) : [primaryRoad],
@@ -392,7 +402,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     });
   };
 
-  // Fetch / Generate Rute dari Backend AI (Memprioritaskan data DB/cache agar hemat panggilan AI)
+  // Fetch / Generate Rute dari Backend AI (Memprioritaskan data DB/cache hanya jika titik default, kirim koordinat asli pilihan pengguna)
   const fetchLiveRoutes = useCallback(
     async (
       forceRegenerate = false,
@@ -405,23 +415,32 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       const activeDest = customDest || destination;
       const activeOrigPt = customOrigPt !== undefined ? customOrigPt : customOriginCoords;
       const activeDestPt = customDestPt !== undefined ? customDestPt : customDestCoords;
+      const reqId = ++currentRequestIdRef.current;
 
       setIsAnalyzing(true);
 
       try {
         const projectId = project?.id || 1;
 
-        // 1. Coba baca rute yang sudah tersimpan di database jika tidak diminta analisis ulang
-        if (!forceRegenerate) {
+        // 1. Coba baca rute yang sudah tersimpan di database HANYA jika bukan titik kustom pilihan pengguna
+        const isCustomEndpoints = Boolean(
+          activeOrigPt || activeDestPt ||
+          (activeOrigin !== routeCtx.defaultOrigin && activeOrigin !== 'Alun-Alun Lamongan') ||
+          (activeDest !== routeCtx.defaultDestination && activeDest !== 'Stasiun Lamongan')
+        );
+
+        if (!forceRegenerate && !isCustomEndpoints) {
           try {
             const getRes = await fetch(`/api/v1/proyek/${projectId}/rute-alternatif`);
             if (getRes.ok) {
               const existingData = await getRes.json();
               if (Array.isArray(existingData) && existingData.length > 0) {
-                const mapped = mapRoutesResponse(existingData, projectCoords, activeOrigin, activeDest, activeOrigPt, activeDestPt);
-                setRoutes(mapped);
-                setIsAnalyzing(false);
-                return;
+                if (reqId === currentRequestIdRef.current) {
+                  const mapped = mapRoutesResponse(existingData, projectCoords, activeOrigin, activeDest, activeOrigPt, activeDestPt);
+                  setRoutes(mapped);
+                  setIsAnalyzing(false);
+                  return;
+                }
               }
             }
           } catch (e) {
@@ -429,14 +448,22 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
           }
         }
 
-        // 2. Panggil generate-rute jika belum ada atau saat tombol Analisis Ulang ditekan
+        // 2. Panggil generate-rute dengan menyertakan koordinat titik asli pilihan pengguna
         const res = await fetch(`/api/v1/proyek/${projectId}/generate-rute`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             catatan_penutupan: `Rute dari ${activeOrigin} menuju ${activeDest} melintasi proyek ${projectName || 'Pelebaran Jalan'}`,
+            origin_lat: activeOrigPt ? activeOrigPt[0] : undefined,
+            origin_lng: activeOrigPt ? activeOrigPt[1] : undefined,
+            dest_lat: activeDestPt ? activeDestPt[0] : undefined,
+            dest_lng: activeDestPt ? activeDestPt[1] : undefined,
+            origin_name: activeOrigin,
+            dest_name: activeDest,
           }),
         });
+
+        if (reqId !== currentRequestIdRef.current) return;
 
         if (res.ok) {
           const aiRoutesData = await res.json();
@@ -450,13 +477,17 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         // Fallback contextual routes jika backend belum memiliki rute tersimpan
         setRoutes(buildDefaultRoutes(activeOrigin, activeDest, projectCoords, projectName, activeOrigPt, activeDestPt));
       } catch (err) {
-        console.warn('Gagal memuat rute alternatif dari backend:', err);
-        setRoutes(buildDefaultRoutes(activeOrigin, activeDest, projectCoords, projectName, activeOrigPt, activeDestPt));
+        if (reqId === currentRequestIdRef.current) {
+          console.warn('Gagal memuat rute alternatif dari backend:', err);
+          setRoutes(buildDefaultRoutes(activeOrigin, activeDest, projectCoords, projectName, activeOrigPt, activeDestPt));
+        }
       } finally {
-        setIsAnalyzing(false);
+        if (reqId === currentRequestIdRef.current) {
+          setIsAnalyzing(false);
+        }
       }
     },
-    [origin, destination, projectName, project?.id, projectCoords, customOriginCoords, customDestCoords]
+    [origin, destination, projectName, project?.id, projectCoords, customOriginCoords, customDestCoords, routeCtx]
   );
 
   const handleApplyPreset = (newOrigin: string, newDest: string) => {
@@ -539,18 +570,41 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         const lat = Number(e.latlng.lat.toFixed(6));
         const lng = Number(e.latlng.lng.toFixed(6));
         const clickedPt: [number, number] = [lat, lng];
-        const placeName = getNearestPlaceName(clickedPt, projectCoords, projectName);
+        const initialLabel = getNearestPlaceName(clickedPt, projectCoords, projectName);
+        const thisReqId = ++currentRequestIdRef.current;
 
         if (mode === 'origin') {
           setCustomOriginCoords(clickedPt);
-          setOrigin(placeName);
-          setPickingNotice(`Titik Awal dipilih: ${placeName}. Sekarang klik lokasi Titik Tujuan di peta.`);
+          setOrigin(initialLabel);
+          setPickingNotice(`Titik Awal dipilih: ${initialLabel} (${lat.toFixed(6)}, ${lng.toFixed(6)}). Sekarang klik lokasi Titik Tujuan di peta.`);
           setPickingMode('destination');
+
+          reverseGeocodeCoords(clickedPt, projectCoords, projectName).then((info) => {
+            if (thisReqId === currentRequestIdRef.current && customOriginCoordsRef.current &&
+                customOriginCoordsRef.current[0] === clickedPt[0] &&
+                customOriginCoordsRef.current[1] === clickedPt[1]) {
+              setOrigin(info.label);
+              if (info.label !== 'Lokasi yang dipilih') {
+                setPickingNotice(`Titik Awal teridentifikasi: ${info.label}`);
+              }
+            }
+          });
         } else if (mode === 'destination') {
           setCustomDestCoords(clickedPt);
-          setDestination(placeName);
-          setPickingNotice(`Titik Tujuan dipilih: ${placeName}. Rute langsung diperbarui!`);
+          setDestination(initialLabel);
+          setPickingNotice(`Titik Tujuan dipilih: ${initialLabel} (${lat.toFixed(6)}, ${lng.toFixed(6)}). Rute langsung diperbarui!`);
           setPickingMode(null);
+
+          reverseGeocodeCoords(clickedPt, projectCoords, projectName).then((info) => {
+            if (thisReqId === currentRequestIdRef.current && customDestCoordsRef.current &&
+                customDestCoordsRef.current[0] === clickedPt[0] &&
+                customDestCoordsRef.current[1] === clickedPt[1]) {
+              setDestination(info.label);
+              if (info.label !== 'Lokasi yang dipilih') {
+                setPickingNotice(`Titik Tujuan teridentifikasi: ${info.label}`);
+              }
+            }
+          });
         }
       });
     }
@@ -695,13 +749,22 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       .addTo(layerGroup);
 
     if (typeof originMarker?.on === 'function') {
-      originMarker.on('dragend', (e) => {
+      originMarker.on('dragend', async (e) => {
         const pos = (e.target as L.Marker).getLatLng();
         const newPt: [number, number] = [Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6))];
-        const placeName = getNearestPlaceName(newPt, projectCoords, projectName);
+        const reqId = ++currentRequestIdRef.current;
+        const initialLabel = getNearestPlaceName(newPt, projectCoords, projectName);
         setCustomOriginCoords(newPt);
-        setOrigin(placeName);
-        setPickingNotice(`Titik Awal digeser ke: ${placeName}`);
+        setOrigin(initialLabel);
+        setPickingNotice(`Titik Awal digeser ke: ${initialLabel}`);
+
+        const resolvedInfo = await reverseGeocodeCoords(newPt, projectCoords, projectName);
+        if (currentRequestIdRef.current === reqId) {
+          setOrigin(resolvedInfo.label);
+          if (resolvedInfo.label !== 'Lokasi yang dipilih') {
+            setPickingNotice(`Titik Awal teridentifikasi: ${resolvedInfo.label}`);
+          }
+        }
       });
     }
 
@@ -730,13 +793,22 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       .addTo(layerGroup);
 
     if (typeof destMarker?.on === 'function') {
-      destMarker.on('dragend', (e) => {
+      destMarker.on('dragend', async (e) => {
         const pos = (e.target as L.Marker).getLatLng();
         const newPt: [number, number] = [Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6))];
-        const placeName = getNearestPlaceName(newPt, projectCoords, projectName);
+        const reqId = ++currentRequestIdRef.current;
+        const initialLabel = getNearestPlaceName(newPt, projectCoords, projectName);
         setCustomDestCoords(newPt);
-        setDestination(placeName);
-        setPickingNotice(`Titik Akhir digeser ke: ${placeName}`);
+        setDestination(initialLabel);
+        setPickingNotice(`Titik Akhir digeser ke: ${initialLabel}`);
+
+        const resolvedInfo = await reverseGeocodeCoords(newPt, projectCoords, projectName);
+        if (currentRequestIdRef.current === reqId) {
+          setDestination(resolvedInfo.label);
+          if (resolvedInfo.label !== 'Lokasi yang dipilih') {
+            setPickingNotice(`Titik Akhir teridentifikasi: ${resolvedInfo.label}`);
+          }
+        }
       });
     }
 
@@ -1127,6 +1199,19 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                       </span>
                     )}
                   </div>
+                  {customOriginCoords && (
+                    <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                      <span>Koordinat: {customOriginCoords[0].toFixed(6)}, {customOriginCoords[1].toFixed(6)}</span>
+                      <button
+                        type="button"
+                        onClick={() => setCustomOriginCoords(null)}
+                        className="text-slate-400 hover:text-red-500 text-[9px] font-sans"
+                        title="Reset koordinat manual"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  )}
                 </div>
 
                 {/* TUJUAN */}
@@ -1175,6 +1260,19 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                       </span>
                     )}
                   </div>
+                  {customDestCoords && (
+                    <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 font-mono">
+                      <span>Koordinat: {customDestCoords[0].toFixed(6)}, {customDestCoords[1].toFixed(6)}</span>
+                      <button
+                        type="button"
+                        onClick={() => setCustomDestCoords(null)}
+                        className="text-slate-400 hover:text-red-500 text-[9px] font-sans"
+                        title="Reset koordinat manual"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
 

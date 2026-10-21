@@ -323,17 +323,85 @@ describe('AIRouteModal', () => {
     const { getNearestPlaceName } = await import('../utils/aiRouteUtils');
     const projectCenter: [number, number] = [-7.135, 112.33];
 
-    // Click near Masjid Agung Lamongan
+    // Click exactly at Masjid Agung Lamongan
     const masjidAgungName = getNearestPlaceName([-7.1202, 112.4147], projectCenter);
     expect(masjidAgungName.toLowerCase()).toContain('masjid agung');
 
-    // Click near Masjid Namira Lamongan
+    // Click exactly at Masjid Namira Lamongan
     const masjidNamiraName = getNearestPlaceName([-7.1585, 112.4124], projectCenter);
     expect(masjidNamiraName.toLowerCase()).toContain('masjid namira');
 
-    // Arbitrary coordinates
+    // Arbitrary coordinates without landmark returns fallback label
     const arbitraryName = getNearestPlaceName([-7.1400, 112.3800], projectCenter);
-    expect(arbitraryName).toContain('Titik Peta');
+    expect(arbitraryName).toBe('Lokasi yang dipilih');
+  });
+
+  it('Test A & B: does not replace arbitrary house coordinates with Masjid Agung or Stasiun', async () => {
+    const { getNearestPlaceName } = await import('../utils/aiRouteUtils');
+    const projectCenter: [number, number] = [-7.135, 112.33];
+
+    // House located ~200m away from Masjid Agung (-7.1202, 112.4147)
+    const houseNearMasjid: [number, number] = [-7.1188, 112.4135];
+    const originLabel = getNearestPlaceName(houseNearMasjid, projectCenter);
+    expect(originLabel).not.toContain('Masjid Agung');
+    expect(originLabel).toBe('Lokasi yang dipilih');
+
+    // House located ~250m away from Stasiun (-7.1158, 112.4182)
+    const houseNearStation: [number, number] = [-7.1140, 112.4165];
+    const destLabel = getNearestPlaceName(houseNearStation, projectCenter);
+    expect(destLabel).not.toContain('Stasiun');
+    expect(destLabel).toBe('Lokasi yang dipilih');
+  });
+
+  it('Test C: provides fallback label and preserves exact coordinate tuple', async () => {
+    const { getNearestPlaceName, reverseGeocodeCoords } = await import('../utils/aiRouteUtils');
+    const projectCenter: [number, number] = [-7.135, 112.33];
+    const unmappedPt: [number, number] = [-7.124567, 112.408123];
+
+    // Synchronous label fallback
+    const label = getNearestPlaceName(unmappedPt, projectCenter);
+    expect(label).toBe('Lokasi yang dipilih');
+
+    // Async reverse geocoding fallback
+    const info = await reverseGeocodeCoords(unmappedPt, projectCenter);
+    expect(info.label).toBeDefined();
+    expect(info.subLabel).toContain('-7.124567, 112.408123');
+  });
+
+  it('Test E: motorcycle detour uses compact local road offsets instead of distant highways', async () => {
+    const { calculateDetourWaypoints, getDistanceMeters } = await import('../utils/aiRouteUtils');
+    const origin: [number, number] = [-7.1195, 112.4154]; // Alun-Alun Lamongan
+    const dest: [number, number] = [-7.1158, 112.4182]; // Stasiun Lamongan
+    const projectCenter: [number, number] = [-7.1180, 112.4165]; // Between them
+
+    const detours = calculateDetourWaypoints(origin, dest, projectCenter);
+    expect(detours.viaLocal).toBeDefined();
+
+    // Verify motorcycle local waypoint is compact and not a massive 1km detour onto distant ring roads
+    const distFromProject = getDistanceMeters(detours.viaLocal, projectCenter);
+    expect(distFromProject).toBeLessThan(600);
+  });
+
+  it('Test F: correctly detects route intersecting closure zone', async () => {
+    const { doesRouteIntersectClosure } = await import('../utils/aiRouteUtils');
+    const closureCenter: [number, number] = [-7.1180, 112.4165];
+
+    // A route starting and ending well outside closure zone (~1.3 km away), but cutting directly through closure center
+    const directRoute: [number, number][] = [
+      [-7.1300, 112.4165],
+      [-7.1180, 112.4165],
+      [-7.1050, 112.4165],
+    ];
+    expect(doesRouteIntersectClosure(directRoute, closureCenter, 280)).toBe(true);
+
+    // A detour route safely skirting outside closure radius (> 900m away)
+    const detourRoute: [number, number][] = [
+      [-7.1300, 112.4165],
+      [-7.1300, 112.4260],
+      [-7.1050, 112.4260],
+      [-7.1050, 112.4165],
+    ];
+    expect(doesRouteIntersectClosure(detourRoute, closureCenter, 280)).toBe(false);
   });
 });
 

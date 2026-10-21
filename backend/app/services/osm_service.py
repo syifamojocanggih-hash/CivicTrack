@@ -18,6 +18,7 @@ CACHE_TTL_SECONDS = 14 * 86400  # 14 days TTL
 _IN_MEMORY_CACHE: Dict[str, Tuple[float, List[str], Dict[str, List[List[List[float]]]]]] = {}
 
 OVERPASS_ENDPOINTS = [
+    "https://overpass.private.coffee/api/interpreter",
     "https://z.overpass-api.de/api/interpreter",
     "https://overpass-api.de/api/interpreter",
     "https://lz4.overpass-api.de/api/interpreter",
@@ -267,6 +268,33 @@ def chain_road_geometries(
 
     return chained
 
+def check_route_crosses_closure(
+    coordinates: List[List[float]],
+    closure_lat: float,
+    closure_lon: float,
+    radius_meters: float = 280.0
+) -> bool:
+    """
+    Memeriksa apakah koordinat garis rute memotong area radius penutupan proyek.
+    Jika start dan finish berada di luar radius penutupan, tetapi ada titik perantara
+    yang masuk ke dalam radius penutupan, fungsi mengembalikan True (rute terhalang).
+    """
+    if not coordinates or len(coordinates) < 2:
+        return False
+
+    d_start = math.sqrt(((coordinates[0][0] - closure_lat) * 111000) ** 2 + ((coordinates[0][1] - closure_lon) * 110170) ** 2)
+    d_dest = math.sqrt(((coordinates[-1][0] - closure_lat) * 111000) ** 2 + ((coordinates[-1][1] - closure_lon) * 110170) ** 2)
+
+    # Hanya lakukan cek jika start dan finish berada di luar zona penutupan
+    if d_start < radius_meters * 0.8 or d_dest < radius_meters * 0.8:
+        return False
+
+    for pt in coordinates:
+        d = math.sqrt(((pt[0] - closure_lat) * 111000) ** 2 + ((pt[1] - closure_lon) * 110170) ** 2)
+        if d < radius_meters:
+            return True
+    return False
+
 def fetch_osrm_driving_route(
     orig_lat: float,
     orig_lon: float,
@@ -274,11 +302,13 @@ def fetch_osrm_driving_route(
     dest_lon: float,
     via_lat: Optional[float] = None,
     via_lon: Optional[float] = None,
+    profile: str = "driving",
     timeout_sec: float = 3.5
 ) -> Optional[Dict[str, Any]]:
     """
     Mengambil rute jalan berkendara riil dari Open Source Routing Machine (OSRM)
     yang terjamin 100% menempel pada jaringan jalan resmi OpenStreetMap.
+    Mendukung profil: 'driving' (mobil/kendaraan umum) dan 'bicycle' (roda dua/sepeda motor).
     """
     try:
         if via_lat is not None and via_lon is not None:
@@ -286,7 +316,8 @@ def fetch_osrm_driving_route(
         else:
             coords_str = f"{orig_lon},{orig_lat};{dest_lon},{dest_lat}"
 
-        url = f"https://router.project-osrm.org/route/v1/driving/{coords_str}?overview=full&geometries=geojson&steps=true"
+        profile_endpoint = "bicycle" if profile == "bicycle" else "driving"
+        url = f"https://router.project-osrm.org/route/v1/{profile_endpoint}/{coords_str}?overview=full&geometries=geojson&steps=true"
         headers = {"User-Agent": "CivicTrack/1.0 (Public Infrastructure Transparency; contact@civictrack.id)"}
 
         with httpx.Client(timeout=timeout_sec) as client:
@@ -314,6 +345,7 @@ def fetch_osrm_driving_route(
                         "road_names": road_names,
                     }
     except Exception as e:
-        logger.warning(f"OSRM driving route query error: {e}")
+        logger.warning(f"OSRM {profile} route query error: {e}")
     return None
+
 

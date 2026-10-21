@@ -600,33 +600,134 @@ export const getNearestPlaceName = (
   projectCenter: [number, number],
   projectName?: string
 ): string => {
-  let closestKey = '';
-  let minDistance = Infinity;
-
+  // Hanya gunakan nama POI jika pengguna benar-benar mengeklik di lokasi POI tersebut (toleransi ketat <= 35 meter)
   for (const [key, lCoords] of Object.entries(LAMONGAN_LANDMARKS)) {
     const dist = getDistanceMeters(coords, lCoords);
-    if (dist < minDistance) {
-      minDistance = dist;
-      closestKey = key;
+    if (dist <= 35) {
+      return key
+        .split(' ')
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
     }
   }
 
-  // Jika dekat dengan landmark terdaftar (< 500 meter)
-  if (minDistance <= 500 && closestKey) {
-    return closestKey
-      .split(' ')
-      .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-      .join(' ');
-  }
-
-  // Jika dekat dengan proyek (< 400 meter)
+  // Jika pas di area proyek (< 40 meter)
   const distToProj = getDistanceMeters(coords, projectCenter);
-  if (distToProj <= 400 && projectName) {
+  if (distToProj <= 40 && projectName) {
     const cleanProj = projectName.replace(/^(Peningkatan|Rekonstruksi|Pembangunan|Pelebaran)\s+/i, '');
     return `Area Proyek ${cleanProj.slice(0, 24)}`;
   }
 
-  return `Titik Peta (${coords[0].toFixed(4)}, ${coords[1].toFixed(4)})`;
+  // Fallback standar: tidak menebak nama terkenal terdekat jika bukan di titik tersebut
+  return 'Lokasi yang dipilih';
+};
+
+export interface LocationInfo {
+  label: string;
+  subLabel?: string;
+  roadName?: string;
+}
+
+const geocodeCache = new Map<string, LocationInfo>();
+
+export const reverseGeocodeCoords = async (
+  coords: [number, number],
+  projectCenter: [number, number],
+  projectName?: string
+): Promise<LocationInfo> => {
+  const coordKey = `${coords[0].toFixed(5)},${coords[1].toFixed(5)}`;
+  if (geocodeCache.has(coordKey)) {
+    return geocodeCache.get(coordKey)!;
+  }
+
+  // 1. Cek jika pas di POI spesifik (<= 35m)
+  for (const [key, lCoords] of Object.entries(LAMONGAN_LANDMARKS)) {
+    const dist = getDistanceMeters(coords, lCoords);
+    if (dist <= 35) {
+      const name = key.split(' ').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+      const info: LocationInfo = {
+        label: name,
+        subLabel: `Koordinat: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`,
+      };
+      geocodeCache.set(coordKey, info);
+      return info;
+    }
+  }
+
+  // 2. Cek jika pas di proyek (< 40m)
+  const distToProj = getDistanceMeters(coords, projectCenter);
+  if (distToProj <= 40 && projectName) {
+    const cleanProj = projectName.replace(/^(Peningkatan|Rekonstruksi|Pembangunan|Pelebaran)\s+/i, '');
+    const info: LocationInfo = {
+      label: `Area Proyek ${cleanProj.slice(0, 24)}`,
+      subLabel: `Koordinat: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`,
+    };
+    geocodeCache.set(coordKey, info);
+    return info;
+  }
+
+  // 3. Coba reverse geocode ke OpenStreetMap (Nominatim)
+  try {
+    const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
+    const timeout = setTimeout(() => controller?.abort(), 2000);
+    const resp = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${coords[0]}&lon=${coords[1]}`,
+      {
+        signal: controller?.signal,
+        headers: { Accept: 'application/json' },
+      }
+    );
+    clearTimeout(timeout);
+    if (resp.ok) {
+      const data = await resp.json();
+      const addr = data.address || {};
+
+      // Nama tempat / fasilitas spesifik
+      const place = addr.amenity || addr.building || addr.shop || addr.tourism;
+      if (place && typeof place === 'string' && place.length >= 3) {
+        const info: LocationInfo = {
+          label: place,
+          subLabel: `Koordinat: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`,
+          roadName: addr.road,
+        };
+        geocodeCache.set(coordKey, info);
+        return info;
+      }
+
+      // Nama jalan dan wilayah
+      const road = addr.road || addr.pedestrian || addr.residential;
+      if (road && typeof road === 'string') {
+        const area = addr.village || addr.suburb || addr.neighbourhood;
+        const info: LocationInfo = {
+          label: area ? `${road}, ${area}` : road,
+          subLabel: `Koordinat: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`,
+          roadName: road,
+        };
+        geocodeCache.set(coordKey, info);
+        return info;
+      }
+
+      // Kawasan
+      if (addr.village || addr.suburb) {
+        const info: LocationInfo = {
+          label: `Kawasan ${addr.village || addr.suburb}`,
+          subLabel: `Koordinat: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`,
+        };
+        geocodeCache.set(coordKey, info);
+        return info;
+      }
+    }
+  } catch (e) {
+    // Abaikan error jaringan
+  }
+
+  // 4. Fallback jika nama tidak dapat dipastikan
+  const fallbackInfo: LocationInfo = {
+    label: 'Lokasi yang dipilih',
+    subLabel: `Koordinat: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`,
+  };
+  geocodeCache.set(coordKey, fallbackInfo);
+  return fallbackInfo;
 };
 
 export interface OSRMRouteResult {
@@ -637,11 +738,34 @@ export interface OSRMRouteResult {
   steps: NavigationStep[];
 }
 
+export const doesRouteIntersectClosure = (
+  coordinates: [number, number][],
+  closureCenter: [number, number],
+  radiusMeters = 260
+): boolean => {
+  if (!coordinates || coordinates.length < 2) return false;
+  const dStart = getDistanceMeters(coordinates[0], closureCenter);
+  const dDest = getDistanceMeters(coordinates[coordinates.length - 1], closureCenter);
+  if (dStart < radiusMeters * 0.8 || dDest < radiusMeters * 0.8) return false;
+
+  for (const pt of coordinates) {
+    if (getDistanceMeters(pt, closureCenter) < radiusMeters) {
+      return true;
+    }
+  }
+  return false;
+};
+
 export const calculateDetourWaypoints = (
   origPt: [number, number],
   destPt: [number, number],
   closureCenter: [number, number]
-): { viaNorth: [number, number]; viaSouth: [number, number]; needDetour: boolean } => {
+): {
+  viaNorth: [number, number];
+  viaSouth: [number, number];
+  viaLocal: [number, number];
+  needDetour: boolean;
+} => {
   const dx = destPt[0] - origPt[0];
   const dy = destPt[1] - origPt[1];
   const len = Math.sqrt(dx * dx + dy * dy) || 0.001;
@@ -658,13 +782,20 @@ export const calculateDetourWaypoints = (
   );
   const projPt: [number, number] = [origPt[0] + t * dx, origPt[1] + t * dy];
   const distToLineMeters = getDistanceMeters(closureCenter, projPt);
-  const needDetour = distToLineMeters < 500 && t > 0.05 && t < 0.95;
+  const dStart = getDistanceMeters(origPt, closureCenter);
+  const dDest = getDistanceMeters(destPt, closureCenter);
+
+  // Penutupan hanya relevan jika rute melintasi proyek dan start/dest berada di luar penutupan
+  const needDetour = distToLineMeters < 320 && dStart > 240 && dDest > 240 && t > 0.05 && t < 0.95;
 
   const refLat = needDetour ? closureCenter[0] : (origPt[0] + destPt[0]) / 2;
   const refLng = needDetour ? closureCenter[1] : (origPt[1] + destPt[1]) / 2;
 
-  const offsetNorthDeg = needDetour ? 0.0075 : 0.0090;
-  const offsetSouthDeg = needDetour ? 0.0075 : 0.0090;
+  // Offset yang wajar dan proporsional untuk mobil & kendaraan umum
+  const offsetNorthDeg = needDetour ? 0.0055 : 0.0060;
+  const offsetSouthDeg = needDetour ? 0.0065 : 0.0070;
+  // Offset kompak untuk sepeda motor agar tidak memaksakan jalan lingkar jauh jika ada jalan lokal
+  const offsetLocalDeg = needDetour ? 0.0025 : 0.0030;
 
   const viaNorth: [number, number] = [
     Number((refLat + nx * offsetNorthDeg).toFixed(6)),
@@ -674,8 +805,12 @@ export const calculateDetourWaypoints = (
     Number((refLat - nx * offsetSouthDeg).toFixed(6)),
     Number((refLng - ny * offsetSouthDeg).toFixed(6)),
   ];
+  const viaLocal: [number, number] = [
+    Number((refLat + nx * offsetLocalDeg).toFixed(6)),
+    Number((refLng + ny * offsetLocalDeg).toFixed(6)),
+  ];
 
-  return { viaNorth, viaSouth, needDetour };
+  return { viaNorth, viaSouth, viaLocal, needDetour };
 };
 
 const osrmRouteCache = new Map<string, OSRMRouteResult>();
@@ -686,9 +821,10 @@ export const fetchOSRMRoute = async (
   viaPt?: [number, number] | null,
   originName?: string,
   destName?: string,
+  profile: 'driving' | 'bicycle' = 'driving',
   timeoutMs = 4500
 ): Promise<OSRMRouteResult | null> => {
-  const cacheKey = `${origPt[0].toFixed(5)},${origPt[1].toFixed(5)}_${destPt[0].toFixed(5)},${destPt[1].toFixed(5)}_${
+  const cacheKey = `${profile}_${origPt[0].toFixed(5)},${origPt[1].toFixed(5)}_${destPt[0].toFixed(5)},${destPt[1].toFixed(5)}_${
     viaPt ? `${viaPt[0].toFixed(5)},${viaPt[1].toFixed(5)}` : 'direct'
   }`;
 
@@ -701,7 +837,8 @@ export const fetchOSRMRoute = async (
     ? `${origPt[1]},${origPt[0]};${viaPt[1]},${viaPt[0]};${destPt[1]},${destPt[0]}`
     : `${origPt[1]},${origPt[0]};${destPt[1]},${destPt[0]}`;
 
-  const url = `https://router.project-osrm.org/route/v1/driving/${coordsStr}?overview=full&geometries=geojson&steps=true`;
+  const profileEndpoint = profile === 'bicycle' ? 'bicycle' : 'driving';
+  const url = `https://router.project-osrm.org/route/v1/${profileEndpoint}/${coordsStr}?overview=full&geometries=geojson&steps=true`;
 
   const controller = typeof AbortController !== 'undefined' ? new AbortController() : null;
   const timeoutId = controller ? setTimeout(() => controller.abort(), timeoutMs) : null;
@@ -714,9 +851,18 @@ export const fetchOSRMRoute = async (
       },
     });
 
-    if (!res.ok) return null;
+    if (!res.ok) {
+      // Jika profil bicycle gagal pada server, fallback ke driving
+      if (profile === 'bicycle') {
+        return fetchOSRMRoute(origPt, destPt, viaPt, originName, destName, 'driving', timeoutMs);
+      }
+      return null;
+    }
     const data = await res.json();
     if (data.code !== 'Ok' || !Array.isArray(data.routes) || data.routes.length === 0) {
+      if (profile === 'bicycle') {
+        return fetchOSRMRoute(origPt, destPt, viaPt, originName, destName, 'driving', timeoutMs);
+      }
       return null;
     }
 

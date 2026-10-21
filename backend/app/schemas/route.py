@@ -22,3 +22,9 @@ class RekomendasiRuteResponse(BaseModel):
 
 class GenerateRuteRequest(BaseModel):
     catatan_penutupan: Optional[str] = None
+    origin_lat: Optional[float] = None
+    origin_lng: Optional[float] = None
+    dest_lat: Optional[float] = None
+    dest_lng: Optional[float] = None
+    origin_name: Optional[str] = None
+    dest_name: Optional[str] = None

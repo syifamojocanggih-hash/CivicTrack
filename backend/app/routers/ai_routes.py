@@ -103,14 +103,31 @@ def generate_alternative_routes(
     db.query(RekomendasiRute).filter(RekomendasiRute.proyek_id == id).delete()
     db.commit()
 
-    # Panggil layanan AI
+    # Validasi koordinat jika dikirimkan oleh klien
+    origin_coords = None
+    if req.origin_lat is not None and req.origin_lng is not None:
+        if not (-90.0 <= req.origin_lat <= 90.0 and -180.0 <= req.origin_lng <= 180.0):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Koordinat titik awal tidak valid.")
+        origin_coords = (float(req.origin_lat), float(req.origin_lng))
+
+    dest_coords = None
+    if req.dest_lat is not None and req.dest_lng is not None:
+        if not (-90.0 <= req.dest_lat <= 90.0 and -180.0 <= req.dest_lng <= 180.0):
+            raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail="Koordinat titik tujuan tidak valid.")
+        dest_coords = (float(req.dest_lat), float(req.dest_lng))
+
+    # Panggil layanan AI & routing engine
     ai_results = generate_ai_alternative_routes(
         nama_proyek=proyek.nama_proyek,
         kategori=proyek.kategori.value,
         nama_wilayah=nama_wilayah,
         latitude=float(proyek.latitude),
         longitude=float(proyek.longitude),
-        catatan_penutupan=req.catatan_penutupan
+        catatan_penutupan=req.catatan_penutupan,
+        origin_coords=origin_coords,
+        dest_coords=dest_coords,
+        origin_name=req.origin_name,
+        dest_name=req.dest_name
     )
 
     created_routes = []
