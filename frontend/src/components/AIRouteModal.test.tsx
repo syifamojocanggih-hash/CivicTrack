@@ -117,6 +117,7 @@ describe('AIRouteModal', () => {
   });
 
   it('renders modal header and 3 priority route cards with verified OSM badges', async () => {
+    const user = userEvent.setup();
     render(
       <AIRouteModal
         isOpen={true}
@@ -140,6 +141,13 @@ describe('AIRouteModal', () => {
 
     // Header title
     expect(screen.getByText(/Visualisasi & Generator Rute Alternatif Cerdas/i)).toBeInTheDocument();
+
+    // Default origin is empty, prompting user to pick location
+    expect(screen.getAllByText(/Titik Awal Belum Dipilih/i).length).toBeGreaterThan(0);
+
+    // Select preset to generate routes
+    const presetBtn = screen.getByRole('button', { name: /Alun-Alun ➔ Stasiun/i });
+    await user.click(presetBtn);
 
     // Route cards
     await waitFor(() => {
@@ -216,14 +224,21 @@ describe('AIRouteModal', () => {
     const originInput = inputs[0];
     const destInput = inputs[1];
 
+    expect(originInput.value).toBe('');
+    expect(destInput.value).toBe('');
+
+    // Preset button for the road corridor should exist and populate both points
+    const user = userEvent.setup();
+    const presetBtn = screen.getByRole('button', { name: /Sukodadi ➔ Sumberwudi/i });
+    expect(presetBtn).toBeInTheDocument();
+    await user.click(presetBtn);
+
     expect(originInput.value).toBe('Simpang Sukodadi');
     expect(destInput.value).toBe('Simpang Sumberwudi');
-
-    // Preset button for the road corridor should exist
-    expect(screen.getByRole('button', { name: /Sukodadi ➔ Sumberwudi/i })).toBeInTheDocument();
   });
 
   it('renders simulation controls and starts vehicle simulation without crashing', async () => {
+    const user = userEvent.setup();
     render(
       <AIRouteModal
         isOpen={true}
@@ -232,11 +247,13 @@ describe('AIRouteModal', () => {
       />
     );
 
+    const presetBtn = screen.getByRole('button', { name: /Alun-Alun ➔ Stasiun/i });
+    await user.click(presetBtn);
+
     await waitFor(() => {
       expect(screen.getByRole('button', { name: /Simulasi Kendaraan/i })).toBeInTheDocument();
     });
 
-    const user = userEvent.setup();
     const simBtn = screen.getByRole('button', { name: /Simulasi Kendaraan/i });
     await user.click(simBtn);
 

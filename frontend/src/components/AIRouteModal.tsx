@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -155,8 +155,8 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
   const routeCtx = useMemo(() => getProjectRouteContext(projectName, project), [projectName, project]);
 
-  const [origin, setOrigin] = useState(routeCtx.defaultOrigin);
-  const [destination, setDestination] = useState(routeCtx.defaultDestination);
+  const [origin, setOrigin] = useState('');
+  const [destination, setDestination] = useState('');
   const [customOriginCoords, setCustomOriginCoords] = useState<[number, number] | null>(null);
   const [customDestCoords, setCustomDestCoords] = useState<[number, number] | null>(null);
   const [pickingMode, setPickingMode] = useState<'origin' | 'destination' | null>(null);
@@ -186,29 +186,43 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   destinationRef.current = destination;
   const currentRequestIdRef = useRef<number>(0);
 
-  // Koordinat efektif aktif (prioritas kustom dari klik/drag peta, fallback ke pencarian landmark/wilayah)
-  const originCoords: [number, number] = useMemo(
-    () => customOriginCoords || resolvePlaceCoords(origin, projectCoords, true),
+  // Koordinat efektif aktif (prioritas kustom dari klik/drag peta, fallback ke pencarian landmark/wilayah jika diisi)
+  const originCoords: [number, number] | null = useMemo(
+    () => {
+      if (customOriginCoords) return customOriginCoords;
+      if (origin && origin.trim()) {
+        return resolvePlaceCoords(origin, projectCoords, true);
+      }
+      return null;
+    },
     [customOriginCoords, origin, projectCoords]
   );
-  const destCoords: [number, number] = useMemo(
-    () => customDestCoords || resolvePlaceCoords(destination, projectCoords, false),
+  const destCoords: [number, number] | null = useMemo(
+    () => {
+      if (customDestCoords) return customDestCoords;
+      if (destination && destination.trim()) {
+        return resolvePlaceCoords(destination, projectCoords, false);
+      }
+      return null;
+    },
     [customDestCoords, destination, projectCoords]
   );
 
-  const dStartProj = getDistanceMeters(originCoords, projectCoords);
-  const dEndProj = getDistanceMeters(destCoords, projectCoords);
-  const isRouteCrossingClosure = dStartProj < 4000 || dEndProj < 4000;
+  const dStartProj = originCoords ? getDistanceMeters(originCoords, projectCoords) : 0;
+  const dEndProj = destCoords ? getDistanceMeters(destCoords, projectCoords) : 0;
+  const isRouteCrossingClosure = (originCoords && dStartProj < 4000) || (destCoords && dEndProj < 4000);
 
-  // State rute rekomendasi (diambil langsung dari backend AI & Overpass OSM)
-  const [routes, setRoutes] = useState<RouteItem[]>(() =>
-    buildDefaultRoutes(routeCtx.defaultOrigin, routeCtx.defaultDestination, projectCoords, projectName, null, null)
-  );
+  // State rute rekomendasi (kosong saat titik awal belum ditentukan)
+  const [routes, setRoutes] = useState<RouteItem[]>([]);
 
   const [copiedRouteIndex, setCopiedRouteIndex] = useState<number | null>(null);
 
   // Sinkronisasi rute lokal instan setiap kali origin, destination, atau koordinat berubah
   useEffect(() => {
+    if (!origin.trim() || !destination.trim()) {
+      setRoutes([]);
+      return;
+    }
     const newRoutes = buildDefaultRoutes(
       origin,
       destination,
@@ -224,6 +238,10 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   // Menjamin polylines 100% menempel pada jaringan jalan resmi, tanpa garis potong kompas
   useEffect(() => {
     let isCancelled = false;
+
+    if (!originCoords || !destCoords || !origin.trim() || !destination.trim()) {
+      return;
+    }
 
     const syncRealOSRMPaths = async () => {
       const { viaNorth, viaSouth, viaLocal, needDetour } = calculateDetourWaypoints(
@@ -521,14 +539,13 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
   useEffect(() => {
     if (isOpen) {
-      const ctx = getProjectRouteContext(projectName, project);
-      setOrigin(ctx.defaultOrigin);
-      setDestination(ctx.defaultDestination);
+      setOrigin('');
+      setDestination('');
       setCustomOriginCoords(null);
       setCustomDestCoords(null);
       setPickingMode(null);
       setPickingNotice(null);
-      fetchLiveRoutes(false, ctx.defaultOrigin, ctx.defaultDestination, null, null);
+      setRoutes([]);
     }
   }, [isOpen, project?.id, projectName]);
 
@@ -721,95 +738,99 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     });
 
     // 3. Marker Start (A) dan Finish (B) untuk Rute Terpilih yang Terverifikasi
-    const startPt: [number, number] = originCoords;
-    const endPt: [number, number] = destCoords;
-
-    const originIcon = L.divIcon({
-      className: 'route-origin-icon',
-      html: `
-        <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-grab active:cursor-grabbing">
-          <div class="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white ring-2 ring-emerald-400">
-            A
+    if (originCoords) {
+      const startPt: [number, number] = originCoords;
+      const originIcon = L.divIcon({
+        className: 'route-origin-icon',
+        html: `
+          <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-grab active:cursor-grabbing">
+            <div class="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white ring-2 ring-emerald-400">
+              A
+            </div>
+            <div class="absolute -bottom-5 bg-emerald-950 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap border border-white/20">
+              START (A)
+            </div>
           </div>
-          <div class="absolute -bottom-5 bg-emerald-950 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap border border-white/20">
-            START (A)
-          </div>
-        </div>
-      `,
-      iconSize: [0, 0],
-    });
-
-    const originMarker = L.marker(startPt, { icon: originIcon, draggable: true })
-      .bindTooltip(
-        `<div class="text-xs font-bold text-emerald-800">
-          📍 Titik Awal: ${origin || 'Titik Awal'}
-          <div class="text-[10px] text-slate-500 font-normal mt-0.5">💡 Geser marker ini untuk memindahkan lokasi di peta</div>
-        </div>`
-      )
-      .addTo(layerGroup);
-
-    if (typeof originMarker?.on === 'function') {
-      originMarker.on('dragend', async (e) => {
-        const pos = (e.target as L.Marker).getLatLng();
-        const newPt: [number, number] = [Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6))];
-        const reqId = ++currentRequestIdRef.current;
-        const initialLabel = getNearestPlaceName(newPt, projectCoords, projectName);
-        setCustomOriginCoords(newPt);
-        setOrigin(initialLabel);
-        setPickingNotice(`Titik Awal digeser ke: ${initialLabel}`);
-
-        const resolvedInfo = await reverseGeocodeCoords(newPt, projectCoords, projectName);
-        if (currentRequestIdRef.current === reqId) {
-          setOrigin(resolvedInfo.label);
-          if (resolvedInfo.label !== 'Lokasi yang dipilih') {
-            setPickingNotice(`Titik Awal teridentifikasi: ${resolvedInfo.label}`);
-          }
-        }
+        `,
+        iconSize: [0, 0],
       });
+
+      const originMarker = L.marker(startPt, { icon: originIcon, draggable: true })
+        .bindTooltip(
+          `<div class="text-xs font-bold text-emerald-800">
+            📍 Titik Awal: ${origin || 'Titik Awal'}
+            <div class="text-[10px] text-slate-500 font-normal mt-0.5">💡 Geser marker ini untuk memindahkan lokasi di peta</div>
+          </div>`
+        )
+        .addTo(layerGroup);
+
+      if (typeof originMarker?.on === 'function') {
+        originMarker.on('dragend', async (e) => {
+          const pos = (e.target as L.Marker).getLatLng();
+          const newPt: [number, number] = [Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6))];
+          const reqId = ++currentRequestIdRef.current;
+          const initialLabel = getNearestPlaceName(newPt, projectCoords, projectName);
+          setCustomOriginCoords(newPt);
+          setOrigin(initialLabel);
+          setPickingNotice(`Titik Awal digeser ke: ${initialLabel}`);
+
+          const resolvedInfo = await reverseGeocodeCoords(newPt, projectCoords, projectName);
+          if (currentRequestIdRef.current === reqId) {
+            setOrigin(resolvedInfo.label);
+            if (resolvedInfo.label !== 'Lokasi yang dipilih') {
+              setPickingNotice(`Titik Awal teridentifikasi: ${resolvedInfo.label}`);
+            }
+          }
+        });
+      }
     }
 
-    const destIcon = L.divIcon({
-      className: 'route-dest-icon',
-      html: `
-        <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-grab active:cursor-grabbing">
-          <div class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white ring-2 ring-indigo-400">
-            B
+    if (destCoords) {
+      const endPt: [number, number] = destCoords;
+
+      const destIcon = L.divIcon({
+        className: 'route-dest-icon',
+        html: `
+          <div class="relative flex items-center justify-center w-8 h-8 -ml-4 -mt-4 cursor-grab active:cursor-grabbing">
+            <div class="w-7 h-7 rounded-full bg-indigo-600 text-white flex items-center justify-center font-black text-xs shadow-lg border-2 border-white ring-2 ring-indigo-400">
+              B
+            </div>
+            <div class="absolute -bottom-5 bg-indigo-950 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap border border-white/20">
+              FINISH (B)
+            </div>
           </div>
-          <div class="absolute -bottom-5 bg-indigo-950 text-white text-[9px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap border border-white/20">
-            FINISH (B)
-          </div>
-        </div>
-      `,
-      iconSize: [0, 0],
-    });
-
-    const destMarker = L.marker(endPt, { icon: destIcon, draggable: true })
-      .bindTooltip(
-        `<div class="text-xs font-bold text-indigo-800">
-          🏁 Titik Akhir: ${destination || 'Tujuan'}
-          <div class="text-[10px] text-slate-500 font-normal mt-0.5">💡 Geser marker ini untuk memindahkan lokasi di peta</div>
-        </div>`
-      )
-      .addTo(layerGroup);
-
-    if (typeof destMarker?.on === 'function') {
-      destMarker.on('dragend', async (e) => {
-        const pos = (e.target as L.Marker).getLatLng();
-        const newPt: [number, number] = [Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6))];
-        const reqId = ++currentRequestIdRef.current;
-        const initialLabel = getNearestPlaceName(newPt, projectCoords, projectName);
-        setCustomDestCoords(newPt);
-        setDestination(initialLabel);
-        setPickingNotice(`Titik Akhir digeser ke: ${initialLabel}`);
-
-        const resolvedInfo = await reverseGeocodeCoords(newPt, projectCoords, projectName);
-        if (currentRequestIdRef.current === reqId) {
-          setDestination(resolvedInfo.label);
-          if (resolvedInfo.label !== 'Lokasi yang dipilih') {
-            setPickingNotice(`Titik Akhir teridentifikasi: ${resolvedInfo.label}`);
-          }
-        }
+        `,
+        iconSize: [0, 0],
       });
+
+      const destMarker = L.marker(endPt, { icon: destIcon, draggable: true })
+        .bindTooltip(
+          `<div class="text-xs font-bold text-indigo-800">
+            🏁 Titik Akhir: ${destination || 'Tujuan'}
+            <div class="text-[10px] text-slate-500 font-normal mt-0.5">💡 Geser marker ini untuk memindahkan lokasi di peta</div>
+          </div>`
+        )
+        .addTo(layerGroup);
+
+      if (typeof destMarker?.on === 'function') {
+        destMarker.on('dragend', async (e) => {
+          const pos = (e.target as L.Marker).getLatLng();
+          const newPt: [number, number] = [Number(pos.lat.toFixed(6)), Number(pos.lng.toFixed(6))];
+          const reqId = ++currentRequestIdRef.current;
+          const initialLabel = getNearestPlaceName(newPt, projectCoords, projectName);
+          setCustomDestCoords(newPt);
+          setDestination(initialLabel);
+          setPickingNotice(`Titik Akhir digeser ke: ${initialLabel}`);
+
+          const resolvedInfo = await reverseGeocodeCoords(newPt, projectCoords, projectName);
+          if (currentRequestIdRef.current === reqId) {
+            setDestination(resolvedInfo.label);
+            if (resolvedInfo.label !== 'Lokasi yang dipilih') {
+              setPickingNotice(`Titik Akhir teridentifikasi: ${resolvedInfo.label}`);
+            }
+          }
+        });
+      }
     }
 
     // Auto-fit bounds ke rute aktif, titik awal/akhir, dan area proyek
@@ -817,20 +838,24 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     if (activeEntry && activeEntry.polyline.getLatLngs().length > 0) {
       activeEntry.polyline.bringToFront();
       const bounds = activeEntry.polyline.getBounds();
-      const dStart = getDistanceMeters(startPt, projectCoords);
-      const dEnd = getDistanceMeters(endPt, projectCoords);
-      if (dStart < 4000 || dEnd < 4000) {
-        bounds.extend(projectCoords);
-      }
-      bounds.extend(startPt);
-      bounds.extend(endPt);
+      bounds.extend(projectCoords);
+      if (originCoords) bounds.extend(originCoords);
+      if (destCoords) bounds.extend(destCoords);
       map.fitBounds(bounds.pad(0.16), { animate: true, duration: 0.5 });
-    } else {
-      const bounds = L.latLngBounds([startPt, endPt]);
-      if (getDistanceMeters(startPt, projectCoords) < 4000) {
+    } else if (originCoords && destCoords) {
+      const bounds = L.latLngBounds([originCoords, destCoords]);
+      if (getDistanceMeters(originCoords, projectCoords) < 4000) {
         bounds.extend(projectCoords);
       }
       map.fitBounds(bounds.pad(0.2), { animate: true });
+    } else if (originCoords) {
+      const bounds = L.latLngBounds([originCoords, projectCoords]);
+      map.fitBounds(bounds.pad(0.25), { animate: true });
+    } else if (destCoords) {
+      const bounds = L.latLngBounds([destCoords, projectCoords]);
+      map.fitBounds(bounds.pad(0.25), { animate: true });
+    } else {
+      map.setView(projectCoords, 14);
     }
   }, [routes, selectedRouteIndex, isOpen, projectCoords, projectName, origin, destination, originCoords, destCoords]);
 
@@ -1012,10 +1037,34 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
             {/* Map Container */}
             <div ref={mapContainerRef} className="w-full h-full min-h-[380px] z-10" />
 
-            {/* Overlay Banner saat Geometri Belum Terverifikasi / Tidak Tersedia */}
-            {(!routes[selectedRouteIndex]?.geografis_terverifikasi ||
+            {/* Overlay Banner saat Titik Awal belum ditentukan ATAU Geometri Belum Terverifikasi */}
+            {!origin.trim() ? (
+              <div className="absolute inset-x-4 top-14 z-[450] bg-[#0B2540]/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-xl border border-white/20 flex items-center justify-between gap-3 animate-fade-in pointer-events-auto">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 border border-emerald-400/30">
+                    <MapPin className="w-4 h-4 animate-bounce" />
+                  </div>
+                  <div className="text-left">
+                    <div className="text-xs font-bold leading-tight">Titik Awal Belum Dipilih</div>
+                    <div className="text-[11px] text-slate-300 leading-normal mt-0.5">
+                      Pilih lokasi di peta atau klik salah satu preset untuk melihat rute navigasi.
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPickingMode('origin');
+                    setPickingNotice('📍 Klik lokasi pada peta untuk menentukan Titik Awal');
+                  }}
+                  className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl shadow cursor-pointer shrink-0 transition-colors"
+                >
+                  Pilih di Peta
+                </button>
+              </div>
+            ) : (!routes[selectedRouteIndex]?.geografis_terverifikasi ||
               !routes[selectedRouteIndex]?.coordinates ||
-              routes[selectedRouteIndex]?.coordinates!.length < 2) && (
+              routes[selectedRouteIndex]?.coordinates!.length < 2) && !isAnalyzing ? (
               <div className="absolute inset-x-4 top-14 z-[450] bg-amber-500/95 backdrop-blur-md text-white px-4 py-3 rounded-2xl shadow-xl border border-amber-300/80 flex items-center gap-3 animate-fade-in pointer-events-auto">
                 <AlertTriangle className="w-5 h-5 text-white shrink-0" />
                 <div className="text-left">
@@ -1025,7 +1074,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                   </div>
                 </div>
               </div>
-            )}
+            ) : null}
 
             {/* Mode Pemilihan Titik di Peta (Floating Guide Banner) */}
             {pickingMode && (
@@ -1186,7 +1235,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                         setOrigin(e.target.value);
                         setCustomOriginCoords(null);
                       }}
-                      placeholder={`Contoh: ${routeCtx.defaultOrigin}`}
+                      placeholder="Pilih lokasi di peta atau ketik titik awal..."
                       className={`w-full px-3 py-1.5 text-xs border rounded-xl bg-white outline-none transition-all pr-8 ${
                         pickingMode === 'origin'
                           ? 'border-emerald-500 ring-2 ring-emerald-500/20'
@@ -1247,7 +1296,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                         setDestination(e.target.value);
                         setCustomDestCoords(null);
                       }}
-                      placeholder={`Contoh: ${routeCtx.defaultDestination}`}
+                      placeholder="Pilih lokasi di peta atau ketik tujuan..."
                       className={`w-full px-3 py-1.5 text-xs border rounded-xl bg-white outline-none transition-all pr-8 ${
                         pickingMode === 'destination'
                           ? 'border-indigo-500 ring-2 ring-indigo-500/20'
@@ -1344,6 +1393,29 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
             {/* List 3 Alternatif Rute Terstruktur */}
             <div className="p-4 space-y-3.5 flex-1 overflow-y-auto">
+              {!origin.trim() && !isAnalyzing && (
+                <div className="p-6 text-center bg-white rounded-2xl border border-dashed border-slate-300 flex flex-col items-center justify-center my-4">
+                  <div className="w-12 h-12 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center mb-3 border border-emerald-100 shadow-xs">
+                    <MapPin className="w-6 h-6 animate-pulse" />
+                  </div>
+                  <h4 className="text-xs font-bold text-slate-800 mb-1">Titik Awal Belum Dipilih</h4>
+                  <p className="text-[11px] text-slate-500 max-w-xs mb-3.5 leading-relaxed">
+                    Tentukan lokasi asal keberangkatan Anda langsung di peta atau pilih tombol preset rute di atas.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPickingMode('origin');
+                      setPickingNotice('📍 Klik lokasi pada peta untuk menentukan Titik Awal');
+                    }}
+                    className="px-3.5 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-bold transition-all shadow-md flex items-center gap-1.5 cursor-pointer"
+                  >
+                    <MapPin className="w-3.5 h-3.5" />
+                    <span>Pilih Titik Awal di Peta</span>
+                  </button>
+                </div>
+              )}
+
               {isAnalyzing && (
                 <div className="p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-2 text-xs text-indigo-900 font-semibold animate-pulse">
                   <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin shrink-0" />

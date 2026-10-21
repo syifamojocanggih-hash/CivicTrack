@@ -371,6 +371,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const polygonsLayerRef = useRef<L.LayerGroup | null>(null);
   const userMarkerRef = useRef<L.Marker | null>(null);
   const legendRef = useRef<HTMLDivElement | null>(null);
+  const skipNextCameraFitRef = useRef<boolean>(false);
 
   // Auto-hide Legenda popover saat klik di luar area legenda atau menekan tombol Escape
   useEffect(() => {
@@ -641,6 +642,9 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     const map = L.map(mapContainerRef.current, {
       zoomControl: false,
       minZoom: responsiveMinZoom,
+      doubleClickZoom: false, // Nonaktifkan default Leaflet zoom-in agar double-click berfungsi sebagai zoom-out
+      zoomSnap: 0.25, // Level zoom pecahan agar penyesuaian kamera halus & proporsional
+      zoomDelta: 1, // Tombol +/- dan double-click zoom out tetap melangkah 1 level normal
     });
 
     // Inisialisasi awal: langsung sesuaikan batas pandang ke seluruh 27 kecamatan Lamongan
@@ -693,6 +697,21 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     map.addLayer(clusterGroup);
     markersLayerRef.current = clusterGroup;
 
+    // Automatically reset selections when clicking on empty map area outside districts without zooming out
+    map.on('click', () => {
+      skipNextCameraFitRef.current = true;
+      setSelectedKecamatan('all');
+      setSelectedDesaId('all');
+    });
+
+    // Double-click on map to zoom out (mundur 1 level per double-click)
+    map.on('dblclick', (e: any) => {
+      if (e && e.originalEvent) {
+        L.DomEvent.stopPropagation(e);
+      }
+      map.zoomOut();
+    });
+
     mapInstanceRef.current = map;
 
     return () => {
@@ -707,6 +726,11 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   useEffect(() => {
     const map = mapInstanceRef.current;
     if (!map) return;
+
+    if (skipNextCameraFitRef.current) {
+      skipNextCameraFitRef.current = false;
+      return;
+    }
 
     map.invalidateSize();
 
@@ -742,7 +766,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       map.fitBounds(ALL_LAMONGAN_BOUNDS, {
         paddingTopLeft: [leftPad, topPad],
         paddingBottomRight: [rightPad, bottomPad],
-        maxZoom: 12,
+        maxZoom: 11.5,
         animate: true,
         duration: 0.85,
       });
@@ -754,12 +778,13 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       if (desaFeat) {
         const bounds = desaFeat.properties?.bounds || (L.geoJSON ? L.geoJSON(desaFeat).getBounds() : null);
         if (bounds) {
-          map.fitBounds(bounds, {
+          // Soft and graceful flyToBounds for selected desa
+          map.flyToBounds(bounds, {
             paddingTopLeft: [leftPad, topPad],
             paddingBottomRight: [rightPad, bottomPad],
-            maxZoom: isMobile ? 14 : 15,
-            animate: true,
-            duration: 0.85,
+            maxZoom: isMobile ? 12.8 : 13.2,
+            duration: 1.4,
+            easeLinearity: 0.25,
           });
         }
       }
@@ -774,12 +799,13 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       if (feat) {
         const bounds = feat.properties?.bounds || (L.geoJSON ? L.geoJSON(feat).getBounds() : null);
         if (bounds) {
-          map.fitBounds(bounds, {
+          // Soft, gentle overview of the kecamatan - not abruptly deep
+          map.flyToBounds(bounds, {
             paddingTopLeft: [leftPad, topPad],
             paddingBottomRight: [rightPad, bottomPad],
-            maxZoom: isMobile ? 13 : 14,
-            animate: true,
-            duration: 0.85,
+            maxZoom: isMobile ? 11.8 : 12.2,
+            duration: 1.4,
+            easeLinearity: 0.25,
           });
         }
       }
@@ -904,10 +930,34 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               geoLayer.resetStyle(e.target);
             }
           },
-          click: () => {
-            // Decoupled: only set state. The single camera effect smoothly handles navigation!
-            setSelectedKecamatan(props.nama);
-            setSelectedDesaId('all');
+          click: (e: any) => {
+            if (e && e.originalEvent) {
+              L.DomEvent.stopPropagation(e);
+            }
+            if (selectedKecamatan === props.nama) {
+              if (selectedDesaId !== 'all') {
+                setSelectedDesaId('all');
+              } else {
+                skipNextCameraFitRef.current = true;
+                setSelectedKecamatan('all');
+              }
+            } else {
+              if (selectedKecamatan !== 'all') {
+                // Clicking outside the currently selected kecamatan resets back to all districts without zooming out
+                skipNextCameraFitRef.current = true;
+                setSelectedKecamatan('all');
+                setSelectedDesaId('all');
+              } else {
+                setSelectedKecamatan(props.nama);
+                setSelectedDesaId('all');
+              }
+            }
+          },
+          dblclick: (e: any) => {
+            if (e && e.originalEvent) {
+              L.DomEvent.stopPropagation(e);
+            }
+            map.zoomOut();
           },
         });
       },
@@ -973,6 +1023,21 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
             if (isDesaSelected) {
               selectedDesaLayerInstance = layer;
+              layer.on({
+                click: (e: any) => {
+                  if (e && e.originalEvent) {
+                    L.DomEvent.stopPropagation(e);
+                  }
+                  // Clicking the selected desa resets back to kecamatan level
+                  setSelectedDesaId('all');
+                },
+                dblclick: (e: any) => {
+                  if (e && e.originalEvent) {
+                    L.DomEvent.stopPropagation(e);
+                  }
+                  map.zoomOut();
+                },
+              });
               layer.bindTooltip(
                 `<div class="p-2.5 font-heading text-xs min-w-[170px] bg-white rounded-xl shadow-xl border-2 border-indigo-400">
                   <div class="flex items-center gap-1.5 pb-1.5 mb-1.5 border-b border-indigo-50">
@@ -1018,8 +1083,17 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 mouseout: (e: any) => {
                   desaGeoLayer.resetStyle(e.target);
                 },
-                click: () => {
+                click: (e: any) => {
+                  if (e && e.originalEvent) {
+                    L.DomEvent.stopPropagation(e);
+                  }
                   setSelectedDesaId(String(fProps.id));
+                },
+                dblclick: (e: any) => {
+                  if (e && e.originalEvent) {
+                    L.DomEvent.stopPropagation(e);
+                  }
+                  map.zoomOut();
                 },
               });
             }
@@ -1120,9 +1194,10 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
     const proj = enrichedProjects.find((p) => p.id === id);
     if (proj && mapInstanceRef.current && typeof mapInstanceRef.current.flyTo === 'function') {
-      mapInstanceRef.current.flyTo([proj.latitude, proj.longitude], 15, {
+      mapInstanceRef.current.flyTo([proj.latitude, proj.longitude], 13.8, {
         animate: true,
-        duration: 0.8,
+        duration: 1.3,
+        easeLinearity: 0.25,
       });
     }
   }, [enrichedProjects]);
@@ -1206,8 +1281,17 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         { direction: 'top', offset: [0, -22], opacity: 0.98 }
       );
 
-      marker.on('click', () => {
+      marker.on('click', (e: any) => {
+        if (e && e.originalEvent) {
+          L.DomEvent.stopPropagation(e);
+        }
         handleSelectPin(proj.id);
+      });
+
+      marker.on('dblclick', (e: any) => {
+        if (e && e.originalEvent) {
+          L.DomEvent.stopPropagation(e);
+        }
       });
 
       markersGroup.addLayer(marker);
