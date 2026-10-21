@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   BookOpen,
   Code2,
@@ -45,7 +45,7 @@ export const PenelitiDashboard: React.FC<PenelitiDashboardProps> = ({
             <BookOpen className="w-4 h-4 text-emerald-200" />
             <span>Portal Riset, Akademisi &amp; Jurnalisme Data</span>
           </div>
-          <h1 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold tracking-tight">
+          <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight">
             Data Terbuka CivicTrack
           </h1>
           <p className="text-white/85 text-xs sm:text-sm mt-1 leading-relaxed">
@@ -75,7 +75,7 @@ export const PenelitiDashboard: React.FC<PenelitiDashboardProps> = ({
       <div className="bg-white rounded-2xl border border-[#DCE0E6] p-6 shadow-xs space-y-4">
         <div className="flex items-center justify-between">
           <div>
-            <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
+            <h3 className="font-heading font-bold text-base text-[#184C78]">
               Katalog REST API Terbuka Publik (Open API V1)
             </h3>
             <p className="text-xs text-[#6C757D] mt-0.5">

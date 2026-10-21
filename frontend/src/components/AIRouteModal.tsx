@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+﻿import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -705,7 +705,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       }).addTo(layerGroup);
 
       polyline.bindTooltip(
-        `<div class="p-1 font-['DM_Sans'] text-xs">
+        `<div class="p-1 font-heading text-xs">
           <strong style="color: ${color}">Rute ${idx + 1}: ${r.nama_rute}</strong><br/>
           <span class="text-slate-600 font-medium">${r.estimasi_waktu_menit} menit • ${r.estimasi_jarak_km} km</span>
           <br/><span class="text-emerald-600 text-[10px] font-bold">✓ Terverifikasi Peta OSM</span>
@@ -967,7 +967,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
               </span>
             </div>
 
-            <h2 id="modal-ai-route-title" className="font-['DM_Sans'] text-lg sm:text-2xl font-bold tracking-tight pr-8 sm:pr-0">
+            <h2 id="modal-ai-route-title" className="font-heading text-lg sm:text-2xl font-bold tracking-tight pr-8 sm:pr-0">
               Visualisasi &amp; Generator Rute Alternatif Cerdas
             </h2>
             <p className="text-xs text-white/80 mt-1 max-w-2xl leading-relaxed">

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+﻿import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Compass, Maximize2, MapPin, Layers, ArrowRight } from 'lucide-react';
@@ -130,7 +130,7 @@ export const MiniMapOverview: React.FC<MiniMapOverviewProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h2 className="font-['DM_Sans'] font-extrabold text-base sm:text-lg text-[#0B2540] group-hover:text-[#184C78] transition-colors">
+              <h2 className="font-heading font-extrabold text-base sm:text-lg text-[#0B2540] group-hover:text-[#184C78] transition-colors">
                 Overview Sebaran Spasial Proyek (GIS)
               </h2>
               <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">

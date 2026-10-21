@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import { MapPin, Compass, LayoutDashboard } from 'lucide-react';
 import type { ProyekItem } from '../types';
 
@@ -137,7 +137,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
         {/* Left Column: Hero Text & Actions (7 Cols on desktop for better breathing room) */}
         <div className="lg:col-span-6 xl:col-span-7 flex flex-col justify-center">
           {/* Headline with typographic contrast */}
-          <h1 className="font-['DM_Sans'] text-3xl sm:text-4xl lg:text-[42px] font-black text-[#0B2540] leading-[1.15] tracking-[-1px] mb-4 max-w-[540px]">
+          <h1 className="font-heading text-3xl sm:text-4xl lg:text-[42px] font-black text-[#0B2540] leading-[1.15] tracking-[-1px] mb-4 max-w-[540px]">
             Pantau proyek pembangunan di kotamu{' '}
             <span className="bg-gradient-to-r from-[#184C78] via-[#2980B9] to-[#0284c7] bg-clip-text text-transparent">
               secara langsung
@@ -184,7 +184,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
                 <div className="w-6 h-6 rounded-md bg-[#EBF4FB] flex items-center justify-center text-[#184C78]">
                   <MapPin className="w-3.5 h-3.5 text-[#184C78]" />
                 </div>
-                <span className="text-xs font-bold text-[#184C78] font-['DM_Sans']">
+                <span className="text-xs font-bold text-[#184C78] font-heading">
                   Peta Proyek Pembangunan
                 </span>
                 <span className="text-[10px] font-bold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-200">
@@ -304,7 +304,7 @@ export const HeroSection: React.FC<HeroSectionProps> = ({
               {/* Title & Action Button */}
               <div className="flex items-center justify-between gap-3 mb-2">
                 <div>
-                  <h4 className="text-sm font-extrabold text-[#0B2540] font-['DM_Sans'] line-clamp-1 leading-snug">
+                  <h4 className="text-sm font-extrabold text-[#0B2540] font-heading line-clamp-1 leading-snug">
                     {currentHighlight.name}
                   </h4>
                   <p className="text-[11px] text-slate-500 mt-0.5 flex items-center gap-1">

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import {
   Menu,
   Bell,
@@ -141,7 +141,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           <div>
             <div className="flex items-center gap-2">
               <span className="text-xs font-bold text-slate-400 hidden sm:inline">CivicTrack /</span>
-              <h1 className="font-['DM_Sans'] font-bold text-base sm:text-lg text-[#184C78] leading-tight">
+              <h1 className="font-heading font-bold text-base sm:text-lg text-[#184C78] leading-tight">
                 {activeNavTitle}
               </h1>
             </div>

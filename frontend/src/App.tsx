@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+﻿import { useState, useMemo, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { StatStrip } from './components/StatStrip';
@@ -52,6 +52,8 @@ export function App() {
 
   // Sync projects and stats from backend on mount, plus restore database user session
   useEffect(() => {
+    document.title = 'CivicTrack: Transparansi Pembangunan Daerah';
+
     // 0. Check real authenticated user session from database
     const token = localStorage.getItem('civictrack_token');
     if (token) {
@@ -285,7 +287,7 @@ export function App() {
   };
 
   return (
-    <div className="min-h-screen bg-white flex flex-col font-['Inter'] text-[#212529]">
+    <div className="min-h-screen bg-white flex flex-col font-sans text-[#212529]">
       {/* ── CONDITIONAL RENDERING: LOGIN/REGISTER PAGE vs MAP EXPLORER vs DASHBOARD vs LANDING PAGE ── */}
       {currentView === 'login' || currentView === 'register' ? (
         <LoginPage

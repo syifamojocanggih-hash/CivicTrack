@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { X, MapPin, Building, DollarSign, Star, CheckCircle, Bell, Sparkles, Send, Check, AlertCircle } from 'lucide-react';
 import type { ProyekItem, UserProfile } from '../types';
 import { apiService } from '../services/api';
+import { getRealProjectImage } from '../utils/projectImages';
 
 interface ProjectDetailModalProps {
   project: ProyekItem | null;
@@ -251,7 +252,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               <span className="text-xs text-white/70">ID #{project.id.toString().padStart(4, '0')}</span>
             </div>
 
-            <h2 id="modal-project-detail-title" className="font-['DM_Sans'] text-lg sm:text-2xl font-bold tracking-tight mb-2 pr-8 sm:pr-0">
+            <h2 id="modal-project-detail-title" className="font-heading text-lg sm:text-2xl font-bold tracking-tight mb-2 pr-8 sm:pr-0">
               {project.nama_proyek}
             </h2>
 
@@ -314,7 +315,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
         <div className="flex border-b border-[#DCE0E6] bg-white px-3 sm:px-6 shrink-0 overflow-x-auto scrollbar-thin whitespace-nowrap">
           <button
             onClick={() => setActiveTab('timeline')}
-            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
+            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-heading transition-colors border-b-2 cursor-pointer ${
               activeTab === 'timeline'
                 ? 'border-[#184C78] text-[#184C78]'
                 : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
@@ -324,7 +325,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('gallery')}
-            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
+            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-heading transition-colors border-b-2 cursor-pointer ${
               activeTab === 'gallery'
                 ? 'border-[#184C78] text-[#184C78]'
                 : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
@@ -334,7 +335,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('report')}
-            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
+            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-heading transition-colors border-b-2 cursor-pointer ${
               activeTab === 'report'
                 ? 'border-[#184C78] text-[#184C78]'
                 : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
@@ -344,7 +345,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </button>
           <button
             onClick={() => setActiveTab('rating')}
-            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-['DM_Sans'] transition-colors border-b-2 cursor-pointer ${
+            className={`py-2.5 sm:py-3 px-3 sm:px-4 text-xs font-bold font-heading transition-colors border-b-2 cursor-pointer ${
               activeTab === 'rating'
                 ? 'border-[#184C78] text-[#184C78]'
                 : 'border-transparent text-[#6C757D] hover:text-[#184C78]'
@@ -363,7 +364,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 {project.deskripsi}
               </p>
 
-              <h4 className="font-['DM_Sans'] text-sm font-bold text-[#184C78]">Tahapan Pengerjaan Lapangan:</h4>
+              <h4 className="font-heading text-sm font-bold text-[#184C78]">Tahapan Pengerjaan Lapangan:</h4>
 
               <div className="relative pl-6 border-l-2 border-[#DCE0E6] ml-3 space-y-6">
                 {timelineSteps.map((step, idx) => (
@@ -399,7 +400,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           {activeTab === 'gallery' && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <h4 className="font-['DM_Sans'] text-sm font-bold text-[#184C78]">Dokumentasi Fisik Lapangan:</h4>
+                <h4 className="font-heading text-sm font-bold text-[#184C78]">Dokumentasi Fisik Lapangan:</h4>
                 <span className="text-[11px] text-[#6C757D] font-medium">Foto Berkas &amp; Rekaman Video Drone</span>
               </div>
 
@@ -442,24 +443,26 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                 <div className="bg-white rounded-xl overflow-hidden border border-[#DCE0E6] shadow-sm flex flex-col">
                   <div className="relative h-44 bg-slate-100 overflow-hidden">
                     <img
-                      src="https://images.unsplash.com/photo-1578575437130-527eed3abbec?w=800&auto=format&fit=crop&q=80"
-                      alt="Foto Fisik"
+                      src={getRealProjectImage(project)}
+                      alt="Foto Fisik Real"
                       className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
                     />
                     <div className="absolute top-2 left-2 bg-[#184C78]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                      📸 Foto Lapangan
+                      📸 Bukti Fisik Lapangan Real
                     </div>
                   </div>
                   <div className="p-3 bg-white text-xs flex-1 flex flex-col justify-between">
                     <div>
-                      <span className="font-bold text-[#184C78] block">Pemasangan Struktur &amp; Perapihan Bahu Jalan</span>
+                      <span className="font-bold text-[#184C78] block">
+                        Dokumentasi Proyek: {project?.nama_proyek || 'Infrastruktur Daerah'}
+                      </span>
                       <p className="text-[11px] text-[#6C757D] mt-1">
-                        Pengecekan elevasi dan uji kepadatan agregat telah lolos uji laboratorium dinas.
+                        Dokumentasi visual berkala tim verifikator dinas daerah untuk validasi progres fisik lapangan.
                       </p>
                     </div>
                     <div className="mt-2 pt-2 border-t border-[#DCE0E6]/60 flex items-center justify-between text-[10px] text-[#6C757D]">
-                      <span>Bobot Tahap: 65%</span>
-                      <span className="text-emerald-700 font-semibold">Terverifikasi</span>
+                      <span>Bobot Realisasi: {project?.progres_persen || 65}%</span>
+                      <span className="text-emerald-700 font-semibold">Terverifikasi Resmi</span>
                     </div>
                   </div>
                 </div>
@@ -545,7 +548,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             <div className="space-y-4">
               <div className="flex items-center justify-between bg-[#F5F7FA] p-4 rounded-xl border border-[#DCE0E6]">
                 <div>
-                  <div className="text-2xl font-bold font-['DM_Sans'] text-[#184C78] flex items-center gap-1.5">
+                  <div className="text-2xl font-bold font-heading text-[#184C78] flex items-center gap-1.5">
                     {project.rata_rata_rating || '4.5'}
                     <Star className="w-5 h-5 fill-amber-400 text-amber-400" />
                   </div>

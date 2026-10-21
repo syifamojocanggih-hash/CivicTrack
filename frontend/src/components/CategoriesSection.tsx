@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import type { CategoryItem, ProyekKategori } from '../types';
 
 interface CategoriesSectionProps {
@@ -15,7 +15,7 @@ export const CategoriesSection: React.FC<CategoriesSectionProps> = ({
   return (
     <section id="categories" className="max-w-[1180px] mx-auto px-6 sm:px-8 py-20">
       <div className="max-w-[520px] mb-10">
-        <h2 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold text-[#184C78] tracking-[-0.6px] leading-[1.2] mb-3">
+        <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#184C78] tracking-[-0.6px] leading-[1.2] mb-3">
           Telusuri berdasarkan kategori
         </h2>
         <p className="text-[15px] text-[#6C757D] leading-[1.65]">
@@ -39,7 +39,7 @@ export const CategoriesSection: React.FC<CategoriesSectionProps> = ({
               <span className="text-3xl mb-2.5 block transform transition-transform group-hover:scale-110">
                 {cat.icon}
               </span>
-              <h3 className="font-['DM_Sans'] text-sm font-bold text-[#184C78] mb-1">
+              <h3 className="font-heading text-sm font-bold text-[#184C78] mb-1">
                 {cat.name}
               </h3>
               <p className="text-xs text-[#6C757D]">

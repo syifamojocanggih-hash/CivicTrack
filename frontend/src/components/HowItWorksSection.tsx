@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Search, FileSpreadsheet, Camera, CheckCircle2 } from 'lucide-react';
 import type { StepItem } from '../types';
 
@@ -45,7 +45,7 @@ export const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ onExploreC
         {/* Section Header */}
         <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-10">
           <div className="max-w-[620px]">
-            <h2 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold text-[#184C78] tracking-[-0.6px] leading-[1.2] mb-2">
+            <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#184C78] tracking-[-0.6px] leading-[1.2] mb-2">
               Alur Partisipasi dan Pengawasan Proyek
             </h2>
             <p className="text-[15px] text-[#6C757D] leading-[1.65]">
@@ -78,7 +78,7 @@ export const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ onExploreC
                     <div className="w-10 h-10 rounded-lg bg-[#EBF4FB] flex items-center justify-center text-[#2980B9]">
                       <Icon className="w-5 h-5" />
                     </div>
-                    <span className="font-['DM_Sans'] text-lg font-black text-slate-300 group-hover:text-[#2980B9] transition-colors">
+                    <span className="font-heading text-lg font-black text-slate-300 group-hover:text-[#2980B9] transition-colors">
                       {step.num}
                     </span>
                   </div>
@@ -87,7 +87,7 @@ export const HowItWorksSection: React.FC<HowItWorksSectionProps> = ({ onExploreC
                     {step.tag}
                   </span>
 
-                  <h3 className="font-['DM_Sans'] text-[15px] font-bold text-[#184C78] mb-1.5 leading-snug">
+                  <h3 className="font-heading text-[15px] font-bold text-[#184C78] mb-1.5 leading-snug">
                     {step.title}
                   </h3>
 

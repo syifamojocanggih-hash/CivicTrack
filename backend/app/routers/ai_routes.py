@@ -127,7 +127,8 @@ def generate_alternative_routes(
         origin_coords=origin_coords,
         dest_coords=dest_coords,
         origin_name=req.origin_name,
-        dest_name=req.dest_name
+        dest_name=req.dest_name,
+        jenis_kendaraan=req.jenis_kendaraan,
     )
 
     created_routes = []

@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -174,7 +174,7 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
               </div>
               <div>
                 <div className="flex items-center gap-2">
-                  <h3 id="modal-nearby-map-title" className="font-['DM_Sans'] text-base sm:text-xl font-bold tracking-tight">
+                  <h3 id="modal-nearby-map-title" className="font-heading text-base sm:text-xl font-bold tracking-tight">
                     Peta &amp; Informasi Pembangunan di Sekitar
                   </h3>
                   <span className="hidden sm:inline-flex items-center gap-1 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-semibold px-2 py-0.5 rounded-full">
@@ -267,7 +267,7 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
             <div className="absolute top-3 left-3 right-3 z-10 flex items-center justify-between pointer-events-none">
               <div className="bg-white/95 backdrop-blur-md border border-[#DCE0E6] shadow-sm rounded-lg px-3 py-1.5 flex items-center gap-2 pointer-events-auto">
                 <Layers className="w-3.5 h-3.5 text-[#184C78]" />
-                <span className="text-xs font-bold text-[#184C78] font-['DM_Sans']">
+                <span className="text-xs font-bold text-[#184C78] font-heading">
                   Peta Sekitar Kota Malang
                 </span>
                 <span className="text-[10px] text-[#6C757D]">
@@ -485,7 +485,7 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
           <div className="lg:col-span-5 flex flex-col bg-white overflow-hidden">
             <div className="px-5 py-3.5 border-b border-[#DCE0E6] bg-[#FAFCFF] flex items-center justify-between">
               <div>
-                <h4 className="font-['DM_Sans'] font-bold text-sm text-[#184C78]">
+                <h4 className="font-heading font-bold text-sm text-[#184C78]">
                   Pekerjaan di Radius {selectedRadius === 10 ? 'Seluruh Kota' : `${selectedRadius} km`}
                 </h4>
                 <p className="text-[11px] text-[#6C757D]">
@@ -570,7 +570,7 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
                         </span>
                       </div>
 
-                      <h5 className="font-['DM_Sans'] text-sm font-bold text-[#184C78] line-clamp-1 mb-1">
+                      <h5 className="font-heading text-sm font-bold text-[#184C78] line-clamp-1 mb-1">
                         {proj.nama_proyek}
                       </h5>
 

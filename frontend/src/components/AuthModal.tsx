@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, AlertCircle, Loader2, Check } from 'lucide-react';
 import type { UserProfile } from '../types';
@@ -118,7 +118,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
 
             {/* Title */}
-            <h2 className="text-[28px] font-bold tracking-tight font-['DM_Sans'] text-white mt-3">
+            <h2 className="text-[28px] font-bold tracking-tight font-heading text-white mt-3">
               CivicTrack
             </h2>
 
@@ -185,7 +185,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 className="w-8 h-8 object-contain"
               />
             </div>
-            <h2 className="text-xl font-bold tracking-tight font-['DM_Sans']">
+            <h2 className="text-xl font-bold tracking-tight font-heading">
               CivicTrack
             </h2>
             <p className="text-[11px] text-white/80 max-w-xs mt-0.5">
@@ -220,7 +220,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         <div className="flex-1 bg-white p-6 sm:p-10 md:p-12 flex flex-col justify-center overflow-y-auto min-h-0 scrollbar-thin">
           <div className="max-w-[340px] w-full mx-auto">
             {/* Title */}
-            <h3 id="modal-auth-title" className="text-xl sm:text-2xl font-bold text-[#184C78] tracking-tight mb-5 sm:mb-7 text-center font-['DM_Sans']">
+            <h3 id="modal-auth-title" className="text-xl sm:text-2xl font-bold text-[#184C78] tracking-tight mb-5 sm:mb-7 text-center font-heading">
               {mode === 'login' ? 'Masuk ke Akun' : 'Daftar Akun Baru'}
             </h3>
 

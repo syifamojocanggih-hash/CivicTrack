@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+﻿import React, { useState, useEffect, useMemo } from 'react';
 import {
   Award,
   TrendingUp,
@@ -149,7 +149,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
               <Award className="w-4 h-4 text-amber-300" />
               <span>Executive Dashboard Pimpinan Daerah</span>
             </div>
-            <h1 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight">
               {currentUser.nama}
             </h1>
             <p className="text-white/80 text-xs sm:text-sm mt-1">
@@ -209,7 +209,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
             <span>Total Pagu Daerah</span>
             <DollarSign className="w-4 h-4 text-[#184C78]" />
           </div>
-          <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#184C78] mt-1.5">
+          <div className="text-2xl font-heading font-extrabold text-[#184C78] mt-1.5">
             Rp {displayTotalPagu} M
           </div>
           <div className="text-[11px] text-[#1A9E6E] font-semibold mt-1 flex items-center gap-1">
@@ -223,7 +223,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
             <span>Indeks Kepuasan (IKM)</span>
             <Award className="w-4 h-4 text-amber-500" />
           </div>
-          <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529] mt-1.5 flex items-baseline gap-1">
+          <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5 flex items-baseline gap-1">
             <span>{avgRatingDaerah}</span>
             <span className="text-sm font-normal text-[#6C757D]">/ 5.0</span>
           </div>
@@ -237,7 +237,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
             <span>Respon Aduan Warga</span>
             <ShieldCheck className="w-4 h-4 text-[#1A9E6E]" />
           </div>
-          <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#1A9E6E] mt-1.5">
+          <div className="text-2xl font-heading font-extrabold text-[#1A9E6E] mt-1.5">
             {penyelesaianAduanPersen}%
           </div>
           <div className="text-[11px] text-[#6C757D] font-medium mt-1">
@@ -250,7 +250,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
             <span>Kecepatan Respons</span>
             <Clock className="w-4 h-4 text-[#2980B9]" />
           </div>
-          <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529] mt-1.5">
+          <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
             1.6 Hari
           </div>
           <div className="text-[11px] text-[#1A9E6E] font-semibold mt-1">
@@ -264,7 +264,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <AlertTriangle className="w-5 h-5 text-[#E67E22]" />
-            <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
+            <h3 className="font-heading font-bold text-base text-[#184C78]">
               Early Warning System (Peringatan Dini Proyek Kritis)
             </h3>
           </div>
@@ -320,7 +320,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
         <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs overflow-hidden">
           <div className="p-4 border-b border-[#DCE0E6] flex items-center justify-between">
             <div>
-              <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
+              <h3 className="font-heading font-bold text-base text-[#184C78]">
                 Tabel Komparasi Efektivitas 5 Organisasi Perangkat Daerah (OPD)
               </h3>
               <p className="text-xs text-[#6C757D]">
@@ -331,7 +331,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
 
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
-              <thead className="bg-[#F5F7FA] text-[#184C78] font-['DM_Sans'] font-bold border-b border-[#DCE0E6]">
+              <thead className="bg-[#F5F7FA] text-[#184C78] font-heading font-bold border-b border-[#DCE0E6]">
                 <tr>
                   <th className="p-3.5">Organisasi Perangkat Daerah</th>
                   <th className="p-3.5">Kepala Dinas</th>
@@ -409,7 +409,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
           <div className="bg-white p-6 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-5">
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#DCE0E6] pb-4">
               <div>
-                <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78] flex items-center gap-2">
+                <h3 className="font-heading font-bold text-base text-[#184C78] flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-[#2980B9]" />
                   <span>Rekapitulasi Agregat Proyek per Wilayah Kecamatan (Kabupaten Lamongan)</span>
                 </h3>
@@ -566,7 +566,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
 
           {/* Strategic Executive Recommendations */}
           <div className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-4">
-            <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
+            <h3 className="font-heading font-bold text-base text-[#184C78]">
               Rekomendasi Kebijakan Pimpinan Daerah Berbasis Data Wilayah
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
@@ -599,7 +599,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Sparkles className="w-5 h-5 text-[#2980B9]" />
-              <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
+              <h3 className="font-heading font-bold text-base text-[#184C78]">
                 Analisis Aspirasi Publik &amp; AI Sentimen (Groq AI Engine)
               </h3>
             </div>
@@ -647,7 +647,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
         <div className="bg-white rounded-2xl border border-[#DCE0E6] p-6 shadow-xs space-y-5">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
+              <h3 className="font-heading font-bold text-base text-[#184C78]">
                 Pusat Unduh Dokumen &amp; Laporan Berkala Pimpinan
               </h3>
               <p className="text-xs text-[#6C757D] mt-0.5">

@@ -34,10 +34,10 @@ import {
   MapPin,
 } from 'lucide-react';
 import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem } from '../types';
-import centennialParkImg from '../assets/centennial_park.jpg';
 import { apiService } from '../services/api';
 import { CivicTrackLogo } from './CivicTrackLogo';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON, LAMONGAN_DESA_GEOJSON } from '../data/geoWilayahData';
+import { getRealProjectImage } from '../utils/projectImages';
 
 // Bounding box resmi gabungan seluruh 27 Kecamatan di Kab. Lamongan (dihitung dari poligon GeoJSON BPS/BIG)
 const ALL_LAMONGAN_BOUNDS: L.LatLngBoundsExpression = [
@@ -861,7 +861,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
         // Sleek Google Maps style district tooltip
         layer.bindTooltip(
-          `<div class="p-2.5 font-['DM_Sans'] text-xs min-w-[160px] bg-white rounded-xl shadow-lg border border-slate-100">
+          `<div class="p-2.5 font-heading text-xs min-w-[160px] bg-white rounded-xl shadow-lg border border-slate-100">
             <div class="flex items-center gap-1.5 pb-1.5 mb-1.5 border-b border-slate-100">
               <span class="w-2.5 h-2.5 rounded-full ${isSelected ? 'bg-blue-600' : 'bg-[#0369A1]'}"></span>
               <strong class="text-[#0B2540] font-bold text-xs">${props.nama}</strong>
@@ -974,7 +974,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             if (isDesaSelected) {
               selectedDesaLayerInstance = layer;
               layer.bindTooltip(
-                `<div class="p-2.5 font-['DM_Sans'] text-xs min-w-[170px] bg-white rounded-xl shadow-xl border-2 border-indigo-400">
+                `<div class="p-2.5 font-heading text-xs min-w-[170px] bg-white rounded-xl shadow-xl border-2 border-indigo-400">
                   <div class="flex items-center gap-1.5 pb-1.5 mb-1.5 border-b border-indigo-50">
                     <span class="w-2.5 h-2.5 rounded-full bg-indigo-600 animate-pulse"></span>
                     <strong class="text-[#0B2540] font-bold text-xs">${fProps.nama_wilayah}</strong>
@@ -995,7 +995,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               );
             } else {
               layer.bindTooltip(
-                `<div class="p-2 font-['DM_Sans'] text-xs bg-white rounded-xl shadow-md border border-slate-100">
+                `<div class="p-2 font-heading text-xs bg-white rounded-xl shadow-md border border-slate-100">
                   <strong class="text-slate-800 font-bold">${fProps.nama_wilayah}</strong>
                   <div class="text-[10px] text-blue-600 mt-0.5 font-medium">👉 Klik untuk pilih desa ini</div>
                 </div>`,
@@ -1192,7 +1192,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
       // Sleek interactive tooltip for project details
       marker.bindTooltip(
-        `<div class="p-2 font-['DM_Sans'] text-xs min-w-[170px] bg-white rounded-xl shadow-md border border-slate-100">
+        `<div class="p-2 font-heading text-xs min-w-[170px] bg-white rounded-xl shadow-md border border-slate-100">
           <div class="flex items-center gap-1 pb-1 mb-1 border-b border-slate-100">
             <span class="w-2 h-2 rounded-full" style="background-color: ${theme.hex}"></span>
             <span class="text-[10px] font-extrabold uppercase text-slate-500">${theme.label}</span>
@@ -1263,7 +1263,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-40 bg-[#F8FAFC] flex flex-col font-['Inter'] text-[#212529] select-none overflow-hidden">
+    <div className="fixed inset-0 z-40 bg-[#F8FAFC] flex flex-col font-sans text-[#212529] select-none overflow-hidden">
       {/* ── TOP NAV HEADER ── */}
       <header className="h-14 bg-white/95 backdrop-blur-md border-b border-[#DCE4EC] px-4 sm:px-6 flex items-center justify-between shrink-0 z-30 shadow-xs">
         {/* Left: Brand & Back */}
@@ -1466,7 +1466,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             {isLegendOpen && (
               <div className="absolute top-full mt-2 left-0 bg-white/98 backdrop-blur-md border border-slate-200/90 shadow-2xl rounded-2xl p-3.5 w-64 animate-fade-in text-xs space-y-2.5 z-30">
                 <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                  <span className="font-['DM_Sans'] font-bold text-slate-800 text-xs flex items-center gap-1.5">
+                  <span className="font-heading font-bold text-slate-800 text-xs flex items-center gap-1.5">
                     <Info className="w-3.5 h-3.5 text-blue-600" />
                     Legenda Peta
                   </span>
@@ -1574,7 +1574,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-slate-100 shrink-0 bg-white flex items-start justify-between">
             <div>
-              <h1 className="font-['DM_Sans'] text-xl font-bold text-slate-900 tracking-tight">
+              <h1 className="font-heading text-xl font-bold text-slate-900 tracking-tight">
                 Cari Proyek Pembangunan
               </h1>
               <p className="text-xs text-slate-500 mt-0.5 font-medium">
@@ -1931,7 +1931,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                             <span>•</span>
                             <span className="text-[#2563EB]">{p.distanceStr}</span>
                           </div>
-                          <h4 className="font-['DM_Sans'] text-xs font-bold text-slate-900 group-hover:text-[#184C78] line-clamp-1 transition-colors">
+                          <h4 className="font-heading text-xs font-bold text-slate-900 group-hover:text-[#184C78] line-clamp-1 transition-colors">
                             {p.nama_proyek}
                           </h4>
                           <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
@@ -2034,7 +2034,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-slate-100 shrink-0 flex items-center justify-between bg-slate-50/70">
             <div>
-              <h2 className="font-['DM_Sans'] text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight">
+              <h2 className="font-heading text-base sm:text-lg font-bold text-slate-900 tracking-tight leading-tight">
                 {currentProject.nama_wilayah || 'Kabupaten Lamongan'}
               </h2>
               <p className="text-xs text-slate-500 font-medium mt-0.5">
@@ -2082,7 +2082,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               {/* Photo Showcase with Telemetry Tag */}
               <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
                 <img
-                  src={centennialParkImg}
+                  src={getRealProjectImage(currentProject)}
                   alt={currentProject.nama_proyek}
                   className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
                 />
@@ -2112,7 +2112,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   </span>
                 </div>
 
-                <h3 className="font-['DM_Sans'] text-xl font-bold text-slate-900 leading-snug">
+                <h3 className="font-heading text-xl font-bold text-slate-900 leading-snug">
                   {currentProject.nama_proyek}
                 </h3>
                 <p className="text-xs text-slate-600 mt-1 leading-relaxed">
@@ -2126,7 +2126,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
                     Total Anggaran
                   </span>
-                  <div className="font-['DM_Sans'] text-lg font-extrabold text-[#184C78]">
+                  <div className="font-heading text-lg font-extrabold text-[#184C78]">
                     Rp {(currentProject.anggaran / 1000000000).toFixed(1)} M
                   </div>
                   <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1">
@@ -2138,7 +2138,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
                     Progres Lapangan
                   </span>
-                  <div className="font-['DM_Sans'] text-lg font-extrabold text-emerald-600">
+                  <div className="font-heading text-lg font-extrabold text-emerald-600">
                     {currentProject.progres_persen}%
                   </div>
                   <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full inline-block mt-1">
@@ -2256,7 +2256,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           {detailTab === 'transparansi' && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 scrollbar-thin animate-fade-in text-xs">
               <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4">
-                <h4 className="font-['DM_Sans'] text-sm font-bold text-[#184C78] mb-1">
+                <h4 className="font-heading text-sm font-bold text-[#184C78] mb-1">
                   Rincian Anggaran & Efisiensi LPSE
                 </h4>
                 <p className="text-slate-600 text-[11px] mb-3">
@@ -2289,7 +2289,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
               {/* Tim Pelaksana & Kontraktor */}
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2.5">
-                <h4 className="font-['DM_Sans'] text-xs font-bold text-slate-800 uppercase tracking-wider">
+                <h4 className="font-heading text-xs font-bold text-slate-800 uppercase tracking-wider">
                   Penyedia Jasa & Tim Teknis
                 </h4>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
@@ -2314,7 +2314,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
               {/* Dokumen Teknis & Perizinan */}
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">
-                <h4 className="font-['DM_Sans'] text-xs font-bold text-slate-800 uppercase tracking-wider">
+                <h4 className="font-heading text-xs font-bold text-slate-800 uppercase tracking-wider">
                   Legalitas & Sertifikasi Teknis
                 </h4>
                 <div className="space-y-1.5 text-[11px]">
@@ -2462,7 +2462,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   <div className="w-12 h-12 rounded-full bg-blue-50 text-[#2563EB] mx-auto flex items-center justify-center mb-3">
                     <MapPin className="w-6 h-6" />
                   </div>
-                  <h5 className="font-['DM_Sans'] text-sm font-bold text-slate-800 mb-1">
+                  <h5 className="font-heading text-sm font-bold text-slate-800 mb-1">
                     Tidak Ada Proyek Lain di Sekitar Wilayah Ini
                   </h5>
                   <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
@@ -2482,7 +2482,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                         <div className="flex gap-3">
                           {/* Image Thumbnail on Left */}
                           <img
-                            src={centennialParkImg}
+                            src={getRealProjectImage(p)}
                             alt={p.nama_proyek}
                             className="w-24 h-24 rounded-2xl object-cover shrink-0 shadow-2xs group-hover:scale-102 transition-transform"
                           />
@@ -2492,7 +2492,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                             <div>
                               <div className="flex items-center justify-between">
                                 <div className="flex items-baseline gap-1">
-                                  <span className="font-['DM_Sans'] text-sm font-bold text-slate-900 group-hover:text-[#2980B9] transition-colors">
+                                  <span className="font-heading text-sm font-bold text-slate-900 group-hover:text-[#2980B9] transition-colors">
                                     Rp {(p.anggaran / 1000000000).toFixed(1)} M
                                   </span>
                                   <span className="text-[10px] text-slate-400 font-normal">/proyek</span>

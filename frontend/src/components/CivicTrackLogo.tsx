@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import iconMonoNavy from '../assets/civictrack-icon-mono-navy.png';
 import iconMonoWhite from '../assets/civictrack-icon-mono-white.png';
 
@@ -43,7 +43,7 @@ export const CivicTrackLogo: React.FC<CivicTrackLogoProps> = ({
       {/* 1-Color Typography */}
       {showText && (
         <div className="flex flex-col leading-none">
-          <div className={`font-['DM_Sans'] font-black tracking-tight ${textColor} ${currentSize.text}`}>
+          <div className={`font-heading font-black tracking-tight ${textColor} ${currentSize.text}`}>
             CivicTrack
           </div>
           {subtitle && (

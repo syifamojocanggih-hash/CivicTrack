@@ -1,4 +1,4 @@
-from typing import Optional
+from typing import Literal, Optional
 from datetime import datetime
 from decimal import Decimal
 from pydantic import BaseModel, ConfigDict
@@ -22,6 +22,8 @@ class RekomendasiRuteResponse(BaseModel):
 
 class GenerateRuteRequest(BaseModel):
     catatan_penutupan: Optional[str] = None
+    # 'semua' = all vehicles (default), 'motor' = motorcycle only, 'mobil' = car/truck only
+    jenis_kendaraan: Literal["semua", "motor", "mobil"] = "semua"
     origin_lat: Optional[float] = None
     origin_lng: Optional[float] = None
     dest_lat: Optional[float] = None

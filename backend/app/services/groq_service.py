@@ -301,7 +301,8 @@ def generate_ai_alternative_routes(
     origin_coords: Optional[Tuple[float, float]] = None,
     dest_coords: Optional[Tuple[float, float]] = None,
     origin_name: Optional[str] = None,
-    dest_name: Optional[str] = None
+    dest_name: Optional[str] = None,
+    jenis_kendaraan: str = "semua"
 ) -> List[Dict[str, Any]]:
     """
     Fitur 11 PRD: Menghasilkan rekomendasi rute alternatif penutupan akses jalan
@@ -414,14 +415,18 @@ def generate_ai_alternative_routes(
     # Kandidat 2: Kedua (Lingkar luar / sekunder pengurai kepadatan)
     res_kedua = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_south[0], via_lon=via_south[1], profile="driving", timeout_sec=2.5)
 
-    # Kandidat 3: Tambahan (Khusus Sepeda Motor - mempertimbangkan jalan lokal/lingkungan legal & hemat jarak)
+    # Kandidat 3: Tambahan
+    # - 'motor' → paksa bicycle profile (optimasi jalan lokal roda dua)
+    # - 'mobil' → paksa driving profile saja (tidak pakai bicycle network)
+    # - 'semua' (default) → bicycle profile jika jalan tidak melintasi penutupan, driving via_local jika melintasi
     res_tambahan = None
+    tambahan_profile = "bicycle" if jenis_kendaraan != "mobil" else "driving"
     if not direct_crosses:
-        res_tambahan = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], profile="bicycle", timeout_sec=2.5)
+        res_tambahan = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], profile=tambahan_profile, timeout_sec=2.5)
         if not res_tambahan or not res_tambahan.get("coordinates"):
             res_tambahan = direct_route
     else:
-        res_tambahan = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_local[0], via_lon=via_local[1], profile="bicycle", timeout_sec=2.5)
+        res_tambahan = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_local[0], via_lon=via_local[1], profile=tambahan_profile, timeout_sec=2.5)
         if not res_tambahan or not res_tambahan.get("coordinates"):
             res_tambahan = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_local[0], via_lon=via_local[1], profile="driving", timeout_sec=2.5)
 
@@ -580,22 +585,8 @@ Format JSON wajib persis:
                         ai_alasan = str(matched_ai.get("alasan_rekomendasi", "")).strip()
                         if ai_alasan and len(ai_alasan) >= 5:
                             c["alasan_rekomendasi"] = ai_alasan
-                        # Jika mock test menyediakan nama_rute lengkap dan koordinat belum OSRM, izinkan nama_rute
-                        if not has_custom_route and matched_ai.get("nama_rute"):
-                            c["nama_rute"] = matched_ai["nama_rute"]
                         c["source"] = "groq"
                         c["raw_response_ai"] = matched_ai
-
-                # Kasus khusus unit test di mana has_custom_route == False dan mock data OSM disediakan
-                if not has_custom_route:
-                    test_results = []
-                    for item in routes_list[:3]:
-                        if isinstance(item, dict):
-                            item["source"] = "groq"
-                            _attach_osm_geometries(item, nearby_streets, road_geometries, is_osm_grounded)
-                            test_results.append(item)
-                    if len(test_results) == 3 and test_results[0].get("geografis_terverifikasi"):
-                        return test_results
 
                 return candidates
         except Exception as e:

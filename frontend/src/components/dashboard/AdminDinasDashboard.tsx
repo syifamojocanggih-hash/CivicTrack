@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+﻿import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Building2,
@@ -856,7 +856,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
               <Lock className="w-3.5 h-3.5 text-amber-300" />
               <span>Verifikasi Otorisasi Penanggung Jawab Proyek</span>
             </div>
-            <h2 className="font-['DM_Sans'] text-2xl font-bold tracking-tight">
+            <h2 className="font-heading text-2xl font-bold tracking-tight">
               Gerbang Akses Penanggung Jawab Proyek
             </h2>
             <p className="text-xs sm:text-sm text-white/80 mt-1 leading-relaxed">
@@ -1065,7 +1065,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     <FolderKanban className="w-4 h-4 text-cyan-300" />
                   </div>
                   <div>
-                    <h3 id="modal-new-project-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                    <h3 id="modal-new-project-title" className="font-heading text-base sm:text-lg font-bold leading-tight">
                       Input Data Proyek Pembangunan Baru
                     </h3>
                     <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
@@ -1352,7 +1352,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                       <Key className="w-3.5 h-3.5" />
                     </div>
                     <div>
-                      <h4 className="font-['DM_Sans'] font-bold text-xs text-[#184C78]">
+                      <h4 className="font-heading font-bold text-xs text-[#184C78]">
                         Nomor Seri Registrasi &amp; Kunci Akses Khusus
                       </h4>
                       <p className="text-[10px] text-[#6C757D]">
@@ -1642,7 +1642,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     <Edit3 className="w-4 h-4 text-amber-300" />
                   </div>
                   <div>
-                    <h3 id="modal-edit-project-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                    <h3 id="modal-edit-project-title" className="font-heading text-base sm:text-lg font-bold leading-tight">
                       Sunting Data Proyek: {editingProject.nama_proyek}
                     </h3>
                     <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
@@ -1851,7 +1851,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     <Clock className="w-4 h-4 text-emerald-300" />
                   </div>
                   <div>
-                    <h3 id="modal-stage-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                    <h3 id="modal-stage-title" className="font-heading text-base sm:text-lg font-bold leading-tight">
                       Tambah Tahapan Pengerjaan Baru
                     </h3>
                     <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
@@ -1978,7 +1978,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     <Upload className="w-4 h-4 text-emerald-300" />
                   </div>
                   <div>
-                    <h3 id="modal-doc-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                    <h3 id="modal-doc-title" className="font-heading text-base sm:text-lg font-bold leading-tight">
                       Upload Bukti Dokumentasi Fisik
                     </h3>
                     <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
@@ -2133,7 +2133,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                           Tinjauan Mutu
                         </span>
                       </div>
-                      <h3 id="modal-verify-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight text-white mt-0.5">
+                      <h3 id="modal-verify-title" className="font-heading text-base sm:text-lg font-bold leading-tight text-white mt-0.5">
                         Verifikasi Tindakan Perbaikan FHO
                       </h3>
                     </div>
@@ -2261,7 +2261,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 {unlockedProject.kategori}
               </span>
             </div>
-            <h2 className="font-['DM_Sans'] text-xl font-bold text-white">
+            <h2 className="font-heading text-xl font-bold text-white">
               {unlockedProject.nama_proyek}
             </h2>
             <div className="flex flex-wrap items-center gap-3 text-xs text-white/80">
@@ -2301,7 +2301,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                   : 'Portal Penanggung Jawab Proyek (Dinas Pelaksana & Rekanan)'}
               </span>
             </div>
-            <h1 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold tracking-tight">
+            <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight">
               {currentUser.nama}
             </h1>
             <p className="text-white/80 text-xs sm:text-sm mt-1">
@@ -2362,7 +2362,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             <span>Total Proyek</span>
             <FolderKanban className="w-4 h-4 text-[#184C78]" />
           </div>
-          <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#184C78] mt-1.5">
+          <div className="text-2xl font-heading font-extrabold text-[#184C78] mt-1.5">
             {projectList.length}
           </div>
           <div className="text-[11px] text-[#1A9E6E] font-semibold mt-1">
@@ -2375,7 +2375,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             <span>Pagu Anggaran</span>
             <DollarSign className="w-4 h-4 text-[#2980B9]" />
           </div>
-          <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529] mt-1.5">
+          <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
             Rp {(totalAnggaran / 1000000000).toFixed(1)}M
           </div>
           <div className="text-[11px] text-[#2980B9] font-semibold mt-1">
@@ -2388,7 +2388,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             <span>Selesai (FHO)</span>
             <CheckCircle2 className="w-4 h-4 text-[#1A9E6E]" />
           </div>
-          <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#1A9E6E] mt-1.5">
+          <div className="text-2xl font-heading font-extrabold text-[#1A9E6E] mt-1.5">
             {selesaiCount}
           </div>
           <div className="text-[11px] text-[#6C757D] mt-1">
@@ -2401,7 +2401,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             <span>Aduan Warga</span>
             <MessageSquare className="w-4 h-4 text-[#E67E22]" />
           </div>
-          <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529] mt-1.5">
+          <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
             {aduanList.length}
           </div>
           <div className="text-[11px] text-[#E67E22] font-bold mt-1">
@@ -2414,7 +2414,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             <span>Evaluasi Cacat AI</span>
             <Wrench className="w-4 h-4 text-[#E74C3C]" />
           </div>
-          <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#E74C3C] mt-1.5">
+          <div className="text-2xl font-heading font-extrabold text-[#E74C3C] mt-1.5">
             {evaluasiList.length}
           </div>
           <div className="text-[11px] text-[#E74C3C] font-semibold mt-1">
@@ -2439,7 +2439,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                       Status: {unlockedProject.status}
                     </span>
                   </div>
-                  <h3 className="font-['DM_Sans'] text-lg font-bold text-[#184C78] mt-1.5">
+                  <h3 className="font-heading text-lg font-bold text-[#184C78] mt-1.5">
                     {unlockedProject.nama_proyek}
                   </h3>
                   <p className="text-xs text-[#6C757D] mt-0.5">
@@ -2564,7 +2564,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
               <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs overflow-hidden">
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-xs">
-                    <thead className="bg-[#F5F7FA] text-[#184C78] font-['DM_Sans'] font-bold border-b border-[#DCE0E6]">
+                    <thead className="bg-[#F5F7FA] text-[#184C78] font-heading font-bold border-b border-[#DCE0E6]">
                       <tr>
                         <th className="p-3.5">Kode Proyek</th>
                         <th className="p-3.5">Nama Proyek</th>
@@ -2740,7 +2740,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
           </div>
 
           <div className="bg-white rounded-2xl border border-[#DCE0E6] p-6 shadow-xs space-y-6">
-            <h3 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
+            <h3 className="font-heading font-bold text-base text-[#184C78]">
               Runtutan Tahapan Pengerjaan Konstruksi Fisik
             </h3>
 
@@ -2808,7 +2808,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-[#DCE0E6]">
             <div>
-              <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
+              <h2 className="text-base font-bold font-heading text-[#184C78]">
                 Galeri Foto &amp; Video Dokumentasi Proyek
               </h2>
               <p className="text-xs text-[#6C757D]">
@@ -2873,7 +2873,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                           <span>{doc.tanggal_unggah}</span>
                           <span className="text-[#184C78] font-bold">{doc.nama_proyek}</span>
                         </div>
-                        <h4 className="font-['DM_Sans'] font-bold text-sm text-[#212529] leading-snug">
+                        <h4 className="font-heading font-bold text-sm text-[#212529] leading-snug">
                           {doc.judul}
                         </h4>
                         <p className="text-xs text-[#495057] leading-relaxed">
@@ -2898,7 +2898,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         <div className="space-y-4">
           <div className="flex items-center justify-between bg-white p-4 rounded-xl border border-[#DCE0E6]">
             <div>
-              <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
+              <h2 className="text-base font-bold font-heading text-[#184C78]">
                 Layanan &amp; Kanal Tanggapan Pengaduan Masyarakat
               </h2>
               <p className="text-xs text-[#6C757D]">
@@ -2954,7 +2954,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     </div>
 
                     <div>
-                      <h4 className="font-['DM_Sans'] font-bold text-sm text-[#212529]">{item.judul}</h4>
+                      <h4 className="font-heading font-bold text-sm text-[#212529]">{item.judul}</h4>
                       <p className="text-xs text-[#495057] mt-1 bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/50">
                         "{item.isi_laporan}"
                       </p>
@@ -3000,7 +3000,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-[#2980B9]" />
-                <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
+                <h2 className="text-base font-bold font-heading text-[#184C78]">
                   Tinjauan Cacat Fisik &amp; Masa Pemeliharaan (FHO)
                 </h2>
               </div>

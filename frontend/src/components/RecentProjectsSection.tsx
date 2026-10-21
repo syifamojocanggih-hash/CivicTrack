@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { MapPin, ArrowRight, FilterX } from 'lucide-react';
 import type { ProyekItem, ProyekKategori } from '../types';
 
@@ -73,7 +73,7 @@ export const RecentProjectsSection: React.FC<RecentProjectsSectionProps> = ({
       <div className="max-w-[1180px] mx-auto">
         <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between mb-7 gap-4">
           <div>
-            <h2 className="font-['DM_Sans'] text-2xl font-extrabold text-[#184C78] tracking-[-0.6px]">
+            <h2 className="font-heading text-2xl font-extrabold text-[#184C78] tracking-[-0.6px]">
               Proyek diperbarui baru-baru ini
             </h2>
             {(selectedCategory || searchQuery) && (

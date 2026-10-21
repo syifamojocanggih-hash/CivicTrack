@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import {
   User,
   Lock,
@@ -251,7 +251,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
 
         {/* 3. BOTTOM: WELCOME HEADING, SUBTITLE & CAROUSEL DOTS */}
         <div className="relative z-10 max-w-lg">
-          <h1 className="text-3xl sm:text-4xl font-bold font-['DM_Sans'] tracking-tight text-white mb-3">
+          <h1 className="text-3xl sm:text-4xl font-bold font-heading tracking-tight text-white mb-3">
             {slides[activeSlide].title}
           </h1>
           <p className="text-white/85 text-sm sm:text-[15px] leading-relaxed mb-6 font-normal min-h-[44px]">
@@ -303,7 +303,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
         <div className="w-full max-w-md mx-auto my-auto py-6">
           {/* Header */}
           <div className="mb-8">
-            <h2 className="text-3xl sm:text-4xl font-bold font-['DM_Sans'] text-[#184C78] tracking-tight mb-2">
+            <h2 className="text-3xl sm:text-4xl font-bold font-heading text-[#184C78] tracking-tight mb-2">
               {mode === 'login' ? 'Log In' : 'Create an Account'}
             </h2>
 

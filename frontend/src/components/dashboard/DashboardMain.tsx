@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { DashboardHeader } from './DashboardHeader';
 import { WargaDashboard } from './WargaDashboard';
@@ -84,7 +84,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F7FA] flex font-['Inter'] text-[#212529] relative">
+    <div className="min-h-screen bg-[#F5F7FA] flex font-sans text-[#212529] relative">
       {/* ── 1. SIDEBAR NAVIGATION ── */}
       <DashboardSidebar
         currentUser={currentUser}

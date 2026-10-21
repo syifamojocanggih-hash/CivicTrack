@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+﻿import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Bookmark,
@@ -686,7 +686,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 </div>
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 id="modal-detail-aduan-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                    <h3 id="modal-detail-aduan-title" className="font-heading text-base sm:text-lg font-bold leading-tight">
                       Detail Aduan &amp; Tanggapan Warga
                     </h3>
                     <span className="text-[10px] font-mono bg-white/15 px-2 py-0.5 rounded text-sky-200">
@@ -910,7 +910,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                   <MessageSquarePlus className="w-4 h-4 text-sky-300" />
                 </div>
                 <div>
-                  <h3 id="modal-report-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                  <h3 id="modal-report-title" className="font-heading text-base sm:text-lg font-bold leading-tight">
                     Kirim Laporan / Tanggapan Warga
                   </h3>
                   <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
@@ -1052,7 +1052,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                   <Edit3 className="w-4 h-4 text-amber-300" />
                 </div>
                 <div>
-                  <h3 id="modal-edit-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                  <h3 id="modal-edit-title" className="font-heading text-base sm:text-lg font-bold leading-tight">
                     Edit Pengaduan Warga
                   </h3>
                   <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
@@ -1152,7 +1152,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                   <Sparkles className="w-4 h-4 text-amber-300" />
                 </div>
                 <div>
-                  <h3 id="modal-evaluasi-title" className="font-['DM_Sans'] text-base sm:text-lg font-bold leading-tight">
+                  <h3 id="modal-evaluasi-title" className="font-heading text-base sm:text-lg font-bold leading-tight">
                     Laporkan Cacat Fisik Pasca-Proyek
                   </h3>
                   <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
@@ -1267,7 +1267,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <ShieldCheck className="w-4 h-4 text-emerald-300" />
                 <span>Portal Partisipasi &amp; Pengawasan Warga</span>
               </div>
-              <h1 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold tracking-tight">
+              <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight">
                 Selamat Datang, {currentUser.nama}! 👋
               </h1>
               <p className="text-white/85 text-xs sm:text-sm mt-2 leading-relaxed">
@@ -1316,7 +1316,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <Bookmark className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#184C78]">
+                <div className="text-2xl font-heading font-extrabold text-[#184C78]">
                   {subscribedList.length}
                 </div>
                 <div className="text-xs text-[#6C757D] font-medium">Proyek Diikuti</div>
@@ -1331,7 +1331,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <MessageSquarePlus className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529]">
+                <div className="text-2xl font-heading font-extrabold text-[#212529]">
                   {laporanList.length}
                 </div>
                 <div className="text-xs text-[#6C757D] font-medium">Laporan Terkirim</div>
@@ -1346,7 +1346,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <Star className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529]">
+                <div className="text-2xl font-heading font-extrabold text-[#212529]">
                   {ratingList.length}
                 </div>
                 <div className="text-xs text-[#6C757D] font-medium">Rating Diberikan</div>
@@ -1361,7 +1361,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <AlertTriangle className="w-6 h-6" />
               </div>
               <div>
-                <div className="text-2xl font-['DM_Sans'] font-extrabold text-[#212529]">
+                <div className="text-2xl font-heading font-extrabold text-[#212529]">
                   {evaluasiList.length}
                 </div>
                 <div className="text-xs text-[#6C757D] font-medium">Evaluasi Cacat Fisik</div>
@@ -1377,7 +1377,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                   <Bookmark className="w-5 h-5" />
                 </div>
                 <div>
-                  <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
+                  <h2 className="text-base font-bold font-heading text-[#184C78]">
                     Ringkasan Proyek yang Anda Ikuti
                   </h2>
                   <p className="text-xs text-[#6C757D]">
@@ -1406,7 +1406,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                     <div>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-['DM_Sans'] font-bold text-base text-[#0B2540] leading-snug">
+                          <h3 className="font-heading font-bold text-base text-[#0B2540] leading-snug">
                             {p.nama_proyek}
                           </h3>
                           <p className="text-xs text-[#6C757D] mt-1 flex items-center gap-1">
@@ -1498,7 +1498,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <Bookmark className="w-6 h-6" />
               </div>
               <div>
-                <h2 className="text-lg font-bold font-['DM_Sans'] text-[#0B2540]">
+                <h2 className="text-lg font-bold font-heading text-[#0B2540]">
                   Proyek Pilihan yang Anda Ikuti
                 </h2>
                 <p className="text-xs text-[#6C757D] mt-0.5">
@@ -1524,7 +1524,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                     <div>
                       <div className="flex items-start justify-between gap-3">
                         <div className="flex-1 min-w-0">
-                          <h3 className="font-['DM_Sans'] font-bold text-base text-[#0B2540] leading-snug">
+                          <h3 className="font-heading font-bold text-base text-[#0B2540] leading-snug">
                             {p.nama_proyek}
                           </h3>
                           <p className="text-xs text-[#6C757D] mt-1 flex items-center gap-1">
@@ -1607,7 +1607,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
               <div className="w-16 h-16 rounded-2xl bg-[#F5F7FA] text-[#6C757D] flex items-center justify-center mx-auto mb-4">
                 <Bookmark className="w-8 h-8 text-slate-400" />
               </div>
-              <h3 className="text-base font-bold text-[#0B2540] font-['DM_Sans']">
+              <h3 className="text-base font-bold text-[#0B2540] font-heading">
                 Belum Ada Proyek yang Diikuti
               </h3>
               <p className="text-xs text-slate-500 max-w-md mx-auto mt-1.5 mb-5">
@@ -1632,7 +1632,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         <div className="space-y-4">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-[#DCE0E6]">
             <div>
-              <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
+              <h2 className="text-base font-bold font-heading text-[#184C78]">
                 Riwayat Laporan &amp; Aspirasi Warga
               </h2>
               <p className="text-xs text-[#6C757D]">
@@ -1705,7 +1705,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                   </div>
 
                   <div>
-                    <h3 className="font-['DM_Sans'] font-bold text-base text-[#212529] group-hover:text-[#184C78] transition-colors">
+                    <h3 className="font-heading font-bold text-base text-[#212529] group-hover:text-[#184C78] transition-colors">
                       {lap.judul}
                     </h3>
                     <div className="text-xs font-semibold text-[#184C78] mt-0.5">
@@ -1778,7 +1778,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
           {/* Rating Submission Form */}
           <div className="lg:col-span-1 bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs h-fit space-y-4">
             <div>
-              <h2 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
+              <h2 className="font-heading font-bold text-base text-[#184C78]">
                 Beri Penilaian Proyek Selesai
               </h2>
               <p className="text-xs text-[#6C757D] mt-1">
@@ -1991,7 +1991,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
           {/* List of Public Ratings */}
           <div className="lg:col-span-2 space-y-3">
-            <h2 className="font-['DM_Sans'] font-bold text-base text-[#184C78]">
+            <h2 className="font-heading font-bold text-base text-[#184C78]">
               Daftar Ulasan &amp; Indeks Kepuasan Terkini
             </h2>
 
@@ -2034,7 +2034,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-4 rounded-xl border border-[#DCE0E6]">
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
+                <h2 className="text-base font-bold font-heading text-[#184C78]">
                   Evaluasi &amp; Aduan Cacat Fisik Pasca-Proyek
                 </h2>
                 <span className="bg-[#EBF4FB] text-[#2980B9] text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1">
@@ -2188,7 +2188,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <Sparkles className="w-5 h-5 text-[#E67E22]" />
-                <h2 className="text-base font-bold font-['DM_Sans'] text-[#184C78]">
+                <h2 className="text-base font-bold font-heading text-[#184C78]">
                   Sistem Rekomendasi Rute Pengalihan AI
                 </h2>
               </div>

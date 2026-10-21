@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   Building2,
   Award,
@@ -35,7 +35,7 @@ export const PemerintahDashboard: React.FC<PemerintahDashboardProps> = ({
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <h2 className="font-['DM_Sans'] text-base font-bold text-[#184C78]">
+                <h2 className="font-heading text-base font-bold text-[#184C78]">
                   Portal Aparatur Pemerintah Daerah
                 </h2>
                 <span className="bg-[#EBF4FB] text-[#184C78] text-[11px] font-semibold px-2 py-0.5 rounded-full border border-[#DCE0E6]">

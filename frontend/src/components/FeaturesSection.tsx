@@ -1,4 +1,4 @@
-import React from 'react';
+﻿import React from 'react';
 import { Map, BarChart2, MessageSquare, Sparkles, Bell, Code2 } from 'lucide-react';
 import type { FeatureItem } from '../types';
 
@@ -52,7 +52,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ features, onOp
   return (
     <section id="features" className="max-w-[1180px] mx-auto px-6 sm:px-8 py-20">
       <div className="max-w-[520px] mb-12">
-        <h2 className="font-['DM_Sans'] text-2xl sm:text-3xl font-extrabold text-[#184C78] tracking-[-0.6px] leading-[1.2] mb-3">
+        <h2 className="font-heading text-2xl sm:text-3xl font-extrabold text-[#184C78] tracking-[-0.6px] leading-[1.2] mb-3">
           Semua yang perlu warga tahu, dalam satu platform
         </h2>
         <p className="text-[15px] text-[#6C757D] leading-[1.65]">
@@ -68,7 +68,7 @@ export const FeaturesSection: React.FC<FeaturesSectionProps> = ({ features, onOp
             className="bg-white border border-[#DCE0E6] rounded-xl p-6 hover:border-[#b0cde8] hover:shadow-[0_2px_8px_rgba(24,76,120,0.09),0_8px_24px_rgba(24,76,120,0.07)] transition-all cursor-pointer group"
           >
             {getIcon(feat.iconType)}
-            <h3 className="font-['DM_Sans'] text-[15px] font-bold text-[#184C78] mb-2 group-hover:text-[#2980B9] transition-colors">
+            <h3 className="font-heading text-[15px] font-bold text-[#184C78] mb-2 group-hover:text-[#2980B9] transition-colors">
               {feat.title}
             </h3>
             <p className="text-[13px] text-[#6C757D] leading-[1.6]">

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+﻿import React, { useState } from 'react';
 import {
   ArrowLeft,
   MessageSquare,
@@ -227,7 +227,7 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
                 <span>{statusConfig.text}</span>
               </span>
             </div>
-            <h1 className="font-['DM_Sans'] text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
+            <h1 className="font-heading text-lg sm:text-xl font-extrabold text-[#184C78] mt-1">
               Halaman Penanganan &amp; Tanggapan Resmi Aduan
             </h1>
           </div>
@@ -370,7 +370,7 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
                 {(currentAduan.nama_pelapor || 'W').charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
-                <div className="font-['DM_Sans'] font-bold text-sm text-[#212529] truncate">
+                <div className="font-heading font-bold text-sm text-[#212529] truncate">
                   {currentAduan.nama_pelapor}
                 </div>
                 <div className="text-xs text-[#6C757D] font-mono truncate">{currentAduan.email_pelapor}</div>
@@ -401,7 +401,7 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
             </h3>
 
             <div className="p-3.5 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6]/60 space-y-2">
-              <div className="font-['DM_Sans'] font-bold text-sm text-[#184C78]">
+              <div className="font-heading font-bold text-sm text-[#184C78]">
                 {currentAduan.nama_proyek}
               </div>
               {matchedProject && (
@@ -503,7 +503,7 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
             ) : (
               /* Normal View of Citizen Complaint */
               <div className="space-y-2">
-                <h2 className="font-['DM_Sans'] font-extrabold text-base text-[#212529]">
+                <h2 className="font-heading font-extrabold text-base text-[#212529]">
                   {currentAduan.judul}
                 </h2>
                 <div className="p-4 bg-[#F8FAFC] rounded-2xl border border-[#DCE0E6] relative overflow-hidden">
@@ -531,7 +531,7 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
                     <ShieldCheck className="w-5 h-5 text-emerald-300" />
                   </div>
                   <div>
-                    <h3 className="font-['DM_Sans'] font-bold text-sm text-[#184C78]">
+                    <h3 className="font-heading font-bold text-sm text-[#184C78]">
                       Tanggapan Resmi Dinas Teknis
                     </h3>
                     <div className="text-[11px] text-[#6C757D]">
@@ -567,7 +567,7 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
                     <MessageSquare className="w-4 h-4" />
                   </div>
                   <div>
-                    <h3 className="font-['DM_Sans'] font-bold text-sm text-[#184C78]">
+                    <h3 className="font-heading font-bold text-sm text-[#184C78]">
                       {currentAduan.tanggapan_dinas ? 'Perbarui Tanggapan Resmi Dinas' : 'Tulis Tanggapan Resmi Dinas'}
                     </h3>
                     <p className="text-[11px] text-[#6C757D]">
@@ -678,7 +678,7 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
                   <Clock className="w-7 h-7" />
                 </div>
                 <div className="max-w-md mx-auto space-y-2">
-                  <h3 className="font-['DM_Sans'] font-bold text-base text-[#212529]">
+                  <h3 className="font-heading font-bold text-base text-[#212529]">
                     Pengaduan Sedang Dalam Antrean Telaah Dinas Teknis
                   </h3>
                   <p className="text-xs text-[#6C757D] leading-relaxed">

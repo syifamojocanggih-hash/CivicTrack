@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+﻿import React, { useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, Code2, Download, ExternalLink, Check } from 'lucide-react';
 import type { ProyekItem } from '../types';
@@ -70,7 +70,7 @@ export const OpenDataModal: React.FC<OpenDataModalProps> = ({
             <div className="w-10 h-10 bg-white/15 rounded-xl flex items-center justify-center mb-2.5 sm:mb-3 text-white">
               <Code2 className="w-5 h-5" />
             </div>
-            <h3 id="modal-open-data-title" className="font-['DM_Sans'] text-lg sm:text-xl font-bold pr-8 sm:pr-0">
+            <h3 id="modal-open-data-title" className="font-heading text-lg sm:text-xl font-bold pr-8 sm:pr-0">
               Portal Data Terbuka (Open Data API)
             </h3>
             <p className="text-xs text-white/70 mt-1 leading-relaxed">
