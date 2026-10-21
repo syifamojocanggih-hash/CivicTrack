@@ -1,4 +1,4 @@
-﻿import { useState, useMemo, useEffect } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { Navbar } from './components/Navbar';
 import { HeroSection } from './components/HeroSection';
 import { StatStrip } from './components/StatStrip';
@@ -306,7 +306,7 @@ export function App() {
           onBackToLanding={() => navigateToView('landing')}
           onOpenDashboard={() => navigateToView('dashboard')}
           onOpenProjectDetail={(proj) => setSelectedProject(proj)}
-          onOpenAIRoute={(name) => handleOpenAIRoute(name)}
+          onOpenAIRoute={(name, proj) => handleOpenAIRoute(name, proj)}
           onOpenAuth={(mode) => handleOpenAuth(mode)}
         />
       ) : currentView === 'dashboard' && currentUser ? (
@@ -424,6 +424,7 @@ export function App() {
         isOpen={aiRouteModal.isOpen}
         projectName={aiRouteModal.projectName}
         project={aiRouteModal.project}
+        allProjects={projects}
         onClose={() => setAIRouteModal({ isOpen: false, projectName: '', project: null })}
       />
 

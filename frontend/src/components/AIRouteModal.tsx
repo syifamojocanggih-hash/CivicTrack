@@ -25,6 +25,7 @@ import {
   ExternalLink,
   MapPin,
   ArrowUpDown,
+  ChevronDown,
 } from 'lucide-react';
 import type { ProyekItem } from '../types';
 
@@ -33,6 +34,7 @@ interface AIRouteModalProps {
   onClose: () => void;
   projectName: string;
   project?: ProyekItem | null;
+  allProjects?: ProyekItem[];
 }
 
 interface RouteItem {
@@ -148,12 +150,42 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   onClose,
   projectName,
   project,
+  allProjects = [],
 }) => {
-  const projectLat = project?.latitude ? Number(project.latitude) : -7.1205;
-  const projectLng = project?.longitude ? Number(project.longitude) : 112.4155;
+  // State Proyek Aktif yang sedang ditinjau rute pengalihannya
+  const [activeProject, setActiveProject] = useState<ProyekItem | null>(project || null);
+  const [activeProjectName, setActiveProjectName] = useState<string>(projectName || project?.nama_proyek || '');
+
+  // Sinkronisasi saat modal dibuka atau props berganti
+  useEffect(() => {
+    if (isOpen) {
+      const initialProj = project || (allProjects.length > 0 ? allProjects[0] : null);
+      setActiveProject(initialProj);
+      setActiveProjectName(projectName || initialProj?.nama_proyek || '');
+    }
+  }, [isOpen, project, projectName, allProjects]);
+
+  // Daftar seluruh proyek pemerintah yang sedang berjalan (belum selesai / progres < 100%)
+  const ongoingProjects = useMemo(() => {
+    if (!allProjects || allProjects.length === 0) {
+      return activeProject ? [activeProject] : [];
+    }
+    const unfinished = allProjects.filter((p) => p.status !== 'selesai' && p.progres_persen < 100);
+    const list = unfinished.length > 0 ? unfinished : allProjects;
+    if (activeProject && !list.some((p) => p.id === activeProject.id)) {
+      return [activeProject, ...list];
+    }
+    return list;
+  }, [allProjects, activeProject]);
+
+  const currentProj = activeProject || project;
+  const currentName = activeProjectName || projectName || currentProj?.nama_proyek || 'Area Konstruksi Lamongan';
+
+  const projectLat = currentProj?.latitude ? Number(currentProj.latitude) : -7.1205;
+  const projectLng = currentProj?.longitude ? Number(currentProj.longitude) : 112.4155;
   const projectCoords: [number, number] = useMemo(() => [projectLat, projectLng], [projectLat, projectLng]);
 
-  const routeCtx = useMemo(() => getProjectRouteContext(projectName, project), [projectName, project]);
+  const routeCtx = useMemo(() => getProjectRouteContext(currentName, currentProj), [currentName, currentProj]);
 
   const [origin, setOrigin] = useState('');
   const [destination, setDestination] = useState('');
@@ -508,6 +540,26 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     [origin, destination, projectName, project?.id, projectCoords, customOriginCoords, customDestCoords, routeCtx]
   );
 
+  // Handler untuk beralih fokus ke proyek konstruksi lain
+  const handleSelectProject = (proj: ProyekItem) => {
+    setActiveProject(proj);
+    setActiveProjectName(proj.nama_proyek);
+    setOrigin('');
+    setDestination('');
+    setCustomOriginCoords(null);
+    setCustomDestCoords(null);
+    setPickingMode(null);
+    setPickingNotice(`Fokus rute dialihkan ke: ${proj.nama_proyek}`);
+    setRoutes([]);
+
+    if (mapInstanceRef.current && proj.latitude && proj.longitude) {
+      mapInstanceRef.current.flyTo([Number(proj.latitude), Number(proj.longitude)], 14, {
+        animate: true,
+        duration: 1.2,
+      });
+    }
+  };
+
   const handleApplyPreset = (newOrigin: string, newDest: string) => {
     setOrigin(newOrigin);
     setDestination(newDest);
@@ -515,7 +567,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     setCustomDestCoords(null);
     setPickingMode(null);
     setPickingNotice(null);
-    setRoutes(buildDefaultRoutes(newOrigin, newDest, projectCoords, projectName, null, null));
+    setRoutes(buildDefaultRoutes(newOrigin, newDest, projectCoords, currentName, null, null));
     fetchLiveRoutes(true, newOrigin, newDest, null, null);
   };
 
@@ -669,7 +721,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
     closureCircle.bindTooltip(
       `<div class="text-xs font-bold text-rose-700 p-1">
-        🚧 Zona Penutupan Proyek Fisik (${projectName || 'Jalan Ditutup'})
+        🚧 Zona Penutupan Proyek Utama (${currentName})
       </div>`,
       { sticky: true }
     );
@@ -690,8 +742,54 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       iconSize: [0, 0],
     });
     L.marker(projectCoords, { icon: barrierIcon })
-      .bindTooltip(`<div class="text-xs font-bold text-rose-800">🚧 Lokasi Proyek Konstruksi: ${projectName || 'Area Konstruksi'}</div>`)
+      .bindTooltip(`<div class="text-xs font-bold text-rose-800">🚧 Proyek Utama: ${currentName}</div>`)
       .addTo(layerGroup);
+
+    // 1b. Render Seluruh Proyek Konstruksi yang Belum Selesai Lainnya di Peta
+    const otherProjects = ongoingProjects.filter(
+      (p) => p.id !== currentProj?.id && p.latitude && p.longitude
+    );
+    otherProjects.forEach((p) => {
+      const otherProjIcon = L.divIcon({
+        className: 'other-project-marker',
+        html: `
+          <div class="relative flex flex-col items-center justify-center cursor-pointer group hover:scale-120 transition-transform">
+            <span class="absolute -inset-1 rounded-full bg-amber-400/25 animate-ping"></span>
+            <div class="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-lg border-2 border-white ring-2 ring-amber-300">
+              🚧
+            </div>
+            <div class="absolute -bottom-5 bg-slate-900/90 text-amber-200 text-[8px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap border border-white/20">
+              ${p.progres_persen}% • Belum Selesai
+            </div>
+          </div>
+        `,
+        iconSize: [0, 0],
+      });
+
+      const otherMarker = L.marker([Number(p.latitude), Number(p.longitude)], { icon: otherProjIcon })
+        .bindTooltip(
+          `<div class="p-1.5 font-heading text-xs">
+            <div class="flex items-center gap-1 text-amber-800 font-bold mb-0.5">
+              <span>🚧</span>
+              <span>Proyek Sedang Berjalan:</span>
+            </div>
+            <strong class="text-slate-900 text-xs block leading-tight mb-1">${p.nama_proyek}</strong>
+            <div class="flex items-center justify-between text-[10px] text-slate-600 border-t border-slate-100 pt-1">
+              <span>Progres: <b class="text-amber-700">${p.progres_persen}%</b></span>
+              <span class="text-slate-500">${p.nama_wilayah?.split(',')[0] || 'Lamongan'}</span>
+            </div>
+            <div class="text-[9.5px] text-blue-600 font-bold mt-1 bg-blue-50 px-1.5 py-0.5 rounded text-center">
+              👉 Klik untuk alihkan fokus ke proyek ini
+            </div>
+          </div>`,
+          { sticky: true }
+        )
+        .addTo(layerGroup);
+
+      otherMarker.on('click', () => {
+        handleSelectProject(p);
+      });
+    });
 
     // 2. Render Polylines Rute yang Terverifikasi
     const routePolylines: { index: number; polyline: L.Polyline }[] = [];
@@ -996,8 +1094,38 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
               Visualisasi &amp; Generator Rute Alternatif Cerdas
             </h2>
             <p className="text-xs text-white/80 mt-1 max-w-2xl leading-relaxed">
-              Menyajikan pengalihan arus lalu lintas terstruktur dengan pemetaan visual langsung pada jaringan jalan Kab. Lamongan untuk proyek: <strong className="text-white underline decoration-amber-400 underline-offset-2">{projectName || 'Pelebaran Jalan Konstruksi'}</strong>
+              Menyajikan pengalihan arus lalu lintas terstruktur dengan pemetaan visual langsung pada jaringan jalan Kab. Lamongan untuk proyek: <strong className="text-white underline decoration-amber-400 underline-offset-2">{currentName}</strong>
             </p>
+
+            {/* Interactive Project Switcher (Sinkronisasi Seluruh Proyek Belum Selesai) */}
+            <div className="flex flex-wrap items-center gap-2 mt-2.5 pt-2.5 border-t border-white/10">
+              <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1 shrink-0">
+                <span>🚧</span>
+                <span>Fokus Proyek Pengalihan:</span>
+              </span>
+              <div className="relative inline-flex items-center">
+                <select
+                  value={currentProj?.id || ''}
+                  onChange={(e) => {
+                    const selectedId = Number(e.target.value);
+                    const found = ongoingProjects.find((p) => p.id === selectedId);
+                    if (found) handleSelectProject(found);
+                  }}
+                  className="bg-white/15 hover:bg-white/25 text-white border border-white/30 rounded-xl px-3 py-1 text-xs font-bold outline-none cursor-pointer backdrop-blur-md transition-colors pr-7 appearance-none max-w-[280px] sm:max-w-[420px] truncate"
+                  aria-label="Pilih Proyek Konstruksi Pemerintah"
+                >
+                  {ongoingProjects.map((p) => (
+                    <option key={p.id} value={p.id} className="text-slate-900 bg-white font-medium">
+                      {p.nama_proyek} ({p.progres_persen}% • {p.nama_wilayah?.split(',')[0] || 'Lamongan'})
+                    </option>
+                  ))}
+                </select>
+                <ChevronDown className="w-3.5 h-3.5 text-white/70 absolute right-2 pointer-events-none" />
+              </div>
+              <span className="text-[10px] text-emerald-200 bg-emerald-500/20 border border-emerald-300/30 px-2 py-0.5 rounded-full font-bold">
+                ✓ {ongoingProjects.length} Proyek Konstruksi Aktif di Peta
+              </span>
+            </div>
           </div>
 
         {/* ── MOBILE TAB SWITCHER ── */}

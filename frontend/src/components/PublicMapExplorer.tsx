@@ -51,7 +51,7 @@ interface PublicMapExplorerProps {
   onBackToLanding: () => void;
   onOpenDashboard?: () => void;
   onOpenProjectDetail: (project: ProyekItem) => void;
-  onOpenAIRoute: (projectName: string) => void;
+  onOpenAIRoute: (projectName: string, project?: ProyekItem) => void;
   onOpenAuth: (mode?: 'login' | 'register') => void;
 }
 
@@ -1394,7 +1394,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
           {/* Rute Alternatif AI Button */}
           <button
-            onClick={() => onOpenAIRoute(currentProject?.nama_proyek || 'Pelebaran Jalan Veteran - Lamongan')}
+            onClick={() => onOpenAIRoute(currentProject?.nama_proyek || 'Pelebaran Jalan Veteran - Lamongan', currentProject)}
             className="px-3 py-1.5 bg-gradient-to-r from-[#6D28D9] to-[#184C78] hover:from-[#5B21B6] hover:to-[#0f3252] text-white text-xs font-bold rounded-xl shadow-xs hover:shadow-sm flex items-center gap-1.5 transition-all cursor-pointer hover:scale-102"
             title="Buka Navigasi Rute Alternatif AI"
           >
@@ -2326,7 +2326,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 </button>
 
                 <button
-                  onClick={() => onOpenAIRoute(currentProject.nama_proyek)}
+                  onClick={() => onOpenAIRoute(currentProject.nama_proyek, currentProject)}
                   className="w-full py-2 px-3 bg-gradient-to-r from-[#6D28D9] to-[#184C78] text-white rounded-xl text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer hover:shadow-sm"
                 >
                   <Sparkles className="w-3.5 h-3.5 text-amber-300" />
@@ -2649,7 +2649,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         >
           {/* Rute Alternatif AI Floating Quick Button */}
           <button
-            onClick={() => onOpenAIRoute(currentProject?.nama_proyek || 'Pelebaran Jalan Veteran - Lamongan')}
+            onClick={() => onOpenAIRoute(currentProject?.nama_proyek || 'Pelebaran Jalan Veteran - Lamongan', currentProject)}
             className="w-10 h-10 bg-white/95 backdrop-blur-md hover:bg-gradient-to-r hover:from-[#6D28D9] hover:to-[#184C78] hover:text-white border border-purple-200/90 rounded-2xl shadow-md flex items-center justify-center text-[#6D28D9] transition-all active:scale-95 cursor-pointer group"
             title="Input & Analisis Rute Alternatif AI"
           >
