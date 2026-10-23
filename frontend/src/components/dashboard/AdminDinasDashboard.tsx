@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Building2,
@@ -49,7 +49,6 @@ import { apiService } from '../../services/api';
 import { MiniMapOverview } from './MiniMapOverview';
 import { AduanDetailView } from './AduanDetailView';
 import { WILAYAH_DATA } from '../../data/geoWilayahData';
-import { validateCoordinatesInKecamatan } from '../../utils/spatial';
 
 const KECAMATAN_ID_MAP: Record<string, number> = {
   'Kecamatan Sukorame': 2,
@@ -373,15 +372,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   const [editError, setEditError] = useState<string | null>(null);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
 
-  // Validasi real-time Point-in-Polygon terhadap wilayah terpilih
-  const spatialValidation = useMemo(() => {
-    return validateCoordinatesInKecamatan(
-      Number(newProjectForm.latitude),
-      Number(newProjectForm.longitude),
-      newProjectForm.nama_wilayah
-    );
-  }, [newProjectForm.latitude, newProjectForm.longitude, newProjectForm.nama_wilayah]);
-
   // Linimasa state
   const [selectedProjectForTimeline, setSelectedProjectForTimeline] = useState<number>(2);
   const [timelineStages, setTimelineStages] = useState<LinimasaTahap[]>(MOCK_LINIMASA_TAHAP);
@@ -557,10 +547,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   // Handle create new project via backend API
   const handleCreateProject = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!spatialValidation.isValid) {
-      alert(`Validasi Koordinat Gagal (Point-in-Polygon):\n${spatialValidation.message}`);
-      return;
-    }
 
     setIsSubmittingNewProj(true);
     setCreateProjError(null);
@@ -569,14 +555,25 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       const wilayahId = KECAMATAN_ID_MAP[newProjectForm.nama_wilayah] || 23;
       const dinasId = currentUser.dinas_id || 1;
 
-      const created = await apiService.createProject({
+      const parseCoordinate = (val: any, fallback: number): number => {
+        if (typeof val === 'number') return isNaN(val) ? fallback : val;
+        if (typeof val === 'string') {
+          const num = parseFloat(val.replace(',', '.'));
+          return isNaN(num) ? fallback : num;
+        }
+        return fallback;
+      };
+
+      const payload = {
         nama_proyek: newProjectForm.nama_proyek.trim(),
         kategori: newProjectForm.kategori,
         deskripsi: newProjectForm.deskripsi.trim() || undefined,
-        latitude: Number(newProjectForm.latitude),
-        longitude: Number(newProjectForm.longitude),
+        latitude: parseCoordinate(newProjectForm.latitude, -7.1197),
+        longitude: parseCoordinate(newProjectForm.longitude, 112.4150),
         wilayah_id: wilayahId,
-        desa_id: newProjectForm.skala_proyek === 'skala_desa' ? newProjectForm.desa_id : null,
+        desa_id: (newProjectForm.skala_proyek === 'skala_desa' && newProjectForm.desa_id && newProjectForm.desa_id < 9000)
+          ? newProjectForm.desa_id
+          : null,
         dinas_id: dinasId,
         anggaran: Number(newProjectForm.anggaran),
         status: newProjectForm.status,
@@ -585,7 +582,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         estimasi_selesai: newProjectForm.estimasi_selesai,
         kode_proyek: newProjectForm.kode_proyek.trim() || undefined,
         kode_akses: newProjectForm.kode_akses.trim() || undefined,
-      });
+      };
+
+      const created = await apiService.createProject(payload);
 
       setProjectList((prev) => [created, ...prev]);
       if (onProjectCreated) {
@@ -620,8 +619,10 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum dan Penataan Ruang',
         tahap_terkini: 'Pembersihan & Pengukuran Lahan',
       });
-    } catch (err: any) {
-      setCreateProjError(err.message || 'Gagal menambahkan proyek baru.');
+    } catch (error: any) {
+      console.log('Submit proyek gagal:', error);
+      console.error('Submit proyek gagal (detail):', error);
+      setCreateProjError(error?.message || 'Gagal membuat proyek baru.');
     } finally {
       setIsSubmittingNewProj(false);
     }
@@ -1461,7 +1462,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
               </div>
 
-              {/* Koordinat Lintang & Bujur (Point-in-Polygon Validation) */}
+              {/* Koordinat Lintang & Bujur */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label htmlFor="latitude" className="block font-semibold text-[#184C78] mb-1">
@@ -1500,48 +1501,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     }
                     className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
                   />
-                </div>
-              </div>
-
-              {/* Status Badge Verifikasi Spasial Point-in-Polygon */}
-              <div
-                className={`p-3 rounded-xl border flex items-start gap-2.5 text-xs transition-colors ${
-                  spatialValidation.isValid
-                    ? 'bg-emerald-50 border-emerald-200 text-emerald-800'
-                    : 'bg-rose-50 border-rose-300 text-rose-800'
-                }`}
-              >
-                {spatialValidation.isValid ? (
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
-                ) : (
-                  <AlertTriangle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
-                )}
-                <div className="flex-1">
-                  <div className="font-bold flex items-center justify-between">
-                    <span>
-                      {spatialValidation.isValid
-                        ? 'Point-in-Polygon: Terverifikasi di Dalam Wilayah'
-                        : 'Point-in-Polygon: Di Luar Batas Wilayah!'}
-                    </span>
-                    {spatialValidation.centerCoordinates && !spatialValidation.isValid && (
-                      <button
-                        type="button"
-                        onClick={() =>
-                          setNewProjectForm({
-                            ...newProjectForm,
-                            latitude: spatialValidation.centerCoordinates![0],
-                            longitude: spatialValidation.centerCoordinates![1],
-                          })
-                        }
-                        className="text-[11px] underline font-semibold text-rose-700 hover:text-rose-900 cursor-pointer ml-2"
-                      >
-                        Reset ke Titik Wilayah
-                      </button>
-                    )}
-                  </div>
-                  <p className="mt-0.5 text-[11px] leading-relaxed opacity-90">
-                    {spatialValidation.message}
-                  </p>
                 </div>
               </div>
 

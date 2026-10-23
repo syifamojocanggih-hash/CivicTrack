@@ -181,11 +181,12 @@ export const getGoogleMapsDirUrl = (
   origin: string,
   destination: string,
   origCoords?: [number, number],
-  destCoords?: [number, number]
+  destCoords?: [number, number],
+  travelMode: 'driving' | 'two-wheeler' | 'walking' | 'bicycling' = 'driving'
 ): string => {
   const o = origCoords ? `${origCoords[0]},${origCoords[1]}` : encodeURIComponent(origin);
   const d = destCoords ? `${destCoords[0]},${destCoords[1]}` : encodeURIComponent(destination);
-  return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=driving`;
+  return `https://www.google.com/maps/dir/?api=1&origin=${o}&destination=${d}&travelmode=${travelMode}`;
 };
 
 export const generateNavigationSteps = (

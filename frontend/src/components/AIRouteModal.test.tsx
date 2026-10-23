@@ -420,5 +420,54 @@ describe('AIRouteModal', () => {
     ];
     expect(doesRouteIntersectClosure(detourRoute, closureCenter, 280)).toBe(false);
   });
+
+  it('renders interactive Google Maps style transport mode selector with Mobil, Motor, and Jalan Kaki', async () => {
+    const user = userEvent.setup();
+    render(
+      <AIRouteModal
+        isOpen={true}
+        onClose={vi.fn()}
+        projectName="Renovasi Alun-Alun & Taman Centennial Lamongan"
+        project={{
+          id: 25,
+          nama_proyek: 'Renovasi Alun-Alun & Taman Centennial Lamongan',
+          nama_wilayah: 'Lamongan',
+          latitude: -7.1195,
+          longitude: 112.4154,
+        } as any}
+      />
+    );
+
+    // Initial placeholder state (no points selected yet)
+    expect(screen.getByText(/Moda Transportasi:/i)).toBeInTheDocument();
+    const carBtn = screen.getByRole('button', { name: /Mobil/i });
+    const motorBtn = screen.getByRole('button', { name: /Motor/i });
+    const walkBtn = screen.getByRole('button', { name: /Jalan Kaki/i });
+
+    expect(carBtn).toBeInTheDocument();
+    expect(motorBtn).toBeInTheDocument();
+    expect(walkBtn).toBeInTheDocument();
+
+    // Verify placeholder '—' appears when routes are not generated yet
+    expect(screen.getAllByText('—').length).toBeGreaterThanOrEqual(3);
+
+    // Apply a preset to load routes
+    const presetBtn = screen.getByRole('button', { name: /Alun-Alun ➔ Stasiun/i });
+    await user.click(presetBtn);
+
+    // After routes are generated, ETAs should be displayed (e.g. containing 'mnt')
+    await waitFor(() => {
+      expect(screen.getAllByText(/\d+\s*mnt/i).length).toBeGreaterThan(0);
+    });
+
+    // Test switching to Motorcycle
+    await user.click(motorBtn);
+    expect(screen.getByText(/🏍️ Sepeda Motor/i)).toBeInTheDocument();
+
+    // Test switching to Walking
+    await user.click(walkBtn);
+    expect(screen.getByText(/🚶 Jalan Kaki/i)).toBeInTheDocument();
+  });
 });
+
 

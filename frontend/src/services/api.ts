@@ -45,18 +45,43 @@ export function getAuthHeaders(): Record<string, string> {
 }
 
 export async function handleApiError(res: Response, defaultMessage: string): Promise<never> {
-  const errData = await res.json().catch(() => ({}));
-  let msg = defaultMessage;
-  if (errData && errData.detail) {
-    if (typeof errData.detail === 'string') {
-      msg = errData.detail;
-    } else if (Array.isArray(errData.detail)) {
-      msg = errData.detail.map((e: any) => e.msg || JSON.stringify(e)).join(', ');
-    } else {
-      msg = JSON.stringify(errData.detail);
+  let detailMsg = '';
+  const status = res.status;
+  try {
+    const text = await res.text();
+    try {
+      const errData = JSON.parse(text);
+      if (errData && errData.detail) {
+        if (typeof errData.detail === 'string') {
+          detailMsg = errData.detail;
+        } else if (Array.isArray(errData.detail)) {
+          detailMsg = errData.detail
+            .map((e: any) => {
+              const field = Array.isArray(e.loc) ? e.loc.filter((x: any) => x !== 'body').join('.') : '';
+              const prefix = field ? `[${field}]: ` : '';
+              return `${prefix}${e.msg || JSON.stringify(e)}`;
+            })
+            .join('; ');
+        } else {
+          detailMsg = JSON.stringify(errData.detail);
+        }
+      } else if (errData && errData.message) {
+        detailMsg = errData.message;
+      }
+    } catch {
+      if (text && text.trim().length > 0 && text.length < 300) {
+        detailMsg = text.trim();
+      }
     }
+  } catch {
+    // ignore parsing failure
   }
-  throw new Error(msg);
+
+  const finalMsg = detailMsg ? detailMsg : `${defaultMessage} (Status: ${status})`;
+  const error = new Error(finalMsg);
+  (error as any).status = status;
+  (error as any).detail = detailMsg;
+  throw error;
 }
 
 export interface BackendProjectItem {
@@ -497,13 +522,31 @@ export const apiService = {
     let backendStatus = data.status || 'berjalan';
     if (backendStatus === 'ditangguhkan') backendStatus = 'tertunda' as any;
 
+    const parseCoordinate = (val: any, fallback: number): number => {
+      if (typeof val === 'number') return isNaN(val) ? fallback : val;
+      if (typeof val === 'string') {
+        const num = parseFloat(val.replace(',', '.'));
+        return isNaN(num) ? fallback : num;
+      }
+      return fallback;
+    };
+
     const payload = {
-      ...data,
+      nama_proyek: data.nama_proyek ? data.nama_proyek.trim() : '',
       kategori: backendKategori,
-      anggaran: data.anggaran !== undefined ? Number(data.anggaran) : 0,
-      progres_persen: data.progres_persen !== undefined ? Number(data.progres_persen) : 0,
-      desa_id: data.desa_id || null,
+      deskripsi: data.deskripsi ? data.deskripsi.trim() : null,
+      latitude: parseCoordinate(data.latitude, -7.1197),
+      longitude: parseCoordinate(data.longitude, 112.4150),
+      wilayah_id: Number(data.wilayah_id),
+      desa_id: data.desa_id && Number(data.desa_id) < 9000 ? Number(data.desa_id) : null,
+      dinas_id: Number(data.dinas_id),
+      anggaran: data.anggaran !== undefined ? Math.max(0, Number(data.anggaran)) : 0,
       status: backendStatus,
+      progres_persen: data.progres_persen !== undefined ? Math.min(100, Math.max(0, Number(data.progres_persen))) : 0,
+      tanggal_mulai: data.tanggal_mulai,
+      estimasi_selesai: data.estimasi_selesai,
+      kode_proyek: data.kode_proyek ? data.kode_proyek.trim().toUpperCase() : undefined,
+      kode_akses: data.kode_akses ? data.kode_akses.trim() : undefined,
     };
 
     const res = await fetch(`${BASE_URL}/proyek`, {

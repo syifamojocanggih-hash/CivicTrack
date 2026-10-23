@@ -11,6 +11,8 @@ import {
   Layers,
   ArrowRight,
   Car,
+  CarFront,
+  Motorbike,
   Bike,
   Compass,
   Play,
@@ -28,6 +30,8 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import type { ProyekItem } from '../types';
+
+export type TravelMode = 'car' | 'motorcycle' | 'walking';
 
 interface AIRouteModalProps {
   isOpen: boolean;
@@ -247,6 +251,70 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   // State rute rekomendasi (kosong saat titik awal belum ditentukan)
   const [routes, setRoutes] = useState<RouteItem[]>([]);
 
+  // State Pemilihan Moda Transportasi Navigasi (Gaya Google Maps)
+  const [travelMode, setTravelMode] = useState<TravelMode>('car');
+
+  // Kalkulasi estimasi waktu dinamis per moda transportasi (menyesuaikan kecepatan rata-rata perkotaan)
+  const travelModeEtas = useMemo(() => {
+    if (!routes || routes.length === 0) {
+      return {
+        car: null,
+        motorcycle: null,
+        walking: null,
+      };
+    }
+
+    const primaryRoute = routes[0] || routes[selectedRouteIndex];
+    const carMin = primaryRoute?.estimasi_waktu_menit || 10;
+    const distKm = primaryRoute?.estimasi_jarak_km || 3.5;
+
+    // Rute motor: jika ada rute pintas motor gunakan estimasinya, jika tidak ~75% waktu mobil
+    const motorRoute =
+      routes.find(
+        (r) =>
+          /motor|roda dua|pintas/i.test(r.vehicle_type || '') ||
+          /pintas/i.test(r.nama_rute)
+      ) || routes[2];
+    const motorMin = motorRoute?.estimasi_waktu_menit || Math.max(2, Math.round(carMin * 0.75));
+
+    // Rute jalan kaki: rata-rata kecepatan pejalan kaki perkotaan ~4.5 km/jam (~13.3 menit/km)
+    const shortestKm = Math.min(...routes.map((r) => r.estimasi_jarak_km || distKm));
+    const walkingMin = Math.max(3, Math.round(shortestKm * 13.3));
+
+    return {
+      car: carMin,
+      motorcycle: motorMin,
+      walking: walkingMin,
+    };
+  }, [routes, selectedRouteIndex]);
+
+  // Handler interaktif perpindahan moda transportasi
+  const handleSelectTravelMode = (mode: TravelMode) => {
+    setTravelMode(mode);
+    if (routes.length > 0) {
+      if (mode === 'car') {
+        setSelectedRouteIndex(0);
+      } else if (mode === 'motorcycle') {
+        const motorIdx = routes.findIndex(
+          (r) =>
+            /motor|roda dua|pintas/i.test(r.vehicle_type || '') ||
+            /pintas/i.test(r.nama_rute)
+        );
+        setSelectedRouteIndex(motorIdx >= 0 ? motorIdx : routes.length > 2 ? 2 : 0);
+      } else if (mode === 'walking') {
+        let shortestIdx = 0;
+        let minDistance = Infinity;
+        routes.forEach((r, idx) => {
+          if (r.estimasi_jarak_km < minDistance) {
+            minDistance = r.estimasi_jarak_km;
+            shortestIdx = idx;
+          }
+        });
+        setSelectedRouteIndex(shortestIdx);
+      }
+    }
+  };
+
   const [copiedRouteIndex, setCopiedRouteIndex] = useState<number | null>(null);
 
   // Sinkronisasi rute lokal instan setiap kali origin, destination, atau koordinat berubah
@@ -378,7 +446,11 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     const stepsText = (r.petunjuk_langkah || [])
       .map((s) => `${s.nomor}. ${s.instruksi} (${s.jarak})`)
       .join('\n');
-    const fullText = `📍 PANDUAN RUTE CIVICTRACK\nDari: ${origin}\nKe: ${destination}\nRute: ${r.nama_rute} (${r.estimasi_waktu_menit} Menit, ${r.estimasi_jarak_km} km)\n\nLangkah Navigasi:\n${stepsText}\n\nGoogle Maps: ${getGoogleMapsDirUrl(origin, destination, originCoords, destCoords)}`;
+    const gmapsMode =
+      travelMode === 'motorcycle' ? 'two-wheeler' : travelMode === 'walking' ? 'walking' : 'driving';
+    const modeLabel =
+      travelMode === 'car' ? 'Mobil' : travelMode === 'motorcycle' ? 'Sepeda Motor' : 'Jalan Kaki';
+    const fullText = `📍 PANDUAN RUTE CIVICTRACK\nDari: ${origin}\nKe: ${destination}\nModa Transportasi: ${modeLabel}\nRute: ${r.nama_rute} (${r.estimasi_waktu_menit} Menit, ${r.estimasi_jarak_km} km)\n\nLangkah Navigasi:\n${stepsText}\n\nGoogle Maps: ${getGoogleMapsDirUrl(origin, destination, originCoords, destCoords, gmapsMode)}`;
 
     try {
       if (navigator?.clipboard?.writeText) {
@@ -972,13 +1044,14 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     }
 
     const isMotor = selectedRouteIndex === 2;
+    const simEmoji = travelMode === 'walking' ? '🚶' : travelMode === 'motorcycle' || isMotor ? '🏍️' : '🚗';
     const vehicleIcon = L.divIcon({
       className: 'simulation-vehicle-marker',
       html: `
         <div class="relative flex items-center justify-center w-9 h-9 -ml-4.5 -mt-4.5">
           <span class="absolute w-9 h-9 bg-emerald-400/40 rounded-full animate-ping"></span>
           <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xl border-2 border-white">
-            ${isMotor ? '🏍️' : '🚗'}
+            ${simEmoji}
           </div>
         </div>
       `,
@@ -1328,15 +1401,18 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
             }`}
           >
             {/* Input Form Pencarian Arah */}
-            <form onSubmit={handleReanalyze} className="p-4 border-b border-slate-200 bg-slate-50/70 space-y-2.5 shrink-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                {/* TITIK AWAL */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                      Titik Awal (Origin)
-                    </label>
+            <form onSubmit={handleReanalyze} className="p-4 border-b border-slate-200 bg-slate-50/70 space-y-3 shrink-0">
+              {/* ── BAGIAN INPUT TITIK AWAL & TUJUAN (LAYOUT SIMETRIS 2 KOLOM SEJAJAR) ── */}
+              <div className="grid grid-cols-2 gap-3 items-start">
+                {/* TITIK AWAL (ORIGIN) */}
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center justify-between gap-1 mb-1.5 min-h-[26px]">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-2xs" />
+                      <label className="text-[10.5px] font-extrabold text-slate-600 uppercase tracking-wide truncate">
+                        Titik Awal <span className="text-[9px] font-semibold text-slate-400 lowercase tracking-normal">(origin)</span>
+                      </label>
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
@@ -1344,14 +1420,14 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                         setPickingMode(next);
                         setPickingNotice(next ? '📍 Klik sembarang lokasi di peta untuk titik awal' : null);
                       }}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border ${
+                      className={`shrink-0 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border whitespace-nowrap ${
                         pickingMode === 'origin'
                           ? 'bg-emerald-600 text-white border-emerald-600 ring-2 ring-emerald-400/40 animate-pulse'
                           : 'bg-white hover:bg-emerald-50 text-emerald-700 border-emerald-300 shadow-2xs'
                       }`}
                       title="Klik untuk memilih titik awal langsung di peta"
                     >
-                      <MapPin className="w-3 h-3" />
+                      <MapPin className="w-3 h-3 shrink-0" />
                       <span>{pickingMode === 'origin' ? 'Merekam...' : 'Pilih di Peta'}</span>
                     </button>
                   </div>
@@ -1364,40 +1440,45 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                         setCustomOriginCoords(null);
                       }}
                       placeholder="Pilih lokasi di peta atau ketik titik awal..."
-                      className={`w-full px-3 py-1.5 text-xs border rounded-xl bg-white outline-none transition-all pr-8 ${
+                      className={`w-full h-9 px-3 text-xs border rounded-xl bg-white outline-none transition-all pr-14 ${
                         pickingMode === 'origin'
                           ? 'border-emerald-500 ring-2 ring-emerald-500/20'
                           : 'border-slate-200 focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/15'
                       }`}
                     />
                     {customOriginCoords && (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1 py-0.2 rounded border border-emerald-200" title="Koordinat dipilih dari peta">
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-200 pointer-events-none" title="Koordinat dipilih dari peta">
                         📍 Peta
                       </span>
                     )}
                   </div>
-                  {customOriginCoords && (
-                    <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-                      <span>Koordinat: {customOriginCoords[0].toFixed(6)}, {customOriginCoords[1].toFixed(6)}</span>
+                  {/* Info Koordinat (dengan placeholder spacer agar seimbang jika kolom sebelah ada koordinat) */}
+                  {customOriginCoords ? (
+                    <div className="mt-1 flex items-center justify-between text-[9.5px] text-slate-500 font-mono bg-emerald-50/70 px-2 py-0.5 rounded-md border border-emerald-200/80">
+                      <span className="truncate">📍 {customOriginCoords[0].toFixed(5)}, {customOriginCoords[1].toFixed(5)}</span>
                       <button
                         type="button"
                         onClick={() => setCustomOriginCoords(null)}
-                        className="text-slate-400 hover:text-red-500 text-[9px] font-sans"
+                        className="text-slate-400 hover:text-red-500 text-[9px] font-sans ml-1 font-bold shrink-0 cursor-pointer"
                         title="Reset koordinat manual"
                       >
                         Reset
                       </button>
                     </div>
-                  )}
+                  ) : customDestCoords ? (
+                    <div className="mt-1 h-[21px]" aria-hidden="true" />
+                  ) : null}
                 </div>
 
-                {/* TUJUAN */}
-                <div>
-                  <div className="flex items-center justify-between mb-1">
-                    <label className="text-[10px] font-extrabold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-                      <span className="w-2 h-2 rounded-full bg-indigo-500"></span>
-                      Tujuan (Destination)
-                    </label>
+                {/* TUJUAN (DESTINATION) */}
+                <div className="flex flex-col min-w-0">
+                  <div className="flex items-center justify-between gap-1 mb-1.5 min-h-[26px]">
+                    <div className="flex items-center gap-1.5 min-w-0">
+                      <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 shadow-2xs" />
+                      <label className="text-[10.5px] font-extrabold text-slate-600 uppercase tracking-wide truncate">
+                        Tujuan <span className="text-[9px] font-semibold text-slate-400 lowercase tracking-normal">(destination)</span>
+                      </label>
+                    </div>
                     <button
                       type="button"
                       onClick={() => {
@@ -1405,14 +1486,14 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                         setPickingMode(next);
                         setPickingNotice(next ? '🏁 Klik sembarang lokasi di peta untuk titik tujuan' : null);
                       }}
-                      className={`px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border ${
+                      className={`shrink-0 px-2 py-0.5 rounded-lg text-[10px] font-bold transition-all flex items-center gap-1 cursor-pointer border whitespace-nowrap ${
                         pickingMode === 'destination'
                           ? 'bg-indigo-600 text-white border-indigo-600 ring-2 ring-indigo-400/40 animate-pulse'
                           : 'bg-white hover:bg-indigo-50 text-indigo-700 border-indigo-300 shadow-2xs'
                       }`}
                       title="Klik untuk memilih titik tujuan langsung di peta"
                     >
-                      <MapPin className="w-3 h-3" />
+                      <MapPin className="w-3 h-3 shrink-0" />
                       <span>{pickingMode === 'destination' ? 'Merekam...' : 'Pilih di Peta'}</span>
                     </button>
                   </div>
@@ -1425,31 +1506,142 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                         setCustomDestCoords(null);
                       }}
                       placeholder="Pilih lokasi di peta atau ketik tujuan..."
-                      className={`w-full px-3 py-1.5 text-xs border rounded-xl bg-white outline-none transition-all pr-8 ${
+                      className={`w-full h-9 px-3 text-xs border rounded-xl bg-white outline-none transition-all pr-14 ${
                         pickingMode === 'destination'
                           ? 'border-indigo-500 ring-2 ring-indigo-500/20'
                           : 'border-slate-200 focus:border-[#7C3AED] focus:ring-2 focus:ring-[#7C3AED]/15'
                       }`}
                     />
                     {customDestCoords && (
-                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-indigo-700 bg-indigo-100 px-1 py-0.2 rounded border border-indigo-200" title="Koordinat dipilih dari peta">
+                      <span className="absolute right-2 top-1/2 -translate-y-1/2 text-[9px] font-bold text-indigo-700 bg-indigo-100 px-1.5 py-0.5 rounded border border-indigo-200 pointer-events-none" title="Koordinat dipilih dari peta">
                         🏁 Peta
                       </span>
                     )}
                   </div>
-                  {customDestCoords && (
-                    <div className="mt-1 flex items-center justify-between text-[10px] text-slate-500 font-mono">
-                      <span>Koordinat: {customDestCoords[0].toFixed(6)}, {customDestCoords[1].toFixed(6)}</span>
+                  {/* Info Koordinat (dengan placeholder spacer agar seimbang jika kolom sebelah ada koordinat) */}
+                  {customDestCoords ? (
+                    <div className="mt-1 flex items-center justify-between text-[9.5px] text-slate-500 font-mono bg-indigo-50/70 px-2 py-0.5 rounded-md border border-indigo-200/80">
+                      <span className="truncate">🏁 {customDestCoords[0].toFixed(5)}, {customDestCoords[1].toFixed(5)}</span>
                       <button
                         type="button"
                         onClick={() => setCustomDestCoords(null)}
-                        className="text-slate-400 hover:text-red-500 text-[9px] font-sans"
+                        className="text-slate-400 hover:text-red-500 text-[9px] font-sans ml-1 font-bold shrink-0 cursor-pointer"
                         title="Reset koordinat manual"
                       >
                         Reset
                       </button>
                     </div>
+                  ) : customOriginCoords ? (
+                    <div className="mt-1 h-[21px]" aria-hidden="true" />
+                  ) : null}
+                </div>
+              </div>
+
+              {/* ── BAR PEMILIHAN MODA TRANSPORTASI (GAYA GOOGLE MAPS NAVIGATION) ── */}
+              <div className="pt-2 pb-1.5 px-3 bg-white rounded-2xl border border-slate-200/90 shadow-2xs">
+                <div className="flex items-center justify-between mb-1.5">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
+                    Moda Transportasi:
+                  </span>
+                  {routes.length > 0 && (
+                    <span className="text-[10px] font-bold text-[#7C3AED] bg-violet-50 px-2 py-0.5 rounded-md border border-violet-100">
+                      {travelMode === 'car' ? '🚗 Mobil Pribadi' : travelMode === 'motorcycle' ? '🏍️ Sepeda Motor' : '🚶 Jalan Kaki'}
+                    </span>
                   )}
+                </div>
+
+                <div className="grid grid-cols-3 gap-2">
+                  {/* MODA 1: MOBIL (CAR) */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTravelMode('car')}
+                    className={`py-1.5 px-2 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer group ${
+                      travelMode === 'car'
+                        ? 'bg-sky-50 text-sky-900 border border-sky-300 ring-2 ring-sky-400/20 shadow-xs'
+                        : 'bg-slate-50/70 hover:bg-slate-100 text-slate-600 border border-slate-200/70'
+                    }`}
+                    title="Moda Mobil (Roda Empat / Kendaraan Pribadi)"
+                  >
+                    <div className={`px-4 py-1 rounded-full flex items-center justify-center transition-all ${
+                      travelMode === 'car'
+                        ? 'bg-[#C2E7FF] text-[#001D35] shadow-2xs'
+                        : 'text-slate-600 group-hover:text-slate-900 group-hover:bg-slate-200/60'
+                    }`}>
+                      <CarFront className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[11px] mt-1 tracking-tight transition-colors ${
+                      travelMode === 'car' ? 'font-black text-slate-900' : 'font-semibold text-slate-600'
+                    }`}>
+                      {routes.length > 0 ? `${travelModeEtas.car} mnt` : '—'}
+                    </span>
+                    <span className="text-[9.5px] font-medium text-slate-400 leading-none mt-0.5">
+                      Mobil
+                    </span>
+                  </button>
+
+                  {/* MODA 2: MOTOR (MOTORCYCLE) */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTravelMode('motorcycle')}
+                    className={`py-1.5 px-2 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer group ${
+                      travelMode === 'motorcycle'
+                        ? 'bg-sky-50 text-sky-900 border border-sky-300 ring-2 ring-sky-400/20 shadow-xs'
+                        : 'bg-slate-50/70 hover:bg-slate-100 text-slate-600 border border-slate-200/70'
+                    }`}
+                    title="Moda Sepeda Motor (Roda Dua)"
+                  >
+                    <div className={`px-4 py-1 rounded-full flex items-center justify-center transition-all ${
+                      travelMode === 'motorcycle'
+                        ? 'bg-[#C2E7FF] text-[#001D35] shadow-2xs'
+                        : 'text-slate-600 group-hover:text-slate-900 group-hover:bg-slate-200/60'
+                    }`}>
+                      <Motorbike className="w-4 h-4" />
+                    </div>
+                    <span className={`text-[11px] mt-1 tracking-tight transition-colors ${
+                      travelMode === 'motorcycle' ? 'font-black text-slate-900' : 'font-semibold text-slate-600'
+                    }`}>
+                      {routes.length > 0 ? `${travelModeEtas.motorcycle} mnt` : '—'}
+                    </span>
+                    <span className="text-[9.5px] font-medium text-slate-400 leading-none mt-0.5">
+                      Motor
+                    </span>
+                  </button>
+
+                  {/* MODA 3: PEJALAN KAKI (WALKING) */}
+                  <button
+                    type="button"
+                    onClick={() => handleSelectTravelMode('walking')}
+                    className={`py-1.5 px-2 rounded-xl flex flex-col items-center justify-center transition-all cursor-pointer group ${
+                      travelMode === 'walking'
+                        ? 'bg-sky-50 text-sky-900 border border-sky-300 ring-2 ring-sky-400/20 shadow-xs'
+                        : 'bg-slate-50/70 hover:bg-slate-100 text-slate-600 border border-slate-200/70'
+                    }`}
+                    title="Moda Pejalan Kaki (Jalan Kaki)"
+                  >
+                    <div className={`px-4 py-1 rounded-full flex items-center justify-center transition-all ${
+                      travelMode === 'walking'
+                        ? 'bg-[#C2E7FF] text-[#001D35] shadow-2xs'
+                        : 'text-slate-600 group-hover:text-slate-900 group-hover:bg-slate-200/60'
+                    }`}>
+                      {/* Walking Person SVG Icon (Gaya Google Maps Navigation) */}
+                      <svg
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                        className="w-4 h-4"
+                        aria-hidden="true"
+                      >
+                        <path d="M13.5 5.5c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zM9.8 8.9L7 23h2.1l1.8-8 2.1 2v6h2v-7.5l-2.1-2 .6-3C14.8 12 16.8 13 19 13v-2c-1.9 0-3.5-1-4.3-2.4l-1-1.6c-.4-.6-1-1-1.7-1-.3 0-.5.1-.8.1L6 8.3V13h2V9.6l1.8-.7z" />
+                      </svg>
+                    </div>
+                    <span className={`text-[11px] mt-1 tracking-tight transition-colors ${
+                      travelMode === 'walking' ? 'font-black text-slate-900' : 'font-semibold text-slate-600'
+                    }`}>
+                      {routes.length > 0 ? `${travelModeEtas.walking} mnt` : '—'}
+                    </span>
+                    <span className="text-[9.5px] font-medium text-slate-400 leading-none mt-0.5">
+                      Jalan Kaki
+                    </span>
+                  </button>
                 </div>
               </div>
 
@@ -1676,7 +1868,13 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                               )}
                             </button>
                             <a
-                              href={getGoogleMapsDirUrl(origin, destination, originCoords, destCoords)}
+                              href={getGoogleMapsDirUrl(
+                                origin,
+                                destination,
+                                originCoords,
+                                destCoords,
+                                travelMode === 'motorcycle' ? 'two-wheeler' : travelMode === 'walking' ? 'walking' : 'driving'
+                              )}
                               target="_blank"
                               rel="noopener noreferrer"
                               onClick={(e) => e.stopPropagation()}
