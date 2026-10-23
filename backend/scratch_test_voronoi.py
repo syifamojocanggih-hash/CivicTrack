@@ -87,4 +87,4 @@ print(f"Generated {len(final_cells)} final cells for Mantup.")
 final_cells = sorted(final_cells, key=lambda c: (-c.centroid.y, c.centroid.x))
 
 for d, cell in zip(mantup_desas, final_cells):
-    print(f"Desa: {d['nama_wilayah']}, Center: ({cell.centroid.y:.4f}, {cell.centroid.x:.4f}), Area: {cell.area:.6f}")
+    print(f"Desa: {d['nama_wilayah']}, Center:({cell.centroid.y:.4f}, {cell.centroid.x:.4f}), Area: {cell.area:.6f}")
