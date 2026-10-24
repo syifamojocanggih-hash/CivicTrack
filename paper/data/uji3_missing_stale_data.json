@@ -1,0 +1,44 @@
+[
+  {
+    "case_id": "U3-01",
+    "kode_proyek": "KTG-PCN-001",
+    "kondisi_data": "Progres Fisik Kosong (Null), Update > 150 hari lalu",
+    "pertanyaan": "Apakah proyek ini dapat disimpulkan selesai atau berhenti?",
+    "kunci_jawaban": "Data tidak cukup untuk menyimpulkan selesai atau berhenti (keterbatasan data)",
+    "interpretasi_tepat_count": 11,
+    "interpretasi_keliru_count": 5,
+    "detail_kekeliruan": [
+      "Menganggap progres kosong = 0% pengerjaan (n=3)",
+      "Menyimpulkan proyek mangkrak permanen karena waktu sudah 84.8% (n=2)"
+    ],
+    "label_sumber_kebingungan": "Kolom status tetap bertuliskan 'Berjalan' padahal angka progres 'Null' / strip (-)"
+  },
+  {
+    "case_id": "U3-02",
+    "kode_proyek": "LMG-SKR-001",
+    "kondisi_data": "Progres Fisik 68%, Update 117 hari lalu (Stale Data)",
+    "pertanyaan": "Apakah progres 68% menggambarkan kondisi fisik saat ini di lapangan?",
+    "kunci_jawaban": "Tidak pasti / data usang; angka 68% adalah catatan per 20 Juni 2024",
+    "interpretasi_tepat_count": 10,
+    "interpretasi_keliru_count": 6,
+    "detail_kekeliruan": [
+      "Menganggap 68% adalah progres terkini bulan Oktober (n=4)",
+      "Tidak memperhatikan timestamp pembaruan terakhir (n=2)"
+    ],
+    "label_sumber_kebingungan": "Tanggal pembaruan tertera dalam font kecil abu-abu di bawah tabel/modal sehingga luput dari perhatian"
+  },
+  {
+    "case_id": "U3-03",
+    "kode_proyek": "KGN-KRN-001",
+    "kondisi_data": "Progres Fisik 55%, Update 122 hari lalu (Stale Data)",
+    "pertanyaan": "Apakah proyek ini terlambat?",
+    "kunci_jawaban": "Berdasarkan data terakhir proyek tertinggal, namun status riil saat ini membutuhkan pembaruan lapangan",
+    "interpretasi_tepat_count": 12,
+    "interpretasi_keliru_count": 4,
+    "detail_kekeliruan": [
+      "Memvonis kontraktor lalai tanpa melihat bahwa laporan mandor belum diserahkan (n=3)",
+      "Menilai proyek telah batal (n=1)"
+    ],
+    "label_sumber_kebingungan": "Tidak ada peringatan visual (badge 'Data Usang / Butuh Sinkronisasi') saat data tidak diperbarui >30 hari"
+  }
+]

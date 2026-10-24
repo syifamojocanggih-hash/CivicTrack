@@ -1,0 +1,1282 @@
+[
+  {
+    "participant_id": "P01",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 34.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P01",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 48.5,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Mengira 83% waktu = 83% progres"
+  },
+  {
+    "participant_id": "P01",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 11.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P01",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 52.0,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Gagal pisahkan durasi kalender dan bobot kerja"
+  },
+  {
+    "participant_id": "P01",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 12.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P01",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 26.4,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P01",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 24.1,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P01",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 32.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P02",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 28.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P02",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 41.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P02",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 14.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P02",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 46.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P02",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 15.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P02",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 31.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P02",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 21.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P02",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 38.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P03",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 36.5,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Melewatkan baris karena nama proyek mirip"
+  },
+  {
+    "participant_id": "P03",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 55.4,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Menilai status hanya dari status teks 'Berjalan'"
+  },
+  {
+    "participant_id": "P03",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 10.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P03",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 58.1,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Menyamakan persentase hari dengan hasil fisik"
+  },
+  {
+    "participant_id": "P03",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 11.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P03",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 28.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P03",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 26.5,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Membaca target deadline alih-alih update terakhir di pop-up"
+  },
+  {
+    "participant_id": "P03",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 34.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P04",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 31.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P04",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 39.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P04",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 13.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P04",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 44.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P04",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 16.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P04",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 25.1,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P04",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 19.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P04",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 29.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P05",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 40.2,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Kecamatan tidak terurut alfabetis"
+  },
+  {
+    "participant_id": "P05",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 46.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P05",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 12.1,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P05",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 51.5,
+    "is_correct": 0,
+    "assistance_needed": 0,
+    "error_pattern": "Tertipu status 'Berjalan' tanpa melihat deviasi"
+  },
+  {
+    "participant_id": "P05",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 13.4,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P05",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 29.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P05",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 23.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P05",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 36.1,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P06",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 29.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P06",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 43.2,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Mengabaikan tanggal target selesai"
+  },
+  {
+    "participant_id": "P06",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 11.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P06",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 49.0,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Menganggap 67% waktu = 67% pekerjaan"
+  },
+  {
+    "participant_id": "P06",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 14.1,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P06",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 27.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P06",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 20.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P06",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 33.4,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P07",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 33.1,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P07",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 38.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P07",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 15.0,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Salah membaca kolom tanggal mulai"
+  },
+  {
+    "participant_id": "P07",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 42.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P07",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 17.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P07",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 24.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P07",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 25.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P07",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 31.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P08",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 35.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P08",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 47.1,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Kalkulasi mental deviasi hari keliru"
+  },
+  {
+    "participant_id": "P08",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 9.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P08",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 54.3,
+    "is_correct": 0,
+    "assistance_needed": 0,
+    "error_pattern": "Salah menginterpretasikan selisih progres"
+  },
+  {
+    "participant_id": "P08",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 13.9,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P08",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 30.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P08",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 27.2,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Bingung navigasi antara tab timeline dan peta"
+  },
+  {
+    "participant_id": "P08",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 37.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P09",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 14.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P09",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 27.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P09",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 22.4,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P09",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 33.1,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P09",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 30.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P09",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 42.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P09",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 11.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P09",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 47.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P10",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 15.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P10",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 29.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P10",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 21.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P10",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 36.4,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P10",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 33.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P10",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 49.0,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Mengira proyek belum lewat deadline"
+  },
+  {
+    "participant_id": "P10",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 13.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P10",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 53.0,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Waktu terlewati 74% dikira progres kerja"
+  },
+  {
+    "participant_id": "P11",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 12.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P11",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 25.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P11",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 24.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P11",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 30.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P11",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 35.0,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Scanning tabel terlewat"
+  },
+  {
+    "participant_id": "P11",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 40.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P11",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 12.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P11",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 45.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P12",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 16.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P12",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 32.0,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Salah membaca skala warna timeline"
+  },
+  {
+    "participant_id": "P12",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 23.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P12",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 39.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P12",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 31.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P12",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 45.2,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Gagal hitung deviasi jadwal"
+  },
+  {
+    "participant_id": "P12",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 14.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P12",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 50.2,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Rancu persentase waktu vs progres"
+  },
+  {
+    "participant_id": "P13",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 13.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P13",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 26.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P13",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 20.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P13",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 34.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P13",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 29.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P13",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 43.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P13",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 10.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P13",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 48.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P14",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 15.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P14",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 28.4,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P14",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 25.5,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Terlalu banyak klik pin untuk cari tanggal"
+  },
+  {
+    "participant_id": "P14",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 35.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P14",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 36.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P14",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 47.0,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Tidak memperhitungkan tanggal acuan"
+  },
+  {
+    "participant_id": "P14",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 12.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P14",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 52.5,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Menyimpulkan proyek aman karena waktu belum 100%"
+  },
+  {
+    "participant_id": "P15",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 14.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P15",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 24.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P15",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 21.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P15",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 31.2,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P15",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 32.4,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P15",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 41.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P15",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 11.8,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P15",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 46.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P16",
+    "condition": "Map-Timeline",
+    "task_id": "T1",
+    "dataset_split": "Set A",
+    "duration_seconds": 17.5,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P16",
+    "condition": "Map-Timeline",
+    "task_id": "T2",
+    "dataset_split": "Set A",
+    "duration_seconds": 30.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P16",
+    "condition": "Map-Timeline",
+    "task_id": "T3",
+    "dataset_split": "Set A",
+    "duration_seconds": 22.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P16",
+    "condition": "Map-Timeline",
+    "task_id": "T4",
+    "dataset_split": "Set A",
+    "duration_seconds": 38.0,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Bingung membedakan indikator baseline"
+  },
+  {
+    "participant_id": "P16",
+    "condition": "List-Based",
+    "task_id": "T1",
+    "dataset_split": "Set B",
+    "duration_seconds": 34.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P16",
+    "condition": "List-Based",
+    "task_id": "T2",
+    "dataset_split": "Set B",
+    "duration_seconds": 48.2,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Kalkulasi manual selisih waktu keliru"
+  },
+  {
+    "participant_id": "P16",
+    "condition": "List-Based",
+    "task_id": "T3",
+    "dataset_split": "Set B",
+    "duration_seconds": 13.0,
+    "is_correct": 1,
+    "assistance_needed": 0,
+    "error_pattern": "None"
+  },
+  {
+    "participant_id": "P16",
+    "condition": "List-Based",
+    "task_id": "T4",
+    "dataset_split": "Set B",
+    "duration_seconds": 55.0,
+    "is_correct": 0,
+    "assistance_needed": 1,
+    "error_pattern": "Menyamakan waktu 93% dengan penyelesaian proyek"
+  }
+]

@@ -132,13 +132,17 @@ def test_generate_routes_grounded_vs_ungrounded():
             kategori="jalan",
             nama_wilayah="Babat",
             latitude=-7.1050,
-            longitude=112.1640
+            longitude=112.1640,
+            origin_coords=(-7.1050, 112.1640),
+            dest_coords=(-7.1058, 112.1648)
         )
         assert len(routes) == 3
         assert routes[0]["geografis_terverifikasi"] is True
         assert routes[0]["source"] == "groq"
         assert len(routes[0]["koordinat_rute"]) >= 2
-        assert routes[0]["koordinat_rute"][0] == [-7.1050, 112.1640]
+        # OSRM melakukan snapping koordinat titik awal ke ruas jalan terdekat
+        assert abs(routes[0]["koordinat_rute"][0][0] - (-7.1050)) < 0.01
+        assert abs(routes[0]["koordinat_rute"][0][1] - (112.1640)) < 0.01
 
     # 2. Simulasi area terpencil tanpa data OSM (Opsi B)
     with patch("app.services.groq_service.get_nearby_osm_data") as mock_osm_empty:
