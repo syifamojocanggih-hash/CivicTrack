@@ -1,0 +1,344 @@
+% This is samplepaper.tex, a sample chapter demonstrating the
+% LLNCS macro package for Springer Computer Science proceedings;
+% Version 2.21 of 2022/01/12
+%
+\documentclass[runningheads]{llncs}
+%
+\usepackage{graphicx}
+\usepackage{amsmath,amssymb}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{multirow}
+\usepackage{array}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{cite}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue,
+    filecolor=magenta,      
+    urlcolor=cyan,
+    citecolor=blue,
+}
+
+\begin{document}
+%
+\title{List-Based versus Map-and-Timeline Project Information: A Pilot Study of Citizen Comprehension}
+%
+\titlerunning{List-Based vs. Map-and-Timeline Project Information}
+%
+\author{Ahmad Syifa'ul Falakhul Khayyi\inst{1}\orcidID{0009-0002-8921-9923} \and
+Aimatus Sholiha\inst{1}\orcidID{0009-0004-7182-3341}}
+%
+\authorrunning{A. S. F. Khayyi and A. Sholiha}
+% First names are abbreviated in the running head.
+% If there are more than two authors, 'et al.' is used.
+%
+\institute{Department of Informatics and Computer Engineering, \\
+Politeknik Elektronika Negeri Surabaya, Surabaya 60111, Indonesia \\
+\email{\{khayyi, aimatus\}@pasca.student.pens.ac.id}}
+%
+\maketitle              % typeset the header of the contribution
+%
+\begin{abstract}
+Public infrastructure transparency platforms increasingly seek to empower civic monitoring by publishing civil works schedules, budgets, and physical progress. However, conventional e-government portals predominantly display projects in unstructured tabular lists, frequently obscuring geographic context and inducing cognitive confusion between calendar time elapsed, milestone-based work completion, and field reporting recency. This pilot study investigates whether an integrated map-and-timeline interface significantly enhances citizen comprehension compared to a baseline list-based format. Utilizing CivicTrack, an infrastructure monitoring platform implemented for Lamongan Regency, Indonesia, we established a rigorous benchmark dataset of 20 synthetic public works projects and conducted a three-phase empirical evaluation. Phase~1 validated baseline data integrity. Phase~2 executed a counterbalanced within-subjects crossover pilot experiment ($N = 16$) across four representative information retrieval and analytical tasks. Phase~3 evaluated user interpretation of stale and missing progress data. The experimental results reveal a pronounced task-dependent dichotomy: the interactive geospatial map substantially accelerated spatial project retrieval (median 14.30\,s vs. 33.30\,s; accuracy 100.0\% vs. 81.2\%; $t(15) = 18.48, p < 0.001$), while the chronological timeline effectively mitigated schedule misinterpretations, elevating delay identification accuracy from 50.0\% to 93.8\% ($t(15) = 16.79, p < 0.001$). Conversely, for isolated attribute lookup---specifically identifying field update timestamps---the tabular list was nearly twice as fast (median 12.05\,s vs. 22.70\,s; $t(15) = -14.16, p < 0.001$) and yielded fewer errors, exposing the cognitive overhead introduced by multi-view spatial navigation. In the missing data evaluation, 31.2\% of participants misattributed missing progress values to project cancellation or zero work, underscoring the necessity of explicit visual ambiguity indicators. These preliminary findings demonstrate that visual richness does not universally enhance comprehension; civic platforms must couple spatial overview with frictionless tabular inspection.
+
+\keywords{Civic Technology \and Public Project Dashboard \and Geospatial Visualization \and Timeline Usability \and Citizen Comprehension \and Open Government Data \and ISO/IEC 25010.}
+\end{abstract}
+%
+%
+%
+\section{Introduction}
+Civic engagement in public infrastructure governance has emerged as a cornerstone of transparent, accountable, and democratic regional development~\cite{ansari2022enhancing,chokki2022engaging}. Across emerging economies and decentralized administrations, municipal authorities allocate substantial capital expenditures to road pavements, flood-control drainage systems, bridge rehabilitations, and community healthcare facilities~\cite{matheus2018data,matheus2021design}. However, ordinary citizens seeking to locate public works within their residential vicinity and comprehend their execution progress confront pervasive information barriers~\cite{lourenco2015analysis,zuiderwijk2015acceptance}. While regulatory mandates compel municipal agencies to publish procurement records, budgets, and contractor allocations, these public disclosures are conventionally sequestered in fragmented PDF documents or cumbersome spreadsheet portals~\cite{zuiderwijk2014open,safarov2017utilization}. Consequently, local residents experience profound difficulties in identifying which civil works affect their daily commutes, assessing whether ongoing construction adheres to contractually stipulated delivery schedules, or verifying whether contractors have legitimately achieved declared milestones~\cite{ruijer2017open,bertot2010using}.
+
+A critical usability bottleneck identified during preliminary field observations is the prevalent conflation among three distinct temporal and operational dimensions: physical milestone progress, calendar duration elapsed, and field reporting recency~\cite{porumbescu2016linking,piotrowski2007citizen}. In conventional tabular disclosures, public portals typically present a single percentage metric alongside project commencement and completion dates~\cite{grimmelikhuijsen2012developing,grimmelikhuijsen2013effect}. When an ordinary citizen inspects an ongoing road reconstruction project displaying ``75\% elapsed duration'' alongside ``60\% physical progress,'' the absence of contextual visual cues frequently leads them to conclude that the project is proceeding normally, intuitively misinterpreting the mere passage of calendar days as tangible physical completion~\cite{vessey1991cognitive,shneiderman1996eyes}. Furthermore, public disclosures frequently fail to distinguish between the final contract deadline and the timestamp of the latest field inspection report~\cite{tory2004rethinking,sarikaya2019what}. When field data updates lag by several months, citizens remain unaware that reported progress percentages reflect obsolete conditions, leading to misplaced public satisfaction or unwarranted civic grievances~\cite{bangor2008empirical}.
+
+To overcome the communicative limitations of raw spreadsheets, municipal dashboards increasingly incorporate interactive geospatial maps and rich visual representations~\cite{andrienko2006exploratory,andrienko2003exploratory}. Nonetheless, the design of existing civic dashboards has predominantly been driven by superficial aesthetic appeal rather than rigorous human-computer interaction (HCI) evaluation grounded in user comprehension tasks~\cite{stromberg2025evaluating,goodchild2007citizens}. Current scholarly assessments of open government data portals frequently focus on technical interoperability, metadata completeness, or broad citizen satisfaction indices, largely neglecting how specific visual encodings influence the cognitive speed and accuracy of non-expert citizens~\cite{haklay2008openstreetmap,kahilatani2019does}. Deploying rich geospatial overlays and animated diagrams without understanding their cognitive trade-offs risks introducing visual clutter, increasing interaction friction, and ironically degrading citizen decision-making on straightforward information retrieval tasks~\cite{brown2014key,kitchin2014real}.
+
+To address these empirical gaps, this paper establishes a systematic comparative evaluation examining whether an integrated map-and-timeline presentation improves citizen comprehension of project location, execution progress, and schedule delays compared to a structured list-based baseline. Using an equivalent, controlled dataset of 20 public infrastructure projects modeled on official municipal works in Lamongan Regency, East Java, Indonesia, this study formulates three sequential evaluation protocols: (1) baseline data validation and progress formula auditing, (2) a counterbalanced within-subjects crossover pilot experiment measuring accuracy and completion time across four core comprehension tasks, and (3) a targeted assessment of user interpretations under missing and stale data conditions. By isolating task-dependent performance variations, this paper delineates where spatial and temporal visual representations deliver demonstrable cognitive benefits and where interface complexity imposes unnecessary operational burdens.
+
+\section{Related Work}
+The empirical study of public project dashboard comprehension intersects five major domains of research: open government data usability, cognitive fit and visual taxonomies, geospatial visualization in civic decision-making, temporal project progress modeling, and the interpretation of incomplete or delayed administrative disclosures.
+
+\subsection{Public Project Dashboards and Citizen Comprehension}
+Digital transparency portals are widely heralded as mechanisms to mitigate information asymmetry between public agencies and citizens~\cite{ansari2022enhancing,chokki2022engaging}. In their comprehensive review of open government data visualization research, Ansari et al.~\cite{ansari2022enhancing} emphasized that raw disclosure fails to achieve civic utility unless accompanied by task-tailored analytical tools that prevent cognitive overload. Matheus et al.~\cite{matheus2018data,matheus2021design} formulated design principles for digital transparency in smart governance, noting that portals must support structured inquiry rather than passive data exposure. In their analyses of municipal open data platforms, Louren{\c{c}}o~\cite{lourenco2015analysis}, Zuiderwijk et al.~\cite{zuiderwijk2015acceptance,zuiderwijk2014open}, and Safarov et al.~\cite{safarov2017utilization} revealed that most municipal implementations remain restricted to passive ``data dumps,'' offering static tables that fail to support analytical inquiry by lay citizens. 
+
+Chokki et al.~\cite{chokki2022engaging} conducted controlled experiments demonstrating that interactive dashboards significantly enhance citizen comprehension compared to isolated charts; however, they noted that multi-component dashboards trigger visual fragmentation if navigational hierarchies are ambiguous. Furthermore, Ruijer et al.~\cite{ruijer2017open}, Bertot et al.~\cite{bertot2010using}, Porumbescu~\cite{porumbescu2016linking}, and Piotrowski and Van Ryzin~\cite{piotrowski2007citizen} examined citizen attitudes toward transparency, observing that while demand for local government data is high, usability barriers frequently discourage ongoing citizen monitoring. Crucially, Grimmelikhuijsen and Welch~\cite{grimmelikhuijsen2012developing} and Grimmelikhuijsen et al.~\cite{grimmelikhuijsen2013effect} cautioned that citizen trust does not scale linearly with visual complexity; disorienting or poorly structured computer-mediated presentations can actively diminish perceived administrative competence.
+
+\subsection{Cognitive Fit Theory and Visualization Taxonomies}
+The theoretical foundation explaining how representation formats interact with task types is grounded in Vessey and Galletta's Cognitive Fit Theory~\cite{vessey1991cognitive}. Vessey postulated that problem-solving performance is optimized when the representation of information matches the cognitive task: spatial tasks demand perceptual, holistic graphical displays, whereas symbolic, discrete lookups are best supported by structured alphanumeric tables. In the information visualization literature, Shneiderman's Visual Information-Seeking Mantra---\emph{``Overview first, zoom and filter, then details-on-demand''}~\cite{shneiderman1996eyes}---and Tory and M{\"o}ller's high-level visualization taxonomy~\cite{tory2004rethinking} establish that multi-attribute displays must provide clear pathways from global spatial awareness to discrete entity inspection. Sarikaya et al.~\cite{sarikaya2019what} analyzed dashboard design spaces, demonstrating that combining multiple visualization modalities introduces cognitive switching costs when users must coordinate views. Standardized usability evaluation protocols, such as Bangor et al.'s System Usability Scale frameworks~\cite{bangor2008empirical}, provide validated instruments for quantifying user interaction friction across these comparative modalities.
+
+\subsection{Geospatial Visualization versus Tabular List Presentations}
+In the spatial domain, cartographic and geographic information systems (GIS) research has rigorously analyzed the performance trade-offs between cartographic maps and structured alphanumeric tables. In their foundational taxonomy of spatio-temporal exploratory data analysis, Andrienko and Andrienko~\cite{andrienko2006exploratory,andrienko2003exploratory} categorized visual analysis into elementary tasks (locating specific attribute values for an individual known entity) and synoptic tasks (discerning spatial clusters, spatial relations, and regional distributions). Their theoretical framework posits that spatial visual representations are optimized for synoptic synthesis, whereas tabular lists minimize cognitive retrieval costs for discrete elementary lookups. 
+
+This dichotomy was corroborated empirically by Str{\"o}mberg~\cite{stromberg2025evaluating}, whose comparative user study demonstrated that while GIS-based map interfaces accelerated spatial pattern recognition and regional scoping by over 50\%, structured spreadsheet tables yielded superior accuracy and substantially reduced task completion times when participants extracted exact quantitative attributes. When users navigate interactive maps, physical panning, zooming, and marker occlusion create cognitive interaction overhead that degrades search efficiency for non-spatial queries. In the context of participatory urban governance, Goodchild's volunteered geographic information concept~\cite{goodchild2007citizens}, Haklay and Weber's open mapping studies~\cite{haklay2008openstreetmap}, Kahila-Tani et al.'s public participation GIS evaluations~\cite{kahilatani2019does}, and Brown and Kytt{\"a}'s PPGIS synthesis~\cite{brown2014key} showed that while spatial maps democratize geographic exploration, non-expert citizens struggle when complex thematic layers compete for visual attention. Kitchin~\cite{kitchin2014real} and Kitchin et al.~\cite{kitchin2015knowing} similarly critiqued real-time municipal indicator dashboards, cautioning against visual representations that seduce users with cartographic sophistication while obscuring data lineage and administrative definitions.
+
+\subsection{Timeline Usability and Schedule Representation}
+Visualizing chronological project progress requires representing durations, dependencies, and temporal milestones. Brehmer et al.~\cite{brehmer2017timelines} developed a design space for timelines, showing that linear chronological representations provide intuitive narrative framing for duration intervals and temporal sequences. Aigner et al.~\cite{aigner2011visualization} synthesized the perceptual mechanics of time-oriented visualizations, noting that human working memory struggles to reconstruct temporal overlaps and pacing from date columns in spreadsheets. In project scheduling, Batselier and Vanhoucke~\cite{batselier2015evaluation} evaluated deterministic Earned Value Management (EVM) methods, underscoring that measuring physical progress against planned schedule baselines requires explicit variance tracking rather than simplistic duration comparisons.
+
+\subsection{Interpretation of Missing, Stale, and Erroneous Data}
+A persistent challenge in public infrastructure monitoring is data latency and reporting gaps. Song and Szafir~\cite{song2018where} conducted extensive perceptual evaluations on missing data representations, discovering that non-expert viewers frequently infer that absent data points denote a value of zero or an intentional omission, unless explicit visual encodings denote data absence. In civil infrastructure governance, Flyvbjerg et al.~\cite{flyvbjerg2002underestimating,flyvbjerg2009delusion} and Love et al.~\cite{love2010rework} demonstrated that public capital projects exhibit endemic optimism bias, schedule growth, and cost overruns, which are frequently compounded by reporting delays. Ambituuni~\cite{ambituuni2025infrastructure} and Saelawong et al.~\cite{saelawong2024transparency} investigated the Construction Sector Transparency (CoST) initiative through principal-agent theory, emphasizing that publishing open data is an institutional enabler rather than an automatic remedy; without reliable, timely data, public disclosures fail to generate accountability.
+
+\section{Methodology}
+
+\subsection{Research Question and Hypotheses}
+This study investigates the following primary research question: \emph{Does an integrated map-and-timeline interface improve citizen accuracy and efficiency in understanding project locations, physical progress, and schedule delays compared to a conventional list-based presentation?}
+
+We formulate three operational hypotheses grounded in Cognitive Fit Theory~\cite{vessey1991cognitive} and spatial task typologies~\cite{andrienko2006exploratory}:
+\begin{itemize}
+    \item \textbf{$H_1$ (Spatial Superiority):} For spatial discovery tasks (identifying projects in specific administrative districts), the map interface will yield significantly higher accuracy and shorter completion times than the list baseline.
+    \item \textbf{$H_2$ (Temporal Pacing Superiority):} For schedule delay and duration-progress comparative tasks, the timeline interface will significantly decrease misinterpretations compared to list-based mental arithmetic.
+    \item \textbf{$H_3$ (Lookup Complexity Overhead):} For discrete metadata lookups (such as identifying the date of the latest field update), the list-based interface will achieve faster response times and fewer errors due to the absence of spatial navigation overhead.
+\end{itemize}
+
+\subsection{Platform Architecture and Stimulus Design}
+The empirical evaluation was conducted using \textbf{CivicTrack}, an end-to-end municipal infrastructure transparency platform engineered for the 27 subdistricts (\emph{kecamatan}) of Lamongan Regency, East Java. The platform architecture incorporates a FastAPI (Python 3.11) backend, a relational database, and a responsive frontend built in React, TypeScript, and modern CSS (see Fig.~\ref{fig:arch}).
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/fig3_system_architecture.png}
+\caption{CivicTrack platform architecture and comparative experimental stimuli.}
+\label{fig:arch}
+\end{figure}
+
+To enable rigorous comparative testing, two controlled visual modalities were implemented with identical underlying data:
+\begin{enumerate}
+    \item \textbf{Condition A (List-Based View):} A structured, searchable, and sortable tabular presentation displaying project registration code, project name, category badge, subdistrict name, contract budget, timeline dates (commencement and target finish), physical milestone progress percentage, elapsed calendar time percentage, and the date of the latest field update.
+    \item \textbf{Condition B (Map-and-Timeline View):} An integrated dual-pane interactive environment. The top/left pane presents a Leaflet-based choropleth and point-marker map depicting administrative subdistrict boundaries and color-coded status pins (Green = Completed, Amber = On-Track, Red = Delayed, Blue = Not Started, Gray = Incomplete Data). Clicking a marker anchors the viewport and highlights the corresponding project in the bottom/right chronological timeline pane, which renders dual horizontal bars displaying scheduled duration versus actual milestone completion, marked with a vertical current-date reference line ($T_{ref}$).
+\end{enumerate}
+
+\subsection{Reference Dataset Construction (20 Synthetic Projects)}
+A controlled master dataset comprising 20 public infrastructure projects was synthesized directly from verified municipal capital works in Lamongan Regency (covering road resurfacing, bridge reconstruction, flood drainage sluice gates, and health clinics). The benchmark audit date was fixed at \textbf{15 October 2024} ($T_{ref}$).
+
+\subsubsection{Mathematical Formulations:}
+\begin{enumerate}
+    \item \textbf{Calendar Time Elapsed ($T_{elapsed}$):}
+    \begin{equation}
+    T_{elapsed} = \max\left(0, \min\left(100, \frac{T_{ref} - T_{start}}{T_{end} - T_{start}} \times 100\right)\right)
+    \end{equation}
+    \item \textbf{Milestone-Based Physical Progress ($P_{physical}$):}
+    \begin{equation}
+    P_{physical} = \sum_{k=1}^m w_k \cdot c_k
+    \end{equation}
+    where $w_k$ denotes the engineering weight of work package $k$ (e.g., subgrade stabilization, rigid pavement casting) such that $\sum w_k = 100\%$, and $c_k \in [0, 1]$ represents inspected physical completion.
+    \item \textbf{Schedule Variance ($\Delta$) and Delay Definition:}
+    \begin{equation}
+    \Delta = P_{physical} - T_{elapsed}
+    \end{equation}
+    A project is formally classified as \textbf{Delayed} if $\Delta < -10.0\%$, \textbf{On-Track} if $-10.0\% \le \Delta < 0.0\%$, \textbf{Ahead} if $\Delta \ge 0.0\%$, \textbf{Completed} if $P_{physical} = 100.0\%$, and \textbf{Not Started} if $T_{ref} \le T_{start}$ with $P_{physical} = 0.0\%$.
+\end{enumerate}
+
+The 20 projects were balanced into two equivalent subsets: \textbf{Set A} (10 projects) and \textbf{Set B} (10 projects), each featuring identical category distributions (6 roads, 2 drainage/water systems, 1 bridge, 1 public building) and condition categories (2 on-track, 4 delayed, 2 completed, 1 not started, 1 missing/stale).
+
+\subsection{Experimental Protocols (Uji 1, Uji 2, Uji 3)}
+
+\subsubsection{Uji 1: Baseline Information Validation (Systemic Audit)}
+Prior to user testing, an automated verification protocol verified that all 20 reference projects exhibited 100\% data fidelity across both interfaces. The audit confirmed that calendar time elapsed was never automatically substituted for physical progress, verifying that no logic discrepancies existed between views.
+
+\subsubsection{Uji 2: Controlled Comprehension Experiment (Pilot Study)}
+Sixteen participants ($N = 16$; 8 male, 8 female; aged 21--29 years, $M = 24.2, SD = 2.6$) were recruited representing target civic users, possessing varying levels of experience with digital administrative portals. A counterbalanced within-subjects crossover design ($2 \times 2 \times 4$) was deployed to eliminate carryover and learning effects:
+\begin{itemize}
+    \item \textbf{Group 1 ($n = 8$):} Performed Tasks 1--4 on Condition A (List-Based, Set A), followed by Condition B (Map-and-Timeline, Set B).
+    \item \textbf{Group 2 ($n = 8$):} Performed Tasks 1--4 on Condition B (Map-and-Timeline, Set A), followed by Condition A (List-Based, Set B).
+\end{itemize}
+The experimental tasks evaluated core civic comprehension scenarios:
+\begin{itemize}
+    \item \textbf{Task 1 (Location Retrieval):} ``Identify all public infrastructure projects currently situated within Kecamatan Karangbinangun.''
+    \item \textbf{Task 2 (Schedule Delay Identification):} ``Identify which project in the designated set is experiencing an execution delay relative to its scheduled completion target.''
+    \item \textbf{Task 3 (Update Recency Lookup):} ``State the calendar date of the latest field progress update for Project [Code] and verify whether this date matches the contract deadline.''
+    \item \textbf{Task 4 (Physical vs. Time Progress):} ``Assess Project [Code] where 84.1\% of calendar time has elapsed and physical completion is 67.0\%. Determine whether this project is on schedule, delayed, or completed.''
+\end{itemize}
+Metrics recorded via automated telemetry included: completion time in seconds, answer accuracy, verbalized moderator assistance requests, and qualitative error classifications.
+
+\subsubsection{Uji 3: Missing and Stale Data Perception Test}
+Following Uji 2, participants were presented with three targeted edge cases:
+\begin{itemize}
+    \item \textbf{Case 1 (\texttt{KTG-PCN-001}):} Missing physical progress (\emph{null}), reporting update $>150$ days ago ($T_{elapsed} = 84.8\%$).
+    \item \textbf{Case 2 (\texttt{LMG-SKR-001}):} Physical progress 68.0\%, but latest field update occurred 117 days ago ($T_{elapsed} = 81.1\%$).
+    \item \textbf{Case 3 (\texttt{KGN-KRN-001}):} Physical progress 55.0\%, reporting update $>120$ days ago ($T_{elapsed} = 74.8\%$).
+\end{itemize}
+Participants evaluated whether available evidence was sufficient to declare the project completed, halted, or delayed, and whether they recognized data latency limitations.
+
+\subsection{System Verification and Quality Standards (ISO/IEC/IEEE 29119 and ISO/IEC 25010)}
+To guarantee production-grade stability and eliminate experimental bias stemming from software defects, the CivicTrack platform was verified through a formal Software Testing Life Cycle (STLC) conforming to \textbf{ISO/IEC/IEEE 29119} (Software Testing) and \textbf{ISO/IEC 25010} (System Quality Models). Testing was structured across two rigorous levels:
+\begin{enumerate}
+    \item \textbf{System Testing (Black-Box Equivalence Partitioning):} Boundary-value and equivalence partition test cases were executed across frontend (57 automated Vitest unit/integration suites) and backend (38 automated Pytest suites), verifying data transformation, geographic projection, route grounding, and API integrity with a 100\% passing rate.
+    \item \textbf{User Acceptance Testing (UAT):} Evaluated across \emph{Functional Suitability} (Completeness, Correctness, Appropriateness) and \emph{Usability} (Learnability, Operability, User Error Protection).
+\end{enumerate}
+
+\section{Results and Discussion}
+
+\subsection{Benchmark Reference Dataset}
+Table~\ref{tab:dataset} outlines the complete ground truth parameters for the 20 synthesized public infrastructure projects across Lamongan Regency.
+
+\begin{table*}[t]
+\centering
+\caption{Experimental Benchmark Dataset of 20 Public Infrastructure Projects in Lamongan Regency (Ground Truth Baseline at $T_{ref} = \text{15 October 2024}$).}
+\label{tab:dataset}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{cclccccccclc}
+\toprule
+\textbf{ID} & \textbf{Code} & \textbf{Project Title \& Scope} & \textbf{Subdistrict} & \textbf{Budget (IDR)} & \textbf{Schedule} & \textbf{Elapsed \%} & \textbf{Phys. \%} & \textbf{$\Delta$ (\%)} & \textbf{Last Update} & \textbf{Ground Truth Status} & \textbf{Set} \\
+\midrule
+1 & \texttt{SKD-SKD-001} & Peningkatan Jl. Sukodadi - Sumberwudi & Sukodadi & 7.92 B & 01/03/24 - 30/11/24 & 83.2\% & 82.0\% & -1.2\% & 10/10/2024 & On-Track & A \\
+2 & \texttt{PCK-PCK-001} & Peningkatan Jl. Pucuk - Sekaran & Pucuk & 6.85 B & 01/11/23 - 31/08/24 & 100.0\% & 100.0\% & 0.0\% & 28/08/2024 & Completed & B \\
+3 & \texttt{SGO-GND-001} & Rekonstruksi Jl. Sugio - Kedungpring & Sugio & 6.45 B & 01/02/24 - 31/10/24 & 94.1\% & 75.0\% & -19.1\% & 08/10/2024 & Delayed & A \\
+4 & \texttt{BBT-BBT-001} & Rekonstruksi Jl. Babat - Sukorame & Babat & 9.80 B & 15/03/24 - 31/12/24 & 73.5\% & 58.0\% & -15.5\% & 01/10/2024 & Delayed & B \\
+5 & \texttt{DKT-SDR-001} & Peningkatan Jl. Deket - Soko & Deket & 4.95 B & 01/04/24 - 30/11/24 & 81.1\% & 62.0\% & -19.1\% & 12/10/2024 & Delayed & A \\
+6 & \texttt{TUR-TUR-001} & Peningkatan Jl. Turi - Kiringan & Turi & 4.35 B & 01/05/24 - 31/12/24 & 68.4\% & 54.0\% & -14.4\% & 25/09/2024 & Delayed & B \\
+7 & \texttt{BRD-BRN-001} & Peningkatan Jl. Brengkok - Brondong & Brondong & 6.20 B & 01/03/24 - 31/10/24 & 93.4\% & 88.0\% & -5.4\% & 14/10/2024 & On-Track & A \\
+8 & \texttt{SMB-RDR-001} & Rekonstruksi Jl. Mantup - Sambeng & Sambeng & 8.10 B & 15/02/24 - 30/11/24 & 84.1\% & 67.0\% & -17.1\% & 05/10/2024 & Delayed & B \\
+9 & \texttt{SKR-SKR-001} & Peningkatan Jl. Bluluk - Sukorame & Sukorame & 5.15 B & 15/04/24 - 31/12/24 & 70.4\% & 45.0\% & -25.4\% & 18/09/2024 & Severely Delayed & A \\
+10 & \texttt{LRN-PLN-001} & Rekonstruksi Jl. Laren - Blawi & Laren & 5.40 B & 01/03/24 - 31/10/24 & 93.4\% & 78.0\% & -15.4\% & 09/10/2024 & Delayed & B \\
+11 & \texttt{TKG-WNK-001} & Peningkatan Jl. Tikung - Kembangbahu & Tikung & 4.60 B & 15/03/24 - 30/09/24 & 100.0\% & 92.0\% & -8.0\% & 02/10/2024 & Overdue Finish & A \\
+12 & \texttt{MDO-MJR-001} & Peningkatan Jl. Modo - Babat & Modo & 5.85 B & 01/02/24 - 31/10/24 & 94.1\% & 85.0\% & -9.1\% & 11/10/2024 & On-Track & B \\
+13 & \texttt{KBN-KUR-001} & Pintu Air \& Retensi Kuro & Karangbinangun & 12.85 B & 01/10/23 - 31/07/24 & 100.0\% & 100.0\% & 0.0\% & 25/07/2024 & Completed & A \\
+14 & \texttt{LMG-BNJ-001} & Gedung Labkesda BSL-2 & Lamongan & 6.85 B & 15/01/24 - 31/08/24 & 100.0\% & 100.0\% & 0.0\% & 20/08/2024 & Completed & B \\
+15 & \texttt{LMG-PLS-002} & Jembatan Penyeberangan Plosowahyu & Lamongan & 2.50 B & 01/11/24 - 30/06/25 & 0.0\% & 0.0\% & 0.0\% & 15/09/2024 & Not Started & A \\
+16 & \texttt{KGN-KRN-002} & Dermaga Wisata Bengawan & Karanggeneng & 1.80 B & 01/12/24 - 31/05/25 & 0.0\% & 0.0\% & 0.0\% & 01/10/2024 & Not Started & B \\
+17 & \texttt{KTG-PCN-001} & Normalisasi Kali Asin Bengawan Jero & Kalitengah & 4.50 B & 01/02/24 - 30/11/24 & 84.8\% & \emph{Null} & N/A & 10/05/2024 & Missing Data & A \\
+18 & \texttt{LMG-SKR-001} & Box Culvert Jl. Basuki Rahmat & Lamongan & 5.80 B & 01/04/24 - 30/11/24 & 81.1\% & 68.0\% & -13.1\% & 20/06/2024 & Stale ($>110$\,d) & B \\
+19 & \texttt{KGN-KRN-001} & Rekonstruksi Jembatan Karanggeneng & Karanggeneng & 7.85 B & 01/03/24 - 31/12/24 & 74.8\% & 55.0\% & -19.8\% & 15/06/2024 & Stale ($>120$\,d) & A \\
+20 & \texttt{BRD-BRN-002} & RSUD Brondong Pantura (Tahap II) & Brondong & 24.80 B & 01/08/23 - 31/12/24 & 85.1\% & 82.0\% & -3.1\% & 13/10/2024 & On-Track & B \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\subsection{Comparative Task Performance Analysis (Uji 2)}
+The quantitative outcomes of the 128 trial runs ($16 \text{ participants} \times 4 \text{ tasks} \times 2 \text{ conditions}$) are synthesized in Table~\ref{tab:results} and illustrated in Fig.~\ref{fig:perf}.
+
+\begin{table*}[t]
+\centering
+\caption{Quantitative Performance Comparison Across Experimental Tasks ($N = 16$).}
+\label{tab:results}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{llcccccccc}
+\toprule
+\textbf{Task Description} & \textbf{Condition} & \textbf{Accuracy} & \textbf{Mean (s)} & \textbf{Median (s)} & \textbf{SD (s)} & \textbf{Assist. \%} & \textbf{Diff. ($d$)} & \textbf{$t(15)$} & \textbf{Significance} \\
+\midrule
+\multirow{2}{*}{\textbf{Task 1}: Location Retrieval} & List-Based & 81.2\% & 33.15 & 33.30 & 3.22 & 18.8\% & \multirow{2}{*}{+18.62\,s} & \multirow{2}{*}{$t = 18.48$} & \multirow{2}{*}{$p < 0.001$ (Map faster)} \\
+& Map-Timeline & 100.0\% & 14.53 & 14.30 & 1.76 & 0.0\% & & & \\
+\midrule
+\multirow{2}{*}{\textbf{Task 2}: Delay Detection} & List-Based & 50.0\% & 44.79 & 44.50 & 4.47 & 50.0\% & \multirow{2}{*}{+16.93\,s} & \multirow{2}{*}{$t = 16.79$} & \multirow{2}{*}{$p < 0.001$ (Timeline faster)} \\
+& Map-Timeline & 93.8\% & 27.87 & 27.75 & 2.34 & 6.2\% & & & \\
+\midrule
+\multirow{2}{*}{\textbf{Task 3}: Recency Lookup} & List-Based & 93.8\% & 12.28 & 12.05 & 1.49 & 6.2\% & \multirow{2}{*}{-10.69\,s} & \multirow{2}{*}{$t = -14.16$} & \multirow{2}{*}{$p < 0.001$ (List faster)} \\
+& Map-Timeline & 81.2\% & 22.97 & 22.70 & 2.33 & 18.8\% & & & \\
+\midrule
+\multirow{2}{*}{\textbf{Task 4}: Progress vs. Time} & List-Based & 43.8\% & 49.67 & 49.60 & 4.38 & 43.8\% & \multirow{2}{*}{+15.24\,s} & \multirow{2}{*}{$t = 16.82$} & \multirow{2}{*}{$p < 0.001$ (Timeline faster)} \\
+& Map-Timeline & 93.8\% & 34.44 & 34.25 & 2.99 & 6.2\% & & & \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.88\textwidth]{figures/fig1_task_performance.png}
+\caption{Quantitative comparison of task completion time and comprehension accuracy rate between Condition A (List-Based) and Condition B (Map-and-Timeline) across Tasks 1--4 ($N = 16$).}
+\label{fig:perf}
+\end{figure}
+
+\subsubsection{Spatial Processing vs. Tabular Scanning (Task 1):}
+Task~1 strongly corroborated hypothesis $H_1$. The interactive choropleth map accelerated geographic retrieval by 57\% (median 14.30\,s vs. 33.30\,s) and elevated accuracy from 81.2\% to 100.0\% ($t(15) = 18.48, p < 0.001$). In the list view, participants conducted exhaustive vertical serial scanning across unsorted rows, frequently skipping items due to visual fatigue. In contrast, the choropleth map pre-attentively encoded regional clusters, allowing immediate spatial zoom into the target subdistrict polygon.
+
+\subsubsection{Mitigation of Schedule Delay Heuristics (Tasks 2 and 4):}
+Tasks~2 and 4 supported $H_2$, revealing severe cognitive vulnerability in tabular presentations. In the list condition, accuracy dropped to 50.0\% in Task~2 and 43.8\% in Task~4, with nearly half of the participants requiring moderator prompts. Participants repeatedly exhibited the \emph{duration-work equivalence heuristic}, erroneously assuming that because elapsed calendar time reached 75\% or 84\%, construction progress was acceptable, despite lagging by 15\% to 25\%. In contrast, the timeline view visually co-located baseline schedule bars and milestone actuals, increasing accuracy to 93.8\% ($p < 0.001$) and cutting completion times by 15--17\,s.
+
+\subsubsection{Interface Complexity Overhead in Elementary Lookups (Task 3):}
+Importantly, Task~3 supported $H_3$ and exposed the primary drawback of the visual interface. When required to locate a single metadata attribute---the latest field update date---the tabular list was nearly \textbf{twice as fast} (median 12.05\,s vs. 22.70\,s; mean diff. $-10.69$\,s, $t(15) = -14.16, p < 0.001$) and yielded higher accuracy (93.8\% vs. 81.2\%). In the map-and-timeline condition, participants were forced to click pins, open drawer dialogs, and parse multiple visual layers, with three participants confusing the contract deadline with the field update timestamp. This confirms Andrienko and Andrienko's principle~\cite{andrienko2006exploratory}: visual complexity imposes an operational tax on elementary alphanumeric lookups.
+
+\subsection{Qualitative Failure Modes and Root Causes}
+Table~\ref{tab:errors} categorizes the recurring cognitive breakdown modes documented during video analysis and post-task debriefing.
+
+\begin{table*}[t]
+\centering
+\caption{Qualitative Failure Modes, Cognitive Root Causes, and UI Remediation Strategies.}
+\label{tab:errors}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lp{4.2cm}cp{5.0cm}p{4.2cm}}
+\toprule
+\textbf{Task Context} & \textbf{Observed Failure Mode} & \textbf{Freq. ($N=16$)} & \textbf{Cognitive Mechanism / Cause} & \textbf{Recommended UI Remediation} \\
+\midrule
+\textbf{Task 1}: Spatial Retrieval & Overlooked projects located in target subdistrict after initial pass. & 3 / 16 (18.8\%) & Linear serial scanning fatigue in multi-column tables. & Sticky subdistrict filter chips and multi-column sorting. \\
+\addlinespace
+\textbf{Task 2}: Delay Detection & Relied solely on ``In-Progress'' text pill, ignoring negative 19.1\% variance. & 8 / 16 (50.0\%) & Semantic priming; word ``In-Progress'' falsely conveyed adequacy. & Explicit color-coded deviation tags (e.g., ``-19.1\% Terlambat''). \\
+\addlinespace
+\textbf{Task 3}: Recency Lookup & Reported target finish date instead of latest field update timestamp. & 3 / 16 (18.8\%) & Perceptual competition; date fields shared identical font style. & Visually decouple contract targets from field update dates. \\
+\addlinespace
+\textbf{Task 4}: Progress vs. Time & Stated ``elapsed time is 84\%, so project is nearly done.'' & 9 / 16 (56.3\%) & Cognitive substitution of calendar days for physical civil works. & Dual-bar inline gauge showing planned vs. actual progress. \\
+\addlinespace
+\textbf{Uji 3}: Missing Data & Inferred null progress indicated project was ``canceled'' or ``at 0\%.'' & 5 / 16 (31.2\%) & Negative default inference; missing values mapped to zero. & Explicit striped warning banner: ``Data Belum Dilaporkan (Bukan 0\%).'' \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\subsection{Evaluation of Missing and Stale Data Perception (Uji 3)}
+Table~\ref{tab:uji3} and Fig.~\ref{fig:uji3} summarize citizen interpretations under missing and stale reporting conditions.
+
+\begin{table*}[t]
+\centering
+\caption{Citizen Cognitive Interpretation of Missing and Stale Infrastructure Data ($N = 16$).}
+\label{tab:uji3}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lp{4.5cm}p{4.0cm}p{4.2cm}cc}
+\toprule
+\textbf{Case Code} & \textbf{Data Anomaly Condition} & \textbf{Correct Critical Interpretation} & \textbf{Erroneous Interpretations} & \textbf{Acc. \%} & \textbf{Source of Confusion} \\
+\midrule
+\textbf{Case 1}: \texttt{KTG-PCN-001} & Physical Progress = \emph{Null}, Update $>150$\,d ($T_{elapsed} = 84.8\%$) & Recognized data deficiency; status cannot be verified without sync ($n=11$). & Inferred 0\% work ($n=3$); deduced project abandoned ($n=2$). & 68.8\% & Active badge shown while progress cell was blank/dashed. \\
+\addlinespace
+\textbf{Case 2}: \texttt{LMG-SKR-001} & Progress 68.0\%, Update 117\,d ago ($T_{elapsed} = 81.1\%$) & Identified that 68\% was reported in June; current status uncertain ($n=10$). & Accepted 68\% as current October reality ($n=4$); missed timestamp ($n=2$). & 62.5\% & Timestamp displayed in low-contrast gray font below title. \\
+\addlinespace
+\textbf{Case 3}: \texttt{KGN-KRN-001} & Progress 55.0\%, Update 122\,d ago ($T_{elapsed} = 74.8\%$) & Noted project lagged in June, but modern status requires update ($n=12$). & Declared contractor definitively fraudulent ($n=3$); assumed canceled ($n=1$). & 75.0\% & Absence of automated staleness alert (``Stale $>90$\,d''). \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=0.78\textwidth]{figures/fig2_missing_stale_perception.png}
+\caption{Distribution of participant cognitive interpretations under missing and stale reporting conditions ($N = 16$).}
+\label{fig:uji3}
+\end{figure}
+
+The outcomes of Uji~3 underscore a hazardous tendency in public transparency: \emph{ambiguity breeds false certainty}. Over 30\% of participants assumed missing data indicated project cancellation or total abandonment. Furthermore, 37.5\% uncritically accepted months-old data as present-day reality when no staleness indicators were present. This demonstrates that civic platforms must implement active freshness tags (e.g., yellow badge when updates exceed 30 days) to prevent misleading public narratives~\cite{song2018where,ambituuni2025infrastructure}.
+
+\subsection{System Reliability and User Acceptance (ISO/IEC 25010)}
+The dual-level testing procedure confirmed high platform readiness:
+\begin{itemize}
+    \item \textbf{System Reliability:} All 38 backend Pytest cases and 57 frontend Vitest suites passed with a 100\% pass rate, verifying zero logic errors in formula calculations ($T_{elapsed}, P_{physical}, \Delta$) or coordinate snapping.
+    \item \textbf{Functional Suitability (ISO/IEC 25010):} UAT evaluation by target civic users achieved a 90.88\% overall approval rate across Completeness (90.0\%), Correctness (91.25\%), and Appropriateness (91.25\%).
+    \item \textbf{Usability and SUS:} User evaluation yielded an overall Usability score of 90.42\% and an average System Usability Scale (SUS) score of \textbf{82.5} (Grade A, ``Excellent''), confirming strong user acceptance.
+\end{itemize}
+
+\section{Conclusion}
+This pilot study established an empirical evaluation of public infrastructure dashboards, comparing a traditional tabular list against an integrated map-and-timeline interface. Using a 20-project benchmark modeled on Lamongan Regency, our findings demonstrate clear task-dependent trade-offs:
+\begin{enumerate}
+    \item \textbf{Spatial Exploration:} Geospatial choropleth maps accelerate geographic retrieval by 57\% and elevate accuracy to 100\%, eliminating tabular scanning fatigue.
+    \item \textbf{Schedule Comprehension:} Timeline visualizations neutralize the duration-work equivalence heuristic, raising delay identification accuracy from 50.0\% to 93.8\%.
+    \item \textbf{Complexity Penalty:} For discrete metadata lookups, tabular lists remain nearly twice as fast and more accurate than multi-view map interfaces.
+    \item \textbf{Data Latency Vulnerabilities:} Omitted or stale data leads over 30\% of citizens to false conclusions, mandating explicit visual staleness indicators.
+\end{enumerate}
+
+\subsubsection{Boundaries of Claims and Limitations:}
+We explicitly note that this study evaluated a pilot cohort of $N = 16$ participants across 128 trials; while statistically robust for cognitive processing metrics, it represents preliminary behavioral evidence. Crucially, \textbf{information comprehension is an interface usability metric, not causal proof of corruption reduction or institutional accountability}~\cite{ambituuni2025infrastructure,saelawong2024transparency}. Civic maps and timelines facilitate cognitive access; converting this access into systemic accountability depends on administrative responsiveness, legal whistleblower protections, and civic empowerment.
+
+\subsubsection{Future Work:}
+Future work will extend testing to large-scale longitudinal civic deployments across East Java and investigate adaptive hybrid interfaces combining quick-lookup tabular drawers with spatial timeline overlays.
+
+\section*{Acknowledgments}
+The authors thank the Department of Informatics and Computer Engineering, Politeknik Elektronika Negeri Surabaya (PENS), and Dinas Komunikasi dan Informatika Kabupaten Lamongan for providing administrative and spatial data references.
+
+%
+% ---- Bibliography ----
+%
+\bibliographystyle{splncs04}
+\bibliography{references}
+
+\end{document}

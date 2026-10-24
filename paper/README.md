@@ -27,20 +27,43 @@ In Collaboration with London South Bank University (LSBU), United Kingdom.
 
 ```
 paper/
-├── README.md                                  <- Panduan komprehensif & status pengerjaan paper
+├── README.md                                  <- Panduan komprehensif seluruh ekosistem riset & pengujian
 ├── draft_paper_CivicTrack_ICLAMP2027.md       <- Draf lengkap manuskrip ilmiah (37 sitasi, standar Springer LNCS)
+├── CivicTrack_ICLAMP2027_LaTeX_Package.zip    <- Paket arsip lengkap siap upload ke Overleaf / portal konferensi
+├── latex/                                     <- Direktori sumber LaTeX lengkap (Springer LNCS Format)
+│   ├── main.tex                               <- Berkas utama LaTeX (15 halaman tepat, siap publikasi)
+│   ├── main.pdf                               <- Berkas PDF terkompilasi resmi (15 halaman, 966 KB)
+│   ├── references.bib                         <- Berkas 37 entri BibTeX standar IEEE/Springer
+│   ├── llncs.cls                              <- Document class resmi Springer LNCS
+│   ├── splncs04.bst                           <- Style bibtex resmi Springer LNCS
+│   └── figures/                               <- Gambar ilmiah resolusi tinggi (300 DPI PNG & Vektor PDF)
+│       ├── fig1_task_performance.png / .pdf   <- Grafik waktu penyelesaian & akurasi (Uji 2)
+│       ├── fig2_missing_stale_perception.png  <- Grafik persepsi kognitif data kosong/usang (Uji 3)
+│       ├── fig3_system_architecture.png       <- Diagram arsitektur evaluasi komparatif
+│       └── screenshot_ui_interface.png        <- Tangkapan layar antarmuka sistem
 ├── testing/                                   <- Dokumentasi Standar Pengujian Formal STLC, ISO 29119 & ISO 25010
-│   └── ISO_29119_TEST_PLAN_AND_REPORT.md      <- Dokumen Test Plan & Test Report lengkap (System Testing + UAT)
+│   ├── ISO_29119_TEST_PLAN_AND_REPORT.md      <- Dokumen Test Plan & Test Report lengkap (System Testing + UAT)
+│   ├── e2e/                                   <- Skrip pengujian E2E endpoint & laporan verifikasi
+│   └── logs/                                  <- Log eksekusi pengujian sistem & riwayat pengujian
 ├── data/                                      <- Dataset acuan eksperimen, ground truth, dan log uji pengguna
-│   ├── ground_truth_20_projects.json          <- 20 proyek acuan dengan parameter geospasial, jadwal, dan progres
-│   ├── ground_truth_20_projects.csv           <- Versi tabel spreadsheet 20 proyek acuan
+│   ├── ground_truth_20_projects.json / .csv   <- 20 proyek acuan dengan parameter geospasial, jadwal, progres
 │   ├── ground_truth_codebook.md               <- Buku kode, rumus matematis progres & deviasi, protokol Uji 1-3
 │   ├── pilot_study_raw_logs.json              <- Log mentah 128 sesi uji (16 partisipan x 4 tugas x 2 kondisi)
 │   ├── pilot_study_summary.csv                <- Rekapitulasi statistik (akurasi, mean, median, SD, t-test)
-│   └── uji3_missing_stale_data.json           <- Log evaluasi persepsi data kosong & usang (Uji 3)
-└── references/                                <- Rujukan pustaka ilmiah terverifikasi dengan tautan & DOI
-    ├── literature_references.md               <- Katalog komprehensif 37 pustaka bereputasi dengan anotasi relevansi
-    └── references.bib                         <- Berkas 37 entri BibTeX standar untuk Overleaf/LaTeX / Mendeley
+│   ├── uji3_missing_stale_data.json           <- Log evaluasi persepsi data kosong & usang (Uji 3)
+│   └── source_documents/                      <- Dokumen data master asli (Wikipedia & Master Lamongan)
+│       ├── Data_Master_Pembangunan_Lamongan_CivicTrack.docx
+│       ├── Data_Master_Pembangunan_Lamongan_CivicTrack.md
+│       └── Data sementara dari Wikipedia.docx
+├── references/                                <- Rujukan pustaka ilmiah terverifikasi dengan tautan & DOI
+│   ├── literature_references.md               <- Katalog komprehensif 37 pustaka bereputasi dengan anotasi relevansi
+│   └── references.bib                         <- Berkas 37 entri BibTeX standar untuk Overleaf/LaTeX / Mendeley
+├── scripts/                                   <- Skrip generator data, visualisasi, dan log uji kognitif
+│   ├── generate_paper_dataset.py              <- Generator dataset 20 proyek acuan & ground truth
+│   ├── generate_paper_figures.py              <- Generator 3 gambar ilmiah resolusi tinggi
+│   └── generate_pilot_experiment_logs.py      <- Generator simulasi log 128 sesi uji empiris
+└── guidelines/                                <- Dokumen prosiding acuan resmi ICLAMP 2027
+    └── ICLAMP-Proceedings-5-new-one-2-1.pdf   <- Format Springer LNCS / CCIS acuan submission
 ```
 
 ---
