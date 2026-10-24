@@ -16,11 +16,15 @@
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
 
+\usepackage{color}
+\renewcommand\UrlFont{\color{blue}\rmfamily}
+\urlstyle{rm}
+
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
     filecolor=magenta,      
-    urlcolor=cyan,
+    urlcolor=blue,
     citecolor=blue,
 }
 
@@ -332,8 +336,13 @@ We explicitly note that this study evaluated a pilot cohort of $N = 16$ particip
 \subsubsection{Future Work:}
 Future work will extend testing to large-scale longitudinal civic deployments across East Java and investigate adaptive hybrid interfaces combining quick-lookup tabular drawers with spatial timeline overlays.
 
-\section*{Acknowledgments}
+\begin{credits}
+\subsubsection{\ackname}
 The authors thank the Department of Informatics and Computer Engineering, Politeknik Elektronika Negeri Surabaya (PENS), and Dinas Komunikasi dan Informatika Kabupaten Lamongan for providing administrative and spatial data references.
+
+\subsubsection{\discintname}
+The authors have no competing interests to declare that are relevant to the content of this article.
+\end{credits}
 
 %
 % ---- Bibliography ----
