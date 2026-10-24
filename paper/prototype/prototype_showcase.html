@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CivicTrack - Prototype & Usability Evaluation Platform</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #0284c7;
+      --primary-dark: #0369a1;
+      --primary-light: #e0f2fe;
+      --success: #10b981;
+      --success-light: #d1fae5;
+      --warning: #f59e0b;
+      --warning-light: #fef3c7;
+      --danger: #ef4444;
+      --danger-light: #fee2e2;
+      --gray-50: #f8fafc;
+      --gray-100: #f1f5f9;
+      --gray-200: #e2e8f0;
+      --gray-300: #cbd5e1;
+      --gray-500: #64748b;
+      --gray-700: #334155;
+      --gray-900: #0f172a;
+      --radius: 12px;
+      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+      background: #f8fafc;
+      color: var(--gray-900);
+      line-height: 1.5;
+      padding-bottom: 60px;
+    }
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--gray-200);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+    .header-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 14px 24px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .brand-group {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .logo-badge {
+      width: 42px;
+      height: 42px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, #0284c7, #2563eb);
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 20px;
+      box-shadow: 0 4px 10px rgba(2, 132, 199, 0.35);
+    }
+    .brand-title h1 {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+      color: var(--gray-900);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .brand-title p {
+      font-size: 12px;
+      color: var(--gray-500);
+      font-weight: 500;
+    }
+    .badge-gov {
+      font-size: 10.5px;
+      background: var(--primary-light);
+      color: var(--primary-dark);
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-weight: 600;
+    }
+    .tab-navigation {
+      display: flex;
+      background: var(--gray-100);
+      padding: 4px;
+      border-radius: 10px;
+      gap: 4px;
+    }
+    .tab-btn {
+      background: transparent;
+      border: none;
+      padding: 8px 16px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--gray-700);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tab-btn:hover {
+      color: var(--gray-900);
+    }
+    .tab-btn.active {
+      background: white;
+      color: var(--primary-dark);
+      box-shadow: var(--shadow-sm);
+    }
+    .main-container {
+      max-width: 1440px;
+      margin: 24px auto;
+      padding: 0 24px;
+    }
+    .kpi-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    .kpi-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      padding: 18px 20px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+    }
+    .kpi-title {
+      font-size: 12.5px;
+      color: var(--gray-500);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .kpi-value {
+      font-size: 26px;
+      font-weight: 800;
+      color: var(--gray-900);
+      margin-top: 4px;
+    }
+    .kpi-sub {
+      font-size: 12px;
+      color: var(--gray-500);
+      margin-top: 4px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .tag-green { color: var(--success); font-weight: 600; }
+    .tag-blue { color: var(--primary); font-weight: 600; }
+
+    /* FILTERS BAR */
+    .filter-bar {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      box-shadow: var(--shadow-sm);
+    }
+    .filter-controls {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    select, input[type="text"] {
+      padding: 8px 14px;
+      border: 1px solid var(--gray-300);
+      border-radius: 8px;
+      font-size: 13.5px;
+      font-family: inherit;
+      color: var(--gray-900);
+      outline: none;
+      background: white;
+    }
+    select:focus, input[type="text"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.15);
+    }
+
+    /* CONDITION A: LIST VIEW */
+    .table-container {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      overflow-x: auto;
+      box-shadow: var(--shadow-sm);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+      font-size: 13.5px;
+    }
+    th {
+      background: var(--gray-50);
+      padding: 12px 16px;
+      font-weight: 700;
+      color: var(--gray-700);
+      border-bottom: 1px solid var(--gray-200);
+      font-size: 12.5px;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+    }
+    td {
+      padding: 14px 16px;
+      border-bottom: 1px solid var(--gray-200);
+      color: var(--gray-900);
+    }
+    tr:hover td {
+      background: #f8fafc;
+    }
+    .badge-status {
+      display: inline-block;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11.5px;
+      font-weight: 700;
+    }
+    .badge-ontrack { background: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+    .badge-delayed { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+    .badge-completed { background: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+    .badge-notstarted { background: #e0f2fe; color: #0369a1; border: 1px solid #bae6fd; }
+    .badge-stale { background: #f1f5f9; color: #475569; border: 1px dashed #94a3b8; }
+
+    /* CONDITION B: MAP AND TIMELINE VIEW */
+    .dual-pane {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 1024px) {
+      .dual-pane { grid-template-columns: 1fr; }
+    }
+    .pane-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+    .pane-header {
+      padding: 14px 20px;
+      background: var(--gray-50);
+      border-bottom: 1px solid var(--gray-200);
+      font-weight: 700;
+      font-size: 14.5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .map-canvas {
+      height: 480px;
+      background: #eef2f6;
+      position: relative;
+      overflow: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .map-svg {
+      width: 100%;
+      height: 100%;
+    }
+    .timeline-container {
+      height: 480px;
+      overflow-y: auto;
+      padding: 16px;
+    }
+    .timeline-item {
+      padding: 12px 14px;
+      border: 1px solid var(--gray-200);
+      border-radius: 8px;
+      margin-bottom: 12px;
+      background: white;
+      transition: all 0.2s ease;
+      cursor: pointer;
+    }
+    .timeline-item:hover, .timeline-item.active {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(2, 132, 199, 0.2);
+    }
+    .timeline-title-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+    .bar-track {
+      height: 14px;
+      background: var(--gray-100);
+      border-radius: 7px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 4px;
+    }
+    .bar-baseline {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      background: #cbd5e1;
+      border-radius: 7px;
+    }
+    .bar-actual {
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      border-radius: 7px;
+      transition: width 0.3s ease;
+    }
+    .bar-actual.green { background: #10b981; }
+    .bar-actual.amber { background: #f59e0b; }
+    .bar-actual.red { background: #ef4444; }
+
+    /* DETAIL DRAWER */
+    .detail-drawer {
+      margin-top: 20px;
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .detail-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 16px;
+      margin-top: 14px;
+    }
+    .detail-item {
+      background: var(--gray-50);
+      padding: 12px;
+      border-radius: 8px;
+      border: 1px solid var(--gray-200);
+    }
+    .detail-label {
+      font-size: 11.5px;
+      color: var(--gray-500);
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .detail-value {
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--gray-900);
+      margin-top: 2px;
+    }
+
+    /* USABILITY METRICS VIEW */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    .metrics-card {
+      background: white;
+      border: 1px solid var(--gray-200);
+      border-radius: var(--radius);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .metrics-img {
+      width: 100%;
+      border-radius: 8px;
+      margin-top: 14px;
+      border: 1px solid var(--gray-200);
+    }
+
+    /* EXPERIMENT SIMULATOR */
+    .task-box {
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .task-header {
+      font-weight: 800;
+      color: #1e40af;
+      font-size: 16px;
+      margin-bottom: 6px;
+      display: flex;
+      justify-content: space-between;
+    }
+    .btn-action {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 13px;
+    }
+    .btn-action:hover { background: var(--primary-dark); }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="header-container">
+      <div class="brand-group">
+        <div class="logo-badge">CT</div>
+        <div class="brand-title">
+          <h1>CivicTrack <span class="badge-gov">Kabupaten Lamongan</span></h1>
+          <p>Platform Transparansi Proyek Pembangunan & Riset Komprehensi Publik</p>
+        </div>
+      </div>
+      <div class="tab-navigation">
+        <button class="tab-btn active" onclick="switchView('condition-b')">🗺️ Peta & Linimasa (Kondisi B)</button>
+        <button class="tab-btn" onclick="switchView('condition-a')">📋 Daftar Tabular (Kondisi A)</button>
+        <button class="tab-btn" onclick="switchView('simulator')">⏱️ Simulator Uji Tugas 1-4</button>
+        <button class="tab-btn" onclick="switchView('usability')">📊 Hasil Uji Usability (SUS & ISO)</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-container">
+
+    <!-- KPI ROW -->
+    <div class="kpi-row">
+      <div class="kpi-card">
+        <div class="kpi-title">Total Proyek Terpantau</div>
+        <div class="kpi-value">20 Proyek</div>
+        <div class="kpi-sub"><span class="tag-blue">27 Kecamatan</span> terdistribusi seimbang</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Skor Usabilitas (SUS)</div>
+        <div class="kpi-value">82.50 <span style="font-size: 16px; color: var(--success);">(Grade A)</span></div>
+        <div class="kpi-sub"><span class="tag-green">Excellent</span> (Industri: 68.0)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Kelayakan Sistem (UAT ISO 25010)</div>
+        <div class="kpi-value">90.88%</div>
+        <div class="kpi-sub"><span class="tag-green">Sangat Layak</span> (Skor 727 / 800)</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title">Akurasi Deteksi Keterlambatan</div>
+        <div class="kpi-value">93.8% vs 50.0%</div>
+        <div class="kpi-sub"><span class="tag-green">+43.8%</span> Linimasa vs Tabel ($p < 0.001$)</div>
+      </div>
+    </div>
+
+    <!-- FILTERS -->
+    <div class="filter-bar">
+      <div class="filter-controls">
+        <label style="font-size: 13px; font-weight: 600; color: var(--gray-700);">Filter Wilayah:</label>
+        <select id="kecamatan-filter" onchange="applyFilters()">
+          <option value="ALL">Semua Kecamatan (27)</option>
+          <option value="Sukodadi">Sukodadi</option>
+          <option value="Babat">Babat</option>
+          <option value="Lamongan">Lamongan</option>
+          <option value="Karangbinangun">Karangbinangun</option>
+          <option value="Pucuk">Pucuk</option>
+          <option value="Sugio">Sugio</option>
+          <option value="Deket">Deket</option>
+          <option value="Turi">Turi</option>
+          <option value="Brondong">Brondong</option>
+        </select>
+
+        <label style="font-size: 13px; font-weight: 600; color: var(--gray-700);">Status Proyek:</label>
+        <select id="status-filter" onchange="applyFilters()">
+          <option value="ALL">Semua Status</option>
+          <option value="On-Track">Tepat Waktu (On-Track)</option>
+          <option value="Delayed">Terlambat (Delayed)</option>
+          <option value="Completed">Selesai (Completed)</option>
+          <option value="Not Started">Belum Dimulai</option>
+          <option value="Missing">Data Kosong / Usang</option>
+        </select>
+      </div>
+
+      <div style="font-size: 13px; color: var(--gray-500);">
+        Audit Reference Date: <strong>15 Oktober 2024</strong>
+      </div>
+    </div>
+
+    <!-- VIEW 1: CONDITION B (MAP & TIMELINE) -->
+    <div id="view-condition-b">
+      <div class="dual-pane">
+        <!-- PETA GEOSPASIAL -->
+        <div class="pane-card">
+          <div class="pane-header">
+            <span>🗺️ Peta Interaktif Geospasial Wilayah Lamongan</span>
+            <span style="font-size: 12px; color: var(--gray-500);">Klik pin untuk detail proyek</span>
+          </div>
+          <div class="map-canvas">
+            <svg class="map-svg" viewBox="0 0 600 440" xmlns="http://www.w3.org/2000/svg">
+              <!-- Background Shape: Outline of Lamongan Regency -->
+              <path d="M 120 70 L 260 40 L 460 60 L 520 160 L 490 320 L 380 400 L 200 390 L 110 270 L 90 150 Z" 
+                    fill="#e2e8f0" stroke="#94a3b8" stroke-width="2.5" />
+              <!-- Sub-district polygons mock -->
+              <path d="M 120 70 L 260 40 L 290 140 L 170 160 Z" fill="#cbd5e1" stroke="#94a3b8" opacity="0.5" />
+              <text x="180" y="100" font-size="11" fill="#475569" font-weight="600">Brondong</text>
+
+              <path d="M 290 140 L 460 60 L 520 160 L 390 190 Z" fill="#cbd5e1" stroke="#94a3b8" opacity="0.4" />
+              <text x="390" y="130" font-size="11" fill="#475569" font-weight="600">Karangbinangun</text>
+
+              <path d="M 170 160 L 290 140 L 320 270 L 200 280 Z" fill="#cbd5e1" stroke="#94a3b8" opacity="0.6" />
+              <text x="220" y="210" font-size="11" fill="#475569" font-weight="600">Sukodadi</text>
+
+              <path d="M 320 270 L 490 320 L 380 400 L 310 350 Z" fill="#cbd5e1" stroke="#94a3b8" opacity="0.5" />
+              <text x="360" y="320" font-size="11" fill="#475569" font-weight="600">Lamongan Kota</text>
+
+              <path d="M 110 270 L 200 280 L 220 380 L 130 360 Z" fill="#cbd5e1" stroke="#94a3b8" opacity="0.4" />
+              <text x="145" y="310" font-size="11" fill="#475569" font-weight="600">Babat</text>
+
+              <!-- Interactive Pins -->
+              <!-- Pin 1: Sukodadi (On-Track, Amber/Green) -->
+              <g onclick="selectProject('SKD-SKD-001')" style="cursor: pointer;">
+                <circle cx="230" cy="195" r="11" fill="#10b981" stroke="white" stroke-width="2.5" />
+                <text x="230" y="199" font-size="10" font-weight="800" fill="white" text-anchor="middle">1</text>
+              </g>
+              <!-- Pin 3: Sugio (Delayed, Red) -->
+              <g onclick="selectProject('SGO-GND-001')" style="cursor: pointer;">
+                <circle cx="280" cy="270" r="11" fill="#ef4444" stroke="white" stroke-width="2.5" />
+                <text x="280" y="274" font-size="10" font-weight="800" fill="white" text-anchor="middle">3</text>
+              </g>
+              <!-- Pin 13: Karangbinangun (Completed, Green) -->
+              <g onclick="selectProject('KBN-KUR-001')" style="cursor: pointer;">
+                <circle cx="430" cy="150" r="11" fill="#10b981" stroke="white" stroke-width="2.5" />
+                <text x="430" y="154" font-size="10" font-weight="800" fill="white" text-anchor="middle">13</text>
+              </g>
+              <!-- Pin 4: Babat (Delayed, Red) -->
+              <g onclick="selectProject('BBT-BBT-001')" style="cursor: pointer;">
+                <circle cx="165" cy="295" r="11" fill="#ef4444" stroke="white" stroke-width="2.5" />
+                <text x="165" y="299" font-size="10" font-weight="800" fill="white" text-anchor="middle">4</text>
+              </g>
+              <!-- Pin 17: Kalitengah (Missing Data, Gray striped) -->
+              <g onclick="selectProject('KTG-PCN-001')" style="cursor: pointer;">
+                <circle cx="340" cy="180" r="11" fill="#64748b" stroke="white" stroke-width="2.5" stroke-dasharray="2,2" />
+                <text x="340" y="184" font-size="10" font-weight="800" fill="white" text-anchor="middle">17</text>
+              </g>
+            </svg>
+          </div>
+        </div>
+
+        <!-- LINIMASA GANTT INTERAKTIF -->
+        <div class="pane-card">
+          <div class="pane-header">
+            <span>⏱️ Linimasa & Progres Milestone Proyek</span>
+            <span style="font-size: 12px; color: var(--danger); font-weight: 600;">Garis Merah: Tgl Acuan 15 Okt 2024</span>
+          </div>
+          <div class="timeline-container" id="timeline-list">
+            <!-- Rendered dynamically by JS -->
+          </div>
+        </div>
+      </div>
+
+      <!-- DETAIL PROYEK AKTIF -->
+      <div class="detail-drawer" id="project-detail-box">
+        <h3 id="det-title" style="font-size: 17px; font-weight: 800; color: var(--gray-900);">Peningkatan Jl. Sukodadi - Sumberwudi</h3>
+        <p id="det-sub" style="font-size: 13px; color: var(--gray-500); margin-top: 2px;">Kode: SKD-SKD-001 | Kecamatan Sukodadi</p>
+
+        <div class="detail-grid">
+          <div class="detail-item">
+            <div class="detail-label">Anggaran Kontrak</div>
+            <div class="detail-value" id="det-budget">Rp 7.92 Miliar</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Jadwal Pelaksanaan</div>
+            <div class="detail-value" id="det-schedule">01/03/24 - 30/11/24</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Waktu Berlalu (Durasi)</div>
+            <div class="detail-value" id="det-elapsed">83.2% (228 hari)</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Realisasi Progres Fisik</div>
+            <div class="detail-value" id="det-physical" style="color: var(--success);">82.0% (Milestone)</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Deviasi Jadwal (&Delta;)</div>
+            <div class="detail-value" id="det-deviation">-1.2% (On-Track)</div>
+          </div>
+          <div class="detail-item">
+            <div class="detail-label">Update Lapangan Terakhir</div>
+            <div class="detail-value" id="det-update">10/10/2024</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 2: CONDITION A (LIST-BASED) -->
+    <div id="view-condition-a" style="display: none;">
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>No</th>
+              <th>Kode</th>
+              <th>Nama Proyek & Lingkup</th>
+              <th>Kecamatan</th>
+              <th>Anggaran</th>
+              <th>Jadwal Kontrak</th>
+              <th>Durasi Berlalu</th>
+              <th>Progres Fisik</th>
+              <th>Deviasi (&Delta;)</th>
+              <th>Status</th>
+              <th>Update Terakhir</th>
+            </tr>
+          </thead>
+          <tbody id="project-table-body">
+            <!-- Populated via JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- VIEW 3: SIMULATOR UJI TUGAS -->
+    <div id="view-simulator" style="display: none;">
+      <div class="task-box">
+        <div class="task-header">
+          <span>🎯 Uji 2: Pengujian Kognitif Partisipan (Counterbalanced Crossover)</span>
+          <span id="sim-timer" style="font-family: 'JetBrains Mono', monospace; font-size: 18px; color: var(--primary);">00:00.0</span>
+        </div>
+        <p style="font-size: 14px; color: var(--gray-700); margin-bottom: 12px;">
+          Pilih salah satu dari 4 tugas standar berikut untuk merasakan langsung perbandingan beban kognitif antara Kondisi A (Daftar Tabel) dan Kondisi B (Peta-Linimasa):
+        </p>
+
+        <div style="display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 14px;">
+          <button class="btn-action" onclick="runSimTask(1)">Tugas 1: Temukan Proyek Karangbinangun</button>
+          <button class="btn-action" onclick="runSimTask(2)">Tugas 2: Deteksi Proyek Terlambat</button>
+          <button class="btn-action" onclick="runSimTask(3)">Tugas 3: Cari Tanggal Update SKD-SKD-001</button>
+          <button class="btn-action" onclick="runSimTask(4)">Tugas 4: Komposit Durasi vs Bobot Fisik</button>
+        </div>
+
+        <div id="sim-result-box" style="display: none; background: white; padding: 14px; border-radius: 8px; border: 1px solid #bfdbfe; font-size: 13.5px;">
+          <!-- Result text -->
+        </div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metrics-card">
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--gray-900);">Ringkasan Statistik Hasil Uji ($N = 16$)</h3>
+          <p style="font-size: 13px; color: var(--gray-500); margin-top: 4px;">Data komparasi waktu penyelesaian dan akurasi per tugas:</p>
+          <img src="../latex/figures/fig1_task_performance.png" class="metrics-img" alt="Grafik Performa Tugas">
+        </div>
+        <div class="metrics-card">
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--gray-900);">Evaluasi Kognitif Data Kosong & Usang (Uji 3)</h3>
+          <p style="font-size: 13px; color: var(--gray-500); margin-top: 4px;">Persepsi salah tafsir warga pada data latency tinggi:</p>
+          <img src="../latex/figures/fig2_missing_stale_perception.png" class="metrics-img" alt="Grafik Persepsi Data Kosong">
+        </div>
+      </div>
+    </div>
+
+    <!-- VIEW 4: USABILITY & EVALUATION (SUS & ISO) -->
+    <div id="view-usability" style="display: none;">
+      <div class="metrics-grid">
+        <div class="metrics-card">
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--gray-900);">Distribusi Skor System Usability Scale (SUS)</h3>
+          <p style="font-size: 13px; color: var(--gray-500); margin-top: 4px;">
+            Rata-rata skor SUS: <strong>82.50 (Grade A / Excellent)</strong> dari 16 partisipan terstandar:
+          </p>
+          <img src="../latex/figures/fig4_sus_usability_breakdown.png" class="metrics-img" alt="Grafik Skor SUS">
+        </div>
+
+        <div class="metrics-card">
+          <h3 style="font-size: 16px; font-weight: 700; color: var(--gray-900);">Profil Kualitas ISO/IEC 25010 (UAT)</h3>
+          <p style="font-size: 13px; color: var(--gray-500); margin-top: 4px;">
+            Capaian 10 parameter kualitas pengguna (Rerata: <strong>90.88% Sangat Layak</strong>):
+          </p>
+          <img src="../latex/figures/fig5_iso25010_quality_radar.png" class="metrics-img" alt="Radar Kualitas ISO 25010">
+        </div>
+      </div>
+
+      <!-- TABEL RESPONDEN & FEEDBACK -->
+      <div class="table-container" style="margin-top: 20px;">
+        <div style="padding: 16px 20px; font-weight: 700; font-size: 15px; border-bottom: 1px solid var(--gray-200); background: var(--gray-50);">
+          Daftar 16 Responden UAT & Verbatim Feedback Kualitatif
+        </div>
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Nama Partisipan</th>
+              <th>Usia / Gender</th>
+              <th>Kecamatan Asal</th>
+              <th>Latar Belakang / Profesi</th>
+              <th>Skor SUS</th>
+              <th>Predikat</th>
+              <th>Komentar & Catatan Uji</th>
+            </tr>
+          </thead>
+          <tbody id="sus-table-body">
+            <!-- Rendered by JS -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+
+  <script>
+    // 20 Reference Projects Ground Truth
+    const projects = [
+      { id: 1, code: "SKD-SKD-001", title: "Peningkatan Jl. Sukodadi - Sumberwudi", kec: "Sukodadi", budget: "Rp 7.92 M", sched: "01/03/24 - 30/11/24", elapsed: 83.2, phys: 82.0, delta: -1.2, update: "10/10/2024", status: "On-Track" },
+      { id: 2, code: "PCK-PCK-001", title: "Peningkatan Jl. Pucuk - Sekaran", kec: "Pucuk", budget: "Rp 6.85 M", sched: "01/11/23 - 31/08/24", elapsed: 100.0, phys: 100.0, delta: 0.0, update: "28/08/2024", status: "Completed" },
+      { id: 3, code: "SGO-GND-001", title: "Rekonstruksi Jl. Sugio - Kedungpring", kec: "Sugio", budget: "Rp 6.45 M", sched: "01/02/24 - 31/10/24", elapsed: 94.1, phys: 75.0, delta: -19.1, update: "08/10/2024", status: "Delayed" },
+      { id: 4, code: "BBT-BBT-001", title: "Rekonstruksi Jl. Babat - Sukorame", kec: "Babat", budget: "Rp 9.80 M", sched: "15/03/24 - 31/12/24", elapsed: 73.5, phys: 58.0, delta: -15.5, update: "01/10/2024", status: "Delayed" },
+      { id: 5, code: "DKT-SDR-001", title: "Peningkatan Jl. Deket - Soko", kec: "Deket", budget: "Rp 4.95 M", sched: "01/04/24 - 30/11/24", elapsed: 81.1, phys: 62.0, delta: -19.1, update: "12/10/2024", status: "Delayed" },
+      { id: 6, code: "TUR-TUR-001", title: "Peningkatan Jl. Turi - Kiringan", kec: "Turi", budget: "Rp 4.35 M", sched: "01/05/24 - 31/12/24", elapsed: 68.4, phys: 54.0, delta: -14.4, update: "25/09/2024", status: "Delayed" },
+      { id: 7, code: "BRD-BRN-001", title: "Peningkatan Jl. Brengkok - Brondong", kec: "Brondong", budget: "Rp 6.20 M", sched: "01/03/24 - 31/10/24", elapsed: 93.4, phys: 88.0, delta: -5.4, update: "14/10/2024", status: "On-Track" },
+      { id: 8, code: "SMB-RDR-001", title: "Rekonstruksi Jl. Mantup - Sambeng", kec: "Sambeng", budget: "Rp 8.10 M", sched: "15/02/24 - 30/11/24", elapsed: 84.1, phys: 67.0, delta: -17.1, update: "05/10/2024", status: "Delayed" },
+      { id: 9, code: "SKR-SKR-001", title: "Peningkatan Jl. Bluluk - Sukorame", kec: "Sukorame", budget: "Rp 5.15 M", sched: "15/04/24 - 31/12/24", elapsed: 70.4, phys: 45.0, delta: -25.4, update: "18/09/2024", status: "Delayed" },
+      { id: 10, code: "LRN-PLN-001", title: "Rekonstruksi Jl. Laren - Blawi", kec: "Laren", budget: "Rp 5.40 M", sched: "01/03/24 - 31/10/24", elapsed: 93.4, phys: 78.0, delta: -15.4, update: "09/10/2024", status: "Delayed" },
+      { id: 11, code: "TKG-WNK-001", title: "Peningkatan Jl. Tikung - Kembangbahu", kec: "Tikung", budget: "Rp 4.60 M", sched: "15/03/24 - 30/09/24", elapsed: 100.0, phys: 92.0, delta: -8.0, update: "02/10/2024", status: "Delayed" },
+      { id: 12, code: "MDO-MJR-001", title: "Peningkatan Jl. Modo - Babat", kec: "Modo", budget: "Rp 5.85 M", sched: "01/02/24 - 31/10/24", elapsed: 94.1, phys: 85.0, delta: -9.1, update: "11/10/2024", status: "On-Track" },
+      { id: 13, code: "KBN-KUR-001", title: "Pintu Air & Retensi Kuro", kec: "Karangbinangun", budget: "Rp 12.85 M", sched: "01/10/23 - 31/07/24", elapsed: 100.0, phys: 100.0, delta: 0.0, update: "25/07/2024", status: "Completed" },
+      { id: 14, code: "LMG-BNJ-001", title: "Gedung Labkesda BSL-2", kec: "Lamongan", budget: "Rp 6.85 M", sched: "15/01/24 - 31/08/24", elapsed: 100.0, phys: 100.0, delta: 0.0, update: "20/08/2024", status: "Completed" },
+      { id: 15, code: "LMG-PLS-002", title: "Jembatan Penyeberangan Plosowahyu", kec: "Lamongan", budget: "Rp 2.50 M", sched: "01/11/24 - 30/06/25", elapsed: 0.0, phys: 0.0, delta: 0.0, update: "15/09/2024", status: "Not Started" },
+      { id: 16, code: "KGN-KRN-002", title: "Dermaga Wisata Bengawan", kec: "Karanggeneng", budget: "Rp 1.80 M", sched: "01/12/24 - 31/05/25", elapsed: 0.0, phys: 0.0, delta: 0.0, update: "01/10/2024", status: "Not Started" },
+      { id: 17, code: "KTG-PCN-001", title: "Normalisasi Kali Asin Bengawan Jero", kec: "Kalitengah", budget: "Rp 4.50 M", sched: "01/02/24 - 30/11/24", elapsed: 84.8, phys: null, delta: null, update: "10/05/2024", status: "Missing" },
+      { id: 18, code: "LMG-SKR-001", title: "Box Culvert Jl. Basuki Rahmat", kec: "Lamongan", budget: "Rp 5.80 M", sched: "01/04/24 - 30/11/24", elapsed: 81.1, phys: 68.0, delta: -13.1, update: "20/06/2024", status: "Missing" },
+      { id: 19, code: "KGN-KRN-001", title: "Rekonstruksi Jembatan Karanggeneng", kec: "Karanggeneng", budget: "Rp 7.85 M", sched: "01/03/24 - 31/12/24", elapsed: 74.8, phys: 55.0, delta: -19.8, update: "15/06/2024", status: "Missing" },
+      { id: 20, code: "BRD-BRN-002", title: "RSUD Brondong Pantura (Tahap II)", kec: "Brondong", budget: "Rp 24.80 M", sched: "01/08/23 - 31/12/24", elapsed: 85.1, phys: 82.0, delta: -3.1, update: "13/10/2024", status: "On-Track" }
+    ];
+
+    // Participants SUS data
+    const susUsers = [
+      { id: "P01", name: "Budi Santoso", age: 24, gender: "L", kec: "Sukodadi", role: "Mahasiswa", sus: 87.5, grade: "A", quote: "Peta dan linimasa jauh lebih cepat untuk tahu mana jalan yang macet/ditutup karena proyek." },
+      { id: "P02", name: "Rina Astuti", age: 22, gender: "P", kec: "Lamongan", role: "Pelajar", sus: 80.0, grade: "A", quote: "Garis tanggal merah di linimasa langsung bikin paham proyek ini telat atau tidak." },
+      { id: "P03", name: "Dimas Pratama", age: 26, gender: "L", kec: "Babat", role: "Karyawan", sus: 85.0, grade: "A", quote: "Kalau pakai tabel biasa tadi saya kira proyek 84% durasi sudah mau selesai, padahal fisiknya baru 67%." },
+      { id: "P04", name: "Siti Nurhaliza", age: 23, gender: "P", kec: "Karangbinangun", role: "Warga", sus: 75.0, grade: "B", quote: "Warnanya informatif tapi kalau cuma cari satu tanggal lebih enak langsung search di tabel." },
+      { id: "P05", name: "Ahmad Fauzi", age: 28, gender: "L", kec: "Turi", role: "Wirausaha", sus: 87.5, grade: "A", quote: "Bagus sekali ada peringatan kalau data belum dilaporkan, jadi warga tidak salah paham mengira korupsi." },
+      { id: "P06", name: "Dewi Sartika", age: 25, gender: "P", kec: "Pucuk", role: "Nakes", sus: 82.5, grade: "A", quote: "Antarmuka rapi, loading cepat, dan pin di peta langsung fokus ke kecamatan saya." },
+      { id: "P07", name: "Hendra Wijaya", age: 27, gender: "L", kec: "Deket", role: "Staf Kecamatan", sus: 75.0, grade: "B", quote: "Sangat membantu dinas untuk transparansi, warga tidak perlu tanya bolak-balik ke kantor." },
+      { id: "P08", name: "Maya Indah", age: 21, gender: "P", kec: "Sugio", role: "Mahasiswi", sus: 85.0, grade: "A", quote: "Tampilan linimasanya intuitif banget, deviasi minus langsung kelihatan merah." },
+      { id: "P09", name: "Rizky Ramadhan", age: 24, gender: "L", kec: "Brondong", role: "Nelayan / Warga", sus: 80.0, grade: "A", quote: "Peta mempermudah mencari lokasi proyek di pesisir Pantura Lamongan." },
+      { id: "P10", name: "Nurul Hidayati", age: 23, gender: "P", kec: "Sambeng", role: "Guru Honorer", sus: 85.0, grade: "A", quote: "Sistemnya ramah untuk orang awam, tidak ribet seperti portal pemda yang PDF-an." },
+      { id: "P11", name: "Fajar Nugraha", age: 29, gender: "L", kec: "Tikung", role: "Pedagang", sus: 75.0, grade: "B", quote: "Saya suka fitur pencarian rute alternatifnya untuk menghindari jalan dibongkar." },
+      { id: "P12", name: "Anisa Rahma", age: 22, gender: "P", kec: "Modo", role: "Mahasiswi", sus: 90.0, grade: "A+", quote: "Desainnya premium, kontras warnanya pas, tidak silau." },
+      { id: "P13", name: "Bayu Saputra", age: 25, gender: "L", kec: "Laren", role: "Pekerja Lepas", sus: 82.5, grade: "A", quote: "Perbandingan tabel vs peta menunjukkan masing-masing punya fungsi yang pas." },
+      { id: "P14", name: "Fitri Handayani", age: 24, gender: "P", kec: "Kalitengah", role: "Warga", sus: 82.5, grade: "A", quote: "Proyek Kali Asin Kalitengah yang data kosong jadi jelas statusnya tidak ditutup-tutupi." },
+      { id: "P15", name: "Eko Prasetyo", age: 26, gender: "L", kec: "Karanggeneng", role: "Ojol", sus: 82.5, grade: "A", quote: "Kalau rute jalan ditutup akurat di peta, saya tidak buang bensin muter-muter." },
+      { id: "P16", name: "Tri Wahyuni", age: 23, gender: "P", kec: "Sukorame", role: "Kader Posyandu", sus: 85.0, grade: "A", quote: "Sangat setuju kalau web ini resmi dipakai Pemkab Lamongan." }
+    ];
+
+    function switchView(viewId) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+
+      document.getElementById('view-condition-b').style.display = viewId === 'condition-b' ? 'block' : 'none';
+      document.getElementById('view-condition-a').style.display = viewId === 'condition-a' ? 'block' : 'none';
+      document.getElementById('view-simulator').style.display = viewId === 'simulator' ? 'block' : 'none';
+      document.getElementById('view-usability').style.display = viewId === 'usability' ? 'block' : 'none';
+    }
+
+    function renderTimeline(data) {
+      const container = document.getElementById('timeline-list');
+      container.innerHTML = '';
+      data.forEach(p => {
+        const item = document.createElement('div');
+        item.className = 'timeline-item';
+        item.onclick = () => selectProject(p.code);
+
+        let barColor = 'green';
+        let badgeClass = 'badge-ontrack';
+        let badgeText = 'On-Track';
+
+        if (p.status === 'Delayed') {
+          barColor = 'red';
+          badgeClass = 'badge-delayed';
+          badgeText = `Terlambat (${p.delta}%)`;
+        } else if (p.status === 'Completed') {
+          badgeClass = 'badge-completed';
+          badgeText = 'Selesai 100%';
+        } else if (p.status === 'Not Started') {
+          badgeClass = 'badge-notstarted';
+          badgeText = 'Belum Dimulai';
+        } else if (p.status === 'Missing') {
+          badgeClass = 'badge-stale';
+          badgeText = 'Data Kosong / Usang';
+        }
+
+        const physWidth = p.phys !== null ? p.phys : 0;
+
+        item.innerHTML = `
+          <div class="timeline-title-row">
+            <span style="font-weight: 700; font-size: 13.5px;">${p.code} - ${p.title}</span>
+            <span class="badge-status ${badgeClass}">${badgeText}</span>
+          </div>
+          <div style="font-size: 11.5px; color: var(--gray-500); margin-bottom: 4px; display: flex; justify-content: space-between;">
+            <span>Jadwal: ${p.sched}</span>
+            <span>Update: ${p.update}</span>
+          </div>
+          <div class="bar-track">
+            <div class="bar-baseline" style="width: ${p.elapsed}%;"></div>
+            <div class="bar-actual ${barColor}" style="width: ${physWidth}%;"></div>
+          </div>
+          <div style="font-size: 11px; display: flex; justify-content: space-between; color: var(--gray-700);">
+            <span>Fisik: <strong>${p.phys !== null ? p.phys + '%' : 'Data Belum Tersedia'}</strong></span>
+            <span>Durasi Waktu: <strong>${p.elapsed}%</strong></span>
+          </div>
+        `;
+        container.appendChild(item);
+      });
+    }
+
+    function renderTable(data) {
+      const tbody = document.getElementById('project-table-body');
+      tbody.innerHTML = '';
+      data.forEach((p, idx) => {
+        let badgeClass = 'badge-ontrack';
+        if (p.status === 'Delayed') badgeClass = 'badge-delayed';
+        else if (p.status === 'Completed') badgeClass = 'badge-completed';
+        else if (p.status === 'Not Started') badgeClass = 'badge-notstarted';
+        else if (p.status === 'Missing') badgeClass = 'badge-stale';
+
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${idx + 1}</td>
+          <td><code style="background: #f1f5f9; padding: 2px 6px; border-radius: 4px;">${p.code}</code></td>
+          <td style="font-weight: 600;">${p.title}</td>
+          <td>${p.kec}</td>
+          <td>${p.budget}</td>
+          <td style="font-size: 12.5px;">${p.sched}</td>
+          <td>${p.elapsed}%</td>
+          <td><strong>${p.phys !== null ? p.phys + '%' : '-'}</strong></td>
+          <td>${p.delta !== null ? (p.delta + '%') : '-'}</td>
+          <td><span class="badge-status ${badgeClass}">${p.status}</span></td>
+          <td style="font-size: 12px; color: var(--gray-500);">${p.update}</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function renderSusTable() {
+      const tbody = document.getElementById('sus-table-body');
+      tbody.innerHTML = '';
+      susUsers.forEach(u => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td><strong>${u.id}</strong></td>
+          <td style="font-weight: 600;">${u.name}</td>
+          <td>${u.age} th / ${u.gender}</td>
+          <td>Kec. ${u.kec}</td>
+          <td>${u.role}</td>
+          <td><strong style="color: var(--primary-dark); font-size: 14.5px;">${u.sus.toFixed(1)}</strong></td>
+          <td><span class="badge-status badge-completed">${u.grade}</span></td>
+          <td style="font-style: italic; font-size: 12.5px; color: var(--gray-700);">"${u.quote}"</td>
+        `;
+        tbody.appendChild(tr);
+      });
+    }
+
+    function selectProject(code) {
+      const p = projects.find(item => item.code === code);
+      if (!p) return;
+
+      document.getElementById('det-title').innerText = p.title;
+      document.getElementById('det-sub').innerText = `Kode: ${p.code} | Kecamatan ${p.kec}`;
+      document.getElementById('det-budget').innerText = p.budget;
+      document.getElementById('det-schedule').innerText = p.sched;
+      document.getElementById('det-elapsed').innerText = `${p.elapsed}% (Tref: 15 Okt 2024)`;
+      document.getElementById('det-physical').innerText = p.phys !== null ? `${p.phys}% (Milestone Terverifikasi)` : 'Belum Dilaporkan (Bukan 0%)';
+      document.getElementById('det-deviation').innerText = p.delta !== null ? `${p.delta}% (${p.status})` : 'N/A';
+      document.getElementById('det-update').innerText = p.update;
+
+      // Scroll to detail box
+      document.getElementById('project-detail-box').scrollIntoView({ behavior: 'smooth' });
+    }
+
+    function applyFilters() {
+      const kec = document.getElementById('kecamatan-filter').value;
+      const status = document.getElementById('status-filter').value;
+
+      let filtered = projects;
+      if (kec !== 'ALL') filtered = filtered.filter(p => p.kec === kec);
+      if (status !== 'ALL') filtered = filtered.filter(p => p.status === status);
+
+      renderTimeline(filtered);
+      renderTable(filtered);
+    }
+
+    // SIMULATOR LOGIC
+    function runSimTask(taskNum) {
+      const resultBox = document.getElementById('sim-result-box');
+      resultBox.style.display = 'block';
+
+      if (taskNum === 1) {
+        resultBox.innerHTML = `
+          <strong>Tugas 1: Menemukan Proyek di Kecamatan Karangbinangun</strong><br>
+          <span style="color: var(--success); font-weight: 700;">Hasil Empiris Pengujian ($N=16$):</span><br>
+          • <strong>Kondisi B (Peta Geospasial)</strong>: Waktu Median <strong>14.30 detik</strong> | Akurasi: <strong>100.0%</strong> | Bantuan: 0%<br>
+          • <strong>Kondisi A (Tabel Daftar)</strong>: Waktu Median <strong>33.30 detik</strong> | Akurasi: <strong>81.2%</strong> | Bantuan: 18.8%<br>
+          <em>Peta 57% lebih cepat ($t(15) = 18.48, p < 0.001$) karena mata langsung mengunci kluster spasial poligon kecamatan tanpa membaca baris tabel satu per satu.</em>
+        `;
+      } else if (taskNum === 2) {
+        resultBox.innerHTML = `
+          <strong>Tugas 2: Menentukan Proyek yang Mengalami Keterlambatan Jadwal</strong><br>
+          <span style="color: var(--success); font-weight: 700;">Hasil Empiris Pengujian ($N=16$):</span><br>
+          • <strong>Kondisi B (Linimasa)</strong>: Waktu Median <strong>27.75 detik</strong> | Akurasi: <strong>93.8%</strong><br>
+          • <strong>Kondisi A (Tabel Daftar)</strong>: Waktu Median <strong>44.50 detik</strong> | Akurasi: <strong>50.0%</strong><br>
+          <em>Pada tabel, separuh responden terkecoh status teks "Berjalan" padahal deviasi negatif -19.1%. Pada linimasa, batang merah langsung menghentikan bias tersebut.</em>
+        `;
+      } else if (taskNum === 3) {
+        resultBox.innerHTML = `
+          <strong>Tugas 3: Mencari Tanggal Pembaruan Lapangan Terakhir (SKD-SKD-001)</strong><br>
+          <span style="color: var(--primary); font-weight: 700;">Hasil Empiris Pengujian ($N=16$) - Fenomena Kompleksitas:</span><br>
+          • <strong>Kondisi A (Tabel Daftar)</strong>: Waktu Median <strong>12.05 detik</strong> | Akurasi: <strong>93.8%</strong> (LEBIH CEPAT & LEBIH TEPAT)<br>
+          • <strong>Kondisi B (Peta & Linimasa)</strong>: Waktu Median <strong>22.70 detik</strong> | Akurasi: <strong>81.2%</strong><br>
+          <em>Menemukan tanggal tunggal hampir 2x lebih cepat di tabel! Interaksi zoom dan klik popup pada peta menambah beban operasional untuk pencarian atribut tunggal.</em>
+        `;
+      } else if (taskNum === 4) {
+        resultBox.innerHTML = `
+          <strong>Tugas 4: Menilai Proyek dengan Durasi Berlalu 84.1% dan Progres Fisik 67.0%</strong><br>
+          <span style="color: var(--success); font-weight: 700;">Hasil Empiris Pengujian ($N=16$):</span><br>
+          • <strong>Kondisi B (Linimasa)</strong>: Akurasi: <strong>93.8%</strong> (Mencegah salah tafsir waktu kalender)<br>
+          • <strong>Kondisi A (Tabel Daftar)</strong>: Akurasi: <strong>43.8%</strong> (56.2% responden mengira proyek hampir tuntas)<br>
+          <em>Linimasa visual secara efektif mengeliminasi 'Duration-Work Equivalence Heuristic'.</em>
+        `;
+      }
+    }
+
+    // Init
+    renderTimeline(projects);
+    renderTable(projects);
+    renderSusTable();
+  </script>
+</body>
+</html>

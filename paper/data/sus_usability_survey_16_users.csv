@@ -1,0 +1,17 @@
+ID,Name,Age,Gender,Kecamatan,Role,Q1,Q2,Q3,Q4,Q5,Q6,Q7,Q8,Q9,Q10,SUS_Score,Grade,Rating
+P01,Budi Santoso,24,M,Sukodadi,Warga / Mahasiswa,4,1,4,2,4,1,5,1,4,1,87.5,A,Excellent
+P02,Rina Astuti,22,F,Lamongan,Warga / Pelajar,4,2,4,1,4,2,4,2,4,1,80.0,B,Excellent
+P03,Dimas Pratama,26,M,Babat,Karyawan Swasta,5,2,4,2,4,1,5,2,4,1,85.0,A,Excellent
+P04,Siti Nurhaliza,23,F,Karangbinangun,Warga Lokal,4,2,4,2,4,2,4,2,4,2,75.0,B,Good
+P05,Ahmad Fauzi,28,M,Turi,Wirausaha,4,1,5,2,5,1,4,2,4,1,87.5,A,Excellent
+P06,Dewi Sartika,25,F,Pucuk,Tenaga Kesehatan,4,2,4,2,4,1,5,2,4,1,82.5,A,Excellent
+P07,Hendra Wijaya,27,M,Deket,PNS / Staf Kecamatan,4,2,4,2,4,2,4,2,4,2,75.0,B,Good
+P08,Maya Indah,21,F,Sugio,Mahasiswi,5,1,5,1,4,2,4,2,4,2,85.0,A,Excellent
+P09,Rizky Ramadhan,24,M,Brondong,Nelayan / Warga,4,2,4,2,5,1,4,2,4,2,80.0,B,Excellent
+P10,Nurul Hidayati,23,F,Sambeng,Guru Honorer,5,1,4,2,4,1,4,2,4,1,85.0,A,Excellent
+P11,Fajar Nugraha,29,M,Tikung,Pedagang,4,2,4,2,4,2,4,2,4,2,75.0,B,Good
+P12,Anisa Rahma,22,F,Modo,Mahasiswi,4,1,4,1,5,2,5,1,4,1,90.0,A,Excellent
+P13,Bayu Saputra,25,M,Laren,Pekerja Lepas,5,2,4,1,4,1,4,2,4,2,82.5,A,Excellent
+P14,Fitri Handayani,24,F,Kalitengah,Warga Lokal,4,2,4,2,4,1,5,1,4,2,82.5,A,Excellent
+P15,Eko Prasetyo,26,M,Karanggeneng,Pengemudi Ojek Online,4,1,5,2,4,2,4,1,4,2,82.5,A,Excellent
+P16,Tri Wahyuni,23,F,Sukorame,Kader Posyandu,4,2,4,1,5,1,4,2,4,1,85.0,A,Excellent

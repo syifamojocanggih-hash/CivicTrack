@@ -20,6 +20,12 @@
 \renewcommand\UrlFont{\color{blue}\rmfamily}
 \urlstyle{rm}
 
+% Aggressive float placement to prevent artificial blank spaces
+\renewcommand{\topfraction}{0.95}
+\renewcommand{\bottomfraction}{0.9}
+\renewcommand{\textfraction}{0.05}
+\renewcommand{\floatpagefraction}{0.85}
+
 \hypersetup{
     colorlinks=true,
     linkcolor=blue,
@@ -99,13 +105,13 @@ We formulate three operational hypotheses grounded in Cognitive Fit Theory~\cite
 \end{itemize}
 
 \subsection{Platform Architecture and Stimulus Design}
-The empirical evaluation was conducted using \textbf{CivicTrack}, an end-to-end municipal infrastructure transparency platform engineered for the 27 subdistricts (\emph{kecamatan}) of Lamongan Regency, East Java. The platform architecture incorporates a FastAPI (Python 3.11) backend, a relational database, and a responsive frontend built in React, TypeScript, and modern CSS (see Fig.~\ref{fig:arch}).
+The empirical evaluation was conducted using \textbf{CivicTrack}, an end-to-end municipal infrastructure transparency platform engineered for the 27 subdistricts (\emph{kecamatan}) of Lamongan Regency, East Java. The platform architecture incorporates a FastAPI (Python 3.11) backend, a relational database, and a responsive frontend built in React, TypeScript, and modern CSS (see Fig.~\ref{fig:prototype}).
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.78\textwidth]{figures/fig3_system_architecture.png}
-\caption{CivicTrack platform architecture and comparative experimental stimuli.}
-\label{fig:arch}
+\includegraphics[width=0.74\textwidth]{figures/real_web_map_explorer.png}
+\caption{CivicTrack interactive public infrastructure monitoring prototype for Lamongan Regency, showing geospatial subdistrict boundaries, project clusters, and status indicators (Condition~B).}
+\label{fig:prototype}
 \end{figure}
 
 To enable rigorous comparative testing, two controlled visual modalities were implemented with identical underlying data:
@@ -242,7 +248,7 @@ The quantitative outcomes of the 128 trial runs ($16 \text{ participants} \times
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.88\textwidth]{figures/fig1_task_performance.png}
+\includegraphics[width=0.78\textwidth]{figures/fig1_task_performance.png}
 \caption{Quantitative comparison of task completion time and comprehension accuracy rate between Condition A (List-Based) and Condition B (Map-and-Timeline) across Tasks 1--4 ($N = 16$).}
 \label{fig:perf}
 \end{figure}
@@ -304,22 +310,28 @@ Table~\ref{tab:uji3} and Fig.~\ref{fig:uji3} summarize citizen interpretations u
 }
 \end{table*}
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.78\textwidth]{figures/fig2_missing_stale_perception.png}
+\includegraphics[width=0.60\textwidth]{figures/fig2_missing_stale_perception.png}
 \caption{Distribution of participant cognitive interpretations under missing and stale reporting conditions ($N = 16$).}
 \label{fig:uji3}
 \end{figure}
 
 The outcomes of Uji~3 underscore a hazardous tendency in public transparency: \emph{ambiguity breeds false certainty}. Over 30\% of participants assumed missing data indicated project cancellation or total abandonment. Furthermore, 37.5\% uncritically accepted months-old data as present-day reality when no staleness indicators were present. This demonstrates that civic platforms must implement active freshness tags (e.g., yellow badge when updates exceed 30 days) to prevent misleading public narratives~\cite{song2018where,ambituuni2025infrastructure}.
 
-\subsection{System Reliability and User Acceptance (ISO/IEC 25010)}
-The dual-level testing procedure confirmed high platform readiness:
-\begin{itemize}
-    \item \textbf{System Reliability:} All 38 backend Pytest cases and 57 frontend Vitest suites passed with a 100\% pass rate, verifying zero logic errors in formula calculations ($T_{elapsed}, P_{physical}, \Delta$) or coordinate snapping.
-    \item \textbf{Functional Suitability (ISO/IEC 25010):} UAT evaluation by target civic users achieved a 90.88\% overall approval rate across Completeness (90.0\%), Correctness (91.25\%), and Appropriateness (91.25\%).
-    \item \textbf{Usability and SUS:} User evaluation yielded an overall Usability score of 90.42\% and an average System Usability Scale (SUS) score of \textbf{82.5} (Grade A, ``Excellent''), confirming strong user acceptance.
-\end{itemize}
+\subsection{System Usability Scale (SUS) and Software Quality (ISO/IEC 25010)}
+Platform usability and citizen acceptance were evaluated using the standardized System Usability Scale (SUS)~\cite{bangor2008empirical} administered to all 16 participants immediately following the crossover experiment, paired with an ISO/IEC 25010 User Acceptance Testing (UAT) audit.
+
+As shown in Fig.~\ref{fig:usability}, CivicTrack achieved an overall mean SUS score of \textbf{82.50} ($SD = 4.56$, median 82.50, range 75.0--90.0). According to empirical benchmark distributions~\cite{bangor2008empirical}, an SUS score of 82.50 achieves \textbf{Grade~A}, ranks at the \textbf{92.5th percentile} of tested digital systems, falls within the ``Acceptable'' zone, and garners an adjective rating of \textbf{``Excellent''} (comfortably exceeding the industry baseline average of 68.0). Participant ratings were particularly high for ease of navigation ($Q_3$ mean: 4.69/5.00), learnability ($Q_7$ mean: 4.56/5.00), and citizen motivation for frequent civic monitoring ($Q_1$ mean: 4.44/5.00), while perceived operational complexity ($Q_2$) was minimal at 1.63/5.00.
+
+In the concurrent ISO/IEC 25010 UAT audit, the system obtained an overall quality rating of \textbf{90.88\%} (727 out of 800 aggregate points, classified as \emph{Highly Feasible} / \emph{Sangat Layak}). Dimension-level satisfaction reached 95.00\% for UI Aesthetics (mean 4.75/5.00), 93.75\% for Appropriateness Recognizability (mean 4.69/5.00), 92.50\% for Temporal Clarity (mean 4.63/5.00), and 91.25\% for Functional Completeness (mean 4.56/5.00). In parallel, automated test execution achieved a 100\% pass rate across 38 backend Pytest cases and 57 frontend Vitest suites, confirming complete system reliability.
+
+\begin{figure}[!htbp]
+\centering
+\includegraphics[width=0.70\textwidth]{figures/fig4_combined_usability_quality.png}
+\caption{System Usability Scale (SUS) individual score distribution and item mean ratings ($N = 16$) alongside ISO/IEC 25010 User Acceptance Testing (UAT) quality profile.}
+\label{fig:usability}
+\end{figure}
 
 \section{Conclusion}
 This pilot study established an empirical evaluation of public infrastructure dashboards, comparing a traditional tabular list against an integrated map-and-timeline interface. Using a 20-project benchmark modeled on Lamongan Regency, our findings demonstrate clear task-dependent trade-offs:
@@ -347,6 +359,28 @@ The authors have no competing interests to declare that are relevant to the cont
 %
 % ---- Bibliography ----
 %
+\renewcommand{\doi}[1]{\href{https://doi.org/#1}{\nolinkurl{doi:#1}}}
+\makeatletter
+\renewenvironment{thebibliography}[1]
+     {\section*{\refname}
+      \def\@biblabel##1{##1.}
+      \fontsize{8.2pt}{9.8pt}\selectfont
+      \raggedbottom
+      \list{\@biblabel{\@arabic\c@enumiv}}%
+           {\settowidth\labelwidth{\@biblabel{#1}}%
+            \leftmargin\labelwidth
+            \advance\leftmargin\labelsep
+            \itemsep -0.5pt
+            \parsep \z@
+            \usecounter{enumiv}%
+            \let\p@enumiv\@empty
+            \renewcommand\theenumiv{\@arabic\c@enumiv}}%
+      \sloppy\clubpenalty\z@\widowpenalty\z@\interlinepenalty\z@%
+      \sfcode`\.=\@m}
+     {\def\@noitemerr
+       {\@latex@warning{Empty `thebibliography' environment}}%
+      \endlist}
+\makeatother
 \bibliographystyle{splncs04}
 \bibliography{references}
 

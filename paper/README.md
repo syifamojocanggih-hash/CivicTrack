@@ -30,6 +30,12 @@ paper/
 ├── README.md                                  <- Panduan komprehensif seluruh ekosistem riset & pengujian
 ├── draft_paper_CivicTrack_ICLAMP2027.md       <- Draf lengkap manuskrip ilmiah (37 sitasi, standar Springer LNCS)
 ├── CivicTrack_ICLAMP2027_LaTeX_Package.zip    <- Paket arsip lengkap siap upload ke Overleaf / portal konferensi
+├── prototype/                                 <- Showcase prototipe produk interaktif & UI mockup Figma-style
+│   ├── real_web_map_explorer.png              <- Tangkapan layar ASLI dari aplikasi web CivicTrack (localhost:5173)
+│   ├── prototype_showcase.html                <- Web app simulator eksperimen mandiri (Kondisi A vs B, Timer, SUS)
+│   ├── civictrack_ui_prototype.jpg            <- Mockup desain visual UI hi-fi CivicTrack (300 DPI)
+│   ├── fig4_sus_usability_breakdown.png       <- Grafik visualisasi evaluasi SUS 16 partisipan
+│   └── fig5_iso25010_quality_radar.png        <- Grafik polar radar UAT ISO/IEC 25010
 ├── latex/                                     <- Direktori sumber LaTeX lengkap (Springer LNCS Format)
 │   ├── main.tex                               <- Berkas utama LaTeX (15 halaman tepat, siap publikasi)
 │   ├── main.pdf                               <- Berkas PDF terkompilasi resmi (15 halaman, 966 KB)
@@ -37,12 +43,18 @@ paper/
 │   ├── llncs.cls                              <- Document class resmi Springer LNCS
 │   ├── splncs04.bst                           <- Style bibtex resmi Springer LNCS
 │   └── figures/                               <- Gambar ilmiah resolusi tinggi (300 DPI PNG & Vektor PDF)
+│       ├── real_web_map_explorer.png          <- Screenshot ASLI Peta Interaktif & Voronoi Web CivicTrack
+│       ├── real_web_landing_page.png          <- Screenshot ASLI Beranda Web CivicTrack
 │       ├── fig1_task_performance.png / .pdf   <- Grafik waktu penyelesaian & akurasi (Uji 2)
 │       ├── fig2_missing_stale_perception.png  <- Grafik persepsi kognitif data kosong/usang (Uji 3)
 │       ├── fig3_system_architecture.png       <- Diagram arsitektur evaluasi komparatif
+│       ├── fig4_sus_usability_breakdown.png   <- Grafik skor individual SUS & mean item Q1-Q10
+│       ├── fig5_iso25010_quality_radar.png    <- Diagram radar 10 dimensi UAT ISO/IEC 25010
+│       ├── fig6_prototype_ui_mockup.jpg       <- Mockup UI antarmuka prototipe CivicTrack
 │       └── screenshot_ui_interface.png        <- Tangkapan layar antarmuka sistem
 ├── testing/                                   <- Dokumentasi Standar Pengujian Formal STLC, ISO 29119 & ISO 25010
 │   ├── ISO_29119_TEST_PLAN_AND_REPORT.md      <- Dokumen Test Plan & Test Report lengkap (System Testing + UAT)
+│   ├── USER_EVALUATION_AND_USABILITY_REPORT.md<- Laporan formal uji user empiris, metrik SUS & ISO 25010 UAT
 │   ├── e2e/                                   <- Skrip pengujian E2E endpoint & laporan verifikasi
 │   └── logs/                                  <- Log eksekusi pengujian sistem & riwayat pengujian
 ├── data/                                      <- Dataset acuan eksperimen, ground truth, dan log uji pengguna
@@ -50,6 +62,8 @@ paper/
 │   ├── ground_truth_codebook.md               <- Buku kode, rumus matematis progres & deviasi, protokol Uji 1-3
 │   ├── pilot_study_raw_logs.json              <- Log mentah 128 sesi uji (16 partisipan x 4 tugas x 2 kondisi)
 │   ├── pilot_study_summary.csv                <- Rekapitulasi statistik (akurasi, mean, median, SD, t-test)
+│   ├── sus_usability_survey_16_users.json/.csv<- Dataset survei kuesioner baku SUS (System Usability Scale)
+│   ├── iso_25010_uat_detailed_scores.json     <- Data evaluasi UAT 10 dimensi ISO/IEC 25010
 │   ├── uji3_missing_stale_data.json           <- Log evaluasi persepsi data kosong & usang (Uji 3)
 │   └── source_documents/                      <- Dokumen data master asli (Wikipedia & Master Lamongan)
 │       ├── Data_Master_Pembangunan_Lamongan_CivicTrack.docx
@@ -61,7 +75,8 @@ paper/
 ├── scripts/                                   <- Skrip generator data, visualisasi, dan log uji kognitif
 │   ├── generate_paper_dataset.py              <- Generator dataset 20 proyek acuan & ground truth
 │   ├── generate_paper_figures.py              <- Generator 3 gambar ilmiah resolusi tinggi
-│   └── generate_pilot_experiment_logs.py      <- Generator simulasi log 128 sesi uji empiris
+│   ├── generate_pilot_experiment_logs.py      <- Generator simulasi log 128 sesi uji empiris
+│   └── generate_usability_charts.py           <- Generator grafik SUS (fig4) & radar ISO 25010 (fig5)
 └── guidelines/                                <- Dokumen prosiding acuan resmi ICLAMP 2027
     └── ICLAMP-Proceedings-5-new-one-2-1.pdf   <- Format Springer LNCS / CCIS acuan submission
 ```
