@@ -1,0 +1,826 @@
+List-Based versus Map-and-Timeline Project
+Information: A Pilot Study of Citizen
+Comprehension
+Ahmad Syifa’ul Falakhul Khayyi1 and Aimatus Sholiha1
+Department of Informatics and Computer Engineering,
+Politeknik Elektronika Negeri Surabaya, Surabaya 60111, Indonesia
+{khayyi, aimatus}@student.pens.ac.id
+
+Abstract. Public infrastructure portals predominantly display civil works
+in unstructured tabular lists, obscuring geographic context and inducing
+cognitive confusion between calendar time elapsed, physical completion,
+and reporting recency. This pilot study investigates whether an integrated map-and-timeline interface significantly enhances citizen comprehension compared to a list-based format. Utilizing CivicTrack, an infrastructure monitoring platform for Lamongan Regency, Indonesia, we
+benchmarked 20 municipal projects across a three-phase empirical evaluation. Study 1 validated baseline data integrity. Study 2 executed a counterbalanced within-subjects crossover experiment (N = 16) across four
+core retrieval tasks. Study 3 evaluated user interpretation of stale and
+missing progress data. The results reveal a task-dependent dichotomy. Interactive geospatial maps significantly accelerated spatial retrieval (median 14.30 s vs. 33.30 s; paired t(15) = 18.48, p < 0.001), accompanied by
+a descriptive accuracy gain from 81.2% (13/16) to 100.0% (16/16) (exact
+McNemar p = 0.250). For schedule delay detection, chronological timelines significantly reduced completion time (median 27.75 s vs. 44.50 s;
+paired t(15) = 16.79, p < 0.001), elevating delay identification accuracy
+from 50.0% (8/16) to 93.8% (15/16) (exact McNemar p = 0.016) by mitigating the duration-work equivalence heuristic. Conversely, for isolated
+attribute lookup, tabular lists were significantly faster (median 12.05 s
+vs. 22.70 s; paired t(15) = −14.16, p < 0.001), with descriptive accuracy
+favoring the list format (93.8% vs. 81.2%; exact McNemar p = 0.625),
+exposing multi-view interaction overhead. In missing data evaluations,
+31.2% misattributed missing values to project cancellation. Civic platforms must couple spatial overviews with frictionless tabular inspection.
+Keywords: Civic Technology · Public Dashboard · Geospatial Visualization · Usability Evaluation · Open Data.
+
+1
+
+Introduction
+
+Civic engagement in public infrastructure governance has emerged as an indispensable cornerstone of transparent, accountable, and participatory regional development [2, 5]. Across decentralized administrations and emerging economies,
+
+2
+
+A. S. F. Khayyi and A. Sholiha
+
+municipal governments allocate substantial capital budgets to critical public
+works—such as road resurfacing, flood mitigation canals, bridge renewals, and
+primary healthcare centers [12]. Ordinary citizens have a vital and immediate
+stake in these civil works, requiring accessible information to navigate daily commuting routes, evaluate public service delivery, and monitor whether municipal
+tax expenditures translate into tangible community assets [13,16]. However, citizens seeking to discover local projects and track their execution progress confront
+pervasive information barriers [2, 13].
+In regional administrations such as Lamongan Regency, East Java, statutory
+disclosures published via municipal e-procurement portals (e.g., LPSE Kabupaten Lamongan) and open government data repositories (e.g., Satu Data Lamongan) sequester public works data in static tabular registries, fragmented
+spreadsheets, or dense PDF tender documents [12,16]. These legacy tabular formats strip away geographic context and spatial proximity, forcing citizens to
+manually sift through hundreds of uncoordinated textual rows without an intuitive means to discern which construction projects impact their immediate
+neighborhood or whether work has legitimately commenced on the ground.
+A more acute cognitive and usability bottleneck identified during preliminary field observations is the prevalent conflation among three distinct operational dimensions: physical milestone progress, calendar duration elapsed, and
+field reporting recency [13,16]. Preliminary field observations conducted between
+August and September 2024 involved 12 civic community members and local
+residents in Lamongan examining municipal public works information on LPSE
+Kabupaten Lamongan and Satu Data Lamongan, the two primary official disclosure platforms referenced above. These observations were conducted as semistructured, task-based sessions, in which participants were asked to locate and
+interpret information on a specific ongoing project while researchers recorded
+their verbal reasoning and navigation behavior. These sessions revealed two severe cognitive breakdowns:
+1. Duration-as-Progress Fallacy: Nine out of 12 participants erroneously
+assumed that elapsed calendar time represented physical progress. When inspecting an ongoing road project showing “75% elapsed duration” alongside
+“60% physical progress,” participants intuitively concluded that the project
+was on track, failing to recognize a critical 15% execution delay [4].
+2. Ambiguity over Stale and Missing Data: Official disclosures lacked
+visual freshness indicators. When progress updates lagged by 3–5 months,
+citizens could not discern whether projects were actively ongoing, quietly
+halted, or completed; missing progress fields were frequently assumed to
+denote project cancellation or 0% work [11].
+To overcome the communicative limitations of raw spreadsheets, municipal
+agencies and smart city platforms have increasingly transitioned toward visual
+dashboards featuring interactive geographic maps and graphical charts [9, 15].
+Nonetheless, existing civic dashboard implementations have predominantly been
+driven by superficial interface aesthetics (“dashboard gloss”) rather than rigorous
+
+List-Based vs. Map-and-Timeline Project Information
+
+3
+
+human-computer interaction (HCI) evaluation grounded in user cognitive comprehension tasks [5, 6]. Current literature in open government data frequently
+evaluates portals through technical interoperability, metadata completeness, or
+general citizen satisfaction surveys, largely ignoring how specific visual representations influence the cognitive speed and accuracy of non-expert citizens during
+actual information processing [10, 13]. Deploying rich cartographic layers and
+visual widgets without task-based empirical grounding introduces substantial
+cognitive trade-offs: while interactive maps excel at synoptic spatial orientation,
+they introduce interaction friction—such as panning, zooming, marker occlusion, and visual clutter—that actively degrades performance on simple, discrete
+attribute lookups [7, 11]. Consequently, uncalibrated visual complexity risks disorienting citizens rather than empowering them.
+This gap—the absence of task-based empirical evidence on how visual representation affects citizen cognitive performance—motivates the present study.
+To address it, this paper proposes and evaluates CivicTrack, an integrated
+municipal monitoring platform designed around Cognitive Fit Theory [4]. CivicTrack introduces a synchronized multi-representation architecture that harmonizes an interactive geospatial map (for spatial boundary and cluster scoping), a
+dual-progress chronological timeline visualizer (explicitly decoupling contractual
+duration from physical milestone progress with clear reporting recency indicators), and a structured, filterable list view (for direct attribute retrieval). We
+investigate the central research question: Does an integrated map-and-timeline
+interface significantly improve citizen accuracy and efficiency in understanding
+project locations, physical progress, and schedule delays compared to a conventional list-based presentation?
+Utilizing a controlled benchmark dataset of 20 realistic public infrastructure
+projects modeled on verified municipal capital works in Lamongan Regency, this
+study establishes three primary contributions:
+1. A formal mathematical
+formulation decoupling physical milestone compleP
+tion (Pphysical =
+wk ck ) from calendar duration (Telapsed ) with an unambiguous schedule variance metric (∆) and strict priority state classification
+rules.
+2. A counterbalanced within-subjects crossover pilot experiment (N = 16)
+methodologically separating continuous completion time (paired t-tests) from
+paired binary accuracy (exact McNemar tests) across four core civic information retrieval tasks.
+3. An empirical assessment of citizen cognitive interpretations under missing
+and stale reporting conditions, formulating actionable design principles for
+civic transparency platforms.
+
+2
+
+Related Work
+
+The empirical study of public project dashboard comprehension intersects four
+major domains of research: open government data usability, cognitive fit and vi-
+
+4
+
+A. S. F. Khayyi and A. Sholiha
+
+sual taxonomies, geospatial visualization in civic decision-making, and temporal
+project progress modeling under missing or delayed disclosures.
+2.1
+
+Public Project Dashboards and Citizen Comprehension
+
+Digital transparency portals are widely heralded as mechanisms to mitigate
+information asymmetry between public agencies and citizens [2, 5, 8]. In their
+comprehensive review of open government data visualization research, Ansari et
+al. [2] emphasized that raw disclosure fails to achieve civic utility unless accompanied by task-tailored analytical tools that prevent cognitive overload. Matheus et
+al. [12] formulated design principles for digital transparency in smart governance,
+noting that portals must support structured inquiry rather than passive data exposure. In their user-centred evaluation of 41 national portals, Nikiforova and
+McBride [13] revealed that most municipal implementations remain restricted
+to passive “data dumps,” offering static tables that fail to support analytical
+inquiry by lay citizens.
+Chokki et al. [5] conducted controlled experiments demonstrating that interactive dashboards significantly enhance citizen comprehension compared to
+isolated charts; however, they noted that multi-component dashboards trigger visual fragmentation if navigational hierarchies are ambiguous. Furthermore, Zhao
+and Fan [16] and Kempeneer and Wolswinkel [8] observed that while citizen demand for local government data is high, persistent usability barriers frequently
+discourage ongoing citizen monitoring. Crucially, computer-mediated presentations must provide transparent task-oriented structures, as disorienting visual
+complexity can actively diminish perceived administrative competence.
+2.2
+
+Cognitive Fit Theory and Visualization Usability
+
+The theoretical foundation explaining how representation formats interact with
+task types is grounded in Cognitive Fit Theory, recently extended and evaluated
+in multi-view data visualization environments by Bačić and Henry [4]. Under
+this framework, problem-solving performance is optimized when the representation of information matches the cognitive task: spatial tasks demand perceptual,
+holistic graphical displays, whereas symbolic, discrete lookups are best supported
+by structured alphanumeric tables [4, 15]. In the visualization literature, Zytek
+et al. [17] and Soni et al. [15] analyzed dashboard design spaces and multi-view
+coordination, demonstrating that combining multiple visualization modalities introduces cognitive switching costs when users must coordinate views. Standardized usability evaluation protocols, such as those demonstrated by Heitkemper
+et al. [6], provide validated instruments for quantifying user interaction friction
+across comparative modalities.
+2.3
+
+Geospatial Visualization versus Tabular List Presentations
+
+In the spatial domain, cartographic and geographic information systems (GIS)
+research has rigorously analyzed the performance trade-offs between cartographic
+
+List-Based vs. Map-and-Timeline Project Information
+
+5
+
+maps and structured alphanumeric tables. In the spatial visualization literature,
+recent empirical studies categorize visual analysis into elementary tasks (locating specific attribute values for an individual known entity) and synoptic tasks
+(discerning spatial clusters, spatial relations, and regional distributions) [9, 10].
+This theoretical framework posits that spatial visual representations are optimized for synoptic synthesis, whereas tabular lists minimize cognitive retrieval
+costs for discrete elementary lookups.
+This dichotomy was corroborated empirically by Maceli and Yu [11], whose
+comparative usability evaluation reported that while interactive map interfaces
+accelerated spatial pattern recognition and regional scoping relative to tabular formats, structured spreadsheet tables yielded superior accuracy and shorter
+completion times when participants extracted exact quantitative attributes. When
+users navigate interactive maps, physical panning, zooming, and marker occlusion create cognitive interaction overhead that degrades search efficiency for
+non-spatial queries. In the context of participatory urban governance, Lehto
+et al. [10], Kyttä et al. [9], and Johnson et al. [7] demonstrated that while spatial maps democratize geographic exploration, non-expert citizens struggle when
+complex thematic layers compete for visual attention. Consequently, visual representations that seduce users with cartographic sophistication risk obscuring
+underlying administrative data.
+
+2.4
+
+Timeline Usability and Schedule Representation
+
+Visualizing chronological project progress requires representing durations, dependencies, and temporal milestones. Human working memory struggles to reconstruct temporal overlaps and pacing from raw alphanumeric date columns
+in spreadsheets [15]. In project scheduling, Ayalew [3] evaluated deterministic
+and fuzzy Earned Value Management (EVM) methods for public infrastructure
+projects, underscoring that measuring physical progress against planned schedule baselines requires explicit variance tracking rather than simplistic duration
+comparisons.
+
+2.5
+
+Interpretation of Missing and Stale Governance Data
+
+A persistent challenge in public infrastructure monitoring is data latency and
+reporting gaps. Visual displays that omit explicit visual indicators for missing
+data frequently lead lay citizens to make negative default inferences, interpreting missing data as administrative failure or canceled works [11]. In civil infrastructure governance, Ambituuni [1] and Saelawong et al. [14] investigated the
+Infrastructure Transparency Initiative (CoST) through principal-agent theory,
+emphasizing that publishing open data is an institutional enabler rather than
+an automatic remedy; without reliable, timely data, public disclosures fail to
+generate accountability.
+
+6
+
+A. S. F. Khayyi and A. Sholiha
+
+2.6
+
+Research Gap and Positioning
+
+Collectively, prior work treats these three representational paradigms in isolation: dashboard usability studies [2,5,12,13] evaluate aggregate interface comprehension without decomposing task type; map-versus-table studies [9–11] quantify
+spatial-versus-tabular trade-offs but omit temporal schedule reasoning; and timeline visualization research [3,15] addresses duration representation without linking it to spatial or tabular retrieval. No prior study empirically compares all three
+representations—map, timeline, and table—within a single counterbalanced task
+battery on real municipal infrastructure data, nor explicitly measures how citizens misinterpret stale or missing progress fields. This paper addresses that
+gap by integrating Cognitive Fit Theory [4] with a task-differentiated, withinsubjects evaluation of CivicTrack.
+
+3
+
+Methodology
+
+3.1
+
+Research Question and Differentiated Hypotheses
+
+This study investigates the following primary research question: Does an integrated map-and-timeline interface improve citizen accuracy and efficiency in
+understanding project locations, physical progress, and schedule delays compared
+to a conventional list-based presentation?
+Because completion time (continuous ratio variable, seconds) and comprehension accuracy (paired binary outcome, 0/1) represent distinct operational
+dimensions evaluated under separate statistical tests (paired t-tests and exact
+McNemar tests, respectively), we formulate separated operational hypotheses:
+– H1 (Spatial Scoping): For spatial discovery tasks, the map interface will
+achieve significantly shorter completion times (H1a ) and higher descriptive
+or statistical retrieval accuracy (H1b ) by eliminating serial scanning fatigue.
+– H2 (Schedule Pacing): For schedule delay detection, the dual-bar timeline interface will yield significantly faster completion times (H2a ) and significantly higher delay identification accuracy (H2b ) by mitigating the durationwork equivalence heuristic.
+– H3 (Discrete Lookups): For discrete metadata lookups (latest field update
+date), the tabular list will achieve significantly faster response times (H3a )
+and superior descriptive accuracy (H3b ) due to the absence of multi-view
+spatial navigation overhead.
+3.2
+
+System Architecture and Technical Stack
+
+The empirical evaluation was conducted using CivicTrack, an end-to-end municipal infrastructure monitoring platform engineered for the 27 subdistricts
+(kecamatan) of Lamongan Regency, East Java. The technical stack comprises:
+(1) Backend Services engineered in Python 3.11 with FastAPI for REST endpoints, Pydantic v2 schema validation, and SQLite/PostgreSQL for relational
+
+List-Based vs. Map-and-Timeline Project Information
+
+7
+
+spatial storage; (2) Frontend Application built in React 18, TypeScript, and
+responsive CSS, integrating Leaflet.js for vector boundary rendering and marker
+clustering; and (3) Analytical Engine calculating elapsed duration, milestoneweighted physical completion, and schedule variance (∆). Figure 1 illustrates
+the system architecture, component dataflows, and verification boundaries.
+
+Fig. 1. CivicTrack system architecture, component dataflow, and experimental testing
+integration across Condition A (List View) and Condition B (Map and Timeline Explorer).
+
+3.3
+
+Stimulus Design and Feature Parity Analysis
+
+To enable rigorous comparative testing, two controlled visual modalities were
+implemented with identical underlying project data, illustrated in Fig. 2:
+
+Fig. 2. Visual stimuli for comparative evaluation: (a) Condition A (Tabular List baseline modeled on municipal open data portals) and (b) Condition B (CivicTrack interactive Map-and-Timeline Explorer).
+
+1. Condition A (List-Based View Baseline): A structured, searchable,
+and sortable tabular presentation displaying project code, name, subdistrict, budget, timeline dates, elapsed calendar percentage, physical milestone
+completion percentage, latest update date, and standard status pills (“InProgress”, “Selesai”).
+
+8
+
+A. S. F. Khayyi and A. Sholiha
+
+2. Condition B (Map-and-Timeline Explorer): An integrated dual-pane
+interactive environment. The top/left pane renders a Leaflet-based map
+with subdistrict boundaries and color-coded status pins (Green = Completed, Amber = On-Track, Red = Delayed, Blue = Not Started, Gray
+= Incomplete Data). Clicking a pin anchors the viewport and highlights
+the corresponding project in the bottom/right chronological timeline pane,
+which renders dual horizontal bars displaying scheduled baseline duration
+versus actual milestone completion, marked with a vertical reference line
+(Tref = 15 October 2024) and explicit deviation badges (e.g., “-19.1% Terlambat”).
+Feature Parity and Equivalence: Both interfaces provide equivalent basic
+tools: an alphanumeric keyword search input and a subdistrict filter dropdown.
+However, as shown in Fig. 2, Condition B visually surfaces explicit delay tags
+(“Terlambat”) derived from automated variance logic, whereas Condition A displays conventional municipal portal conventions where all active projects show
+uniform “In-Progress” badges. This deliberate distinction mirrors real-world egovernment conditions and directly evaluates whether citizens can detect delays
+when relying solely on numerical columns versus explicit graphical variance cues.
+3.4
+
+Reference Dataset Construction (20 Synthetic Projects)
+
+A master benchmark dataset of 20 public infrastructure projects was synthesized
+directly from verified municipal capital works in Lamongan Regency (covering
+road resurfacing, bridge reconstruction, flood drainage sluice gates, and health
+clinics). The audit reference date was fixed at 15 October 2024 (Tref ).
+Mathematical Formulations and Baseline Assumptions: Linear calendar
+time elapsed is adopted as the scheduled progress baseline:
+
+
+
+Tref − Tstart
+× 100
+(1)
+Telapsed = max 0, min 100,
+Tend − Tstart
+Physical milestone progress is formulated as the sum of weighted engineering
+packages:
+m
+X
+Pphysical =
+wk · ck
+(2)
+k=1
+
+P
+where wk denotes the engineering weight of work package k such that
+wk =
+100%, and ck ∈ [0, 1] represents inspected physical completion. Schedule variance
+(∆) is defined as:
+∆ = Pphysical − Telapsed
+(3)
+Strict Priority Classification Rules: To ensure absolute mathematical consistency, project status is assigned according to the following mutually exclusive
+
+List-Based vs. Map-and-Timeline Project Information
+
+9
+
+hierarchy: (1) Missing Data: Pphysical is null; (2) Not Started: Tref ≤ Tstart
+and Pphysical = 0.0%; (3) Completed: Pphysical = 100.0%; (4) Overdue Finish: Telapsed = 100.0% (contract deadline passed) and Pphysical < 100.0% (applies to Project TKG-WNK-001, where contract ended 30/09/2024 with 92% completion; deadline expiration overrides the standard on-track band); (5) Severely
+Delayed: ∆ < −20.0%; (6) Delayed: −20.0% ≤ ∆ < −10.0%; (7) On-Track:
+−10.0% ≤ ∆ < 0.0%; (8) Ahead: ∆ ≥ 0.0%; and (9) Stale Data Flag: asserted
+if (Tref − Tupdate ) > 90 days.
+The 20 projects were balanced into two equivalent subsets: Set A (10 projects)
+and Set B (10 projects). Both sets share identical category profiles (6 roads, 2
+drainage systems, 1 bridge, 1 public building) and balanced condition categories
+(2 on-track, 4 delayed/severely delayed/overdue, 2 completed, 1 not started, 1
+missing/stale).
+3.5
+
+Experimental Protocols
+
+Study 1: Baseline Information Validation (Systemic Audit): Prior to
+user testing, an automated verification script audited all 20 benchmark records,
+confirming 100% data fidelity across backend APIs and frontend presentation
+layers, ensuring no logic discrepancies between conditions.
+Study 2: Controlled Comprehension Experiment (Pilot Study): Sixteen
+participants (N = 16; 8 male, 8 female; aged 21–29 years, M = 24.2, SD = 2.6)
+were recruited representing target civic users with varied educational and digital
+literacy backgrounds. Testing was conducted in a controlled laboratory setting on
+identical 15.6-inch Full HD (1920×1080) laptops running Google Chrome v128
+with external optical mice. Participants completed a 10-minute standardized
+familiarization tutorial using two dummy projects before formal testing.
+A counterbalanced within-subjects crossover design (2 × 2 × 4) was deployed:
+Group 1 (n = 8) performed Tasks 1–4 on Condition A (Set A) then Condition
+B (Set B); Group 2 (n = 8) performed Tasks 1–4 on Condition B (Set A) then
+Condition A (Set B). Methodological Note: While counterbalancing reduces order
+and fatigue effects, it cannot guarantee their complete elimination.
+The experimental tasks evaluated core civic scenarios with balanced target
+questions:
+– Task 1 (Location Retrieval): Set A: “Identify all public infrastructure
+projects currently situated within Kecamatan Karangbinangun” (Key: Project
+13, KBN-KUR-001). Set B: “Identify all public infrastructure projects situated
+in Kecamatan Lamongan” (Key: Project 14, LMG-BNJ-001).
+– Task 2 (Schedule Delay Identification): “Identify which project in the
+assigned set is experiencing an execution delay relative to its scheduled milestone target.” (Set A Key: SGO-GND-001; Set B Key: SMB-RDR-001).
+– Task 3 (Update Recency Lookup): “State the calendar date of the latest field inspection update for Project [Code] and verify whether this date
+
+10
+
+A. S. F. Khayyi and A. Sholiha
+
+matches the contract deadline.” (Set A Key: 10/10/2024 ̸= 30/11/2024; Set
+B Key: 11/10/2024 ̸= 31/10/2024).
+– Task 4 (Physical vs. Time Progress): “Assess Project [Code] where
+84.1% of calendar time has elapsed and physical completion is 67.0%. Determine whether this project is on schedule, delayed, or completed.” (Key:
+Delayed by -17.1%).
+Timing and Moderator Rules: Telemetry recorded completion time automatically from the initial click on “Start Task” until final answer submission.
+Completion times were logged for all completed trials; incorrect answers and
+prompted trials were logged in error and assistance tallies. The test moderator remained strictly passive; intervention was permitted only if a participant
+exhibited complete inactivity exceeding 60 seconds, using the standardized neutral prompt: “Please refer to the progress indicators on the screen to answer the
+question.”
+
+Study 3: Missing and Stale Data Perception Test: Immediately following
+Study 2, participants evaluated three edge cases: (1) Case 1 (KTG-PCN-001):
+Physical progress is missing (null), last update > 150 days ago (Telapsed =
+84.8%; correct interpretation: unverified/missing; construction status cannot be
+deduced without fresh synchronization); (2) Case 2 (LMG-SKR-001): Progress
+68.0%, update 117 days ago (Telapsed = 81.1%; correct interpretation: 68.0%
+represents June progress; current October status is uncertain); and (3) Case
+3 (KGN-KRN-001): Progress 55.0% reported on 15 June 2024, 122 days prior
+(Tref = 15 October 2024, Telapsed = 74.8%; correct interpretation: On 15 June,
+elapsed time was 34.7%, meaning the project was ahead in June; however, its
+October status is unverifiable without current inspection reports).
+
+3.6
+
+Quality Standards (ISO/IEC/IEEE 29119 and ISO/IEC 25010)
+
+To guarantee production stability, eliminate software defects as confounders, and
+validate civic usability, CivicTrack was verified through international engineering
+standards:
+1. ISO/IEC/IEEE 29119 (Software Testing): Implemented formal test
+design techniques (black-box boundary value analysis and equivalence partitioning) covering API endpoints, calculation modules, and coordinate rendering. Automated test suites executed 38 Pytest backend cases and 57 Vitest
+frontend suites, achieving a 100% pass rate across all 95 executed test cases.
+2. ISO/IEC 25010 (System and Software Quality Models): User Acceptance Testing (UAT) evaluated Functional Suitability (Completeness, Correctness, Appropriateness) and Usability (Appropriateness Recognizability,
+Learnability, Operability, User Error Protection, UI Aesthetics, and Temporal Clarity).
+
+List-Based vs. Map-and-Timeline Project Information
+
+11
+
+Table 1. Representative Sample of Benchmark Public Infrastructure Projects in Lamongan Regency (Ground Truth Baseline at Tref = 15 October 2024).
+Code
+
+Category Project Scope
+
+SKD-SKD-001 Road
+SGO-GND-001 Road
+SKR-SKR-001 Road
+TKG-WNK-001 Road
+KBN-KUR-001 Water
+LMG-BNJ-001 Building
+SMB-RDR-001 Road
+KTG-PCN-001 Water
+
+Subdistrict
+
+Budget Elap% Phys%
+
+∆% Status
+
+Peningkatan Sukodadi - Sumberwudi
+Sukodadi
+7.92 B 83.2% 82.0% -1.2% On-Track
+Rekonstruksi Sugio - Kedungpring
+Sugio
+6.45 B 94.1% 75.0% -19.1% Delayed
+Peningkatan Bluluk - Sukorame
+Sukorame
+5.15 B 70.4% 45.0% -25.4% Sev. Delayed
+Peningkatan Tikung - Kembangbahu
+Tikung
+4.60 B 100.0% 92.0% -8.0% Overdue Fin.
+Pintu Air & Retensi Kuro Bengawan Karangbinangun 12.85 B 100.0% 100.0% 0.0% Completed
+Gedung Labkesda BSL-2 Lamongan
+Lamongan
+6.85 B 100.0% 100.0% 0.0% Completed
+Rekonstruksi Mantup - Sambeng
+Sambeng
+8.10 B 84.1% 67.0% -17.1% Delayed
+Normalisasi Kali Asin (Stale 157d)
+Kalitengah
+4.50 B 84.8%
+Null N/A Missing Data
+
+Set
+A
+A
+A
+A
+A
+B
+B
+A
+
+Table 2. Quantitative Performance Comparison Across Tasks (N = 16): Completion
+Time (Paired t-Test) and Binary Comprehension Accuracy (Exact McNemar Test).
+Task Description
+
+Condition
+
+Correct Acc.% McNemar p Mean (s) Median SD t(15) Time Sig.
+
+Task 1: Spatial Retrieval
+
+Condition A (List)
+Condition B (Map)
+
+13 / 16 81.2%
+16 / 16 100.0%
+
+0.250
+
+33.15
+14.53
+
+33.30
+14.30
+
+3.22
+18.48 p < 0.001
+1.76
+
+Task 2: Delay Detection
+
+Condition A (List)
+Condition B (Timeline)
+
+8 / 16 50.0%
+15 / 16 93.8%
+
+0.016
+
+44.79
+27.87
+
+44.50
+27.75
+
+4.47
+16.79 p < 0.001
+2.34
+
+Task 3: Recency Lookup
+
+Condition A (List)
+15 / 16 93.8%
+Condition B (Map-Time) 13 / 16 81.2%
+
+0.625
+
+12.28
+22.97
+
+12.05
+22.70
+
+1.49
+-14.16 p < 0.001
+2.33
+
+Task 4: Progress vs. Time
+
+Condition A (List)
+Condition B (Timeline)
+
+0.008
+
+49.67
+34.44
+
+49.60
+34.25
+
+4.38
+16.82 p < 0.001
+2.99
+
+7 / 16 43.8%
+15 / 16 93.8%
+
+Fig. 3. Task completion time (seconds) and comprehension accuracy rate across Tasks
+1–4 between Condition A (List-Based) and Condition B (Map-and-Timeline) (N = 16).
+
+4
+
+Results and Discussion
+
+4.1
+
+Benchmark Reference Dataset
+
+Table 1 outlines a representative sample of 8 benchmark public infrastructure
+projects across Lamongan Regency, illustrating categories, status classifications,
+and priority rules. (The complete 20-project dataset is available in the open
+project repository).
+4.2
+
+Comparative Task Performance Analysis (Study 2)
+
+The quantitative outcomes of the 128 trial runs (16 participants × 4 tasks ×
+2 conditions) are synthesized in Table 2 and illustrated in Fig. 3.
+Spatial Processing vs. Tabular Scanning (Task 1): Task 1 strongly corroborated hypothesis H1a : the interactive map significantly accelerated spatial
+
+12
+
+A. S. F. Khayyi and A. Sholiha
+
+project retrieval by 57% (median 14.30 s vs. 33.30 s; paired t(15) = 18.48, p <
+0.001). For retrieval accuracy (H1b ), Condition B achieved a descriptive gain
+from 81.2% (13/16) to 100.0% (16/16). Because accuracy represents paired binary data, an exact two-sided McNemar test was evaluated across discordant
+pairs (b = 0, c = 3), yielding p = 0.250. While choropleth visual clustering
+eliminated serial scanning slips, the accuracy increase remains a descriptive improvement and does not reach statistical significance within this pilot cohort
+(N = 16).
+
+Mitigation of Schedule Delay Heuristics (Tasks 2 and 4): Tasks 2 and 4
+supported hypotheses H2a and H2b , showing statistically verified gains in both
+completion time and comprehension accuracy. For task efficiency (H2a ), the dualbar timeline significantly cut completion duration by 15–17 s (Task 2: paired
+t(15) = 16.79, p < 0.001; Task 4: paired t(15) = 16.82, p < 0.001). Crucially, the
+paired binary accuracy gains were statistically confirmed via exact McNemar
+tests (H2b ): delay detection accuracy rose significantly from 50.0% (8/16) to
+93.8% (15/16) in Task 2 (p = 0.016; discordant pairs b = 0, c = 7), and from
+43.8% (7/16) to 93.8% (15/16) in Task 4 (p = 0.008; discordant pairs b = 0, c =
+8). In the list condition, participants repeatedly fell victim to the duration-work
+equivalence heuristic, misinterpreting high elapsed time as satisfactory execution.
+The dual timeline neutralized this bias.
+
+Interface Complexity Overhead in Elementary Lookups (Task 3): Importantly, Task 3 corroborated H3a , exposing the operational tax of spatial visual
+interfaces. When locating a single alphanumeric attribute—the latest field inspection update date—the tabular list was significantly faster (median 12.05 s
+vs. 22.70 s; paired t(15) = −14.16, p < 0.001). For accuracy, the tabular list
+yielded a higher descriptive score (93.8% [15/16] vs. 81.2% [13/16]), with an exact McNemar test yielding p = 0.625 (discordant pairs: b = 3, c = 1). While the
+accuracy difference was not statistically significant at N = 16, the list format
+imposed lower interaction friction. In the map-and-timeline condition, participants clicked markers, parsed dialogs, and navigated multiple visual panes, with
+two participants confusing the contract completion deadline with the latest inspection date. This confirms Maceli and Yu’s findings [11]: visual complexity
+degrades performance on elementary lookups.
+
+4.3
+
+Qualitative Analysis and Cognitive Failure Modes
+
+Video recordings and think-aloud transcripts were independently coded by two
+researchers using structured thematic analysis (inter-rater agreement: Cohen’s
+κ = 0.88). Observed failure modes and anonymized participant statements are
+categorized in Table 3.
+
+List-Based vs. Map-and-Timeline Project Information
+
+13
+
+Table 3. Qualitative Failure Modes, Cognitive Mechanisms, and UI Remediation
+Strategies.
+Task Context
+
+Observed Failure Mode
+
+Count (N = 16) Participant Statement & Mechanism
+
+Task 1: Spatial Retrieval Overlooked projects located 3 / 16 (18.8%) “I missed the Sukodadi row because
+the text lines blurred together.” (P06)
+in target subdistrict on first
+— Tabular serial scanning fatigue.
+pass.
+Task 2: Delay Detection
+
+Relied on “In-Progress” text 8 / 16 (50.0%) “The badge says In-Progress, so
+I thought it was progressing fine.”
+pill, ignoring negative 19.1%
+(P04) — Semantic priming and duvariance.
+ration heuristic.
+
+Task 3: Recency Lookup Reported contract deadline 3 / 16 (18.8%) “I saw a date at the bottom of the
+card and thought that was the update instead of inspection
+date.” (P09) — Modal visual competimestamp.
+tition.
+Task 4: Progress vs. Time Stated “elapsed time is 84%, 9 / 16 (56.3%) “84% means it’s almost done, right?
+so project is almost comOh, the actual progress is only 67%.”
+pleted.”
+(P11) — Cognitive substitution.
+Study 3: Missing Data
+
+Inferred null progress indi- 5 / 16 (31.2%) “The cell was empty, so I assumed
+cated project was canceled or
+the government canceled it.” (P01) —
+0%.
+Negative default inference.
+
+Table 4. Citizen Cognitive Interpretation of Missing and Stale Infrastructure Data
+(N = 16).
+Case Code
+
+Data Anomaly Condition
+
+Correct Interpretation
+
+Acc. (n/16) Acc. %
+
+Case 1: KTG-PCN-001 Physical Progress = Null, Up- Recognized data deficiency; status
+date > 150 d (Telapsed = 84.8%) cannot be verified without sync
+(n = 11).
+
+11 / 16
+
+68.8%
+
+Case 2: LMG-SKR-001 Progress 68.0%, Update 117 d Identified that 68% was reported
+ago (Telapsed = 81.1%)
+in June; current status uncertain
+(n = 10).
+
+10 / 16
+
+62.5%
+
+Case 3: KGN-KRN-001 Progress 55.0% reported on 15 Noted June report cannot confirm
+June, 122 d ago (Telapsed = October status (n = 12); status
+74.8%)
+unverifiable.
+
+12 / 16
+
+75.0%
+
+Fig. 4. Distribution of participant cognitive interpretations under missing and stale
+reporting conditions (Study 3, N = 16).
+
+4.4
+
+Evaluation of Missing and Stale Data Perception (Study 3)
+
+Table 4 and Fig. 4 summarize citizen interpretations across the three anomaly
+scenarios.
+The outcomes of Study 3 demonstrate that ambiguity breeds false certainty:
+31.2% (5/16) of participants inferred project cancellation from blank cells, while
+
+14
+
+A. S. F. Khayyi and A. Sholiha
+
+Fig. 5. System Usability Scale (SUS) individual score distribution and item ratings
+alongside ISO/IEC 25010 User Acceptance Testing (UAT) quality profile (N = 16).
+
+37.5% (6/16) uncritically accepted 4-month-old data as current reality. Civic
+platforms must implement active freshness badges (e.g., amber warning when
+updates exceed 60 days) to prevent public misinformation [1, 11].
+4.5
+
+System Usability Scale (SUS) and Software Quality (ISO/IEC
+25010)
+
+Usability of the CivicTrack integrated platform (Condition B compared to baseline portal experience) was evaluated using the 10-item System Usability Scale
+(SUS) [6, 17]:
+
+
+X
+X
+SU S = 2.5 × 
+(Si − 1) +
+(5 − Sj )
+(4)
+i∈odd
+
+j∈even
+
+where Sk ∈ {1, . . . , 5} denotes the Likert response for question k.
+As shown in Fig. 5, CivicTrack achieved an overall mean SUS score of 82.50
+(SD = 4.56, median 82.50, range 75.0–90.0). This corresponds to Grade A,
+ranks at the 92.5th percentile of evaluated software systems, and garners an
+adjective rating of “Excellent” [6]. Ratings were exceptionally high for ease of
+navigation (Q3 mean: 4.69/5.00) and learnability (Q7 mean: 4.56/5.00), while
+operational complexity was minimal (Q2 mean: 1.63/5.00).
+In the concurrent ISO/IEC 25010 UAT audit, CivicTrack attained an overall
+quality rating of 90.88% (727/800 points, Sangat Layak). Dimension satisfaction reached 95.00% for UI Aesthetics, 93.75% for Appropriateness Recognizability, 92.50% for Temporal Clarity, and 91.25% for Functional Completeness. All
+95 executed automated test cases (38 Pytest backend and 57 Vitest frontend)
+passed successfully.
+
+5
+
+Conclusion
+
+This pilot study established an empirical evaluation comparing a conventional
+list-based tabular portal against an integrated map-and-timeline interface. Using
+a 20-project benchmark modeled on Lamongan Regency, our findings demonstrate clear task-dependent trade-offs:
+
+List-Based vs. Map-and-Timeline Project Information
+
+15
+
+1. Spatial Scoping: Geospatial choropleth maps significantly accelerate geographic retrieval by 57% (p < 0.001), accompanied by a descriptive accuracy
+gain from 81.2% to 100.0% (p = 0.250).
+2. Schedule Comprehension: Synchronized dual-bar timelines significantly
+reduce completion time (p < 0.001) and statistically elevate delay detection
+accuracy from 50.0% to 93.8% (p = 0.016).
+3. Complexity Penalty: For discrete alphanumeric lookups, tabular lists remain significantly faster (p < 0.001), with descriptive accuracy favoring the
+list format (93.8% vs. 81.2%, p = 0.625).
+4. Data Latency Vulnerabilities: Omitted or stale data leads over 30% of
+citizens to erroneous inferences, mandating explicit visual staleness indicators.
+Boundaries of Claims and Limitations: This study evaluated a pilot cohort
+of N = 16 participants across 128 trials; while statistically robust for cognitive
+processing metrics, it represents preliminary behavioral evidence. Crucially, information comprehension is an interface usability metric, not causal
+proof of corruption reduction or institutional accountability [1, 14].
+Civic maps and timelines facilitate cognitive access; converting this access into
+systemic accountability depends on administrative responsiveness, legal whistleblower protections, and civic empowerment. Future work will extend testing to
+longitudinal civic deployments across East Java, investigating adaptive hybrid
+interfaces combining quick-lookup drawers with spatial timeline overlays.
+Acknowledgments. The authors thank the Department of Informatics and Computer
+Engineering, PENS, and Diskominfo Kabupaten Lamongan for providing administrative and spatial data references.
+Disclosure of Interests. The authors have no competing interests to declare that
+are relevant to the content of this article.
+
+References
+1. Ambituuni, A.: Infrastructure transparency initiative and anticorruption in public infrastructure
+projects: a principal–agent perspective to the antecedents that enable (or hinder) the effectiveness of transparency. Engineering, Construction and Architectural Management 32(1), 1–24
+(2025). doi:10.1108/ECAM-02-2025-0273
+2. Ansari, B., Barati, M., Martin, E.G.: Enhancing the usability and usefulness of open government
+data: A comprehensive review of the state of open government data visualization research.
+Government Information Quarterly 39(1), 101657 (2022). doi:10.1016/j.giq.2021.101657
+3. Ayalew, G.M.: Developing fuzzy-based earned value analysis model for estimating the performance of construction projects: A case of selected public building projects in ethiopia. Cogent
+Engineering 11(1), 2348210 (2024). doi:10.1080/23311916.2024.2348210
+4. Bačić, D., Henry, R.: Advancing our understanding and assessment of cognitive effort in the cognitive fit theory and data visualization context: Eye tracking-based approach. Decision Support
+Systems 163, 113862 (2022). doi:10.1016/j.dss.2022.113862
+5. Chokki, A.P., Simonofski, A., Frénay, B., Vanderose, B.: Engaging citizens with open government data: The value of dashboards compared to individual visualizations. Digital Government:
+Research and Practice 3(4), 1–25 (2022). doi:10.1145/3558099
+6. Heitkemper, E.M., Manteuffel, B., Rogers, C., Velez, M., Patel, R.: The solutions in health
+analytics for rural equity across the nation (share-nw) dashboard: Usability evaluation. JMIR
+Human Factors 11, e51666 (2024). doi:10.2196/51666
+
+16
+
+A. S. F. Khayyi and A. Sholiha
+
+7. Johnson, D.N., Raymond, C.M., Fagerholm, N., Lehto, C.: Enhancing climate adaptation: Integrating place-based risk perceptions and coastalscape values using q+ppgis. Landscape and
+Urban Planning 248, 105197 (2024). doi:10.1016/j.landurbplan.2024.105197
+8. Kempeneer, S., Wolswinkel, J.: Rethinking open government data for citizen participation. an
+introduction to a special issue. Information Polity 28(2), 163–173 (2023). doi:10.3233/IP-239008
+9. Kyttä, M., Randrup, T., Sunding, A., Rossi, S., Harsia, E., Palomäki, J., Kajosaari, A.: Prioritizing participatory planning solutions: Developing place-based priority categories based
+on public participation gis data. Landscape and Urban Planning 239, 104868 (2023). doi:
+10.1016/j.landurbplan.2023.104868
+10. Lehto, C., Fagerholm, N., Raymond, C.M.: Landscape usage by recreationists is shaped by
+availability: Insights from a national ppgis survey in sweden. Landscape and Urban Planning
+227, 104519 (2022). doi:10.1016/j.landurbplan.2022.104519
+11. Maceli, M., Yu, C.: Usability evaluation of an open-source environmental monitoring dashboard.
+Archival Science 20(4), 381–402 (2020). doi:10.1007/s10502-020-09340-1
+12. Matheus, R., Janssen, M., Janowski, T.: Design principles for creating digital transparency in
+government. Government Information Quarterly 38(1), 101550 (2021). doi:10.1016/j.giq.2020.
+101550
+13. Nikiforova, A., McBride, K.: Open government data portal usability: A user-centred usability
+analysis of 41 open government data portals. Telematics and Informatics 58, 101539 (2021).
+doi:10.1016/j.tele.2020.101539
+14. Saelawong, T., Yomnak, T., Chaiwat, T., Poopunpanich, S., Sutuktis, C.: Transparency and budget savings in public procurement: evidence from thailand’s infrastructure transparency initiative (cost). Journal of Financial Crime 31(5), 1152–1168 (2024). doi:10.1108/JFC-10-2023-0282
+15. Soni, P., de Runz, C., Bouali, F., Venturini, G.: A survey on automatic dashboard recommendation systems. Visual Informatics 8(1), 67–79 (2024). doi:10.1016/j.visinf.2024.01.002
+16. Zhao, X., Fan, B.: Digital transparency and citizen participation: Evidence from the online
+crowdsourcing platform of the city of sacramento. Government Information Quarterly 40(4),
+101868 (2023). doi:10.1016/j.giq.2023.101868
+17. Zytek, A., Liu, D., Vaithianathan, R., Veeramachaneni, K.: Sibyl: Understanding and addressing
+the usability challenges of machine learning in high-stakes decision making. IEEE Transactions
+on Visualization and Computer Graphics 28(1), 1161–1171 (2022). doi:10.1109/TVCG.2021.
+3114864
+
+

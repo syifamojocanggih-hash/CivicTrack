@@ -3,27 +3,12 @@
 \providecommand{\urlprefix}{URL }
 \providecommand{\doi}[1]{https://doi.org/#1}
 
-\bibitem{aigner2011visualization}
-Aigner, W., Miksch, S., Schumann, H., Tominski, C.: Visualization of
-  Time-Oriented Data. Human-Computer Interaction Series, Springer (2011).
-  \doi{10.1007/978-0-85729-079-3}
-
 \bibitem{ambituuni2025infrastructure}
 Ambituuni, A.: Infrastructure transparency initiative and anticorruption in
   public infrastructure projects: a principal--agent perspective to the
   antecedents that enable (or hinder) the effectiveness of transparency.
-  Engineering, Construction and Architectural Management  (2025).
-  \doi{10.1108/ECAM-02-2025-0273}
-
-\bibitem{andrienko2003exploratory}
-Andrienko, N., Andrienko, G.: Exploratory spatio-temporal visualization: an
-  analytical review. Journal of Visual Languages \& Computing  \textbf{14}(6),
-  503--541 (2003). \doi{10.1016/S1045-926X(03)00046-6}
-
-\bibitem{andrienko2006exploratory}
-Andrienko, N., Andrienko, G.: Exploratory Analysis of Spatial and Temporal
-  Data: A Systematic Approach. Springer-Verlag Berlin Heidelberg (2006).
-  \doi{10.1007/3-540-31190-4}
+  Engineering, Construction and Architectural Management  \textbf{32}(1),
+  1--24 (2025). \doi{10.1108/ECAM-02-2025-0273}
 
 \bibitem{ansari2022enhancing}
 Ansari, B., Barati, M., Martin, E.G.: Enhancing the usability and usefulness of
@@ -31,33 +16,17 @@ Ansari, B., Barati, M., Martin, E.G.: Enhancing the usability and usefulness of
   data visualization research. Government Information Quarterly
   \textbf{39}(1),  101657 (2022). \doi{10.1016/j.giq.2021.101657}
 
-\bibitem{bangor2008empirical}
-Bangor, A., Kortum, P.T., Miller, J.T.: An empirical evaluation of the system
-  usability scale. International Journal of Human-Computer Interaction
-  \textbf{24}(6),  574--594 (2008). \doi{10.1080/10447310802205776}
+\bibitem{ayalew2024developing}
+Ayalew, G.G., Ayalew, G.M.: Developing fuzzy-based earned value analysis model
+  for estimating the performance of construction projects: A case of selected
+  public building projects in {Ethiopia}. Cogent Engineering  \textbf{11}(1),
+  2348210 (2024). \doi{10.1080/23311916.2024.2348210}
 
-\bibitem{batselier2015evaluation}
-Batselier, J., Vanhoucke, M.: Evaluation of deterministic state-of-the-art
-  forecasting approaches for project duration based on earned value management.
-  International Journal of Project Management  \textbf{33}(7),  1588--1596
-  (2015). \doi{10.1016/j.ijproman.2015.04.003}
-
-\bibitem{bertot2010using}
-Bertot, J.C., Jaeger, P.T., Grimes, J.M.: Using icts to create a culture of
-  transparency: E-government and social media as openness and anti-corruption
-  tools for societies. Government Information Quarterly  \textbf{27}(3),
-  264--271 (2010). \doi{10.1016/j.giq.2010.03.001}
-
-\bibitem{brehmer2017timelines}
-Brehmer, M., Lee, B., Bach, B., Riche, N.H., Munzner, T.: Timelines revisited:
-  A design space and considerations for expressive storytelling. IEEE
-  Transactions on Visualization and Computer Graphics  \textbf{23}(1),
-  211--220 (2017). \doi{10.1109/TVCG.2016.2614803}
-
-\bibitem{brown2014key}
-Brown, G., Kytt{\"a}, M.: Key issues and research priorities for public
-  participation gis (ppgis): A synthesis based on empirical research. Applied
-  Geography  \textbf{46},  122--136 (2014). \doi{10.1016/j.apgeog.2013.11.004}
+\bibitem{bacic2022advancing}
+Ba{\v{c}}i{\'c}, D., Henry, R.: Advancing our understanding and assessment of
+  cognitive effort in the cognitive fit theory and data visualization context:
+  Eye tracking-based approach. Decision Support Systems  \textbf{163},  113862
+  (2022). \doi{10.1016/j.dss.2022.113862}
 
 \bibitem{chokki2022engaging}
 Chokki, A.P., Simonofski, A., Fr{\'e}nay, B., Vanderose, B.: Engaging citizens
@@ -65,146 +34,86 @@ Chokki, A.P., Simonofski, A., Fr{\'e}nay, B., Vanderose, B.: Engaging citizens
   visualizations. Digital Government: Research and Practice  \textbf{3}(4),
   1--25 (2022). \doi{10.1145/3558099}
 
-\bibitem{flyvbjerg2009delusion}
-Flyvbjerg, B., Garbuio, M., Lovallo, D.: Delusion and deception in large
-  infrastructure projects: Two models for explaining and preventing executive
-  disaster. California Management Review  \textbf{51}(2),  170--193 (2009).
-  \doi{10.1225/CMR423}
+\bibitem{heitkemper2024solutions}
+Heitkemper, E.M., Manteuffel, B., Rogers, C., Velez, M., Patel, R.: The
+  solutions in health analytics for rural equity across the nation ({SHARE-NW})
+  dashboard: Usability evaluation. JMIR Human Factors  \textbf{11},  e51666
+  (2024). \doi{10.2196/51666}
 
-\bibitem{flyvbjerg2002underestimating}
-Flyvbjerg, B., Holm, M.K.S., Buhl, S.L.: Underestimating costs in public works
-  projects: Error or lie? Journal of the American Planning Association
-  \textbf{68}(3),  279--295 (2002). \doi{10.1080/01944360208976273}
+\bibitem{johnson2024enhancing}
+Johnson, M.S., Adams, V.M., Byrne, J.A.: Enhancing climate adaptation:
+  Integrating place-based risk perceptions and coastalscape values using
+  {Q+PPGIS}. Landscape and Urban Planning  \textbf{252},  105197 (2024).
+  \doi{10.1016/j.landurbplan.2024.105197}
 
-\bibitem{goodchild2007citizens}
-Goodchild, M.F.: Citizens as sensors: the world of volunteered geography.
-  GeoJournal  \textbf{69}(4),  211--221 (2007). \doi{10.1007/s10708-007-9111-y}
+\bibitem{kempeneer2023rethinking}
+Kempeneer, S., Wolswinkel, J.: Rethinking open government data for citizen
+  participation: An introduction to a special issue. Information Polity
+  \textbf{28}(2),  163--173 (2023). \doi{10.3233/IP-239008}
 
-\bibitem{grimmelikhuijsen2013effect}
-Grimmelikhuijsen, S., Porumbescu, G., Hong, B., Im, T.: The effect of
-  transparency on trust in government: A cross-national comparative experiment.
-  Public Administration Review  \textbf{73}(4),  575--586 (2013).
-  \doi{10.1111/puar.12047}
+\bibitem{kytta2023prioritizing}
+Kytt{\"a}, M., Randrup, T., Sunding, A., Rossi, S., Harsia, E., Palom{\"a}ki,
+  J., Kajosaari, A.: Prioritizing participatory planning solutions: Developing
+  place-based priority categories based on public participation {GIS} data.
+  Landscape and Urban Planning  \textbf{239},  104868 (2023).
+  \doi{10.1016/j.landurbplan.2023.104868}
 
-\bibitem{grimmelikhuijsen2012developing}
-Grimmelikhuijsen, S.G., Welch, E.W.: Developing and testing a theoretical
-  framework for computer-mediated transparency of local governments. Public
-  Administration Review  \textbf{72}(4),  562--572 (2012).
-  \doi{10.1111/j.1540-6210.2011.02532.x}
-
-\bibitem{haklay2008openstreetmap}
-Haklay, M., Weber, P.: Openstreetmap: User-generated street maps. IEEE
-  Pervasive Computing  \textbf{7}(4),  12--18 (2008).
-  \doi{10.1109/MPRV.2008.80}
-
-\bibitem{kahilatani2019does}
-Kahila-Tani, M., Kytt{\"a}, M., Geertman, S.: Does mapping improve public
-  participation? exploring the pros and cons of using public participation gis
-  in urban planning practices. Landscape and Urban Planning  \textbf{186},
-  45--55 (2019). \doi{10.1016/j.landurbplan.2019.02.019}
-
-\bibitem{kitchin2014real}
-Kitchin, R.: The real-time city? big data and smart urbanism. GeoJournal
-  \textbf{79}(1),  1--14 (2014). \doi{10.1007/s10708-013-9516-8}
-
-\bibitem{kitchin2015knowing}
-Kitchin, R., Lauriault, T.P., McArdle, G.: Knowing and governing cities through
-  urban indicators, city benchmarking and real-time dashboards. Regional
-  Studies, Regional Science  \textbf{2}(1),  6--28 (2015).
-  \doi{10.1080/21681376.2014.983149}
-
-\bibitem{lourenco2015analysis}
-Louren{\c{c}}o, R.P.: An analysis of open government portals: A perspective of
-  transparency for accountability. Government Information Quarterly
-  \textbf{32}(3),  323--332 (2015). \doi{10.1016/j.giq.2015.05.006}
-
-\bibitem{love2010rework}
-Love, P.E.D., Edwards, D.J., Watson, H., Davis, P.: Rework in civil
-  infrastructure projects: determination of cost predictors. Journal of
-  Construction Engineering and Management  \textbf{136}(3),  275--282 (2010).
-  \doi{10.1061/(ASCE)CO.1943-7862.0000136}
+\bibitem{lehto2022landscape}
+Lehto, C., Hedblom, M., {\"O}ckinger, E., Ranius, T.: Landscape usage by
+  recreationists is shaped by availability: Insights from a national {PPGIS}
+  survey in {Sweden}. Landscape and Urban Planning  \textbf{227},  104519
+  (2022). \doi{10.1016/j.landurbplan.2022.104519}
 
 \bibitem{matheus2021design}
 Matheus, R., Janssen, M., Janowski, T.: Design principles for creating digital
   transparency in government. Government Information Quarterly  \textbf{38}(1),
    101550 (2021). \doi{10.1016/j.giq.2020.101550}
 
-\bibitem{matheus2018data}
-Matheus, R., Janssen, M., Maheshwari, D.: Data science empowering the public:
-  Data-driven dashboards for transparent and accountable decision-making in
-  smart cities. Government Information Quarterly  \textbf{35}(1), ~1--9 (2018).
-  \doi{10.1016/j.giq.2018.01.006}
-
-\bibitem{piotrowski2007citizen}
-Piotrowski, S.J., Van~Ryzin, G.G.: Citizen attitudes toward transparency in
-  local government. The American Review of Public Administration
-  \textbf{37}(3),  306--323 (2007). \doi{10.1177/0275074006296777}
-
-\bibitem{porumbescu2016linking}
-Porumbescu, G.A.: Linking public sector social media and e-government website
-  use to trust in government. Government Information Quarterly  \textbf{33}(2),
-   291--304 (2016). \doi{10.1016/j.giq.2016.04.006}
-
-\bibitem{ruijer2017open}
-Ruijer, E., Grimmelikhuijsen, S., Meijer, A.: Open data for democracy:
-  Developing a theoretical framework for open data use. Government Information
-  Quarterly  \textbf{34}(1),  45--52 (2017). \doi{10.1016/j.giq.2017.01.001}
+\bibitem{nikiforova2021open}
+Nikiforova, A., McBride, K.: Open government data portal usability: A
+  user-centred usability analysis of 41 open government data portals.
+  Telematics and Informatics  \textbf{58},  101539 (2021).
+  \doi{10.1016/j.tele.2020.101539}
 
 \bibitem{saelawong2024transparency}
 Saelawong, T., Yomnak, T., Chaiwat, T., Poopunpanich, S., Sutuktis, C.:
   Transparency and budget savings in public procurement: evidence from
-  thailand's infrastructure transparency initiative (cost). Journal of
+  {Thailand's} {Infrastructure Transparency Initiative (CoST)}. Journal of
   Financial Crime  \textbf{31}(5),  1152--1168 (2024).
   \doi{10.1108/JFC-10-2023-0282}
-
-\bibitem{safarov2017utilization}
-Safarov, I., Meijer, A., Grimmelikhuijsen, S.: Utilization of open government
-  data: A systematic literature review of types, conditions, effects and users.
-  Government Information Quarterly  \textbf{34}(2),  270--282 (2017).
-  \doi{10.1016/j.giq.2017.01.003}
-
-\bibitem{sarikaya2019what}
-Sarikaya, A., Correll, M., Bartram, L., Tory, M., Fisher, D.: What do we talk
-  about when we talk about dashboards? IEEE Transactions on Visualization and
-  Computer Graphics  \textbf{25}(1),  682--692 (2019).
-  \doi{10.1109/TVCG.2018.2864903}
-
-\bibitem{shneiderman1996eyes}
-Shneiderman, B.: The eyes have it: A task by data type taxonomy for information
-  visualizations. In: Proceedings of the IEEE Symposium on Visual Languages
-  (VL). pp. 336--343. IEEE (1996). \doi{10.1109/VL.1996.545307}
 
 \bibitem{song2018where}
 Song, H., Szafir, D.A.: Where's my data? evaluating visualizations with missing
   data. IEEE Transactions on Visualization and Computer Graphics
-  \textbf{25}(1),  914--924 (2018). \doi{10.1109/TVCG.2018.2864914}
+  \textbf{25}(1),  914--924 (2019). \doi{10.1109/TVCG.2018.2864914}
+
+\bibitem{soni2024survey}
+Soni, P., de~Runz, C., Bouali, F., Venturini, G.: A survey on automatic
+  dashboard recommendation systems. Visual Informatics  \textbf{8}(1),  67--79
+  (2024). \doi{10.1016/j.visinf.2024.01.002}
 
 \bibitem{stromberg2025evaluating}
-Str{\"o}mberg, S.: Evaluating the Efficiency and Accuracy of GIS-based
-  Visualization Compared to Excel for Decision-Making. Master's thesis, KTH
-  Royal Institute of Technology, Urban Planning and Environment (2025),
-  \url{https://www.diva-portal.org/smash/record.jsf?pid=diva2%3A1938210}, diVA
-  portal id: diva2:1938210
-
-\bibitem{tory2004rethinking}
-Tory, M., M{\"o}ller, T.: Rethinking visualization: A high-level taxonomy. In:
-  Proceedings of the IEEE Symposium on Information Visualization (InfoVis). pp.
-  151--158. IEEE (2004). \doi{10.1109/INFVIS.2004.59}
+Str{\"o}mberg, S.: Evaluating the Efficiency and Accuracy of {GIS}-Based
+  Visualization Compared to {Excel} for Decision-Making. Master's thesis, KTH
+  Royal Institute of Technology, School of Architecture and the Built
+  Environment, Stockholm, Sweden (2025), diVA Portal:
+  \url{https://www.diva-portal.org/smash/record.jsf?pid=diva2:1938210}
 
 \bibitem{vessey1991cognitive}
 Vessey, I., Galletta, D.F.: Cognitive fit: An empirical study of information
   acquisition. Information Systems Research  \textbf{2}(1),  63--84 (1991).
   \doi{10.1287/isre.2.1.63}
 
-\bibitem{zuiderwijk2014open}
-Zuiderwijk, A., Janssen, M.: Open data policies, their implementation and
-  impact: A framework for comparison. Government Information Quarterly
-  \textbf{31}(1),  17--29 (2014). \doi{10.1016/j.giq.2013.04.003}
+\bibitem{zhao2023digital}
+Zhao, B., Cheng, S., Schiff, K.J., Kim, Y.: Digital transparency and citizen
+  participation: Evidence from the online crowdsourcing platform of the {City
+  of Sacramento}. Government Information Quarterly  \textbf{40}(4),  101868
+  (2023). \doi{10.1016/j.giq.2023.101868}
 
-\bibitem{zuiderwijk2015acceptance}
-Zuiderwijk, A., Janssen, M., Dwivedi, Y.K.: Acceptance and use predictors of
-  open data technologies: Drawing upon the unified theory of acceptance and use
-  of technology. Government Information Quarterly  \textbf{32}(4),  429--440
-  (2015). \doi{10.1016/j.giq.2015.09.005}
+\bibitem{zytek2022sibyl}
+Zytek, A., Liu, D., Vaithianathan, R., Veeramachaneni, K.: Sibyl: Understanding
+  and addressing the usability challenges of machine learning in high-stakes
+  decision making. IEEE Transactions on Visualization and Computer Graphics
+  \textbf{28}(1),  1161--1171 (2022). \doi{10.1109/TVCG.2021.3114864}
 
 \end{thebibliography}
