@@ -155,7 +155,7 @@ print("Saved fig2_missing_stale_perception.png and .pdf")
 # ==============================================================================
 # 3. FIGURE 3: Complete System Architecture and Dataflow Diagram
 # ==============================================================================
-fig, ax = plt.subplots(figsize=(11.5, 6.2), dpi=300)
+fig, ax = plt.subplots(figsize=(12.0, 7.0), dpi=300)
 ax.axis('off')
 ax.set_xlim(0, 100)
 ax.set_ylim(0, 100)
@@ -173,21 +173,21 @@ c_qa = '#FFF1F2'
 c_qa_border = '#F43F5E'
 
 def draw_box(x, y, w, h, bg, border, title, items, subtitle=""):
-    rect = patches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=1.2,rounding_size=2.0",
+    rect = patches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=1.0,rounding_size=2.0",
                                   facecolor=bg, edgecolor=border, linewidth=2.0)
     ax.add_patch(rect)
-    ax.text(x + w/2, y + h - 5.5, title, ha='center', va='center', fontsize=11, fontweight='bold', color='#1E293B')
+    ax.text(x + w/2, y + h - 4.5, title, ha='center', va='center', fontsize=11, fontweight='bold', color='#1E293B')
     if subtitle:
-        ax.text(x + w/2, y + h - 10.5, subtitle, ha='center', va='center', fontsize=8.5, fontstyle='italic', color='#64748B')
-        start_y = y + h - 17
+        ax.text(x + w/2, y + h - 8.5, subtitle, ha='center', va='center', fontsize=8.5, fontstyle='italic', color='#64748B')
+        start_y = y + h - 13.5
     else:
-        start_y = y + h - 13
+        start_y = y + h - 10.0
     
     for i, item in enumerate(items):
-        ax.text(x + 4.0, start_y - i*6.0, f"• {item}", ha='left', va='center', fontsize=9.0, color='#334155')
+        ax.text(x + 3.5, start_y - i*4.4, f"• {item}", ha='left', va='center', fontsize=8.8, color='#334155')
 
 # Client Presentation Layer (Top)
-draw_box(4, 58, 43, 38, c_client, c_client_border,
+draw_box(4, 54, 43, 36, c_client, c_client_border,
          "Condition A: Tabular List Explorer",
          ["HTML5 / React 18 Table Component",
           "Linear Data Grid (Code, Name, Budget, Dates)",
@@ -196,7 +196,7 @@ draw_box(4, 58, 43, 38, c_client, c_client_border,
           "Standard Status Text Pills (In-Progress, Selesai)"],
          subtitle="Conventional Baseline (LPSE / Satu Data Style)")
 
-draw_box(53, 58, 43, 38, c_client, c_client_border,
+draw_box(53, 54, 43, 36, c_client, c_client_border,
          "Condition B: Map & Timeline Explorer",
          ["Leaflet.js + GeoJSON Administrative Polygons",
           "Interactive Spatial Clusters & Color-Coded Markers",
@@ -206,7 +206,7 @@ draw_box(53, 58, 43, 38, c_client, c_client_border,
          subtitle="CivicTrack Integrated Visual Interface")
 
 # API & Analytical Layer (Middle)
-draw_box(4, 18, 43, 34, c_engine, c_engine_border,
+draw_box(4, 15.5, 43, 33, c_engine, c_engine_border,
          "Analytical Engine & Business Logic",
          ["Time Elapsed Engine: T_elap = min(100, (T_ref-T_start)/(T_end-T_start))",
           "Milestone Physical Progress: P_physical = sum(w_k * c_k)",
@@ -215,7 +215,7 @@ draw_box(4, 18, 43, 34, c_engine, c_engine_border,
           "Staleness Detection Engine (Alert when Delta_t > 90 days)"],
          subtitle="Earned Value Management (EVM) Core")
 
-draw_box(53, 18, 43, 34, c_api, c_api_border,
+draw_box(53, 15.5, 43, 33, c_api, c_api_border,
          "FastAPI Backend & Geospatial Services",
          ["Python 3.11 High-Performance REST API",
           "Strict Pydantic v2 Schema Validation",
@@ -225,22 +225,22 @@ draw_box(53, 18, 43, 34, c_api, c_api_border,
          subtitle="Server Layer & Telemetry Engine")
 
 # Storage & Standards (Bottom Strip)
-rect_qa = patches.FancyBboxPatch((4, 1), 92, 12, boxstyle="round,pad=0.8,rounding_size=1.5",
+rect_qa = patches.FancyBboxPatch((4, 1.5), 92, 10.5, boxstyle="round,pad=0.8,rounding_size=1.5",
                                 facecolor=c_qa, edgecolor=c_qa_border, linewidth=1.8)
 ax.add_patch(rect_qa)
 ax.text(50, 7.5, "ISO/IEC/IEEE 29119 Software Testing & ISO/IEC 25010 Quality Standards", ha='center', va='center',
         fontsize=10.5, fontweight='bold', color='#9F1239')
-ax.text(50, 3.2, "Automated Verification: 38 Backend Pytest Suites + 57 Frontend Vitest Suites (100% Pass Rate across 95 Test Cases)",
-        ha='center', va='center', fontsize=9.0, color='#881337')
+ax.text(50, 3.8, "Automated Verification: 38 Backend Pytest Suites + 57 Frontend Vitest Suites (100% Pass Rate across 95 Test Cases)",
+        ha='center', va='center', fontsize=8.8, color='#881337')
 
 # Connector Arrows
 arrow_style = dict(arrowstyle="<->", color="#475569", lw=2.0)
-ax.annotate("", xy=(25, 52), xytext=(25, 58), arrowprops=arrow_style)
-ax.annotate("", xy=(74, 52), xytext=(74, 58), arrowprops=arrow_style)
-ax.annotate("", xy=(47, 35), xytext=(53, 35), arrowprops=arrow_style)
+ax.annotate("", xy=(25.5, 49.5), xytext=(25.5, 53.5), arrowprops=arrow_style)
+ax.annotate("", xy=(74.5, 49.5), xytext=(74.5, 53.5), arrowprops=arrow_style)
+ax.annotate("", xy=(47.5, 32.0), xytext=(52.5, 32.0), arrowprops=arrow_style)
 
 # Overall Title
-ax.text(50, 98, "CivicTrack System Architecture and Experimental Workflow",
+ax.text(50, 96.5, "CivicTrack System Architecture and Experimental Workflow",
         ha='center', va='center', fontsize=13.5, fontweight='bold', color='#0F172A')
 
 plt.tight_layout()

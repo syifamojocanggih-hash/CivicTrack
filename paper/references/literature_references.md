@@ -23,10 +23,10 @@
 | 11 | `matheus2021design` | Matheus, Janssen, Janowski (2021) | *Design principles for creating digital transparency in government* (*GIQ*) | Elsevier | [`10.1016/j.giq.2020.101550`](https://doi.org/10.1016/j.giq.2020.101550) | Jurnal (2021), Verified |
 | 12 | `nikiforova2021open` | Nikiforova & McBride (2021) | *Open government data portal usability: A user-centred usability analysis of 41 portals* (*Telematics*) | Elsevier | [`10.1016/j.tele.2020.101539`](https://doi.org/10.1016/j.tele.2020.101539) | Jurnal (2021), Verified |
 | 13 | `saelawong2024transparency` | Saelawong et al. (2024) | *Transparency and budget savings in public procurement: evidence from CoST* (*JFC*) | Emerald | [`10.1108/JFC-10-2023-0282`](https://doi.org/10.1108/JFC-10-2023-0282) | Jurnal (2024), Verified |
-| 14 | `song2018where` | Song & Szafir (2018/2019) | *Where's My Data? Evaluating Visualizations with Missing Data* (*IEEE TVCG*) | IEEE | [`10.1109/TVCG.2018.2864914`](https://doi.org/10.1109/TVCG.2018.2864914) | Jurnal (Seminal), Verified |
+| 14 | `fernstad2022explore` | Fernstad & Westberg (2022) | *To Explore What Isn't There---Glyph-Based Visualization for Analysis of Missing Values* (*IEEE TVCG*, Vol 28, No 10) | IEEE | [`10.1109/TVCG.2021.3065124`](https://doi.org/10.1109/TVCG.2021.3065124) | Jurnal (2022), Verified |
 | 15 | `soni2024survey` | Soni et al. (2024) | *A survey on automatic dashboard recommendation systems* (*Vis. Inf.*) | Elsevier | [`10.1016/j.visinf.2024.01.002`](https://doi.org/10.1016/j.visinf.2024.01.002) | Jurnal (2024), Verified |
 | 16 | `stromberg2025evaluating` | Strömberg (2025) | *Evaluating the Efficiency and Accuracy of GIS-Based Visualization Compared to Excel for Decision-Making* | KTH Stockholm | [`diva2:1938210`](https://www.diva-portal.org/smash/record.jsf?pid=diva2:1938210) | Master Thesis, Verified |
-| 17 | `vessey1991cognitive` | Vessey & Galletta (1991) | *Cognitive Fit: An Empirical Study of Information Acquisition* (*ISR*) | INFORMS | [`10.1287/isre.2.1.63`](https://doi.org/10.1287/isre.2.1.63) | Teori Dasar (Seminal), Verified |
+| 17 | `bina2023incorporating` | Bina et al. (2023) | *Incorporating evolutionary adaptions into the cognitive fit model for data visualization* (*DSS*, Vol 171, 113979) | Elsevier | [`10.1016/j.dss.2023.113979`](https://doi.org/10.1016/j.dss.2023.113979) | Jurnal (2023), Verified |
 | 18 | `zhao2023digital` | Zhao, Cheng, Schiff, Kim (2023) | *Digital transparency and citizen participation: Evidence from online crowdsourcing platform* (*GIQ*) | Elsevier | [`10.1016/j.giq.2023.101868`](https://doi.org/10.1016/j.giq.2023.101868) | Jurnal (2023), Verified |
 | 19 | `zytek2022sibyl` | Zytek et al. (2022) | *Sibyl: Understanding and Addressing the Usability Challenges of Machine Learning...* (*TVCG*) | IEEE | [`10.1109/TVCG.2021.3114864`](https://doi.org/10.1109/TVCG.2021.3114864) | Jurnal (2022), Verified |
 
@@ -39,7 +39,7 @@
    - Mengkaji pergeseran transparansi e-procurement dari data dump menuju penyajian interaktif yang dapat diakses kognitif oleh masyarakat umum.
 
 2. **Klaster Cognitive Fit Theory & Multi-View Coordination**:
-   - `vessey1991cognitive` (Foundational theory), `bacic2022advancing` (Ekstensi eye-tracking multi-view modern), `soni2024survey`, `zytek2022sibyl`, `heitkemper2024solutions`.
+   - `bina2023incorporating` (Ekstensi Cognitive Fit Model modern untuk visualisasi data), `bacic2022advancing` (Ekstensi eye-tracking multi-view modern), `soni2024survey`, `zytek2022sibyl`, `heitkemper2024solutions`.
    - Menjelaskan mengapa representasi spasial cocok untuk tugas persepsi pola, sedangkan tabel cocok untuk pencarian atribut simbolik diskret.
 
 3. **Klaster Komparasi Peta Spasial (GIS) vs Tabel Data**:
@@ -48,5 +48,5 @@
 
 4. **Klaster Linimasa Proyek, Deviasi Jadwal & Persepsi Data Hilang**:
    - `ayalew2024developing` (Earned Value Analysis untuk deviasi kemajuan fisik vs waktu kalender).
-   - `song2018where` (Bukti empiris bahwa pengguna awam menafsirkan data hilang/null sebagai pembatalan atau 0%).
+   - `fernstad2022explore` (Visualisasi nilai hilang/missing values dan mitigasi bias inferensi negatif pengguna awam).
    - `ambituuni2025infrastructure`, `saelawong2024transparency` (Batas klaim transparansi konstruksi publik CoST; transparansi sebagai enabler antarmuka kognitif, bukan bukti kausal langsung penurunan korupsi).

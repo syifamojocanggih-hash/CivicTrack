@@ -76,12 +76,12 @@ In regional administrations such as Lamongan Regency, East Java, statutory discl
 A more acute cognitive and usability bottleneck identified during preliminary field observations is the prevalent conflation among three distinct operational dimensions: physical milestone progress, calendar duration elapsed, and field reporting recency~\cite{nikiforova2021open,zhao2023digital}. Preliminary field observations conducted between August and September 2024 involved 12 civic community members and local residents in Lamongan examining municipal public works information on LPSE Kabupaten Lamongan and Satu Data Lamongan, the two primary official disclosure platforms referenced above. These observations were conducted as semi-structured, task-based sessions, in which participants were asked to locate and interpret information on a specific ongoing project while researchers recorded their verbal reasoning and navigation behavior. These sessions revealed two severe cognitive breakdowns:
 \begin{enumerate}\setlength{\itemsep}{1.2pt}\setlength{\parskip}{0pt}
     \item \textbf{Duration-as-Progress Fallacy:} Nine out of 12 participants erroneously assumed that elapsed calendar time represented physical progress. When inspecting an ongoing road project showing ``75\% elapsed duration'' alongside ``60\% physical progress,'' participants intuitively concluded that the project was on track, failing to recognize a critical 15\% execution delay~\cite{bacic2022advancing}.
-    \item \textbf{Ambiguity over Stale and Missing Data:} Official disclosures lacked visual freshness indicators. When progress updates lagged by 3--5 months, citizens could not discern whether projects were actively ongoing, quietly halted, or completed; missing progress fields were frequently assumed to denote project cancellation or 0\% work~\cite{song2018where}.
+    \item \textbf{Ambiguity over Stale and Missing Data:} Official disclosures lacked visual freshness indicators. When progress updates lagged by 3--5 months, citizens could not discern whether projects were actively ongoing, quietly halted, or completed; missing progress fields were frequently assumed to denote project cancellation or 0\% work~\cite{fernstad2022explore}.
 \end{enumerate}
 
 To overcome the communicative limitations of raw spreadsheets, municipal agencies and smart city platforms have increasingly transitioned toward visual dashboards featuring interactive geographic maps and graphical charts~\cite{soni2024survey,kytta2023prioritizing}. Nonetheless, existing civic dashboard implementations have predominantly been driven by \emph{superficial interface aesthetics} (``dashboard gloss'') rather than rigorous human-computer interaction (HCI) evaluation grounded in \emph{user cognitive comprehension tasks}~\cite{chokki2022engaging,heitkemper2024solutions}. Current literature in open government data frequently evaluates portals through technical interoperability, metadata completeness, or general citizen satisfaction surveys, largely ignoring how specific visual representations influence the cognitive speed and accuracy of non-expert citizens during actual information processing~\cite{nikiforova2021open,lehto2022landscape}. Deploying rich cartographic layers and visual widgets without task-based empirical grounding introduces substantial cognitive trade-offs: while interactive maps excel at synoptic spatial orientation, they introduce interaction friction---such as panning, zooming, marker occlusion, and visual clutter---that actively degrades performance on simple, discrete attribute lookups~\cite{johnson2024enhancing,stromberg2025evaluating}. Consequently, uncalibrated visual complexity risks disorienting citizens rather than empowering them.
 
-This gap---the absence of task-based empirical evidence on how visual representation affects citizen cognitive performance---motivates the present study. To address it, this paper proposes and evaluates \textbf{CivicTrack}, an integrated municipal monitoring platform designed around Cognitive Fit Theory~\cite{vessey1991cognitive,bacic2022advancing}. CivicTrack introduces a synchronized multi-representation architecture that harmonizes an interactive geospatial map (for spatial boundary and cluster scoping), a dual-progress chronological timeline visualizer (explicitly decoupling contractual duration from physical milestone progress with clear reporting recency indicators), and a structured, filterable list view (for direct attribute retrieval). We investigate the central research question: \emph{Does an integrated map-and-timeline interface significantly improve citizen accuracy and efficiency in understanding project locations, physical progress, and schedule delays compared to a conventional list-based presentation?} 
+This gap---the absence of task-based empirical evidence on how visual representation affects citizen cognitive performance---motivates the present study. To address it, this paper proposes and evaluates \textbf{CivicTrack}, an integrated municipal monitoring platform designed around Cognitive Fit Theory~\cite{bina2023incorporating,bacic2022advancing}. CivicTrack introduces a synchronized multi-representation architecture that harmonizes an interactive geospatial map (for spatial boundary and cluster scoping), a dual-progress chronological timeline visualizer (explicitly decoupling contractual duration from physical milestone progress with clear reporting recency indicators), and a structured, filterable list view (for direct attribute retrieval). We investigate the central research question: \emph{Does an integrated map-and-timeline interface significantly improve citizen accuracy and efficiency in understanding project locations, physical progress, and schedule delays compared to a conventional list-based presentation?} 
 
 Utilizing a controlled benchmark dataset of 20 realistic public infrastructure projects modeled on verified municipal capital works in Lamongan Regency, this study establishes three primary contributions:
 \begin{enumerate}\setlength{\itemsep}{1.2pt}\setlength{\parskip}{0pt}
@@ -96,10 +96,10 @@ The empirical study of public project dashboard comprehension intersects four ma
 \subsection{Public Project Dashboards and Citizen Comprehension}
 Digital transparency portals are widely heralded as mechanisms to mitigate information asymmetry between public agencies and citizens~\cite{ansari2022enhancing,chokki2022engaging,kempeneer2023rethinking}. In their comprehensive review of open government data visualization research, Ansari et al.~\cite{ansari2022enhancing} emphasized that raw disclosure fails to achieve civic utility unless accompanied by task-tailored analytical tools that prevent cognitive overload. Matheus et al.~\cite{matheus2021design} formulated design principles for digital transparency in smart governance, noting that portals must support structured inquiry rather than passive data exposure. In their user-centred evaluation of 41 national portals, Nikiforova and McBride~\cite{nikiforova2021open} revealed that most municipal implementations remain restricted to passive ``data dumps,'' offering static tables that fail to support analytical inquiry by lay citizens. 
 
-Chokki et al.~\cite{chokki2022engaging} conducted controlled experiments demonstrating that interactive dashboards significantly enhance citizen comprehension compared to isolated charts; however, they noted that multi-component dashboards trigger visual fragmentation if navigational hierarchies are ambiguous. Furthermore, Zhao and Fan~\cite{zhao2023digital} and Kempeneer and Wolswinkel~\cite{kempeneer2023rethinking} observed that while citizen demand for local government data is high, persistent usability barriers discourage sustained monitoring behavior. Crucially, computer-mediated presentations must provide transparent task-oriented structures, as disorienting visual complexity can actively diminish perceived administrative competence.
+Chokki et al.~\cite{chokki2022engaging} conducted controlled experiments demonstrating that interactive dashboards significantly enhance citizen comprehension compared to isolated charts; however, they noted that multi-component dashboards trigger visual fragmentation if navigational hierarchies are ambiguous. Furthermore, Zhao et al.~\cite{zhao2023digital} and Kempeneer and Wolswinkel~\cite{kempeneer2023rethinking} observed that while citizen demand for local government data is high, persistent usability barriers discourage sustained monitoring behavior. Crucially, computer-mediated presentations must provide transparent task-oriented structures, as disorienting visual complexity can actively diminish perceived administrative competence.
 
 \subsection{Cognitive Fit Theory and Visualization Usability}
-The theoretical foundation explaining how representation formats interact with task types is grounded in Cognitive Fit Theory, originally formulated by Vessey and Galletta~\cite{vessey1991cognitive} and recently evaluated in multi-view data visualization environments by Ba{\v{c}}i{\'c} and Henry~\cite{bacic2022advancing}. Under this framework, problem-solving performance is optimized when the representation of information matches the cognitive task: spatial tasks demand perceptual, holistic graphical displays, whereas symbolic, discrete lookups are best supported by structured alphanumeric tables~\cite{vessey1991cognitive,soni2024survey}. In the visualization literature, Zytek et al.~\cite{zytek2022sibyl} and Soni et al.~\cite{soni2024survey} analyzed dashboard design spaces and multi-view coordination, demonstrating that combining multiple visualization modalities introduces cognitive switching costs when users must coordinate views. Standardized usability evaluation protocols, such as those demonstrated by Heitkemper et al.~\cite{heitkemper2024solutions}, provide validated instruments for quantifying user interaction friction across comparative modalities.
+The theoretical foundation explaining how representation formats interact with task types is grounded in Cognitive Fit Theory, recently extended for data visualization by Bina et al.~\cite{bina2023incorporating} and empirically evaluated in multi-view environments by Ba{\v{c}}i{\'c} and Henry~\cite{bacic2022advancing}. Under this framework, problem-solving performance is optimized when the representation of information matches the cognitive task: spatial tasks demand perceptual, holistic graphical displays, whereas symbolic, discrete lookups are best supported by structured alphanumeric tables~\cite{bina2023incorporating,soni2024survey}. In the visualization literature, Zytek et al.~\cite{zytek2022sibyl} and Soni et al.~\cite{soni2024survey} analyzed dashboard design spaces and multi-view coordination, demonstrating that combining multiple visualization modalities introduces cognitive switching costs when users must coordinate views. Standardized usability evaluation protocols, such as those demonstrated by Heitkemper et al.~\cite{heitkemper2024solutions}, provide validated instruments for quantifying user interaction friction across comparative modalities.
 
 \subsection{Geospatial Visualization versus Tabular List Presentations}
 In the spatial domain, cartographic and geographic information systems (GIS) research has rigorously analyzed the performance trade-offs between cartographic maps and structured alphanumeric tables. In the spatial visualization literature, recent empirical studies categorize visual analysis into elementary tasks (locating specific attribute values for an individual known entity) and synoptic tasks (discerning spatial clusters, spatial relations, and regional distributions)~\cite{kytta2023prioritizing,lehto2022landscape}. This theoretical framework posits that spatial visual representations are optimized for synoptic synthesis, whereas tabular lists minimize cognitive retrieval costs for discrete elementary lookups.
@@ -107,13 +107,13 @@ In the spatial domain, cartographic and geographic information systems (GIS) res
 This dichotomy was corroborated empirically by Str{\"o}mberg~\cite{stromberg2025evaluating}, whose comparative user study reported that GIS-based map interfaces reduced spatial pattern recognition time by over 50\% relative to tabular formats, while structured spreadsheet tables yielded higher accuracy and shorter completion times for exact quantitative attribute extraction. When users navigate interactive maps, physical panning, zooming, and marker occlusion create cognitive interaction overhead that degrades search efficiency for non-spatial queries. In the context of participatory urban governance, Lehto et al.~\cite{lehto2022landscape}, Kytt{\"a} et al.~\cite{kytta2023prioritizing}, and Johnson et al.~\cite{johnson2024enhancing} demonstrated that while spatial maps democratize geographic exploration, non-expert citizens struggle when complex thematic layers compete for visual attention. Consequently, visual representations that seduce users with cartographic sophistication risk obscuring underlying administrative data.
 
 \subsection{Timeline Usability and Schedule Representation}
-Visualizing chronological project progress requires representing durations, dependencies, and temporal milestones. Human working memory struggles to reconstruct temporal overlaps and pacing from raw alphanumeric date columns in spreadsheets~\cite{soni2024survey}. In project scheduling, Ayalew~\cite{ayalew2024developing} evaluated deterministic and fuzzy Earned Value Management (EVM) methods for public infrastructure projects, underscoring that measuring physical progress against planned schedule baselines requires explicit variance tracking rather than simplistic duration comparisons.
+Visualizing chronological project progress requires representing durations, dependencies, and temporal milestones. Human working memory struggles to reconstruct temporal overlaps and pacing from raw alphanumeric date columns in spreadsheets~\cite{soni2024survey}. In project scheduling, Ayalew and Ayalew~\cite{ayalew2024developing} evaluated deterministic and fuzzy Earned Value Management (EVM) methods for public infrastructure projects, underscoring that measuring physical progress against planned schedule baselines requires explicit variance tracking rather than simplistic duration comparisons.
 
 \subsection{Interpretation of Missing and Stale Governance Data}
-A persistent challenge in public infrastructure monitoring is data latency and reporting gaps. Visual displays that omit explicit visual indicators for missing data frequently lead lay citizens to make negative default inferences, interpreting missing data as administrative failure or canceled works~\cite{song2018where}. In civil infrastructure governance, Ambituuni~\cite{ambituuni2025infrastructure} and Saelawong et al.~\cite{saelawong2024transparency} investigated the Infrastructure Transparency Initiative (CoST) through principal-agent theory, emphasizing that publishing open data is an institutional enabler rather than an automatic remedy; without reliable, timely data, public disclosures fail to generate accountability.
+A persistent challenge in public infrastructure monitoring is data latency and reporting gaps. Visual displays that omit explicit visual indicators for missing data frequently lead lay citizens to make negative default inferences, interpreting missing data as administrative failure or canceled works~\cite{fernstad2022explore}. In civil infrastructure governance, Ambituuni~\cite{ambituuni2025infrastructure} and Saelawong et al.~\cite{saelawong2024transparency} investigated the Infrastructure Transparency Initiative (CoST) through principal-agent theory, emphasizing that publishing open data is an institutional enabler rather than an automatic remedy; without reliable, timely data, public disclosures fail to generate accountability.
 
 \subsection{Research Gap and Positioning}
-Collectively, prior work treats these three representational paradigms in isolation: dashboard usability studies~\cite{ansari2022enhancing,chokki2022engaging,matheus2021design,nikiforova2021open} evaluate aggregate interface comprehension without decomposing task type; map-versus-table studies~\cite{stromberg2025evaluating,lehto2022landscape,kytta2023prioritizing} quantify spatial-versus-tabular trade-offs but omit temporal schedule reasoning; and timeline visualization research~\cite{ayalew2024developing,soni2024survey} addresses duration representation without linking it to spatial or tabular retrieval. No prior study empirically compares all three representations---map, timeline, and table---within a single counterbalanced task battery on real municipal infrastructure data, nor explicitly measures how citizens misinterpret stale or missing progress fields. This paper addresses that gap by integrating Cognitive Fit Theory~\cite{vessey1991cognitive,bacic2022advancing} with a task-differentiated, within-subjects evaluation of CivicTrack.
+Collectively, prior work treats these three representational paradigms in isolation: dashboard usability studies~\cite{ansari2022enhancing,chokki2022engaging,matheus2021design,nikiforova2021open} evaluate aggregate interface comprehension without decomposing task type; map-versus-table studies~\cite{stromberg2025evaluating,lehto2022landscape,kytta2023prioritizing} quantify spatial-versus-tabular trade-offs but omit temporal schedule reasoning; and timeline visualization research~\cite{ayalew2024developing,soni2024survey} addresses duration representation without linking it to spatial or tabular retrieval. No prior study empirically compares all three representations---map, timeline, and table---within a single counterbalanced task battery on real municipal infrastructure data, nor explicitly measures how citizens misinterpret stale or missing progress fields. This paper addresses that gap by integrating Cognitive Fit Theory~\cite{bina2023incorporating,bacic2022advancing} with a task-differentiated, within-subjects evaluation of CivicTrack.
 
 \section{Methodology}
 
@@ -132,7 +132,7 @@ The empirical evaluation was conducted using \textbf{CivicTrack}, an end-to-end 
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.70\textwidth]{figures/fig3_system_architecture.png}
+\includegraphics[width=0.68\textwidth]{figures/fig3_system_architecture.png}
 \caption{CivicTrack system architecture, component dataflow, and experimental testing integration across Condition A (List View) and Condition B (Map and Timeline Explorer).}
 \label{fig:architecture}
 \end{figure}
@@ -144,7 +144,7 @@ To enable rigorous comparative testing, two controlled visual modalities were im
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.78\textwidth]{figures/fig_system_interface_comparison.png}
+\includegraphics[width=0.74\textwidth]{figures/fig_system_interface_comparison.png}
 \caption{Visual stimuli for comparative evaluation: (a) Condition A (Tabular List baseline modeled on municipal open data portals) and (b) Condition B (CivicTrack interactive Map-and-Timeline Explorer).}
 \label{fig:comparison}
 \end{figure}
@@ -266,7 +266,7 @@ The quantitative outcomes of the 128 trial runs ($16\text{ participants} \times 
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.64\textwidth]{figures/fig1_task_performance.png}
+\includegraphics[width=0.60\textwidth]{figures/fig1_task_performance.png}
 \caption{Task completion time (seconds) and comprehension accuracy rate across Tasks 1--4 between Condition A (List-Based) and Condition B (Map-and-Timeline) ($N = 16$).}
 \label{fig:perf}
 \end{figure}
@@ -331,19 +331,19 @@ Table~\ref{tab:study3} and Fig.~\ref{fig:study3} summarize citizen interpretatio
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.41\textwidth]{figures/fig2_missing_stale_perception.png}
+\includegraphics[width=0.38\textwidth]{figures/fig2_missing_stale_perception.png}
 \caption{Distribution of participant cognitive interpretations under missing and stale reporting conditions (Study 3, $N = 16$).}
 \label{fig:study3}
 \end{figure}
 
-The outcomes of Study~3 demonstrate that \emph{ambiguity breeds false certainty}: 31.2\% (5/16) of participants inferred project cancellation from blank cells, while 37.5\% (6/16) uncritically accepted 4-month-old data as current reality. Civic platforms must implement active freshness badges (e.g., amber warning when updates exceed 60 days) to prevent public misinformation~\cite{ambituuni2025infrastructure,song2018where}.
+The outcomes of Study~3 demonstrate that \emph{ambiguity breeds false certainty}: 31.2\% (5/16) of participants inferred project cancellation from blank cells, while 37.5\% (6/16) uncritically accepted 4-month-old data as current reality. Civic platforms must implement active freshness badges (e.g., amber warning when updates exceed 60 days) to prevent public misinformation~\cite{ambituuni2025infrastructure,fernstad2022explore}.
 
 \subsection{System Usability Scale (SUS) and Software Quality (ISO/IEC 25010)}
 Usability of the CivicTrack integrated platform (Condition~B compared to baseline portal experience) was evaluated using the 10-item System Usability Scale (SUS)~\cite{zytek2022sibyl,heitkemper2024solutions}, scored standardly as $\text{SUS} = 2.5 \times [ \sum_{i \in \text{odd}} (S_i - 1) + \sum_{j \in \text{even}} (5 - S_j) ]$ where $S_k \in \{1, \dots, 5\}$ denotes the Likert response for question $k$.
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.35\textwidth]{figures/fig4_combined_usability_quality.png}
+\includegraphics[width=0.32\textwidth]{figures/fig4_combined_usability_quality.png}
 \caption{System Usability Scale (SUS) individual score distribution and item ratings alongside ISO/IEC 25010 User Acceptance Testing (UAT) quality profile ($N = 16$).}
 \label{fig:usability}
 \end{figure}
@@ -352,6 +352,7 @@ As shown in Fig.~\ref{fig:usability}, CivicTrack achieved an overall mean SUS sc
 
 In the concurrent ISO/IEC 25010 UAT audit, CivicTrack attained an overall quality rating of \textbf{90.88\%} (727/800 points, \emph{Sangat Layak}). Dimension satisfaction reached 95.00\% for UI Aesthetics, 93.75\% for Appropriateness Recognizability, 92.50\% for Temporal Clarity, and 91.25\% for Functional Completeness. All 95 executed automated test cases (38 Pytest backend and 57 Vitest frontend) passed successfully.
 
+\enlargethispage{4.5\baselineskip}
 \section{Conclusion}
 This pilot study established an empirical evaluation comparing a conventional list-based tabular portal against an integrated map-and-timeline interface. Using a 20-project benchmark modeled on Lamongan Regency, our findings demonstrate clear task-dependent trade-offs:
 \begin{enumerate}\setlength{\itemsep}{0.5pt}\setlength{\parskip}{0pt}
@@ -363,10 +364,11 @@ This pilot study established an empirical evaluation comparing a conventional li
 
 \noindent\textbf{Boundaries of Claims and Limitations:} This study evaluated a pilot cohort of $N = 16$ participants across 128 trials; while statistically robust for cognitive processing metrics, it represents preliminary behavioral evidence. Crucially, \textbf{information comprehension is an interface usability metric, not causal proof of corruption reduction or institutional accountability}~\cite{ambituuni2025infrastructure,saelawong2024transparency}. Civic maps and timelines facilitate cognitive access; converting this access into systemic accountability depends on administrative responsiveness, legal whistleblower protections, and civic empowerment. Future work will extend testing to longitudinal civic deployments across East Java, investigating adaptive hybrid interfaces combining quick-lookup drawers with spatial timeline overlays.
 
-\begin{credits}
+\begin{credits}\vspace{-5pt}
 \subsubsection*{\ackname}
 \noindent\small The authors thank the Department of Informatics and Computer Engineering, PENS, and Diskominfo Kabupaten Lamongan for providing administrative and spatial data references.
 
+\vspace{-4pt}
 \subsubsection*{\discintname}
 \noindent\small The authors have no competing interests to declare that are relevant to the content of this article.
 \end{credits}
@@ -377,16 +379,16 @@ This pilot study established an empirical evaluation comparing a conventional li
 \renewcommand{\doi}[1]{\href{https://doi.org/#1}{\nolinkurl{doi:#1}}}
 \makeatletter
 \renewenvironment{thebibliography}[1]
-     {\section*{\refname}
-      \def\@biblabel##1{##1.}
-      \fontsize{6.8pt}{7.9pt}\selectfont
+     {\section*{\refname}%
+      \def\@biblabel##1{##1.}%
+      \fontsize{7.0pt}{8.2pt}\selectfont
       \raggedbottom
       \list{\@biblabel{\@arabic\c@enumiv}}%
            {\settowidth\labelwidth{\@biblabel{#1}}%
             \leftmargin\labelwidth
             \advance\leftmargin\labelsep
-            \itemsep 0.0pt
-            \parsep \z@
+            \setlength{\itemsep}{0pt}%
+            \setlength{\parsep}{0pt}%
             \usecounter{enumiv}%
             \let\p@enumiv\@empty
             \renewcommand\theenumiv{\@arabic\c@enumiv}}%
