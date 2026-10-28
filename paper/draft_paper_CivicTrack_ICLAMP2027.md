@@ -116,7 +116,7 @@ Project status is assigned according to the following mutually exclusive hierarc
 8. **Ahead:** $\Delta \ge 0.0\%$.
 9. **Stale Data Flag:** asserted if $(T_{ref} - T_{update}) > 90\text{ days}$.
 
-The 20 projects were balanced into two equivalent subsets: **Set A** (10 projects) and **Set B** (10 projects), each sharing identical category profiles (6 roads, 2 drainage systems, 1 bridge, 1 public building) and balanced condition distributions (2 on-track, 4 delayed/severely delayed/overdue, 2 completed, 1 not started, 1 missing/stale).
+The 20 projects were partitioned into two balanced 10-project subsets: **Set A** (6 roads, 2 drainage, 2 bridges; 2 on-track, 4 delayed/overdue, 1 completed, 1 not started, 2 missing/stale) and **Set B** (6 roads, 2 public buildings, 1 drainage, 1 park; 2 on-track, 4 delayed, 2 completed, 1 not started, 1 stale), maintaining an identical core of 6 roads, 4 delayed/overdue, and 2 on-track projects for comparative retrieval parity.
 
 ### 3.5 Experimental Protocols
 
@@ -134,7 +134,7 @@ The experimental tasks evaluated core civic scenarios with balanced target quest
 - **Task 3 (Update Recency Lookup):** "State the calendar date of the latest field inspection update for Project [Code] and verify whether this date matches the contract deadline." (Set A Key: 10/10/2024 $\neq$ 30/11/2024; Set B Key: 11/10/2024 $\neq$ 31/10/2024).
 - **Task 4 (Physical vs. Time Progress):** "Assess Project [Code] where 84.1% of calendar time has elapsed and physical completion is 67.0%. Determine whether this project is on schedule, delayed, or completed." (Key: Delayed by -17.1%).
 
-**Timing and Moderator Rules:** Telemetry recorded completion time automatically from the initial click on "Start Task" until final answer submission. Completion times were logged for all completed trials; incorrect answers and prompted trials were logged in error and assistance tallies. The test moderator remained strictly passive; intervention was permitted only if a participant exhibited complete inactivity exceeding 60 seconds, using the standardized neutral prompt: *"Please refer to the progress indicators on the screen to answer the question."*
+**Timing and Moderator Rules:** Telemetry recorded completion time automatically from the initial click on "Start Task" until final answer submission. Completion times were logged for all completed trials regardless of answer correctness; trial durations for incorrect or moderator-prompted responses were retained in the Table 2 time analysis, while errors and assistance instances were additionally tallied separately for qualitative review (Table 3). The test moderator remained strictly passive; intervention was permitted only if a participant exhibited complete inactivity exceeding 60 seconds, using the standardized neutral prompt: *"Please refer to the progress indicators on the screen to answer the question."*
 
 #### Study 3: Missing and Stale Data Perception Test
 Immediately following Study 2, participants evaluated three edge cases:

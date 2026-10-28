@@ -132,7 +132,7 @@ The empirical evaluation was conducted using \textbf{CivicTrack}, an end-to-end 
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.68\textwidth]{figures/fig3_system_architecture.png}
+\includegraphics[width=0.92\textwidth]{figures/fig3_system_architecture.png}
 \caption{CivicTrack system architecture, component dataflow, and experimental testing integration across Condition A (List View) and Condition B (Map and Timeline Explorer).}
 \label{fig:architecture}
 \end{figure}
@@ -144,7 +144,7 @@ To enable rigorous comparative testing, two controlled visual modalities were im
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.74\textwidth]{figures/fig_system_interface_comparison.png}
+\includegraphics[width=0.95\textwidth]{figures/fig_system_interface_comparison.png}
 \caption{Visual stimuli for comparative evaluation: (a) Condition A (Tabular List baseline modeled on municipal open data portals) and (b) Condition B (CivicTrack interactive Map-and-Timeline Explorer).}
 \label{fig:comparison}
 \end{figure}
@@ -177,7 +177,7 @@ where $w_k$ denotes the engineering weight of work package $k$ such that $\sum w
 \subsubsection{Strict Priority Classification Rules:}
 To ensure absolute mathematical consistency, project status is assigned according to the following mutually exclusive hierarchy: (1)~\textbf{Missing Data:} $P_{physical}$ is null; (2)~\textbf{Not Started:} $T_{ref} \le T_{start}$ and $P_{physical} = 0.0\%$; (3)~\textbf{Completed:} $P_{physical} = 100.0\%$; (4)~\textbf{Overdue Finish:} $T_{elapsed} = 100.0\%$ (contract deadline passed) and $P_{physical} < 100.0\%$ (applies to Project \texttt{TKG-WNK-001}, where contract ended 30/09/2024 with 92\% completion; deadline expiration overrides the standard on-track band); (5)~\textbf{Severely Delayed:} $\Delta < -20.0\%$; (6)~\textbf{Delayed:} $-20.0\% \le \Delta < -10.0\%$; (7)~\textbf{On-Track:} $-10.0\% \le \Delta < 0.0\%$; (8)~\textbf{Ahead:} $\Delta \ge 0.0\%$; and (9)~\textbf{Stale Data Flag:} asserted if $(T_{ref} - T_{update}) > 90\text{ days}$.
 
-The 20 projects were balanced into two equivalent subsets: \textbf{Set A} (10 projects) and \textbf{Set B} (10 projects). Both sets share identical category profiles (6 roads, 2 drainage systems, 1 bridge, 1 public building) and balanced condition categories (2 on-track, 4 delayed/severely delayed/overdue, 2 completed, 1 not started, 1 missing/stale).
+The 20 projects were partitioned into two balanced 10-project subsets: \textbf{Set A} (6 roads, 2 drainage, 2 bridges; 2 on-track, 4 delayed/overdue, 1 completed, 1 not started, 2 missing/stale) and \textbf{Set B} (6 roads, 2 public buildings, 1 drainage, 1 park; 2 on-track, 4 delayed, 2 completed, 1 not started, 1 stale), maintaining an identical core of 6 roads, 4 delayed/overdue, and 2 on-track projects for comparative retrieval parity.
 
 \subsection{Experimental Protocols}
 
@@ -197,7 +197,7 @@ The experimental tasks evaluated core civic scenarios with balanced target quest
     \item \textbf{Task 4 (Physical vs. Time Progress):} ``Assess Project [Code] where 84.1\% of calendar time has elapsed and physical completion is 67.0\%. Determine whether this project is on schedule, delayed, or completed.'' (Key: Delayed by -17.1\%).
 \end{itemize}
 
-\textbf{Timing and Moderator Rules:} Telemetry recorded completion time automatically from the initial click on ``Start Task'' until final answer submission. Completion times were logged for all completed trials; incorrect answers and prompted trials were logged in error and assistance tallies. The test moderator remained strictly passive; intervention was permitted only if a participant exhibited complete inactivity exceeding 60 seconds, using the standardized neutral prompt: \emph{``Please refer to the progress indicators on the screen to answer the question.''}
+\textbf{Timing and Moderator Rules:} Telemetry recorded completion time automatically from the initial click on ``Start Task'' until final answer submission. Completion times were logged for all completed trials regardless of answer correctness; trial durations for incorrect or moderator-prompted responses were retained in the Table 2 time analysis, while errors and assistance instances were additionally tallied separately for qualitative review (Table 3). The test moderator remained strictly passive; intervention was permitted only if a participant exhibited complete inactivity exceeding 60 seconds, using the standardized neutral prompt: \emph{``Please refer to the progress indicators on the screen to answer the question.''}
 
 \subsubsection{Study 3: Missing and Stale Data Perception Test:}
 Immediately following Study~2, participants evaluated three edge cases: (1)~\textbf{Case 1 (\texttt{KTG-PCN-001}):} Physical progress is missing (\emph{null}), last update $>150$ days ago ($T_{elapsed} = 84.8\%$; correct interpretation: unverified/missing; construction status cannot be deduced without fresh synchronization); (2)~\textbf{Case 2 (\texttt{LMG-SKR-001}):} Progress 68.0\%, update 117 days ago ($T_{elapsed} = 81.1\%$; correct interpretation: 68.0\% represents June progress; current October status is uncertain); and (3)~\textbf{Case 3 (\texttt{KGN-KRN-001}):} Progress 55.0\% reported on 15 June 2024, 122 days prior ($T_{ref} = \text{15 October 2024}$, $T_{elapsed} = 74.8\%$; correct interpretation: On 15 June, elapsed time was 34.7\%, meaning the project was ahead in June; however, its October status is unverifiable without current inspection reports).
@@ -234,6 +234,8 @@ Table~\ref{tab:dataset} outlines a representative sample of 8 benchmark public i
 \bottomrule
 \end{tabular}%
 }
+\vspace{1.5pt}
+{\raggedright\scriptsize\emph{Note:} A representative sample of 8 projects is shown; the complete 20-project dataset is available in the repository (\texttt{paper/data/ground\_truth\_20\_projects.csv}).\par}
 \end{table}
 
 \subsection{Comparative Task Performance Analysis (Study 2)}
@@ -266,7 +268,7 @@ The quantitative outcomes of the 128 trial runs ($16\text{ participants} \times 
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.60\textwidth]{figures/fig1_task_performance.png}
+\includegraphics[width=0.90\textwidth]{figures/fig1_task_performance.png}
 \caption{Task completion time (seconds) and comprehension accuracy rate across Tasks 1--4 between Condition A (List-Based) and Condition B (Map-and-Timeline) ($N = 16$).}
 \label{fig:perf}
 \end{figure}
@@ -352,7 +354,7 @@ As shown in Fig.~\ref{fig:usability}, CivicTrack achieved an overall mean SUS sc
 
 In the concurrent ISO/IEC 25010 UAT audit, CivicTrack attained an overall quality rating of \textbf{90.88\%} (727/800 points, \emph{Sangat Layak}). Dimension satisfaction reached 95.00\% for UI Aesthetics, 93.75\% for Appropriateness Recognizability, 92.50\% for Temporal Clarity, and 91.25\% for Functional Completeness. All 95 executed automated test cases (38 Pytest backend and 57 Vitest frontend) passed successfully.
 
-\enlargethispage{4.5\baselineskip}
+\enlargethispage{8.5\baselineskip}
 \section{Conclusion}
 This pilot study established an empirical evaluation comparing a conventional list-based tabular portal against an integrated map-and-timeline interface. Using a 20-project benchmark modeled on Lamongan Regency, our findings demonstrate clear task-dependent trade-offs:
 \begin{enumerate}\setlength{\itemsep}{0.5pt}\setlength{\parskip}{0pt}
@@ -364,12 +366,12 @@ This pilot study established an empirical evaluation comparing a conventional li
 
 \noindent\textbf{Boundaries of Claims and Limitations:} This study evaluated a pilot cohort of $N = 16$ participants across 128 trials; while statistically robust for cognitive processing metrics, it represents preliminary behavioral evidence. Crucially, \textbf{information comprehension is an interface usability metric, not causal proof of corruption reduction or institutional accountability}~\cite{ambituuni2025infrastructure,saelawong2024transparency}. Civic maps and timelines facilitate cognitive access; converting this access into systemic accountability depends on administrative responsiveness, legal whistleblower protections, and civic empowerment. Future work will extend testing to longitudinal civic deployments across East Java, investigating adaptive hybrid interfaces combining quick-lookup drawers with spatial timeline overlays.
 
-\begin{credits}\vspace{-5pt}
-\subsubsection*{\ackname}
+\begin{credits}\vspace{-8pt}
+\subsubsection*{\ackname}\vspace{-4pt}
 \noindent\small The authors thank the Department of Informatics and Computer Engineering, PENS, and Diskominfo Kabupaten Lamongan for providing administrative and spatial data references.
 
-\vspace{-4pt}
-\subsubsection*{\discintname}
+\vspace{-6pt}
+\subsubsection*{\discintname}\vspace{-4pt}
 \noindent\small The authors have no competing interests to declare that are relevant to the content of this article.
 \end{credits}
 
@@ -380,14 +382,15 @@ This pilot study established an empirical evaluation comparing a conventional li
 \makeatletter
 \renewenvironment{thebibliography}[1]
      {\section*{\refname}%
+      \enlargethispage{2\baselineskip}%
       \def\@biblabel##1{##1.}%
-      \fontsize{7.0pt}{8.2pt}\selectfont
+      \fontsize{6.8pt}{7.9pt}\selectfont
       \raggedbottom
       \list{\@biblabel{\@arabic\c@enumiv}}%
            {\settowidth\labelwidth{\@biblabel{#1}}%
             \leftmargin\labelwidth
             \advance\leftmargin\labelsep
-            \setlength{\itemsep}{0pt}%
+            \setlength{\itemsep}{-0.5pt}%
             \setlength{\parsep}{0pt}%
             \usecounter{enumiv}%
             \let\p@enumiv\@empty
