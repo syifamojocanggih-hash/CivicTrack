@@ -8,7 +8,6 @@ dois = [
     ('ayalew2024developing', '10.1080/23311916.2024.2348210'),
     ('bacic2022advancing', '10.1016/j.dss.2022.113862'),
     ('chokki2022engaging', '10.1145/3558099'),
-    ('heitkemper2024solutions', '10.2196/51666'),
     ('johnson2024enhancing', '10.1016/j.landurbplan.2024.105197'),
     ('kempeneer2023rethinking', '10.3233/IP-239008'),
     ('kytta2023prioritizing', '10.1016/j.landurbplan.2023.104868'),

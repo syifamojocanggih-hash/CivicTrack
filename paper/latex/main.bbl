@@ -28,17 +28,23 @@ Ba{\v{c}}i{\'c}, D., Henry, R.: Advancing our understanding and assessment of
   Eye tracking-based approach. Decision Support Systems  \textbf{163},  113862
   (2022). \doi{10.1016/j.dss.2022.113862}
 
+\bibitem{bina2023incorporating}
+Bina, S., Kaskela, T., Jones, D.R., Walden, E., Graue, W.B.: Incorporating
+  evolutionary adaptions into the cognitive fit model for data visualization.
+  Decision Support Systems  \textbf{171},  113979 (2023).
+  \doi{10.1016/j.dss.2023.113979}
+
 \bibitem{chokki2022engaging}
 Chokki, A.P., Simonofski, A., Fr{\'e}nay, B., Vanderose, B.: Engaging citizens
   with open government data: The value of dashboards compared to individual
   visualizations. Digital Government: Research and Practice  \textbf{3}(4),
   1--25 (2022). \doi{10.1145/3558099}
 
-\bibitem{heitkemper2024solutions}
-Heitkemper, E.M., Manteuffel, B., Rogers, C., Velez, M., Patel, R.: The
-  solutions in health analytics for rural equity across the nation ({SHARE-NW})
-  dashboard: Usability evaluation. JMIR Human Factors  \textbf{11},  e51666
-  (2024). \doi{10.2196/51666}
+\bibitem{fernstad2022explore}
+Fernstad, S.J., Westberg, J.J.: To explore what isn't there---glyph-based
+  visualization for analysis of missing values. IEEE Transactions on
+  Visualization and Computer Graphics  \textbf{28}(10),  3513--3529 (2022).
+  \doi{10.1109/TVCG.2021.3065124}
 
 \bibitem{johnson2024enhancing}
 Johnson, M.S., Adams, V.M., Byrne, J.A.: Enhancing climate adaptation:
@@ -82,27 +88,10 @@ Saelawong, T., Yomnak, T., Chaiwat, T., Poopunpanich, S., Sutuktis, C.:
   Financial Crime  \textbf{31}(5),  1152--1168 (2024).
   \doi{10.1108/JFC-10-2023-0282}
 
-\bibitem{song2018where}
-Song, H., Szafir, D.A.: Where's my data? evaluating visualizations with missing
-  data. IEEE Transactions on Visualization and Computer Graphics
-  \textbf{25}(1),  914--924 (2019). \doi{10.1109/TVCG.2018.2864914}
-
 \bibitem{soni2024survey}
 Soni, P., de~Runz, C., Bouali, F., Venturini, G.: A survey on automatic
   dashboard recommendation systems. Visual Informatics  \textbf{8}(1),  67--79
   (2024). \doi{10.1016/j.visinf.2024.01.002}
-
-\bibitem{stromberg2025evaluating}
-Str{\"o}mberg, S.: Evaluating the Efficiency and Accuracy of {GIS}-Based
-  Visualization Compared to {Excel} for Decision-Making. Master's thesis, KTH
-  Royal Institute of Technology, School of Architecture and the Built
-  Environment, Stockholm, Sweden (2025), diVA Portal:
-  \url{https://www.diva-portal.org/smash/record.jsf?pid=diva2:1938210}
-
-\bibitem{vessey1991cognitive}
-Vessey, I., Galletta, D.F.: Cognitive fit: An empirical study of information
-  acquisition. Information Systems Research  \textbf{2}(1),  63--84 (1991).
-  \doi{10.1287/isre.2.1.63}
 
 \bibitem{zhao2023digital}
 Zhao, B., Cheng, S., Schiff, K.J., Kim, Y.: Digital transparency and citizen
