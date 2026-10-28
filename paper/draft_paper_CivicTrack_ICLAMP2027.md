@@ -1,7 +1,7 @@
 # List-Based versus Map-and-Timeline Project Information: A Pilot Study of Citizen Comprehension
 
 **Ahmad Syifa'ul Falakhul Khayyi**$^1$, **Aimatus Sholiha**$^1$  
-$^1$ Department of Informatics and Computer Engineering, Politeknik Elektronika Negeri Surabaya, Surabaya 60111, Indonesia  
+$^1$ Department of Informatics and Computer Engineering, Electronic Engineering Polytechnic Institute of Surabaya, Surabaya 60111, Indonesia  
 `{khayyi, aimatus}@student.pens.ac.id`
 
 ---

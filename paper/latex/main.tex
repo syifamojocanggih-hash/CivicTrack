@@ -15,6 +15,7 @@
 \usepackage{cite}
 \usepackage[T1]{fontenc}
 \usepackage{lmodern}
+\usepackage{microtype}
 
 \usepackage{color}
 \renewcommand\UrlFont{\color{blue}\rmfamily}
@@ -30,11 +31,11 @@
 \renewcommand{\floatpagefraction}{0.65}
 
 % Float spacing optimization to prevent artificial page inflation
-\setlength{\textfloatsep}{5pt plus 1pt minus 1pt}
-\setlength{\floatsep}{4pt plus 1pt minus 1pt}
-\setlength{\intextsep}{4pt plus 1pt minus 1pt}
-\setlength{\abovecaptionskip}{3pt}
-\setlength{\belowcaptionskip}{1pt}
+\setlength{\textfloatsep}{3pt plus 1pt minus 1pt}
+\setlength{\floatsep}{3pt plus 1pt minus 1pt}
+\setlength{\intextsep}{3pt plus 1pt minus 1pt}
+\setlength{\abovecaptionskip}{2pt}
+\setlength{\belowcaptionskip}{0pt}
 
 \hypersetup{
     colorlinks=true,
@@ -55,7 +56,7 @@
 \authorrunning{A. S. F. Khayyi and A. Sholiha}
 %
 \institute{Department of Informatics and Computer Engineering, \\
-Politeknik Elektronika Negeri Surabaya, Surabaya 60111, Indonesia \\
+Electronic Engineering Polytechnic Institute of Surabaya, Surabaya 60111, Indonesia \\
 \email{\{khayyi, aimatus\}@student.pens.ac.id}}
 %
 \maketitle              % typeset the header of the contribution
@@ -132,7 +133,7 @@ The empirical evaluation was conducted using \textbf{CivicTrack}, an end-to-end 
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.92\textwidth]{figures/fig3_system_architecture.png}
+\includegraphics[width=0.96\textwidth]{figures/fig3_system_architecture.png}
 \caption{CivicTrack system architecture, component dataflow, and experimental testing integration across Condition A (List View) and Condition B (Map and Timeline Explorer).}
 \label{fig:architecture}
 \end{figure}
@@ -144,7 +145,7 @@ To enable rigorous comparative testing, two controlled visual modalities were im
 
 \begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.95\textwidth]{figures/fig_system_interface_comparison.png}
+\includegraphics[width=0.98\textwidth]{figures/fig_system_interface_comparison.png}
 \caption{Visual stimuli for comparative evaluation: (a) Condition A (Tabular List baseline modeled on municipal open data portals) and (b) Condition B (CivicTrack interactive Map-and-Timeline Explorer).}
 \label{fig:comparison}
 \end{figure}
@@ -268,7 +269,7 @@ The quantitative outcomes of the 128 trial runs ($16\text{ participants} \times 
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=0.90\textwidth]{figures/fig1_task_performance.png}
+\includegraphics[width=0.95\textwidth]{figures/fig1_task_performance.png}
 \caption{Task completion time (seconds) and comprehension accuracy rate across Tasks 1--4 between Condition A (List-Based) and Condition B (Map-and-Timeline) ($N = 16$).}
 \label{fig:perf}
 \end{figure}
@@ -312,8 +313,9 @@ Video recordings and think-aloud transcripts were independently coded by two res
 \subsection{Evaluation of Missing and Stale Data Perception (Study 3)}
 Table~\ref{tab:study3} and Fig.~\ref{fig:study3} summarize citizen interpretations across the three anomaly scenarios.
 
-\begin{table}[t]
+\begin{table}[!htbp]
 \centering
+\vspace{-2pt}
 \caption{Citizen Cognitive Interpretation of Missing and Stale Infrastructure Data ($N = 16$).}
 \label{tab:study3}
 \resizebox{\textwidth}{!}{%
@@ -331,23 +333,30 @@ Table~\ref{tab:study3} and Fig.~\ref{fig:study3} summarize citizen interpretatio
 }
 \end{table}
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.38\textwidth]{figures/fig2_missing_stale_perception.png}
+\vspace{-2pt}
+\includegraphics[width=0.90\textwidth]{figures/fig2_missing_stale_perception.png}
+\vspace{-3pt}
 \caption{Distribution of participant cognitive interpretations under missing and stale reporting conditions (Study 3, $N = 16$).}
 \label{fig:study3}
+\vspace{-2pt}
 \end{figure}
 
 The outcomes of Study~3 demonstrate that \emph{ambiguity breeds false certainty}: 31.2\% (5/16) of participants inferred project cancellation from blank cells, while 37.5\% (6/16) uncritically accepted 4-month-old data as current reality. Civic platforms must implement active freshness badges (e.g., amber warning when updates exceed 60 days) to prevent public misinformation~\cite{ambituuni2025infrastructure,fernstad2022explore}.
 
+\enlargethispage{6\baselineskip}
 \subsection{System Usability Scale (SUS) and Software Quality (ISO/IEC 25010)}
 Usability of the CivicTrack integrated platform (Condition~B compared to baseline portal experience) was evaluated using the 10-item System Usability Scale (SUS)~\cite{zytek2022sibyl,heitkemper2024solutions}, scored standardly as $\text{SUS} = 2.5 \times [ \sum_{i \in \text{odd}} (S_i - 1) + \sum_{j \in \text{even}} (5 - S_j) ]$ where $S_k \in \{1, \dots, 5\}$ denotes the Likert response for question $k$.
 
-\begin{figure}[t]
+\begin{figure}[!htbp]
 \centering
-\includegraphics[width=0.32\textwidth]{figures/fig4_combined_usability_quality.png}
+\vspace{-2pt}
+\includegraphics[width=0.90\textwidth]{figures/fig4_combined_usability_quality.png}
+\vspace{-3pt}
 \caption{System Usability Scale (SUS) individual score distribution and item ratings alongside ISO/IEC 25010 User Acceptance Testing (UAT) quality profile ($N = 16$).}
 \label{fig:usability}
+\vspace{-2pt}
 \end{figure}
 
 As shown in Fig.~\ref{fig:usability}, CivicTrack achieved an overall mean SUS score of \textbf{82.50} ($SD = 4.56$, median 82.50, range 75.0--90.0). This corresponds to \textbf{Grade~A}, ranks at the \textbf{92.5th percentile} of evaluated software systems, and garners an adjective rating of \textbf{``Excellent''}~\cite{heitkemper2024solutions}. Ratings were exceptionally high for ease of navigation ($Q_3$ mean: 4.69/5.00) and learnability ($Q_7$ mean: 4.56/5.00), while operational complexity was minimal ($Q_2$ mean: 1.63/5.00).
@@ -357,7 +366,7 @@ In the concurrent ISO/IEC 25010 UAT audit, CivicTrack attained an overall qualit
 \enlargethispage{8.5\baselineskip}
 \section{Conclusion}
 This pilot study established an empirical evaluation comparing a conventional list-based tabular portal against an integrated map-and-timeline interface. Using a 20-project benchmark modeled on Lamongan Regency, our findings demonstrate clear task-dependent trade-offs:
-\begin{enumerate}\setlength{\itemsep}{0.5pt}\setlength{\parskip}{0pt}
+\begin{enumerate}\setlength{\itemsep}{-1pt}\setlength{\parskip}{0pt}
     \item \textbf{Spatial Scoping:} Geospatial choropleth maps significantly accelerate geographic retrieval by 57\% ($p < 0.001$), accompanied by a descriptive accuracy gain from 81.2\% to 100.0\% ($p = 0.250$).
     \item \textbf{Schedule Comprehension:} Synchronized dual-bar timelines significantly reduce completion time ($p < 0.001$) and statistically elevate delay detection accuracy from 50.0\% to 93.8\% ($p = 0.016$).
     \item \textbf{Complexity Penalty:} For discrete alphanumeric lookups, tabular lists remain significantly faster ($p < 0.001$), with descriptive accuracy favoring the list format (93.8\% vs. 81.2\%, $p = 0.625$).
@@ -382,15 +391,15 @@ This pilot study established an empirical evaluation comparing a conventional li
 \makeatletter
 \renewenvironment{thebibliography}[1]
      {\section*{\refname}%
-      \enlargethispage{2\baselineskip}%
+      \enlargethispage{5\baselineskip}%
       \def\@biblabel##1{##1.}%
-      \fontsize{6.8pt}{7.9pt}\selectfont
+      \fontsize{6.6pt}{7.6pt}\selectfont
       \raggedbottom
       \list{\@biblabel{\@arabic\c@enumiv}}%
            {\settowidth\labelwidth{\@biblabel{#1}}%
             \leftmargin\labelwidth
             \advance\leftmargin\labelsep
-            \setlength{\itemsep}{-0.5pt}%
+            \setlength{\itemsep}{-1.2pt}%
             \setlength{\parsep}{0pt}%
             \usecounter{enumiv}%
             \let\p@enumiv\@empty
