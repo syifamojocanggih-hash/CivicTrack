@@ -48,22 +48,23 @@ ax0.add_patch(rect_btn)
 ax0.text(88, 75.0, "Filter", fontsize=8.2, fontweight='bold', color='white', ha='center', va='center')
 
 # Table Header
-headers = ["Kode", "Nama Proyek", "Pagu", "Waktu", "Fisik", "Update", "Status"]
-col_x = [3, 17, 43, 55, 68, 79, 90]
+# Table Header (Explicitly displays contract deadline for Task 3 recency-vs-deadline comparison)
+headers = ["Kode", "Nama Proyek", "Deadline", "Waktu", "Fisik", "Update", "Status"]
+col_x = [3, 16, 42, 56, 68, 79, 90]
 
 rect_th = patches.Rectangle((1, 60), 98, 8, facecolor='#F1F5F9', edgecolor='#E2E8F0', linewidth=1.0)
 ax0.add_patch(rect_th)
 for i, h in enumerate(headers):
     ax0.text(col_x[i], 64.0, h, fontsize=7.8, fontweight='bold', color='#475569', va='center')
 
-# Rows
+# Rows with verified contract deadlines matching ground truth and Task 3 keys
 rows_data = [
-    ("SKD-001", "Peningkatan Sukodadi", "7.92 B", "83.2%", "82.0%", "10/10/24", "In-Prog", "#FEF3C7", "#92400E"),
-    ("SGO-001", "Rekonstruksi Sugio", "6.45 B", "94.1%", "75.0%", "08/10/24", "In-Prog", "#FEF3C7", "#92400E"),
-    ("SMB-001", "Rekonstruksi Sambeng", "8.10 B", "84.1%", "67.0%", "05/10/24", "In-Prog", "#FEF3C7", "#92400E"),
-    ("TKG-001", "Peningkatan Tikung", "4.60 B", "100%", "92.0%", "02/10/24", "In-Prog", "#FEF3C7", "#92400E"),
-    ("KBN-001", "Pintu Air Kuro", "12.8 B", "100%", "100%", "25/07/24", "Selesai", "#D1FAE5", "#065F46"),
-    ("KTG-001", "Normalisasi Asin", "4.50 B", "84.8%", "—", "10/05/24", "In-Prog", "#F1F5F9", "#475569")
+    ("SKD-001", "Peningkatan Sukodadi", "30/11/24", "83.2%", "82.0%", "10/10/24", "In-Prog", "#FEF3C7", "#92400E"),
+    ("SGO-001", "Rekonstruksi Sugio", "31/10/24", "94.1%", "75.0%", "08/10/24", "In-Prog", "#FEF3C7", "#92400E"),
+    ("SMB-001", "Rekonstruksi Sambeng", "30/11/24", "84.1%", "67.0%", "05/10/24", "In-Prog", "#FEF3C7", "#92400E"),
+    ("TKG-001", "Peningkatan Tikung", "30/09/24", "100%", "92.0%", "02/10/24", "In-Prog", "#FEF3C7", "#92400E"),
+    ("KBN-001", "Pintu Air Kuro", "31/07/24", "100%", "100%", "25/07/24", "Selesai", "#D1FAE5", "#065F46"),
+    ("KTG-001", "Normalisasi Asin", "30/11/24", "84.8%", "—", "10/05/24", "In-Prog", "#F1F5F9", "#475569")
 ]
 
 y_row = 51
@@ -72,7 +73,7 @@ for r in rows_data:
     ax0.add_patch(rect_row)
     ax0.text(col_x[0], y_row + 3.7, r[0], fontsize=7.5, fontfamily='monospace', color='#1E293B', va='center')
     ax0.text(col_x[1], y_row + 3.7, r[1], fontsize=7.5, color='#1E293B', va='center')
-    ax0.text(col_x[2], y_row + 3.7, r[2], fontsize=7.5, color='#475569', va='center')
+    ax0.text(col_x[2], y_row + 3.7, r[2], fontsize=7.5, color='#0F172A', fontweight='medium', va='center')
     ax0.text(col_x[3], y_row + 3.7, r[3], fontsize=7.5, color='#1E293B', va='center')
     ax0.text(col_x[4], y_row + 3.7, r[4], fontsize=7.5, fontweight='bold', color='#1E293B', va='center')
     ax0.text(col_x[5], y_row + 3.7, r[5], fontsize=7.5, color='#64748B', va='center')
