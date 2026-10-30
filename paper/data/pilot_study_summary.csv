@@ -1,9 +1,9 @@
 task_id,task_name,condition,accuracy_pct,mean_duration_sec,median_duration_sec,sd_duration_sec,assistance_rate_pct,n_trials
-T1,T1: Location Finding,List-Based,81.25,33.15,33.3,3.22,18.75,16
-T1,T1: Location Finding,Map-Timeline,100.0,14.53,14.3,1.76,0.0,16
-T2,T2: Delay Identification,List-Based,50.0,44.79,44.5,4.47,50.0,16
-T2,T2: Delay Identification,Map-Timeline,93.75,27.87,27.75,2.34,6.25,16
-T3,T3: Update Recency Lookup,List-Based,93.75,12.28,12.05,1.49,6.25,16
-T3,T3: Update Recency Lookup,Map-Timeline,81.25,22.97,22.7,2.33,18.75,16
-T4,T4: Progress vs Elapsed Time,List-Based,43.75,49.67,49.6,4.38,43.75,16
-T4,T4: Progress vs Elapsed Time,Map-Timeline,93.75,34.44,34.25,2.99,6.25,16
+T1,T1: Spatial Retrieval,List-Based,81.25,32.83,29.75,13.75,18.75,16
+T1,T1: Spatial Retrieval,Map-and-Timeline,100.00,15.42,14.05,3.12,0.00,16
+T2,T2: Delay Detection,List-Based,50.00,44.22,44.65,12.97,50.00,16
+T2,T2: Delay Detection,Map-and-Timeline,93.75,28.57,27.70,4.82,6.25,16
+T3,T3: Recency Lookup,List-Based,93.75,12.82,12.35,5.83,6.25,16
+T3,T3: Recency Lookup,Map-and-Timeline,81.25,22.40,23.85,4.63,18.75,16
+T4,T4: Progress vs Time,List-Based,43.75,48.51,48.55,13.26,56.25,16
+T4,T4: Progress vs Time,Map-and-Timeline,93.75,34.12,33.10,5.52,6.25,16

@@ -40,11 +40,28 @@ Chokki, A.P., Simonofski, A., Fr{\'e}nay, B., Vanderose, B.: Engaging citizens
   visualizations. Digital Government: Research and Practice  \textbf{3}(4),
   1--25 (2022). \doi{10.1145/3558099}
 
+\bibitem{duncan2021task}
+Duncan, I.K., Shi, T., Perrault, S.T., Gastner, M.T.: Task-based effectiveness
+  of interactive contiguous area cartograms. IEEE Transactions on Visualization
+  and Computer Graphics  \textbf{27}(3),  2136--2152 (2021).
+  \doi{10.1109/TVCG.2020.3041745}
+
 \bibitem{fernstad2022explore}
 Fernstad, S.J., Westberg, J.J.: To explore what isn't there---glyph-based
   visualization for analysis of missing values. IEEE Transactions on
   Visualization and Computer Graphics  \textbf{28}(10),  3513--3529 (2022).
   \doi{10.1109/TVCG.2021.3065124}
+
+\bibitem{hyzy2022system}
+Hyzy, M., Bond, R., Mulvenna, M., Bai, L., Dix, A., Leigh, S., Hunt, S.: System
+  usability scale benchmarking for digital health apps: Meta-analysis. JMIR
+  mHealth and uHealth  \textbf{10}(8),  e37290 (2022). \doi{10.2196/37290}
+
+\bibitem{jaelani2024pelaksanaan}
+Jaelani, Y., Manar, D.: Pelaksanaan layanan pengadaan barang dan jasa secara
+  elektronik di {Kabupaten Lamongan} tahun 2023. Journal of Politic and
+  Government Studies  \textbf{13}(3),  508--517 (2024),
+  \url{https://ejournal3.undip.ac.id/index.php/jpgs/article/view/45952}
 
 \bibitem{johnson2024enhancing}
 Johnson, M.S., Adams, V.M., Byrne, J.A.: Enhancing climate adaptation:
@@ -64,11 +81,11 @@ Kytt{\"a}, M., Randrup, T., Sunding, A., Rossi, S., Harsia, E., Palom{\"a}ki,
   Landscape and Urban Planning  \textbf{239},  104868 (2023).
   \doi{10.1016/j.landurbplan.2023.104868}
 
-\bibitem{lehto2022landscape}
-Lehto, C., Hedblom, M., {\"O}ckinger, E., Ranius, T.: Landscape usage by
-  recreationists is shaped by availability: Insights from a national {PPGIS}
-  survey in {Sweden}. Landscape and Urban Planning  \textbf{227},  104519
-  (2022). \doi{10.1016/j.landurbplan.2022.104519}
+\bibitem{lewis2021usability}
+Lewis, J.R., Sauro, J.: Usability and user experience: Design and evaluation.
+  In: Salvendy, G., Karwowski, W. (eds.) Handbook of Human Factors and
+  Ergonomics, pp. 972--1015. John Wiley \& Sons, Inc., 5th edn. (2021).
+  \doi{10.1002/9781119636113.ch38}
 
 \bibitem{matheus2021design}
 Matheus, R., Janssen, M., Janowski, T.: Design principles for creating digital
@@ -81,6 +98,10 @@ Nikiforova, A., McBride, K.: Open government data portal usability: A
   Telematics and Informatics  \textbf{58},  101539 (2021).
   \doi{10.1016/j.tele.2020.101539}
 
+\bibitem{satudatalamongan2024}
+{Pemerintah Kabupaten Lamongan}: Portal satu data kabupaten lamongan.
+  \url{https://satudata.lamongankab.go.id} (2024), accessed: 15 October 2024
+
 \bibitem{saelawong2024transparency}
 Saelawong, T., Yomnak, T., Chaiwat, T., Poopunpanich, S., Sutuktis, C.:
   Transparency and budget savings in public procurement: evidence from
@@ -88,21 +109,16 @@ Saelawong, T., Yomnak, T., Chaiwat, T., Poopunpanich, S., Sutuktis, C.:
   Financial Crime  \textbf{31}(5),  1152--1168 (2024).
   \doi{10.1108/JFC-10-2023-0282}
 
-\bibitem{soni2024survey}
-Soni, P., de~Runz, C., Bouali, F., Venturini, G.: A survey on automatic
-  dashboard recommendation systems. Visual Informatics  \textbf{8}(1),  67--79
-  (2024). \doi{10.1016/j.visinf.2024.01.002}
+\bibitem{tang2024comparative}
+Tang, J., Yang, F., Ling, X., Chen, W., Ren, L., Wu, Y.: A comparative study on
+  fixed-order event sequence visualizations: Gantt, extended gantt, and
+  stringline charts. IEEE Transactions on Visualization and Computer Graphics
+  \textbf{30}(1),  441--451 (2024). \doi{10.1109/TVCG.2024.3358919}
 
 \bibitem{zhao2023digital}
 Zhao, B., Cheng, S., Schiff, K.J., Kim, Y.: Digital transparency and citizen
   participation: Evidence from the online crowdsourcing platform of the {City
   of Sacramento}. Government Information Quarterly  \textbf{40}(4),  101868
   (2023). \doi{10.1016/j.giq.2023.101868}
-
-\bibitem{zytek2022sibyl}
-Zytek, A., Liu, D., Vaithianathan, R., Veeramachaneni, K.: Sibyl: Understanding
-  and addressing the usability challenges of machine learning in high-stakes
-  decision making. IEEE Transactions on Visualization and Computer Graphics
-  \textbf{28}(1),  1161--1171 (2022). \doi{10.1109/TVCG.2021.3114864}
 
 \end{thebibliography}

@@ -38,7 +38,7 @@ map_time_sd = [1.76, 2.34, 2.33, 2.99]
 rects1 = ax1.bar(x - width/2, list_time, width, yerr=list_time_sd, capsize=4,
                  label='Condition A: List-Based', color='#4A6FA5', edgecolor='#1F3A60', alpha=0.9)
 rects2 = ax1.bar(x + width/2, map_time, width, yerr=map_time_sd, capsize=4,
-                 label='Condition B: Map-Timeline', color='#E07A5F', edgecolor='#8C3D28', alpha=0.9)
+                 label='Condition B: Map-Timeline (+Badge in T2/T4)', color='#E07A5F', edgecolor='#8C3D28', alpha=0.9)
 
 ax1.set_ylabel('Mean Completion Time (seconds)')
 ax1.set_title('(a) Task Completion Time ($N=16$, Mean $\\pm$ SD)')
@@ -65,7 +65,7 @@ map_acc = [100.0, 93.8, 81.2, 93.8]
 rects3 = ax2.bar(x - width/2, list_acc, width,
                  label='Condition A: List-Based', color='#4A6FA5', edgecolor='#1F3A60', alpha=0.9)
 rects4 = ax2.bar(x + width/2, map_acc, width,
-                 label='Condition B: Map-Timeline', color='#E07A5F', edgecolor='#8C3D28', alpha=0.9)
+                 label='Condition B: Map-Timeline (+Badge in T2/T4)', color='#E07A5F', edgecolor='#8C3D28', alpha=0.9)
 
 ax2.set_ylabel('Comprehension Accuracy Rate (%)')
 ax2.set_title('(b) Information Accuracy Rate ($N=16$)')

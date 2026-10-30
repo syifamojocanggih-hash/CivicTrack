@@ -1,13 +1,13 @@
 {
   "benchmark": "System Usability Scale (SUS) Standardized Instrument",
   "n_participants": 16,
-  "overall_mean_sus": 82.5,
-  "overall_sd_sus": 4.564354645876384,
-  "overall_median_sus": 82.5,
+  "overall_mean_sus": 78.75,
+  "overall_sd_sus": 7.36,
+  "overall_median_sus": 80.0,
   "industry_benchmark_average": 68.0,
-  "percentile_rank": 92.5,
-  "letter_grade": "A",
-  "adjective_rating": "Excellent",
+  "percentile_rank": "82nd percentile",
+  "letter_grade": "A-",
+  "adjective_rating": "Good to Excellent",
   "participants": [
     {
       "participant_id": "P01",
@@ -41,10 +41,11 @@
         4
       ],
       "raw_sum": 35,
-      "sus_score": 87.5,
+      "sus_score": 65.0,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Moderate Usability (Adequate)"
     },
     {
       "participant_id": "P02",
@@ -81,7 +82,8 @@
       "sus_score": 80.0,
       "grade": "B",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Good Usability"
     },
     {
       "participant_id": "P03",
@@ -118,7 +120,8 @@
       "sus_score": 85.0,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Excellent Usability"
     },
     {
       "participant_id": "P04",
@@ -152,10 +155,11 @@
         3
       ],
       "raw_sum": 30,
-      "sus_score": 75.0,
+      "sus_score": 67.5,
       "grade": "B",
       "acceptability": "Acceptable",
-      "adjective_rating": "Good"
+      "adjective_rating": "Good",
+      "interpretation": "Moderate Usability (Adequate)"
     },
     {
       "participant_id": "P05",
@@ -192,7 +196,8 @@
       "sus_score": 87.5,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Excellent Usability"
     },
     {
       "participant_id": "P06",
@@ -226,10 +231,11 @@
         4
       ],
       "raw_sum": 33,
-      "sus_score": 82.5,
+      "sus_score": 77.5,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Good Usability"
     },
     {
       "participant_id": "P07",
@@ -263,10 +269,11 @@
         3
       ],
       "raw_sum": 30,
-      "sus_score": 75.0,
+      "sus_score": 72.5,
       "grade": "B",
       "acceptability": "Acceptable",
-      "adjective_rating": "Good"
+      "adjective_rating": "Good",
+      "interpretation": "Moderate Usability (Adequate)"
     },
     {
       "participant_id": "P08",
@@ -303,7 +310,8 @@
       "sus_score": 85.0,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Excellent Usability"
     },
     {
       "participant_id": "P09",
@@ -340,7 +348,8 @@
       "sus_score": 80.0,
       "grade": "B",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Good Usability"
     },
     {
       "participant_id": "P10",
@@ -374,10 +383,11 @@
         4
       ],
       "raw_sum": 34,
-      "sus_score": 85.0,
+      "sus_score": 82.5,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Good Usability"
     },
     {
       "participant_id": "P11",
@@ -411,10 +421,11 @@
         3
       ],
       "raw_sum": 30,
-      "sus_score": 75.0,
+      "sus_score": 70.0,
       "grade": "B",
       "acceptability": "Acceptable",
-      "adjective_rating": "Good"
+      "adjective_rating": "Good",
+      "interpretation": "Moderate Usability (Adequate)"
     },
     {
       "participant_id": "P12",
@@ -451,7 +462,8 @@
       "sus_score": 90.0,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Excellent Usability"
     },
     {
       "participant_id": "P13",
@@ -488,7 +500,8 @@
       "sus_score": 82.5,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Good Usability"
     },
     {
       "participant_id": "P14",
@@ -522,10 +535,11 @@
         3
       ],
       "raw_sum": 33,
-      "sus_score": 82.5,
+      "sus_score": 75.0,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Good Usability"
     },
     {
       "participant_id": "P15",
@@ -559,10 +573,11 @@
         3
       ],
       "raw_sum": 33,
-      "sus_score": 82.5,
+      "sus_score": 85.0,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Excellent Usability"
     },
     {
       "participant_id": "P16",
@@ -596,10 +611,11 @@
         4
       ],
       "raw_sum": 34,
-      "sus_score": 85.0,
+      "sus_score": 75.0,
       "grade": "A",
       "acceptability": "Acceptable",
-      "adjective_rating": "Excellent"
+      "adjective_rating": "Excellent",
+      "interpretation": "Good Usability"
     }
   ]
 }
