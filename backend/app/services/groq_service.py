@@ -215,7 +215,7 @@ def _call_groq_chat(prompt: str, system_message: str = "Anda adalah asisten AI t
             return data["choices"][0]["message"]["content"]
 
         # Jika response_format gagal validasi JSON pada model tertentu, coba ulang tanpa response_format
-        if resp.status_code == 400 and "json_validate_failed" in resp.text:
+        if resp.status_code == 400 and ("json_validate_failed" in resp.text or "response_format" in resp.text or "must contain the word" in resp.text):
             logger.info("Mencoba ulang panggilan Groq tanpa response_format json_object...")
             payload.pop("response_format", None)
             payload["messages"][0]["content"] = f"{system_message} Output raw valid JSON only without markdown or explanations."
@@ -569,7 +569,7 @@ Format JSON wajib persis:
                             routes_list = val
                             break
 
-            if isinstance(routes_list, list) and len(routes_list) >= 3:
+            if isinstance(routes_list, list) and len(routes_list) > 0:
                 # Perbarui alasan rekomendasi dari analisis Groq tanpa mengubah koordinat/jarak/waktu
                 for idx, c in enumerate(candidates):
                     # Cari elemen rute yang cocok berdasarkan prioritas atau indeks
@@ -673,7 +673,8 @@ Format respons dalam bentuk json object valid tanpa teks lain di luar json:
 
             if isinstance(parsed, dict) and "skor_urgensi_ai" in parsed:
                 raw_score = parsed.get("skor_urgensi_ai")
-                score = max(1, min(5, int(raw_score)))
+                num_match = re.search(r"\d+", str(raw_score))
+                score = max(1, min(5, int(num_match.group()) if num_match else 3))
                 summary = str(parsed.get("ringkasan_analisis_ai", "")).strip()
 
                 invalid_placeholders = ["", "null", "none", "undefined", "n/a", "-", "..."]

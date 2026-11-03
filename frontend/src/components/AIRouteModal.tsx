@@ -499,7 +499,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         ? rawCoords
         : generateCleanDetourPath(origPt, destPt, center, idx);
 
-      const rawWaypoints = item.nama_rute ? item.nama_rute.split('➔').map((s: string) => s.trim()) : [];
+      const rawWaypoints = item.nama_rute ? item.nama_rute.split(/➔|->|→/).map((s: string) => s.trim()) : [];
       const waypoints = ensureWaypointsSpan(rawWaypoints, currentOrigin, currentDest);
       const steps = generateNavigationSteps(currentOrigin, currentDest, projectName || '', idx, origPt, destPt, center);
 

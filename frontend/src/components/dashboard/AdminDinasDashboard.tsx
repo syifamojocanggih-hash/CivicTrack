@@ -2989,7 +2989,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                       ⚡ AI Urgensi: Skor {item.skor_urgensi_ai} / 5
                     </span>
                     <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#EBF4FB] text-[#184C78]">
-                      {item.status_verifikasi.replace('_', ' ')}
+                      {item.status_verifikasi.replace(/_/g, ' ')}
                     </span>
                   </div>
                 </div>
