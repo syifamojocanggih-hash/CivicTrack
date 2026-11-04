@@ -344,7 +344,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     }
 
     const syncRealOSRMPaths = async () => {
-      const { viaNorth, viaSouth, viaLocal, needDetour, candidates } = calculateDetourWaypoints(
+      const { candidates } = calculateDetourWaypoints(
         originCoords,
         destCoords,
         projectCoords,

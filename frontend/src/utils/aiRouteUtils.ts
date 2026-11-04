@@ -180,8 +180,8 @@ export interface NavigationStep {
 export const getGoogleMapsDirUrl = (
   origin: string,
   destination: string,
-  origCoords?: [number, number],
-  destCoords?: [number, number],
+  origCoords?: [number, number] | null,
+  destCoords?: [number, number] | null,
   travelMode: 'driving' | 'two-wheeler' | 'walking' | 'bicycling' = 'driving'
 ): string => {
   const o = origCoords ? `${origCoords[0]},${origCoords[1]}` : encodeURIComponent(origin);
