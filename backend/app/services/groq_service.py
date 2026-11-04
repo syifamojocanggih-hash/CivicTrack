@@ -401,34 +401,74 @@ def generate_ai_alternative_routes(
     ref_lat = latitude if dist_to_proj < 0.025 else mid_lat
     ref_lon = longitude if dist_to_proj < 0.025 else mid_lon
 
-    via_north = (round(ref_lat + ny_val * 0.0055, 6), round(ref_lon + nx_val * 0.0055, 6))
-    via_south = (round(ref_lat - ny_val * 0.0065, 6), round(ref_lon - nx_val * 0.0065, 6))
-    via_local = (round(ref_lat + ny_val * 0.0025, 6), round(ref_lon + nx_val * 0.0025, 6))
+    # Kalibrasi offset jalan alternatif perkotaan (420m - 600m) untuk menjamin membersihkan zona penutupan
+    via_side_a = (round(ref_lat + ny_val * 0.0038, 6), round(ref_lon + nx_val * 0.0038, 6))
+    via_side_b = (round(ref_lat - ny_val * 0.0038, 6), round(ref_lon - nx_val * 0.0038, 6))
+    via_side_b_wide = (round(ref_lat - ny_val * 0.0054, 6), round(ref_lon - nx_val * 0.0054, 6))
+    via_local = (round(ref_lat - ny_val * 0.0025, 6), round(ref_lon - nx_val * 0.0025, 6))
 
-    # Kandidat 1: Utama (Arteri / kapasitas penuh seluruh kendaraan)
+    # Kumpulkan kandidat detour untuk dievaluasi
+    detour_candidates = [
+        ("Alternatif Sisi B (-420m)", via_side_b, "driving"),
+        ("Alternatif Sisi B Luas (-600m)", via_side_b_wide, "driving"),
+        ("Alternatif Sisi A (+420m)", via_side_a, "driving"),
+    ]
+
+    # Tambahkan koridor jalan perkotaan Lamongan nyata jika dalam radius kota
+    if abs(latitude - (-7.1205)) < 0.035 and abs(longitude - 112.4155) < 0.035:
+        detour_candidates.append(("Jl. Andanwangi & Sunan Drajat (Selatan)", (-7.1245, 112.4140), "driving"))
+        detour_candidates.append(("Jl. Panglima Sudirman & Kusuma Bangsa (Utara)", (-7.1135, 112.4110), "driving"))
+        detour_candidates.append(("Jl. Basuki Rahmad Selatan (Barat)", (-7.1240, 112.4100), "driving"))
+        detour_candidates.append(("Jl. Suwoko & Sumargo (Tenggara)", (-7.1265, 112.4180), "driving"))
+        detour_candidates.append(("Pintas Jl. Cendrawasih & Laras-Liris (Jalan Tikus)", (-7.1168, 112.4140), "bicycle"))
+        detour_candidates.append(("Pintas Jl. Andansari (Jalan Lingkungan)", (-7.1180, 112.4135), "bicycle"))
+        detour_candidates.append(("Pintas Roda Dua (Andanwangi)", (-7.1245, 112.4140), "bicycle"))
+
+    evaluated_detours = []
+    for label, via_pt, prof in detour_candidates:
+        r = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_pt[0], via_lon=via_pt[1], profile=prof, timeout_sec=2.5)
+        if r and r.get("coordinates") and len(r["coordinates"]) >= 4:
+            crosses = check_route_crosses_closure(r["coordinates"], latitude, longitude, radius_meters=240)
+            evaluated_detours.append({
+                "label": label,
+                "osrm": r,
+                "crosses": crosses,
+                "dist": r.get("distance_km", 99),
+                "time": r.get("duration_min", 99)
+            })
+
+    # Filter kandidat aman yang 100% TIDAK melintasi penutupan proyek
+    safe_detours = [d for d in evaluated_detours if not d["crosses"]]
+    safe_sorted = sorted(safe_detours, key=lambda x: (x["time"], x["dist"]))
+
+    # Tentukan Kandidat 1 (Utama: Rute Langsung HANYA jika aman dari penutupan; jika memotong penutupan, WAJIB ambil alternatif aman)
     res_utama = None
     if not direct_crosses and direct_route and direct_route.get("coordinates"):
         res_utama = direct_route
+    elif safe_sorted:
+        res_utama = safe_sorted[0]["osrm"]
+    elif evaluated_detours:
+        res_utama = evaluated_detours[0]["osrm"]
     else:
-        res_utama = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_north[0], via_lon=via_north[1], profile="driving", timeout_sec=2.5)
+        res_utama = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_side_b[0], via_lon=via_side_b[1], profile="driving", timeout_sec=2.5)
 
-    # Kandidat 2: Kedua (Lingkar luar / sekunder pengurai kepadatan)
-    res_kedua = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_south[0], via_lon=via_south[1], profile="driving", timeout_sec=2.5)
+    # Tentukan Kandidat 2 (Kedua: Alternatif Sekunder pengurai kemacetan)
+    res_kedua = None
+    if safe_sorted:
+        main_roads = set(res_utama.get("road_names", []) if res_utama else [])
+        sec = next((d["osrm"] for d in safe_sorted if set(d["osrm"].get("road_names", [])) != main_roads), safe_sorted[-1]["osrm"] if len(safe_sorted) > 1 else safe_sorted[0]["osrm"])
+        res_kedua = sec
+    elif evaluated_detours:
+        res_kedua = evaluated_detours[-1]["osrm"]
+    else:
+        res_kedua = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_side_a[0], via_lon=via_side_a[1], profile="driving", timeout_sec=2.5)
 
-    # Kandidat 3: Tambahan
-    # - 'motor' → paksa bicycle profile (optimasi jalan lokal roda dua)
-    # - 'mobil' → paksa driving profile saja (tidak pakai bicycle network)
-    # - 'semua' (default) → bicycle profile jika jalan tidak melintasi penutupan, driving via_local jika melintasi
+    # Tentukan Kandidat 3 (Tambahan: Khusus Motor / Pintas Roda Dua)
     res_tambahan = None
     tambahan_profile = "bicycle" if jenis_kendaraan != "mobil" else "driving"
-    if not direct_crosses:
-        res_tambahan = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], profile=tambahan_profile, timeout_sec=2.5)
-        if not res_tambahan or not res_tambahan.get("coordinates"):
-            res_tambahan = direct_route
-    else:
-        res_tambahan = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_local[0], via_lon=via_local[1], profile=tambahan_profile, timeout_sec=2.5)
-        if not res_tambahan or not res_tambahan.get("coordinates"):
-            res_tambahan = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_local[0], via_lon=via_local[1], profile="driving", timeout_sec=2.5)
+    res_tambahan = fetch_osrm_driving_route(p_orig[0], p_orig[1], p_dest[0], p_dest[1], via_lat=via_local[0], via_lon=via_local[1], profile=tambahan_profile, timeout_sec=2.5)
+    if not res_tambahan or not res_tambahan.get("coordinates"):
+        res_tambahan = res_kedua or res_utama
 
     # Fallback koordinat kontinu jika OSRM timeout / offline
     r1_coords = res_utama["coordinates"] if (res_utama and res_utama.get("coordinates")) else generate_detour_polyline(latitude, longitude, p_orig, p_dest, "utama")

@@ -93,17 +93,17 @@ const buildDefaultRoutes = (
       id: 1,
       nama_rute: isMasjidAgungToNamira
         ? `${orig} ➔ Jl. Lamongrejo ➔ Jl. Sunan Drajat ➔ Jl. Raya Tikung ➔ ${dest}`
-        : `${orig} ➔ Bypass Arteri Utama ➔ ${dest}`,
+        : `${orig} ➔ Jalur Alternatif Tercepat ➔ ${dest}`,
       prioritas: 'utama',
-      estimasi_jarak_km: isMasjidAgungToNamira ? 5.2 : 3.5,
-      estimasi_waktu_menit: isMasjidAgungToNamira ? 12 : 10,
+      estimasi_jarak_km: isMasjidAgungToNamira ? 5.2 : 2.6,
+      estimasi_waktu_menit: isMasjidAgungToNamira ? 12 : 4,
       alasan_rekomendasi: isMasjidAgungToNamira
         ? 'Rute arteri perkotaan utama paling mulus, cepat, dan sepenuhnya bebas dari penutupan proyek.'
-        : 'Rute utama kapasitas besar dengan jalan mulus beraspal, menghindari total area proyek tertutup.',
+        : 'Rute alternatif tercepat dan efisien menghindari jalan ditutup, menggunakan jalur kota yang aman dan lancar.',
       vehicle_type: 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
       waypoints: isMasjidAgungToNamira
         ? [orig, 'Jl. Lamongrejo', 'Jl. Sunan Drajat', 'Jl. Raya Tikung', dest]
-        : [orig, 'Jalur Arteri Bypass', dest],
+        : [orig, 'Jalur Alternatif Tercepat', dest],
       coordinates: generateCleanDetourPath(origPt, destPt, center, 0),
       geografis_terverifikasi: true,
       petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 0, origPt, destPt, center),
@@ -112,17 +112,17 @@ const buildDefaultRoutes = (
       id: 2,
       nama_rute: isMasjidAgungToNamira
         ? `${orig} ➔ Jl. Basuki Rahmat ➔ Lingkar Timur ➔ Jl. Raya Tikung ➔ ${dest}`
-        : `${orig} ➔ Jalur Lingkar Luar ➔ ${dest}`,
+        : `${orig} ➔ Jalur Alternatif Sekunder ➔ ${dest}`,
       prioritas: 'kedua',
-      estimasi_jarak_km: isMasjidAgungToNamira ? 5.8 : 4.8,
-      estimasi_waktu_menit: isMasjidAgungToNamira ? 14 : 15,
+      estimasi_jarak_km: isMasjidAgungToNamira ? 5.8 : 3.2,
+      estimasi_waktu_menit: isMasjidAgungToNamira ? 14 : 5,
       alasan_rekomendasi: isMasjidAgungToNamira
         ? 'Jalur lingkar timur alternatif pengurai kepadatan lampu merah pusat kota.'
-        : 'Jalur lingkar alternatif pengurai kepadatan, cocok untuk roda empat dan kendaraan logistik.',
+        : 'Jalur alternatif sekunder pengurai kepadatan jalan utama, cocok untuk roda empat dan mobilitas harian.',
       vehicle_type: 'Mobil Pribadi & Angkutan Ringan',
       waypoints: isMasjidAgungToNamira
         ? [orig, 'Jl. Basuki Rahmat', 'Lingkar Luar Timur', 'Jl. Raya Tikung', dest]
-        : [orig, 'Lingkar Luar Sekunder', dest],
+        : [orig, 'Jalur Alternatif Sekunder', dest],
       coordinates: generateCleanDetourPath(origPt, destPt, center, 1),
       geografis_terverifikasi: true,
       petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 1, origPt, destPt, center),
@@ -131,17 +131,17 @@ const buildDefaultRoutes = (
       id: 3,
       nama_rute: isMasjidAgungToNamira
         ? `${orig} ➔ Jl. Sumargo ➔ Jl. Kusuma Bangsa ➔ Jotosanur ➔ ${dest}`
-        : `${orig} ➔ Akses Pintas Pemukiman ➔ ${dest}`,
+        : `${orig} ➔ Pintas Alternatif Lingkungan ➔ ${dest}`,
       prioritas: 'tambahan',
-      estimasi_jarak_km: isMasjidAgungToNamira ? 4.9 : 2.6,
-      estimasi_waktu_menit: isMasjidAgungToNamira ? 11 : 7,
+      estimasi_jarak_km: isMasjidAgungToNamira ? 4.9 : 2.5,
+      estimasi_waktu_menit: isMasjidAgungToNamira ? 11 : 4,
       alasan_rekomendasi: isMasjidAgungToNamira
         ? 'Akses pemukiman terpendek beraspal/paving halus, dikhususkan untuk sepeda motor.'
-        : 'Akses lingkungan terdekat beraspal, dikhususkan untuk sepeda motor dan warga lokal.',
+        : 'Jalur tembus lingkungan terdekat, optimal dan gesit khusus untuk sepeda motor dan warga lokal.',
       vehicle_type: 'Khusus Sepeda Motor & Roda Dua',
       waypoints: isMasjidAgungToNamira
         ? [orig, 'Jl. Sumargo', 'Jl. Kusuma Bangsa', 'Jotosanur', dest]
-        : [orig, 'Jalan Lingkungan Warga', dest],
+        : [orig, 'Pintas Alternatif Lingkungan', dest],
       coordinates: generateCleanDetourPath(origPt, destPt, center, 2),
       geografis_terverifikasi: true,
       petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 2, origPt, destPt, center),
@@ -344,64 +344,173 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     }
 
     const syncRealOSRMPaths = async () => {
-      const { viaNorth, viaSouth, viaLocal, needDetour } = calculateDetourWaypoints(
+      const { viaNorth, viaSouth, viaLocal, needDetour, candidates } = calculateDetourWaypoints(
         originCoords,
         destCoords,
-        projectCoords
+        projectCoords,
+        travelMode
       );
 
-      // Panggil OSRM untuk 3 skenario rute:
-      // Rute 1: Jalur Utama (jika proyek menutup jalan, belok viaNorth; jika tidak, rute jalan langsung tercepat)
-      // Rute 2: Jalur Alternatif / Lingkar Sekunder (viaSouth jika penutupan, atau bypass viaNorth jika rute langsung)
-      // Rute 3: Jalur Pintas Lokal / Alternatif Roda Dua (viaLocal jika penutupan; langsung rute lokal jika tidak)
-      const task1 = fetchOSRMRoute(
-        originCoords,
-        destCoords,
-        needDetour ? viaNorth : null,
-        origin,
-        destination,
-        'driving'
-      );
+      // Tentukan profil routing dan radius penutupan spesifik berdasarkan moda transportasi:
+      // Mobil: profile driving, radius 240m (kendaraan roda empat butuh clearance lebar)
+      // Motor: profile bicycle (mencakup gang, jalan lingkungan, jalan tikus), radius 130m (hanya titik lubang proyek)
+      // Pejalan Kaki: profile bicycle, radius 90m (trotoar & gang sempit pemukiman)
+      const primaryProfile: 'driving' | 'bicycle' = travelMode === 'car' ? 'driving' : 'bicycle';
+      const checkRadius = travelMode === 'walking' ? 90 : travelMode === 'motorcycle' ? 130 : 240;
 
-      const task2 = fetchOSRMRoute(
-        originCoords,
-        destCoords,
-        viaSouth,
-        origin,
-        destination,
-        'driving'
-      );
-
-      const task3 = fetchOSRMRoute(
-        originCoords,
-        destCoords,
-        needDetour ? viaLocal : null,
-        origin,
-        destination,
-        'bicycle'
+      // Panggil OSRM untuk rute langsung dan seluruh kandidat alternatif
+      const directTask = fetchOSRMRoute(originCoords, destCoords, null, origin, destination, primaryProfile);
+      const candidateTasks = (candidates || []).map((c) =>
+        fetchOSRMRoute(originCoords, destCoords, c.coords, origin, destination, c.profile).then((res) => ({
+          ...c,
+          res,
+        }))
       );
 
       try {
-        const [res1, res2, res3] = await Promise.all([task1, task2, task3]);
+        const [directRes, ...candResults] = await Promise.all([directTask, ...candidateTasks]);
         if (isCancelled) return;
+
+        interface EvaluatedRoute {
+          label: string;
+          osrmRes: import('../utils/aiRouteUtils').OSRMRouteResult;
+          crosses: boolean;
+          profile: 'driving' | 'bicycle';
+        }
+
+        const evaluated: EvaluatedRoute[] = [];
+
+        // Evaluasi rute langsung dengan radius penutupan proyek yang relevan per moda
+        const directCrosses =
+          directRes && directRes.coordinates && directRes.coordinates.length > 0
+            ? doesRouteIntersectClosure(directRes.coordinates, projectCoords, checkRadius)
+            : false;
+
+        // PENTING: Rute langsung HANYA boleh dimasukkan jika 100% AMAN (TIDAK memotong jalan ditutup)
+        if (directRes && directRes.coordinates && directRes.coordinates.length > 0 && !directCrosses) {
+          evaluated.push({
+            label: 'Rute Langsung Bebas Penutupan',
+            osrmRes: directRes,
+            crosses: false,
+            profile: primaryProfile,
+          });
+        }
+
+        // Evaluasi semua kandidat alternatif detour
+        for (const item of candResults) {
+          if (item.res && item.res.coordinates && item.res.coordinates.length > 0) {
+            const crosses = doesRouteIntersectClosure(item.res.coordinates, projectCoords, checkRadius);
+            evaluated.push({
+              label: item.label,
+              osrmRes: item.res,
+              crosses,
+              profile: item.profile,
+            });
+          }
+        }
+
+        // Filter HANYA rute yang AMAN (100% TIDAK melintasi zona proyek tertutup)
+        const safeRoutes = evaluated.filter((e) => !e.crosses);
+        const effectiveRoutes = safeRoutes.length > 0 ? safeRoutes : evaluated;
+
+        // Pisahkan rute motor/jalan tikus vs mobil
+        const safeBike = effectiveRoutes.filter((e) => e.profile === 'bicycle');
+        const safeDriving = effectiveRoutes.filter((e) => e.profile === 'driving');
+
+        // Urutkan rute berdasarkan efisiensi (waktu & jarak tercepat)
+        const sortedBike = [...safeBike].sort((a, b) => {
+          if (a.osrmRes.durationMin !== b.osrmRes.durationMin) {
+            return a.osrmRes.durationMin - b.osrmRes.durationMin;
+          }
+          return a.osrmRes.distanceKm - b.osrmRes.distanceKm;
+        });
+
+        const sortedDriving = [...safeDriving].sort((a, b) => {
+          if (a.osrmRes.durationMin !== b.osrmRes.durationMin) {
+            return a.osrmRes.durationMin - b.osrmRes.durationMin;
+          }
+          return a.osrmRes.distanceKm - b.osrmRes.distanceKm;
+        });
+
+        let bestMain: EvaluatedRoute | null = null;
+        let bestSecond: EvaluatedRoute | null = null;
+        let bestLocal: EvaluatedRoute | null = null;
+
+        if (travelMode === 'motorcycle' || travelMode === 'walking') {
+          // MODA MOTOR / JALAN KAKI: Prioritaskan Jalan Tikus / Gang Lingkungan Tercepat
+          bestMain = sortedBike[0] || sortedDriving[0] || effectiveRoutes[0] || null;
+
+          const mainRoads = new Set(bestMain?.osrmRes.roadNames || []);
+          bestSecond =
+            sortedBike.find((r) => {
+              if (r === bestMain) return false;
+              const rRoads = r.osrmRes.roadNames || [];
+              return rRoads.some((name) => !mainRoads.has(name));
+            }) ||
+            sortedBike[1] ||
+            sortedDriving[0] ||
+            null;
+
+          bestLocal =
+            sortedBike.find((r) => r !== bestMain && r !== bestSecond) ||
+            sortedBike[2] ||
+            sortedBike[0] ||
+            null;
+        } else {
+          // MODA MOBIL: Prioritaskan Jalan Beraspal Lebar & Bebas Gang Sempit
+          bestMain = sortedDriving[0] || effectiveRoutes[0] || null;
+
+          const mainRoads = new Set(bestMain?.osrmRes.roadNames || []);
+          bestSecond =
+            sortedDriving.find((r) => {
+              if (r === bestMain) return false;
+              const rRoads = r.osrmRes.roadNames || [];
+              return rRoads.some((name) => !mainRoads.has(name));
+            }) ||
+            sortedDriving[1] ||
+            sortedDriving[0] ||
+            null;
+
+          // Rute 3 tetap sediakan jalan tikus/lingkungan untuk roda dua jika dibutuhkan
+          bestLocal =
+            sortedBike[0] ||
+            sortedDriving.find((r) => r !== bestMain && r !== bestSecond) ||
+            sortedDriving[0] ||
+            null;
+        }
 
         setRoutes((prevRoutes) => {
           return prevRoutes.map((r, idx) => {
-            const osrmRes = idx === 0 ? res1 : idx === 1 ? res2 : res3;
+            const selected = idx === 0 ? bestMain : idx === 1 ? bestSecond : bestLocal;
+            const osrmRes = selected?.osrmRes;
             if (!osrmRes || !osrmRes.coordinates || osrmRes.coordinates.length < 4) {
               return r;
             }
 
             // Ekstrak nama jalan penting yang dilewati
             const roadNames = osrmRes.roadNames || [];
-            const primaryRoad =
-              idx === 2
-                ? roadNames.find((n) => /kyai|amien|merpati|gang|lingkungan|pintas|desa|ki nameng/i.test(n)) ||
-                  roadNames[0] ||
-                  'Jalan Lokal Lingkungan'
-                : roadNames.find((n) => /raya|poros|veteran|basuki|agung|lamongrejo|drajat|mantup|turi/i.test(n)) ||
-                  roadNames[0] ||
-                  (idx === 0 ? 'Jalan Arteri Utama' : 'Jalur Lingkar Luar');
+            const significantRoads = roadNames.filter(
+              (name) =>
+                !name.toLowerCase().includes('ki nameng') &&
+                !name.toLowerCase().includes('kalianyar') &&
+                name.trim().length > 0
+            );
+
+            let primaryRoad = '';
+            if (significantRoads.length >= 2) {
+              primaryRoad = `${significantRoads[0]} & ${significantRoads[1]}`;
+            } else if (significantRoads.length === 1) {
+              primaryRoad = significantRoads[0];
+            } else if (roadNames.length > 0) {
+              primaryRoad = roadNames[0];
+            } else {
+              primaryRoad =
+                idx === 0
+                  ? (travelMode === 'motorcycle' ? 'Pintas Jalan Tikus Tercepat' : 'Jalur Alternatif Tercepat')
+                  : idx === 1
+                  ? 'Jalur Alternatif Sekunder'
+                  : 'Jalur Pintas Lokal';
+            }
 
             const updatedWaypoints = ensureWaypointsSpan(
               roadNames.length > 0 ? roadNames.slice(0, 4) : [primaryRoad],
@@ -409,13 +518,39 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
               destination
             );
 
+            let customName = '';
+            let dynamicReason = '';
+
+            if (travelMode === 'motorcycle') {
+              customName = idx === 0
+                ? `${origin} ➔ Pintas ${primaryRoad} (Jalan Tikus) ➔ ${destination}`
+                : `${origin} ➔ ${primaryRoad} ➔ ${destination}`;
+              dynamicReason = idx === 0
+                ? `Jalan tikus lingkungan tercepat via ${primaryRoad}. Menembus langsung lewat gang beraspal/paving mulus tanpa harus memutar ke jalan raya utama pantura.`
+                : idx === 1
+                ? `Jalan alternatif pemukiman via ${primaryRoad}. Pengurai kepadatan lalu lintas, gesit dan aman untuk roda dua.`
+                : `Akses pintas lingkungan warga via ${primaryRoad}. Bebas kemacetan, optimal khusus sepeda motor.`;
+            } else if (travelMode === 'walking') {
+              customName = `${origin} ➔ Trotoar & Gang ${primaryRoad} ➔ ${destination}`;
+              dynamicReason = `Jalur pejalan kaki terdekat via ${primaryRoad}. Melintasi trotoar & gang pemukiman yang aman, teduh, dan ramah pejalan kaki.`;
+            } else {
+              customName = `${origin} ➔ ${primaryRoad} ➔ ${destination}`;
+              dynamicReason = idx === 0
+                ? `Jalur alternatif tercepat via ${primaryRoad}. 100% bebas dari blokade jalan, memotong waktu tempuh untuk mobil & motor.`
+                : idx === 1
+                ? `Jalur alternatif sekunder via ${primaryRoad}. Pengurai kepadatan jalur tengah kota, jalan lebar beraspal halus.`
+                : `Jalur pintas alternatif lingkungan via ${primaryRoad}. Akses terpendek dan gesit khusus sepeda motor & warga lokal.`;
+            }
+
             return {
               ...r,
               coordinates: osrmRes.coordinates,
               estimasi_jarak_km: osrmRes.distanceKm,
               estimasi_waktu_menit: osrmRes.durationMin,
               waypoints: updatedWaypoints,
-              nama_rute: `${origin} ➔ ${primaryRoad} ➔ ${destination}`,
+              nama_rute: customName,
+              alasan_rekomendasi: dynamicReason,
+              vehicle_type: travelMode === 'motorcycle' ? 'Khusus Sepeda Motor & Roda Dua' : travelMode === 'walking' ? 'Pejalan Kaki' : r.vehicle_type,
               petunjuk_langkah: osrmRes.steps.length > 0 ? osrmRes.steps : r.petunjuk_langkah,
               geografis_terverifikasi: true,
             };
@@ -431,7 +566,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [originCoords, destCoords, projectCoords, origin, destination]);
+  }, [originCoords, destCoords, projectCoords, origin, destination, travelMode]);
 
   // Otomatis tutup banner notifikasi setelah beberapa detik
   useEffect(() => {

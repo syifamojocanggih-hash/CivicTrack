@@ -757,16 +757,26 @@ export const doesRouteIntersectClosure = (
   return false;
 };
 
-export const calculateDetourWaypoints = (
-  origPt: [number, number],
-  destPt: [number, number],
-  closureCenter: [number, number]
-): {
+export interface DetourCandidate {
+  label: string;
+  coords: [number, number];
+  profile: 'driving' | 'bicycle';
+}
+
+export interface DetourWaypointsResult {
   viaNorth: [number, number];
   viaSouth: [number, number];
   viaLocal: [number, number];
   needDetour: boolean;
-} => {
+  candidates: DetourCandidate[];
+}
+
+export const calculateDetourWaypoints = (
+  origPt: [number, number],
+  destPt: [number, number],
+  closureCenter: [number, number],
+  travelMode: 'car' | 'motorcycle' | 'walking' = 'car'
+): DetourWaypointsResult => {
   const dx = destPt[0] - origPt[0];
   const dy = destPt[1] - origPt[1];
   const len = Math.sqrt(dx * dx + dy * dy) || 0.001;
@@ -787,31 +797,75 @@ export const calculateDetourWaypoints = (
   const dDest = getDistanceMeters(destPt, closureCenter);
 
   // Penutupan hanya relevan jika rute melintasi proyek dan start/dest berada di luar penutupan
-  const needDetour = distToLineMeters < 320 && dStart > 240 && dDest > 240 && t > 0.05 && t < 0.95;
+  const isTwoWheelerOrWalk = travelMode === 'motorcycle' || travelMode === 'walking';
+  const needDetourThreshold = isTwoWheelerOrWalk ? 180 : 340;
+  const needDetour = distToLineMeters < needDetourThreshold && dStart > 120 && dDest > 120 && t > 0.05 && t < 0.95;
 
   const refLat = needDetour ? closureCenter[0] : (origPt[0] + destPt[0]) / 2;
   const refLng = needDetour ? closureCenter[1] : (origPt[1] + destPt[1]) / 2;
 
-  // Offset yang wajar dan proporsional untuk mobil & kendaraan umum
-  const offsetNorthDeg = needDetour ? 0.0055 : 0.0060;
-  const offsetSouthDeg = needDetour ? 0.0065 : 0.0070;
-  // Offset kompak untuk sepeda motor agar tidak memaksakan jalan lingkar jauh jika ada jalan lokal
-  const offsetLocalDeg = needDetour ? 0.0025 : 0.0030;
+  // Kalibrasi offset:
+  // Untuk Sepeda Motor & Pejalan Kaki: offset kompak (~200m - 280m) agar mencari 'jalan tikus' / gang pemukiman warga
+  // Untuk Mobil: offset lebih luas (~420m - 600m) agar tidak terperangkap di gang sempit
+  const offsetSideADeg = isTwoWheelerOrWalk ? 0.0022 : (needDetour ? 0.0038 : 0.0045);
+  const offsetSideBDeg = isTwoWheelerOrWalk ? 0.0022 : (needDetour ? 0.0038 : 0.0045);
+  const offsetWideDeg = isTwoWheelerOrWalk ? 0.0032 : (needDetour ? 0.0054 : 0.0062);
+  const offsetLocalDeg = 0.0025; // Tetap < 600m dari pusat untuk backward compatibility
 
   const viaNorth: [number, number] = [
-    Number((refLat + nx * offsetNorthDeg).toFixed(6)),
-    Number((refLng + ny * offsetNorthDeg).toFixed(6)),
+    Number((refLat + nx * offsetSideADeg).toFixed(6)),
+    Number((refLng + ny * offsetSideADeg).toFixed(6)),
   ];
   const viaSouth: [number, number] = [
-    Number((refLat - nx * offsetSouthDeg).toFixed(6)),
-    Number((refLng - ny * offsetSouthDeg).toFixed(6)),
+    Number((refLat - nx * offsetSideBDeg).toFixed(6)),
+    Number((refLng - ny * offsetSideBDeg).toFixed(6)),
   ];
   const viaLocal: [number, number] = [
-    Number((refLat + nx * offsetLocalDeg).toFixed(6)),
-    Number((refLng + ny * offsetLocalDeg).toFixed(6)),
+    Number((refLat - nx * offsetLocalDeg).toFixed(6)),
+    Number((refLng - ny * offsetLocalDeg).toFixed(6)),
   ];
 
-  return { viaNorth, viaSouth, viaLocal, needDetour };
+  const defaultProfile: 'driving' | 'bicycle' = isTwoWheelerOrWalk ? 'bicycle' : 'driving';
+
+  const candidates: DetourCandidate[] = [
+    { label: isTwoWheelerOrWalk ? 'Pintas Jalan Tikus Sisi A' : 'Alternatif Koridor Sisi A (+420m)', coords: viaNorth, profile: defaultProfile },
+    { label: isTwoWheelerOrWalk ? 'Pintas Jalan Tikus Sisi B' : 'Alternatif Koridor Sisi B (-420m)', coords: viaSouth, profile: defaultProfile },
+    {
+      label: isTwoWheelerOrWalk ? 'Pintas Lingkungan Pemukiman' : 'Alternatif Koridor Luas Sisi B (-600m)',
+      coords: [
+        Number((refLat - nx * offsetWideDeg).toFixed(6)),
+        Number((refLng - ny * offsetWideDeg).toFixed(6)),
+      ],
+      profile: defaultProfile,
+    },
+    { label: 'Pintas Lokal Sepeda Motor', coords: viaLocal, profile: 'bicycle' },
+  ];
+
+  // Tambahkan koridor jalan tikus perkotaan Lamongan jika dekat pusat kota (< 4 km)
+  const distToLamonganCenter = getDistanceMeters(closureCenter, [-7.1205, 112.4155]);
+  if (distToLamonganCenter < 4000) {
+    if (isTwoWheelerOrWalk) {
+      // Prioritaskan jalan tikus, gang warga, dan jalan lingkungan yang tembus langsung
+      candidates.push(
+        { label: 'Pintas Jl. Cendrawasih & Laras-Liris (Jalan Tikus)', coords: [-7.1168, 112.4140], profile: 'bicycle' },
+        { label: 'Pintas Jl. Andansari (Jalan Lingkungan)', coords: [-7.1180, 112.4135], profile: 'bicycle' },
+        { label: 'Pintas Jl. Paviliun (Gang Pemukiman)', coords: [-7.1175, 112.4125], profile: 'bicycle' },
+        { label: 'Pintas Jl. Kyai Amien (Jalur Pemukiman Timur)', coords: [-7.1175, 112.4180], profile: 'bicycle' },
+        { label: 'Pintas Jl. Suwoko & Andanwangi (Pintas Tenggara)', coords: [-7.1235, 112.4182], profile: 'bicycle' }
+      );
+    } else {
+      // Koridor mobil beraspal lebar
+      candidates.push(
+        { label: 'Jl. Andanwangi & Sunan Drajat (Selatan)', coords: [-7.1245, 112.4140], profile: 'driving' },
+        { label: 'Jl. Panglima Sudirman & Kusuma Bangsa (Utara)', coords: [-7.1135, 112.4110], profile: 'driving' },
+        { label: 'Jl. Basuki Rahmad Selatan (Barat)', coords: [-7.1240, 112.4100], profile: 'driving' },
+        { label: 'Jl. Suwoko & Sumargo (Tenggara)', coords: [-7.1265, 112.4180], profile: 'driving' },
+        { label: 'Pintas Roda Dua (Andanwangi)', coords: [-7.1245, 112.4140], profile: 'bicycle' }
+      );
+    }
+  }
+
+  return { viaNorth, viaSouth, viaLocal, needDetour, candidates };
 };
 
 const osrmRouteCache = new Map<string, OSRMRouteResult>();
