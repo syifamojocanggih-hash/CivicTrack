@@ -845,13 +845,16 @@ export const calculateDetourWaypoints = (
   const distToLamonganCenter = getDistanceMeters(closureCenter, [-7.1205, 112.4155]);
   if (distToLamonganCenter < 4000) {
     if (isTwoWheelerOrWalk) {
-      // Prioritaskan jalan tikus, gang warga, dan jalan lingkungan yang tembus langsung
+      // Prioritaskan jalan tikus terpendek, gang warga, dan jalan lingkungan yang tembus langsung
       candidates.push(
-        { label: 'Pintas Jl. Cendrawasih & Laras-Liris (Jalan Tikus)', coords: [-7.1168, 112.4140], profile: 'bicycle' },
-        { label: 'Pintas Jl. Andansari (Jalan Lingkungan)', coords: [-7.1180, 112.4135], profile: 'bicycle' },
-        { label: 'Pintas Jl. Paviliun (Gang Pemukiman)', coords: [-7.1175, 112.4125], profile: 'bicycle' },
-        { label: 'Pintas Jl. Kyai Amien (Jalur Pemukiman Timur)', coords: [-7.1175, 112.4180], profile: 'bicycle' },
-        { label: 'Pintas Jl. Suwoko & Andanwangi (Pintas Tenggara)', coords: [-7.1235, 112.4182], profile: 'bicycle' }
+        { label: 'Pintas Jl. Ronggohadi (Jalan Tikus Tumenggungan)', coords: [-7.11585, 112.41580], profile: 'bicycle' },
+        { label: 'Pintas Jl. Dr. Wahidin Sudirohusodo (Pintas Pemukiman)', coords: [-7.11800, 112.41450], profile: 'bicycle' },
+        { label: 'Pintas Jl. Andansari (Jalan Lingkungan)', coords: [-7.11800, 112.41350], profile: 'bicycle' },
+        { label: 'Pintas Jl. Ronggohadi Barat & Laras-Liris', coords: [-7.11585, 112.41520], profile: 'bicycle' },
+        { label: 'Pintas Jl. Cendrawasih (Utara)', coords: [-7.11420, 112.41630], profile: 'bicycle' },
+        { label: 'Pintas Jl. Paviliun (Gang Pemukiman)', coords: [-7.11650, 112.41250], profile: 'bicycle' },
+        { label: 'Pintas Jl. Kyai Amien (Jalur Pemukiman Timur)', coords: [-7.11750, 112.41800], profile: 'bicycle' },
+        { label: 'Pintas Jl. Suwoko & Andanwangi (Pintas Tenggara)', coords: [-7.12350, 112.41820], profile: 'bicycle' }
       );
     } else {
       // Koridor mobil beraspal lebar

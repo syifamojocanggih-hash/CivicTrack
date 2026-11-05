@@ -420,8 +420,11 @@ def generate_ai_alternative_routes(
         detour_candidates.append(("Jl. Panglima Sudirman & Kusuma Bangsa (Utara)", (-7.1135, 112.4110), "driving"))
         detour_candidates.append(("Jl. Basuki Rahmad Selatan (Barat)", (-7.1240, 112.4100), "driving"))
         detour_candidates.append(("Jl. Suwoko & Sumargo (Tenggara)", (-7.1265, 112.4180), "driving"))
-        detour_candidates.append(("Pintas Jl. Cendrawasih & Laras-Liris (Jalan Tikus)", (-7.1168, 112.4140), "bicycle"))
+        detour_candidates.append(("Pintas Jl. Ronggohadi (Jalan Tikus)", (-7.11585, 112.41580), "bicycle"))
+        detour_candidates.append(("Pintas Jl. Dr. Wahidin Sudirohusodo", (-7.11800, 112.41450), "bicycle"))
         detour_candidates.append(("Pintas Jl. Andansari (Jalan Lingkungan)", (-7.1180, 112.4135), "bicycle"))
+        detour_candidates.append(("Pintas Jl. Ronggohadi Barat", (-7.11585, 112.41520), "bicycle"))
+        detour_candidates.append(("Pintas Jl. Cendrawasih (Utara)", (-7.1142, 112.4163), "bicycle"))
         detour_candidates.append(("Pintas Roda Dua (Andanwangi)", (-7.1245, 112.4140), "bicycle"))
 
     evaluated_detours = []
