@@ -329,7 +329,13 @@ def fetch_osrm_driving_route(
                     geojson_coords = route.get("geometry", {}).get("coordinates", [])
                     lat_lon_coords = [[round(pt[1], 6), round(pt[0], 6)] for pt in geojson_coords if len(pt) >= 2]
                     dist_km = round(route.get("distance", 0) / 1000.0, 1)
-                    dur_min = max(1, round(route.get("duration", 0) / 60.0))
+                    # Kalibrasi durasi realistis perkotaan Lamongan:
+                    # Roda dua/motor bergerak ~32 km/jam di jalan tikus/lingkungan
+                    # Mobil bergerak ~20 km/jam saat ada pengalihan jalur kota + delay simpang
+                    if profile == "bicycle":
+                        dur_min = max(1, round((dist_km / 32.0) * 60.0))
+                    else:
+                        dur_min = max(2, round((dist_km / 20.0) * 60.0 + 1))
 
                     road_names = []
                     for leg in route.get("legs", []):

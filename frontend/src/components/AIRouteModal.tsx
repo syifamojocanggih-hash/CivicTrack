@@ -69,6 +69,7 @@ import {
   calculateDetourWaypoints,
   fetchOSRMRoute,
   doesRouteIntersectClosure,
+  calculateRealisticDurationMin,
   type NavigationStep,
 } from '../utils/aiRouteUtils';
 
@@ -96,10 +97,10 @@ const buildDefaultRoutes = (
         : `${orig} ➔ Jalur Alternatif Tercepat ➔ ${dest}`,
       prioritas: 'utama',
       estimasi_jarak_km: isMasjidAgungToNamira ? 5.2 : 2.6,
-      estimasi_waktu_menit: isMasjidAgungToNamira ? 12 : 4,
+      estimasi_waktu_menit: isMasjidAgungToNamira ? 16 : 8,
       alasan_rekomendasi: isMasjidAgungToNamira
-        ? 'Rute arteri perkotaan utama paling mulus, cepat, dan sepenuhnya bebas dari penutupan proyek.'
-        : 'Rute alternatif tercepat dan efisien menghindari jalan ditutup, menggunakan jalur kota yang aman dan lancar.',
+        ? 'Rute arteri perkotaan utama paling mulus, beraspal lebar, dan sepenuhnya bebas dari penutupan proyek.'
+        : 'Rute alternatif arteri perkotaan menghindari jalan ditutup, menggunakan jalur kota yang aman untuk seluruh jenis kendaraan.',
       vehicle_type: 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
       waypoints: isMasjidAgungToNamira
         ? [orig, 'Jl. Lamongrejo', 'Jl. Sunan Drajat', 'Jl. Raya Tikung', dest]
@@ -115,7 +116,7 @@ const buildDefaultRoutes = (
         : `${orig} ➔ Jalur Alternatif Sekunder ➔ ${dest}`,
       prioritas: 'kedua',
       estimasi_jarak_km: isMasjidAgungToNamira ? 5.8 : 3.2,
-      estimasi_waktu_menit: isMasjidAgungToNamira ? 14 : 5,
+      estimasi_waktu_menit: isMasjidAgungToNamira ? 18 : 10,
       alasan_rekomendasi: isMasjidAgungToNamira
         ? 'Jalur lingkar timur alternatif pengurai kepadatan lampu merah pusat kota.'
         : 'Jalur alternatif sekunder pengurai kepadatan jalan utama, cocok untuk roda empat dan mobilitas harian.',
@@ -133,8 +134,8 @@ const buildDefaultRoutes = (
         ? `${orig} ➔ Jl. Sumargo ➔ Jl. Kusuma Bangsa ➔ Jotosanur ➔ ${dest}`
         : `${orig} ➔ Pintas Alternatif Lingkungan ➔ ${dest}`,
       prioritas: 'tambahan',
-      estimasi_jarak_km: isMasjidAgungToNamira ? 4.9 : 2.5,
-      estimasi_waktu_menit: isMasjidAgungToNamira ? 11 : 4,
+      estimasi_jarak_km: isMasjidAgungToNamira ? 4.9 : 1.4,
+      estimasi_waktu_menit: isMasjidAgungToNamira ? 10 : 3,
       alasan_rekomendasi: isMasjidAgungToNamira
         ? 'Akses pemukiman terpendek beraspal/paving halus, dikhususkan untuk sepeda motor.'
         : 'Jalur tembus lingkungan terdekat, optimal dan gesit khusus untuk sepeda motor dan warga lokal.',
@@ -254,7 +255,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   // State Pemilihan Moda Transportasi Navigasi (Gaya Google Maps)
   const [travelMode, setTravelMode] = useState<TravelMode>('car');
 
-  // Kalkulasi estimasi waktu dinamis per moda transportasi (menyesuaikan kecepatan rata-rata perkotaan)
+  // Kalkulasi estimasi waktu dinamis per moda transportasi (menyesuaikan kecepatan & aksesibilitas rute riil)
   const travelModeEtas = useMemo(() => {
     if (!routes || routes.length === 0) {
       return {
@@ -264,29 +265,39 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       };
     }
 
-    const primaryRoute = routes[0] || routes[selectedRouteIndex];
-    const carMin = primaryRoute?.estimasi_waktu_menit || 10;
-    const distKm = primaryRoute?.estimasi_jarak_km || 3.5;
+    const currentPrimary = routes[0] || routes[selectedRouteIndex];
+    const currentDist = currentPrimary?.estimasi_jarak_km || 2.5;
 
-    // Rute motor: jika ada rute pintas motor gunakan estimasinya, jika tidak ~75% waktu mobil
-    const motorRoute =
-      routes.find(
-        (r) =>
-          /motor|roda dua|pintas/i.test(r.vehicle_type || '') ||
-          /pintas/i.test(r.nama_rute)
-      ) || routes[2];
-    const motorMin = motorRoute?.estimasi_waktu_menit || Math.max(2, Math.round(carMin * 0.75));
+    // 1. MODA MOBIL (Car):
+    // Mobil TIDAK DAPAT melintasi gang sempit / jalan tikus pemukiman.
+    // Jika rute saat ini adalah jalan tikus motor/pejalan kaki, mobil wajib memutar via jalur arteri lebar (~1.5x - 1.8x jarak tikus).
+    let carDistKm = currentDist;
+    if (travelMode === 'motorcycle' || travelMode === 'walking') {
+      const carRoute = routes.find((r) => /arteri|mobil|lingkar|semua/i.test(r.vehicle_type || ''));
+      carDistKm = carRoute?.estimasi_jarak_km || Math.max(2.4, Number((currentDist * 1.65).toFixed(1)));
+    }
+    const carMin = calculateRealisticDurationMin(carDistKm, 'car');
 
-    // Rute jalan kaki: rata-rata kecepatan pejalan kaki perkotaan ~4.5 km/jam (~13.3 menit/km)
-    const shortestKm = Math.min(...routes.map((r) => r.estimasi_jarak_km || distKm));
-    const walkingMin = Math.max(3, Math.round(shortestKm * 13.3));
+    // 2. MODA SEPEDA MOTOR (Motorcycle):
+    // Motor gesit, dapat menembus jalan tikus / gang perumahan warga (~32 km/jam), dan memangkas kemacetan.
+    let motorDistKm = currentDist;
+    if (travelMode === 'car') {
+      const motorRoute = routes.find((r) => /motor|roda dua|pintas/i.test(r.vehicle_type || ''));
+      motorDistKm = motorRoute?.estimasi_jarak_km || Math.max(0.9, Number((currentDist * 0.55).toFixed(1)));
+    }
+    const motorMin = calculateRealisticDurationMin(motorDistKm, 'motorcycle');
+
+    // 3. MODA PEJALAN KAKI (Walking):
+    // Pejalan kaki mengambil lintasan terpendek dengan kecepatan jalan kaki rata-rata ~4.5 km/jam (~13.3 menit/km).
+    const shortestKm = Math.min(...routes.map((r) => r.estimasi_jarak_km || currentDist));
+    const walkingMin = calculateRealisticDurationMin(shortestKm, 'walking');
 
     return {
       car: carMin,
       motorcycle: motorMin,
       walking: walkingMin,
     };
-  }, [routes, selectedRouteIndex]);
+  }, [routes, selectedRouteIndex, travelMode]);
 
   // Handler interaktif perpindahan moda transportasi
   const handleSelectTravelMode = (mode: TravelMode) => {
@@ -356,7 +367,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       // Motor: profile bicycle (mencakup gang, jalan lingkungan, jalan tikus), radius 130m (hanya titik lubang proyek)
       // Pejalan Kaki: profile bicycle, radius 90m (trotoar & gang sempit pemukiman)
       const primaryProfile: 'driving' | 'bicycle' = travelMode === 'car' ? 'driving' : 'bicycle';
-      const checkRadius = travelMode === 'walking' ? 90 : travelMode === 'motorcycle' ? 130 : 240;
+      const checkRadius = travelMode === 'walking' ? 100 : travelMode === 'motorcycle' ? 180 : 240;
 
       // Panggil OSRM untuk rute langsung dan seluruh kandidat alternatif
       const directTask = fetchOSRMRoute(originCoords, destCoords, null, origin, destination, primaryProfile);
@@ -546,7 +557,14 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
               ...r,
               coordinates: osrmRes.coordinates,
               estimasi_jarak_km: osrmRes.distanceKm,
-              estimasi_waktu_menit: osrmRes.durationMin,
+              estimasi_waktu_menit: calculateRealisticDurationMin(
+                osrmRes.distanceKm,
+                travelMode === 'motorcycle'
+                  ? 'motorcycle'
+                  : travelMode === 'walking'
+                  ? 'walking'
+                  : (selected?.profile === 'bicycle' ? 'motorcycle' : 'car')
+              ),
               waypoints: updatedWaypoints,
               nama_rute: customName,
               alasan_rekomendasi: dynamicReason,
@@ -916,9 +934,10 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
     layerGroup.clearLayers();
 
-    // 1. Zona Penutupan Proyek Fisik (Penting: Ditampilkan jelas dengan efek bahaya & pulsasi)
+    // 1. Zona Penutupan Proyek Fisik (Penting: Ditampilkan jelas dengan radius adaptif sesuai moda)
+    const visualRadius = travelMode === 'walking' ? 120 : travelMode === 'motorcycle' ? 190 : 260;
     const closureCircle = L.circle(projectCoords, {
-      radius: 280,
+      radius: visualRadius,
       color: '#DC2626',
       fillColor: '#EF4444',
       fillOpacity: 0.28,
@@ -1162,7 +1181,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     } else {
       map.setView(projectCoords, 14);
     }
-  }, [routes, selectedRouteIndex, isOpen, projectCoords, projectName, origin, destination, originCoords, destCoords]);
+  }, [routes, selectedRouteIndex, isOpen, projectCoords, projectName, origin, destination, originCoords, destCoords, travelMode]);
 
   // Simulasi Navigasi Animasi Kendaraan Berjalan
   const handleStartSimulation = () => {

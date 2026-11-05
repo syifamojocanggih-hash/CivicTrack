@@ -739,6 +739,27 @@ export interface OSRMRouteResult {
   steps: NavigationStep[];
 }
 
+/**
+ * Menghitung estimasi durasi waktu tempuh realistis berdasarkan moda transportasi
+ * di kawasan perkotaan Lamongan (dengan mempertimbangkan hambatan proyek & karakteristik jalan).
+ */
+export const calculateRealisticDurationMin = (
+  distanceKm: number,
+  mode: 'car' | 'motorcycle' | 'walking'
+): number => {
+  if (distanceKm <= 0) return 1;
+  if (mode === 'walking') {
+    // Kecepatan rata-rata pejalan kaki perkotaan: ~4.5 km/jam (~13.3 menit/km)
+    return Math.max(1, Math.round((distanceKm / 4.5) * 60));
+  }
+  if (mode === 'motorcycle') {
+    // Sepeda motor di perkotaan & jalan tikus: ~32 km/jam (~1.8 - 2.0 menit/km), lincah & lolos kemacetan
+    return Math.max(1, Math.round((distanceKm / 32) * 60));
+  }
+  // Mobil pribadi di dalam kota saat pengalihan jalan/kemacetan: ~20 km/jam (~3.0 menit/km) + 1 menit hambatan antrean
+  return Math.max(2, Math.round((distanceKm / 20) * 60 + 1));
+};
+
 export const doesRouteIntersectClosure = (
   coordinates: [number, number][],
   closureCenter: [number, number],
@@ -847,13 +868,13 @@ export const calculateDetourWaypoints = (
     if (isTwoWheelerOrWalk) {
       // Prioritaskan jalan tikus terpendek, gang warga, dan jalan lingkungan yang tembus langsung
       candidates.push(
+        { label: 'Pintas Jl. Kyai Amien (Jalur Pintas Timur)', coords: [-7.11815, 112.41800], profile: 'bicycle' },
+        { label: 'Pintas Jl. Merpati & Ki Nameng', coords: [-7.11750, 112.42000], profile: 'bicycle' },
         { label: 'Pintas Jl. Ronggohadi (Jalan Tikus Tumenggungan)', coords: [-7.11585, 112.41580], profile: 'bicycle' },
-        { label: 'Pintas Jl. Dr. Wahidin Sudirohusodo (Pintas Pemukiman)', coords: [-7.11800, 112.41450], profile: 'bicycle' },
         { label: 'Pintas Jl. Andansari (Jalan Lingkungan)', coords: [-7.11800, 112.41350], profile: 'bicycle' },
         { label: 'Pintas Jl. Ronggohadi Barat & Laras-Liris', coords: [-7.11585, 112.41520], profile: 'bicycle' },
         { label: 'Pintas Jl. Cendrawasih (Utara)', coords: [-7.11420, 112.41630], profile: 'bicycle' },
         { label: 'Pintas Jl. Paviliun (Gang Pemukiman)', coords: [-7.11650, 112.41250], profile: 'bicycle' },
-        { label: 'Pintas Jl. Kyai Amien (Jalur Pemukiman Timur)', coords: [-7.11750, 112.41800], profile: 'bicycle' },
         { label: 'Pintas Jl. Suwoko & Andanwangi (Pintas Tenggara)', coords: [-7.12350, 112.41820], profile: 'bicycle' }
       );
     } else {
@@ -937,7 +958,12 @@ export const fetchOSRMRoute = async (
     ]);
 
     const distanceKm = Number((route.distance / 1000).toFixed(1));
-    const durationMin = Math.max(1, Math.round(route.duration / 60));
+    // Kalibrasi durasi realistis perkotaan:
+    // OSRM bicycle mengasumsikan kayuhan sepeda (15 km/jam), sedangkan sepeda motor bergerak ~32 km/jam.
+    // OSRM driving mengasumsikan jalan bebas hambatan tanpa lampu merah/macet proyek, sedangkan mobil dalam kota bergerak ~20 km/jam.
+    const durationMin = profile === 'bicycle'
+      ? calculateRealisticDurationMin(distanceKm, 'motorcycle')
+      : calculateRealisticDurationMin(distanceKm, 'car');
 
     const oName = (originName || 'Titik Awal').trim();
     const dName = (destName || 'Tujuan').trim();
