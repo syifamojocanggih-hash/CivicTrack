@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import {
   ArrowLeft,
   MessageSquare,
@@ -77,8 +77,8 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
   const canEdit = isOwner && !currentAduan.tanggapan_dinas && currentAduan.status === 'menunggu';
 
   const [isEditingWarga, setIsEditingWarga] = useState(false);
-  const [editJudul, setEditJudul] = useState(currentAduan.judul);
-  const [editIsi, setEditIsi] = useState(currentAduan.isi_laporan);
+  const [editJudul, setEditJudul] = useState(currentAduan?.judul || 'Aduan Warga');
+  const [editIsi, setEditIsi] = useState(currentAduan?.isi_laporan || '');
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [editSuccessMessage, setEditSuccessMessage] = useState<string | null>(null);
   const [editError, setEditError] = useState<string | null>(null);
@@ -367,13 +367,13 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
 
             <div className="flex items-center gap-3 pt-1">
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#184C78] to-[#2980B9] text-white flex items-center justify-center font-extrabold text-base shadow-xs shrink-0">
-                {(currentAduan.nama_pelapor || 'W').charAt(0).toUpperCase()}
+                {(currentAduan?.nama_pelapor || 'W').charAt(0).toUpperCase()}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="font-heading font-bold text-sm text-[#212529] truncate">
-                  {currentAduan.nama_pelapor}
+                  {currentAduan?.nama_pelapor || 'Warga Masyarakat'}
                 </div>
-                <div className="text-xs text-[#6C757D] font-mono truncate">{currentAduan.email_pelapor}</div>
+                <div className="text-xs text-[#6C757D] font-mono truncate">{currentAduan?.email_pelapor || 'warga@civictrack.id'}</div>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
                     <ShieldCheck className="w-3 h-3 text-emerald-600" />
@@ -381,7 +381,7 @@ export const AduanDetailView: React.FC<AduanDetailViewProps> = ({
                   </span>
                   <span className="text-[11px] text-[#6C757D] flex items-center gap-1 font-mono">
                     <Calendar className="w-3 h-3 text-[#2980B9]" />
-                    {currentAduan.tanggal_lapor}
+                    {currentAduan?.tanggal_lapor || '-'}
                   </span>
                 </div>
               </div>

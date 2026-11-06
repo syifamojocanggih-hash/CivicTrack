@@ -31,6 +31,8 @@ vi.mock('../../services/api', () => ({
     getAllReports: vi.fn(),
     getWilayahList: vi.fn(),
     verifyProjectAccess: vi.fn(),
+    uploadDokumentasi: vi.fn(),
+    deleteProject: vi.fn(),
   },
 }));
 
@@ -342,4 +344,319 @@ describe('AdminDinasDashboard Defect Evaluation Verification', () => {
     });
   });
 });
+
+describe('AdminDinasDashboard Aduan Response Modal', () => {
+  const dummyAduan = {
+    id: 101,
+    proyek_id: 1,
+    user_id: 1,
+    nama_proyek: 'Pelebaran Jalan Veteran',
+    nama_pelapor: 'Ahmad Warga',
+    email_pelapor: 'ahmad@gmail.com',
+    judul: 'Debu sangat tebal di lokasi proyek',
+    isi_laporan: 'Truk proyek lewat setiap 10 menit menyebabkan debu sangat tebal.',
+    kategori_aduan: 'Dampak Lingkungan',
+    status: 'menunggu' as const,
+    tanggal_lapor: '2026-11-01',
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(apiService.getProjects).mockResolvedValue({ projects: [], isFromBackend: true });
+    vi.mocked(apiService.getWilayahStats).mockResolvedValue([]);
+    vi.mocked(apiService.getEvaluations).mockResolvedValue([]);
+    vi.mocked(apiService.getAllReports).mockResolvedValue([dummyAduan]);
+    vi.mocked(apiService.replyAduan).mockResolvedValue({
+      id: 101,
+      status: 'ditanggapi',
+      tanggapan_dinas: 'Dinas telah menginstruksikan penyiraman berkala.',
+    } as any);
+  });
+
+  it('opens response modal when clicking "Buka Halaman Respon Tanggapan" and submits response', async () => {
+    render(
+      <AdminDinasDashboard
+        currentUser={{ id: 2, role: 'admin_dinas', nama: 'Admin PUPR', email: 'admin@lamongan.go.id' }}
+        projects={[]}
+        activeSection="aduan"
+        onOpenProjectDetail={() => {}}
+      />
+    );
+
+    const user = userEvent.setup();
+
+    // Find the report card
+    await screen.findByText(/Debu sangat tebal di lokasi proyek/i);
+
+    // Click "Buka Halaman Respon Tanggapan"
+    const openModalBtn = screen.getByRole('button', { name: /Buka Halaman Respon Tanggapan/i });
+    await user.click(openModalBtn);
+
+    // Modal should be visible
+    expect(screen.getByRole('dialog')).toBeInTheDocument();
+    expect(screen.getByText(/Respon & Tanggapan Resmi Aduan Warga/i)).toBeInTheDocument();
+    expect(screen.getByText(/#ADUAN-101/i)).toBeInTheDocument();
+
+    // Use a quick response template
+    const templateBtn = screen.getByRole('button', { name: /Penyiraman & Reduksi Debu/i });
+    await user.click(templateBtn);
+
+    // Check textarea is filled
+    const textarea = screen.getByPlaceholderText(/Tuliskan tindakan konkret/i) as HTMLTextAreaElement;
+    expect(textarea.value).toContain('penyiraman jalan');
+
+    // Submit the response
+    const submitBtn = screen.getByRole('button', { name: /Publikasikan Tanggapan Resmi/i });
+    await user.click(submitBtn);
+
+    await waitFor(() => {
+      expect(apiService.replyAduan).toHaveBeenCalledWith(101, {
+        status_tindak_lanjut: 'diproses',
+        tanggapan_dinas: expect.stringContaining('penyiraman jalan'),
+        petugas_penjawab: expect.stringContaining('Admin PUPR'),
+      });
+    });
+
+    // Check success message is displayed
+    expect(
+      await screen.findByText(/Tanggapan resmi dinas berhasil dipublikasikan secara transparan/i)
+    ).toBeInTheDocument();
+  });
+});
+
+describe('AdminDinasDashboard Dokumentasi Fisik Upload', () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.mocked(apiService.getProjects).mockResolvedValue({
+      projects: [
+        {
+          id: 2,
+          nama_proyek: 'Pelebaran Jalan Soekarno Hatta KM 4–7',
+          kategori: 'jalan',
+          deskripsi: 'Proyek jalan',
+          anggaran: 12000000000,
+          latitude: -7.12,
+          longitude: 112.41,
+          status: 'berjalan',
+          progres_persen: 60,
+          nama_wilayah: 'Kecamatan Lamongan (Kota)',
+          nama_dinas: 'Dinas Pekerjaan Umum',
+          tahap_terkini: 'Galian',
+        },
+      ],
+      isFromBackend: true,
+    });
+    vi.mocked(apiService.getWilayahStats).mockResolvedValue([]);
+    vi.mocked(apiService.getEvaluations).mockResolvedValue([]);
+    vi.mocked(apiService.getAllReports).mockResolvedValue([]);
+    vi.mocked(apiService.uploadDokumentasi).mockResolvedValue({
+      id: 99,
+      url_file: '/uploads/proyek_2_test.jpg',
+      tipe_media: 'foto',
+    });
+  });
+
+  it('allows user to upload documentation directly from device storage (file input)', async () => {
+    render(
+      <AdminDinasDashboard
+        currentUser={{ id: 2, role: 'admin_dinas', nama: 'Admin PUPR', email: 'admin@lamongan.go.id' }}
+        projects={[]}
+        activeSection="dokumentasi"
+        onOpenProjectDetail={() => {}}
+      />
+    );
+
+    const user = userEvent.setup();
+
+    // Find and click "Unggah Dokumentasi Baru" button
+    const openUploadBtn = screen.getByRole('button', { name: /Unggah Dokumentasi Baru/i });
+    await user.click(openUploadBtn);
+
+    // Modal should appear
+    expect(screen.getByText(/Upload Bukti Dokumentasi Fisik/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Penyimpanan Perangkat/i)[0]).toBeInTheDocument();
+
+    // Fill title
+    const judulInput = screen.getByPlaceholderText(/Contoh: Uji Kuat Tekan Beton Silinder/i);
+    await user.type(judulInput, 'Dokumentasi Beton Lapangan');
+
+    // Select a file
+    const file = new File(['dummy photo content'], 'inspeksi_beton.png', { type: 'image/png' });
+    const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement;
+    expect(fileInput).toBeInTheDocument();
+
+    await user.upload(fileInput, file);
+
+    // Verify preview and file info
+    await waitFor(() => {
+      expect(screen.getByText(/inspeksi_beton.png/i)).toBeInTheDocument();
+    });
+
+    // Fill technical note
+    const catatanInput = screen.getByPlaceholderText(/Keterangan kondisi visual/i);
+    await user.type(catatanInput, 'Hasil pengujian beton telah memenuhi standar K-350.');
+
+    // Submit upload
+    const submitBtn = screen.getByRole('button', { name: /Unggah Sekarang/i });
+    await user.click(submitBtn);
+
+    // Modal closes and new documentation is in the gallery
+    await waitFor(() => {
+      expect(screen.queryByText(/Upload Bukti Dokumentasi Fisik/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/Dokumentasi Beton Lapangan/i)).toBeInTheDocument();
+    });
+  });
+
+  it('renders Hapus Proyek button in edit modal, prompts confirmation, and deletes project when confirmed', async () => {
+    const user = userEvent.setup();
+    vi.mocked(apiService.deleteProject).mockResolvedValue(true);
+
+    const testProject = {
+      id: 202,
+      nama_proyek: 'Pembangunan Jembatan Uji Hapus',
+      kategori: 'jalan' as const,
+      deskripsi: 'Proyek uji hapus',
+      latitude: -7.12,
+      longitude: 112.42,
+      anggaran: 1000000000,
+      status: 'berjalan' as const,
+      progres_persen: 40,
+      nama_wilayah: 'Kecamatan Lamongan (Kota)',
+      tahap_terkini: 'Pengerukan Tanah',
+    };
+
+    render(
+      <AdminDinasDashboard
+        currentUser={{ id: 2, role: 'admin_dinas', nama: 'Admin', email: 'admin@banyuwangi.go.id' }}
+        projects={[testProject]}
+        onSelectSection={vi.fn()}
+        onOpenProjectDetail={vi.fn()}
+      />
+    );
+
+    // Click "Edit" on the project (directly visible for admin_dinas)
+    const editBtn = screen.getByRole('button', { name: /^Edit$/i });
+    await user.click(editBtn);
+
+    // Modal Sunting Data Proyek should be visible
+    expect(screen.getByText(/Sunting Data Proyek/i)).toBeInTheDocument();
+
+    // The Hapus Proyek button should be visible in the edit modal footer
+    const deleteBtn = screen.getByRole('button', { name: /Hapus Proyek/i });
+    expect(deleteBtn).toBeInTheDocument();
+
+    // Click "Hapus Proyek"
+    await user.click(deleteBtn);
+
+    // Confirmation dialog should appear
+    expect(screen.getByText(/Konfirmasi Hapus Proyek/i)).toBeInTheDocument();
+    expect(screen.getByText(/Apakah Anda yakin ingin menghapus proyek ini\?/i)).toBeInTheDocument();
+
+    // Confirm deletion
+    const confirmDeleteBtn = screen.getByRole('button', { name: /Ya, Hapus Proyek/i });
+    await user.click(confirmDeleteBtn);
+
+    // Verify apiService.deleteProject was called with project id 202
+    await waitFor(() => {
+      expect(apiService.deleteProject).toHaveBeenCalledWith(202);
+      expect(screen.queryByText(/Konfirmasi Hapus Proyek/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/Sunting Data Proyek/i)).not.toBeInTheDocument();
+    });
+  });
+
+  it('allows penanggung_jawab to enter gate code and unlocks project dashboard seamlessly without errors', async () => {
+    sessionStorage.clear();
+
+    const mockUnlockedProj = {
+      id: 6,
+      kode_proyek: 'LMG-006',
+      kode_akses: 'PJ-10006',
+      nama_proyek: 'Pengaspalan & Penerangan Jalan Poros Pucuk - Babat',
+      kategori: 'jalan' as const,
+      deskripsi: 'Peningkatan jalan hotmix',
+      anggaran: 6800000000,
+      status: 'selesai' as const,
+      progres_persen: 100,
+      tanggal_mulai: '2023-11-01',
+      estimasi_selesai: '2025-10-31',
+      latitude: -7.098,
+      longitude: 112.285,
+      wilayah_id: 14,
+      dinas_id: 1,
+      nama_wilayah: 'Kecamatan Pucuk',
+      nama_dinas: 'Dinas Pekerjaan Umum',
+    };
+
+    vi.mocked(apiService.verifyProjectAccess).mockResolvedValue({
+      success: true,
+      message: 'Otorisasi berhasil',
+      proyek: mockUnlockedProj as any,
+    });
+
+    render(
+      <AdminDinasDashboard
+        currentUser={{ id: 13, role: 'penanggung_jawab', nama: 'ronnn', email: 'ronnn@gmail.com' }}
+        projects={[mockUnlockedProj as any]}
+        onOpenProjectDetail={() => {}}
+      />
+    );
+
+    const user = userEvent.setup();
+
+    // Verification gate should be rendered initially
+    expect(screen.getByText(/Gerbang Akses Penanggung Jawab Proyek/i)).toBeInTheDocument();
+
+    const codeInput = screen.getByPlaceholderText(/Contoh: SKD-SKD-001/i);
+    const pwInput = screen.getByPlaceholderText(/Contoh: PJ-17409/i);
+    const unlockBtn = screen.getByRole('button', { name: /Buka Lembar Kerja Proyek/i });
+
+    await user.type(codeInput, 'LMG-006');
+    await user.type(pwInput, 'PJ-10006');
+    await user.click(unlockBtn);
+
+    // Dashboard should unlock and display the project banner
+    await waitFor(() => {
+      expect(screen.getByText(/Lembar Kerja Terverifikasi/i)).toBeInTheDocument();
+      expect(screen.getAllByText(/Pengaspalan & Penerangan Jalan Poros Pucuk - Babat/i).length).toBeGreaterThan(0);
+      expect(screen.getByText(/Kunci \/ Ganti Proyek/i)).toBeInTheDocument();
+    });
+
+    // 1. Total Proyek must be removed for penanggung_jawab handling 1 project
+    expect(screen.queryByText(/^Total Proyek$/i)).not.toBeInTheDocument();
+
+    // 2. Budget must be tailored to the single project (Rp 6.8M / Rp 6.800.000.000)
+    expect(screen.getAllByText(/6\.800\.000\.000/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Rp 6\.8M/i).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/100% Rampung/i).length).toBeGreaterThan(0);
+
+    // 3. Status must not display dalam_peninjauan_ulang
+    expect(screen.queryByText(/status:\s*dalam_peninjauan_ulang/i)).not.toBeInTheDocument();
+    expect(screen.getAllByText(/status:\s*selesai/i).length).toBeGreaterThan(0);
+
+    // 4. Real-time live sync: dispatching new aduan should update count live
+    window.dispatchEvent(
+      new CustomEvent('civictrack_new_aduan', {
+        detail: {
+          id: 9991,
+          proyek_id: 6,
+          nama_proyek: 'Pengaspalan & Penerangan Jalan Poros Pucuk - Babat',
+          user_id: 10,
+          nama_pelapor: 'Warga Pucuk',
+          email_pelapor: 'warga@pucuk.id',
+          judul: 'Lampu PJU Padam',
+          isi_laporan: 'Ada 2 titik lampu penerangan jalan umum yang padam saat malam hari.',
+          kategori_aduan: 'Penerangan Jalan',
+          status: 'menunggu',
+          tanggal_lapor: '2024-03-25 19:00',
+        },
+      })
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText(/1 Perlu Ditanggapi!/i)).toBeInTheDocument();
+    });
+  });
+});
+
+
 

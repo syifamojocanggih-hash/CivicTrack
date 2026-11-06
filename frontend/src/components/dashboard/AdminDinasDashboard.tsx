@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Building2,
@@ -27,6 +27,14 @@ import {
   Layers,
   Edit3,
   X,
+  Send,
+  AlertCircle,
+  Calendar,
+  User,
+  Film,
+  Image as ImageIcon,
+  Trash2,
+  Globe,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -47,8 +55,13 @@ import {
 } from '../../data/dashboardMockData';
 import { apiService } from '../../services/api';
 import { MiniMapOverview } from './MiniMapOverview';
-import { AduanDetailView } from './AduanDetailView';
 import { WILAYAH_DATA } from '../../data/geoWilayahData';
+import {
+  getProjectTimelineStages,
+  saveProjectTimelineStages,
+  broadcastProjectUpdate,
+  broadcastProjectDeletion,
+} from '../../utils/projectConsistency';
 
 const KECAMATAN_ID_MAP: Record<string, number> = {
   'Kecamatan Sukorame': 2,
@@ -109,6 +122,25 @@ export const KECAMATAN_CODE_MAP: Record<string, string> = {
   'Kecamatan Glagah': 'GLG',
   'Kecamatan Sarirejo': 'SRJ',
 };
+
+export const TEMPLATE_TANGGAPAN = [
+  {
+    label: '⚡ Instruksi Lapangan Segera',
+    text: 'Terima kasih atas laporan dan masukan yang disampaikan. Tim pengawas lapangan dinas teknis telah diinstruksikan untuk melakukan inspeksi langsung bersama kontraktor pelaksana guna penanganan perbaikan dalam waktu 1x24 jam.',
+  },
+  {
+    label: '💧 Penyiraman & Reduksi Debu',
+    text: 'Laporan Anda telah kami terima. Dinas telah menginstruksikan rekanan pelaksana untuk menambah frekuensi penyiraman jalan minimal 4 kali sehari dan memasang jaring penahan debu di sekitar pemukiman warga.',
+  },
+  {
+    label: '🛠️ Perbaikan Kualitas / Aspal',
+    text: 'Dinas Pekerjaan Umum telah meninjau titik kerusakan yang dilaporkan. Perataan ulang dan penambalan lapisan aspal (overlay) sedang dijadwalkan oleh unit pemeliharaan dan kontraktor penanggung jawab.',
+  },
+  {
+    label: '✅ Penyelesaian Tuntas',
+    text: 'Tindak lanjut atas keluhan ini telah diselesaikan oleh tim teknis lapangan. Hasil perbaikan telah diverifikasi oleh pengawas dinas dan saat ini akses jalan kembali normal serta aman dilalui warga.',
+  },
+];
 
 export function abbreviateDesa(desaName: string): string {
   const clean = desaName.replace(/Kelurahan|Desa/gi, '').trim().toUpperCase();
@@ -220,7 +252,20 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   const [unlockedProject, setUnlockedProject] = useState<ProyekItem | null>(() => {
     try {
       const saved = sessionStorage.getItem('civictrack_pj_unlocked_project');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed === 'object') {
+          return {
+            ...parsed,
+            kategori: parsed.kategori || 'jalan',
+            anggaran: Number(parsed.anggaran) || 0,
+            status: parsed.status || 'berjalan',
+            progres_persen: Number(parsed.progres_persen) || 0,
+            nama_wilayah: parsed.nama_wilayah || 'Kabupaten Lamongan',
+            nama_proyek: parsed.nama_proyek || 'Proyek Pembangunan',
+          };
+        }
+      }
     } catch (e) {
       // ignore
     }
@@ -335,10 +380,19 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     try {
       const res = await apiService.verifyProjectAccess(codeToVerify, pwToVerify);
       if (res.success && res.proyek) {
-        setUnlockedProject(res.proyek);
-        sessionStorage.setItem('civictrack_pj_unlocked_project', JSON.stringify(res.proyek));
-        setSelectedProjectForTimeline(res.proyek.id);
-        setNewDocForm((prev) => ({ ...prev, proyek_id: res.proyek!.id }));
+        const sanitizedProj: ProyekItem = {
+          ...res.proyek,
+          kategori: res.proyek.kategori || 'jalan',
+          anggaran: Number(res.proyek.anggaran) || 0,
+          status: res.proyek.status || 'berjalan',
+          progres_persen: Number(res.proyek.progres_persen) || 0,
+          nama_wilayah: res.proyek.nama_wilayah || 'Kabupaten Lamongan',
+          nama_proyek: res.proyek.nama_proyek || 'Proyek Pembangunan',
+        };
+        setUnlockedProject(sanitizedProj);
+        sessionStorage.setItem('civictrack_pj_unlocked_project', JSON.stringify(sanitizedProj));
+        setSelectedProjectForTimeline(sanitizedProj.id);
+        setNewDocForm((prev) => ({ ...prev, proyek_id: sanitizedProj.id }));
       } else {
         setGateError(res.message || 'Verifikasi akses gagal.');
       }
@@ -371,10 +425,101 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   });
   const [editError, setEditError] = useState<string | null>(null);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
+  const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
+  const [isDeletingProject, setIsDeletingProject] = useState(false);
 
   // Linimasa state
-  const [selectedProjectForTimeline, setSelectedProjectForTimeline] = useState<number>(2);
-  const [timelineStages, setTimelineStages] = useState<LinimasaTahap[]>(MOCK_LINIMASA_TAHAP);
+  const [selectedProjectForTimeline, setSelectedProjectForTimeline] = useState<number>(() => {
+    if (currentUser.role === 'penanggung_jawab' && unlockedProject) {
+      return unlockedProject.id;
+    }
+    return 2;
+  });
+  const [timelineStages, setTimelineStages] = useState<LinimasaTahap[]>(() => {
+    const targetProj =
+      (currentUser.role === 'penanggung_jawab' && unlockedProject) ||
+      projectList.find((p) => p.id === 2) ||
+      projectList[0];
+    return targetProj ? getProjectTimelineStages(targetProj) : MOCK_LINIMASA_TAHAP;
+  });
+
+  // Sinkronisasi otomatis tahapan linimasa dengan proyek terpilih & status progres
+  useEffect(() => {
+    const targetId =
+      currentUser.role === 'penanggung_jawab' && unlockedProject
+        ? unlockedProject.id
+        : selectedProjectForTimeline;
+    const targetProj =
+      (currentUser.role === 'penanggung_jawab' && unlockedProject) ||
+      projectList.find((p) => p.id === targetId) ||
+      projectList[0];
+
+    if (targetProj) {
+      setTimelineStages(getProjectTimelineStages(targetProj));
+    }
+  }, [selectedProjectForTimeline, unlockedProject, projectList, currentUser.role]);
+
+  // Sinkronisasi status/progres unlockedProject jika ada pembaruan di projectList
+  useEffect(() => {
+    if (currentUser.role === 'penanggung_jawab' && unlockedProject) {
+      const latest = projectList.find((p) => p.id === unlockedProject.id);
+      if (
+        latest &&
+        (latest.progres_persen !== unlockedProject.progres_persen ||
+          latest.status !== unlockedProject.status ||
+          latest.nama_proyek !== unlockedProject.nama_proyek)
+      ) {
+        setUnlockedProject(latest);
+        sessionStorage.setItem('civictrack_pj_unlocked_project', JSON.stringify(latest));
+      }
+    }
+  }, [projectList, unlockedProject, currentUser.role]);
+
+  // Listener sinkronisasi live antar komponen / browser tab tanpa perlu reload
+  useEffect(() => {
+    const handleLiveSync = (e: any) => {
+      const updated = e.detail as ProyekItem;
+      if (!updated || !updated.id) return;
+
+      setProjectList((prev) => {
+        const exists = prev.some((p) => p.id === updated.id);
+        if (exists) {
+          return prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p));
+        }
+        return [updated, ...prev];
+      });
+
+      if (
+        currentUser.role === 'penanggung_jawab' &&
+        unlockedProject &&
+        unlockedProject.id === updated.id
+      ) {
+        setUnlockedProject((prev) => (prev ? { ...prev, ...updated } : prev));
+      }
+    };
+
+    const handleLiveDelete = (e: any) => {
+      const deletedId = e.detail?.projectId;
+      if (!deletedId) return;
+
+      setProjectList((prev) => prev.filter((p) => p.id !== deletedId));
+      if (
+        currentUser.role === 'penanggung_jawab' &&
+        unlockedProject &&
+        unlockedProject.id === deletedId
+      ) {
+        setUnlockedProject(null);
+        sessionStorage.removeItem('civictrack_pj_unlocked_project');
+      }
+    };
+
+    window.addEventListener('civictrack_project_updated', handleLiveSync as EventListener);
+    window.addEventListener('civictrack_project_deleted', handleLiveDelete as EventListener);
+    return () => {
+      window.removeEventListener('civictrack_project_updated', handleLiveSync as EventListener);
+      window.removeEventListener('civictrack_project_deleted', handleLiveDelete as EventListener);
+    };
+  }, [currentUser.role, unlockedProject]);
   const [isNewStageModalOpen, setIsNewStageModalOpen] = useState(false);
   const [newStageForm, setNewStageForm] = useState({
     nama_tahap: '',
@@ -385,20 +530,138 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   });
 
   // Dokumentasi state
-  const [dokumentasiList, setDokumentasiList] = useState<DokumentasiProyek[]>(MOCK_DOKUMENTASI_PROYEK);
+  const [dokumentasiList, setDokumentasiList] = useState<DokumentasiProyek[]>(() => {
+    try {
+      const saved = localStorage.getItem('civictrack_dokumentasi_proyek');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return MOCK_DOKUMENTASI_PROYEK;
+  });
   const [isNewDocModalOpen, setIsNewDocModalOpen] = useState(false);
+  const [docUploadMode, setDocUploadMode] = useState<'file' | 'url'>('file');
+  const [selectedDocFile, setSelectedDocFile] = useState<File | null>(null);
+  const [docFilePreview, setDocFilePreview] = useState<string | null>(null);
+  const [docFileError, setDocFileError] = useState<string | null>(null);
+  const [isSubmittingDoc, setIsSubmittingDoc] = useState(false);
+  const [isDocDragging, setIsDocDragging] = useState(false);
+  const docFileInputRef = React.useRef<HTMLInputElement | null>(null);
+
   const [newDocForm, setNewDocForm] = useState({
     proyek_id: 2,
     nama_tahap: 'Galian & Pemadatan Lapis Pondasi',
     judul: '',
     deskripsi: '',
-    foto_url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?w=800&auto=format&fit=crop&q=80',
-    tipe_file: 'foto' as const,
+    foto_url: '',
+    tipe_file: 'foto' as 'foto' | 'video' | 'dokumen_teknis',
   });
+
+  const handleDocFileSelect = (file: File) => {
+    setDocFileError(null);
+    const isImage = file.type.startsWith('image/');
+    const isVideo = file.type.startsWith('video/') || /\.(mp4|mov|webm|avi)$/i.test(file.name);
+
+    if (!isImage && !isVideo) {
+      setDocFileError('Format berkas tidak didukung. Harap pilih foto (JPG, PNG, WebP) atau video (MP4, WebM, MOV).');
+      return;
+    }
+
+    const maxSize = 50 * 1024 * 1024; // 50 MB
+    if (file.size > maxSize) {
+      setDocFileError('Ukuran berkas melebihi batas maksimal 50 MB.');
+      return;
+    }
+
+    setSelectedDocFile(file);
+    const detectedType: 'foto' | 'video' = isVideo ? 'video' : 'foto';
+    setNewDocForm((prev) => ({
+      ...prev,
+      tipe_file: detectedType,
+      judul: prev.judul ? prev.judul : file.name.replace(/\.[^/.]+$/, ''),
+    }));
+
+    const reader = new FileReader();
+    reader.onload = () => {
+      setDocFilePreview(reader.result as string);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleClearDocFile = () => {
+    setSelectedDocFile(null);
+    setDocFilePreview(null);
+    setDocFileError(null);
+    if (docFileInputRef.current) {
+      docFileInputRef.current.value = '';
+    }
+  };
 
   // Aduan state
   const [aduanList, setAduanList] = useState<LaporanAduan[]>(MOCK_LAPORAN_WARGA);
   const [selectedAduanToReply, setSelectedAduanToReply] = useState<LaporanAduan | null>(null);
+  const [replyText, setReplyText] = useState<string>('');
+  const [replyStatus, setReplyStatus] = useState<'diproses' | 'selesai'>('diproses');
+  const [isSubmittingReply, setIsSubmittingReply] = useState<boolean>(false);
+  const [replySuccessMessage, setReplySuccessMessage] = useState<string | null>(null);
+  const [replyError, setReplyError] = useState<string | null>(null);
+
+  const handleOpenReplyModal = (aduan: LaporanAduan) => {
+    setSelectedAduanToReply(aduan);
+    setReplyText(aduan.tanggapan_dinas || '');
+    setReplyStatus(aduan.status === 'selesai' ? 'selesai' : 'diproses');
+    setReplyError(null);
+    setReplySuccessMessage(null);
+  };
+
+  const handleSubmitReplyAduan = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedAduanToReply || !replyText.trim()) return;
+
+    setIsSubmittingReply(true);
+    setReplyError(null);
+    setReplySuccessMessage(null);
+
+    try {
+      const responder = `${currentUser.nama} (${
+        currentUser.nama_dinas ||
+        (currentUser.role === 'aparatur_pemerintah' || currentUser.role === 'pimpinan_instansi'
+          ? 'Pemerintah Kabupaten Lamongan'
+          : 'Dinas PU & Penataan Ruang')
+      })`;
+
+      const resStatus = replyStatus === 'selesai' ? 'ditanggapi' : 'diproses';
+
+      await apiService.replyAduan(selectedAduanToReply.id, {
+        status_tindak_lanjut: resStatus,
+        tanggapan_dinas: replyText.trim(),
+        petugas_penjawab: responder,
+      });
+
+      const updated: LaporanAduan = {
+        ...selectedAduanToReply,
+        tanggapan_dinas: replyText.trim(),
+        status: replyStatus,
+        tanggal_tanggapan: new Date().toLocaleString('id-ID', {
+          dateStyle: 'short',
+          timeStyle: 'short',
+        }),
+        petugas_penjawab: responder,
+      };
+
+      setAduanList((prev) =>
+        prev.map((item) => (item.id === updated.id ? updated : item))
+      );
+
+      setReplySuccessMessage('Tanggapan resmi dinas berhasil dipublikasikan secara transparan.');
+      setTimeout(() => {
+        setSelectedAduanToReply(null);
+        setReplySuccessMessage(null);
+      }, 1400);
+    } catch (err: any) {
+      setReplyError(err.message || 'Gagal mempublikasikan tanggapan dinas.');
+    } finally {
+      setIsSubmittingReply(false);
+    }
+  };
 
   // Load aduan warga from database & persistent storage + real-time listener
   React.useEffect(() => {
@@ -420,13 +683,14 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     loadReports();
 
     const handleNewAduan = (event: any) => {
-      if (event.detail) {
+      if (event?.detail) {
         setAduanList((prev) => [event.detail, ...prev.filter((item) => item.id !== event.detail.id)]);
       }
+      loadReports();
     };
 
     const handleRepliedAduan = (event: any) => {
-      if (event.detail) {
+      if (event?.detail) {
         const { reportId, status, tanggapan_dinas, tanggal_tanggapan, petugas_penjawab } = event.detail;
         setAduanList((prev) =>
           prev.map((item) =>
@@ -442,6 +706,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
           )
         );
       }
+      loadReports();
     };
 
     const handleStorageChange = () => {
@@ -451,11 +716,17 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     window.addEventListener('civictrack_new_aduan', handleNewAduan);
     window.addEventListener('civictrack_replied_aduan', handleRepliedAduan);
     window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('focus', loadReports);
+
+    // Auto-refresh interval (sinkronisasi aduan warga secara live tanpa refresh)
+    const aduanInterval = setInterval(loadReports, 5000);
 
     return () => {
       window.removeEventListener('civictrack_new_aduan', handleNewAduan);
       window.removeEventListener('civictrack_replied_aduan', handleRepliedAduan);
       window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', loadReports);
+      clearInterval(aduanInterval);
     };
   }, [activeSection]);
 
@@ -512,7 +783,25 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
     loadEvaluations();
 
-    const handleNewEvaluasi = () => {
+    const handleNewEvaluasi = (event?: any) => {
+      if (event?.detail) {
+        const e = event.detail;
+        const newEval: EvaluasiCacatItem = {
+          id: e.id,
+          proyek_id: e.proyek_id,
+          nama_proyek: e.nama_proyek || 'Proyek Lapangan',
+          user_id: e.user_id,
+          nama_pelapor: e.pelapor?.nama || (e as any).nama_pelapor || 'Warga Masyarakat',
+          deskripsi: e.deskripsi || '',
+          lokasi_titik: (e as any).lokasi_titik || 'Lokasi Proyek',
+          skor_urgensi_ai: e.skor_urgensi_ai || 3,
+          analisis_ai: e.ringkasan_analisis_ai || (e as any).analisis_ai || 'Analisis AI Groq',
+          kategori_cacat: e.kategori_masalah || (e as any).kategori_cacat || 'Kerusakan Fisik',
+          status_verifikasi: e.status || 'menunggu_verifikasi',
+          tanggal_lapor: String(e.created_at || new Date().toISOString()).split('T')[0],
+        };
+        setEvaluasiList((prev) => [newEval, ...prev.filter((item) => item.id !== newEval.id)]);
+      }
       loadEvaluations();
     };
 
@@ -520,12 +809,24 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       loadEvaluations();
     };
 
+    const handleStorageChange = () => {
+      loadEvaluations();
+    };
+
     window.addEventListener('civictrack_new_evaluasi', handleNewEvaluasi);
     window.addEventListener('civictrack_evaluasi_verified', handleEvaluasiVerified);
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('focus', loadEvaluations);
+
+    // Auto-refresh interval (sinkronisasi evaluasi cacat secara live)
+    const evalInterval = setInterval(loadEvaluations, 5000);
 
     return () => {
       window.removeEventListener('civictrack_new_evaluasi', handleNewEvaluasi);
       window.removeEventListener('civictrack_evaluasi_verified', handleEvaluasiVerified);
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('focus', loadEvaluations);
+      clearInterval(evalInterval);
     };
   }, []);
 
@@ -631,6 +932,18 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   // Handle open edit project modal
   const handleOpenEditModal = (p: ProyekItem) => {
     setEditingProject(p);
+    let initialStatus: ProyekStatus = 'berjalan';
+    if (p.progres_persen >= 100 || p.status === 'selesai') {
+      initialStatus = 'selesai';
+    } else if (
+      p.status === 'ditangguhkan' ||
+      (p.status as any) === 'tertunda' ||
+      (p.status as any) === 'dalam_peninjauan_ulang'
+    ) {
+      initialStatus = 'ditangguhkan';
+    } else {
+      initialStatus = 'berjalan';
+    }
     setEditForm({
       nama_proyek: p.nama_proyek,
       kategori: p.kategori,
@@ -638,10 +951,34 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       tanggal_mulai: p.tanggal_mulai || '2024-01-01',
       estimasi_selesai: p.estimasi_selesai || '2024-12-31',
       progres_persen: p.progres_persen,
-      status: p.status,
+      status: initialStatus,
       catatan_perubahan: '',
     });
     setEditError(null);
+  };
+
+  // Handle delete project
+  const handleDeleteProject = async () => {
+    if (!editingProject) return;
+    setIsDeletingProject(true);
+    try {
+      await apiService.deleteProject(editingProject.id);
+      broadcastProjectDeletion(editingProject.id);
+      setProjectList((prev) => prev.filter((item) => item.id !== editingProject.id));
+      if (unlockedProject && unlockedProject.id === editingProject.id) {
+        setUnlockedProject(null);
+        sessionStorage.removeItem('civictrack_pj_unlocked_project');
+      }
+      setIsDeleteConfirmOpen(false);
+      setEditingProject(null);
+      setCopyFeedback(`Proyek '${editingProject.nama_proyek}' berhasil dihapus.`);
+      setTimeout(() => setCopyFeedback(null), 3500);
+    } catch (err: any) {
+      setEditError(err.message || 'Gagal menghapus proyek.');
+      setIsDeleteConfirmOpen(false);
+    } finally {
+      setIsDeletingProject(false);
+    }
   };
 
   // Handle submit edit project
@@ -686,6 +1023,16 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       setProjectList((prev) =>
         prev.map((item) => (item.id === editingProject.id ? { ...item, ...updated } : item))
       );
+      if (
+        currentUser.role === 'penanggung_jawab' &&
+        unlockedProject &&
+        unlockedProject.id === editingProject.id
+      ) {
+        const mergedPJ = { ...unlockedProject, ...updated };
+        setUnlockedProject(mergedPJ);
+        sessionStorage.setItem('civictrack_pj_unlocked_project', JSON.stringify(mergedPJ));
+      }
+      broadcastProjectUpdate(updated);
       if (onProjectUpdated) {
         onProjectUpdated(updated);
       }
@@ -700,10 +1047,14 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   // Handle add new timeline stage
   const handleAddTimelineStage = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!selectedProjectForTimeline) return;
+    const activeTargetId =
+      currentUser.role === 'penanggung_jawab' && unlockedProject
+        ? unlockedProject.id
+        : selectedProjectForTimeline;
+    if (!activeTargetId) return;
 
     try {
-      const stageRes = await apiService.createTimelineStage(selectedProjectForTimeline, {
+      const stageRes = await apiService.createTimelineStage(activeTargetId, {
         nama_tahap: newStageForm.nama_tahap.trim(),
         progres_persen: Number(newStageForm.persentase_bobot),
         catatan: newStageForm.deskripsi.trim() || undefined,
@@ -711,26 +1062,38 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
       const newStage: LinimasaTahap = {
         id: stageRes.id,
-        proyek_id: selectedProjectForTimeline,
+        proyek_id: activeTargetId,
         nomor_tahap: timelineStages.length + 1,
         nama_tahap: stageRes.nama_tahap,
         deskripsi: newStageForm.deskripsi,
         target_mulai: newStageForm.target_mulai,
         target_selesai: newStageForm.target_selesai,
         persentase_bobot: stageRes.progres_persen,
-        status: 'sedang_berjalan',
+        status: (stageRes.progres_persen >= 100 ? 'selesai' : 'sedang_berjalan') as any,
         catatan_lapangan: stageRes.catatan || 'Tahap baru ditambahkan oleh pengawas teknis.',
       };
-      setTimelineStages((prev) => [...prev, newStage]);
+      const updatedStages = [...timelineStages, newStage];
+      setTimelineStages(updatedStages);
+      saveProjectTimelineStages(activeTargetId, updatedStages);
 
-      const projToUpdate = projectList.find((p) => p.id === selectedProjectForTimeline);
+      const projToUpdate = projectList.find((p) => p.id === activeTargetId);
       if (projToUpdate) {
         const updatedProj: ProyekItem = {
           ...projToUpdate,
           progres_persen: stageRes.progres_persen,
+          status: stageRes.progres_persen >= 100 ? 'selesai' : projToUpdate.status,
           tahap_terkini: stageRes.nama_tahap,
         };
         setProjectList((prev) => prev.map((p) => (p.id === updatedProj.id ? updatedProj : p)));
+        broadcastProjectUpdate(updatedProj);
+        if (
+          currentUser.role === 'penanggung_jawab' &&
+          unlockedProject &&
+          unlockedProject.id === activeTargetId
+        ) {
+          setUnlockedProject(updatedProj);
+          sessionStorage.setItem('civictrack_pj_unlocked_project', JSON.stringify(updatedProj));
+        }
         if (onProjectUpdated) {
           onProjectUpdated(updatedProj);
         }
@@ -750,29 +1113,95 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   };
 
   // Handle submit documentation
-  const handleAddDocumentation = (e: React.FormEvent) => {
+  const handleAddDocumentation = async (e: React.FormEvent) => {
     e.preventDefault();
+    setDocFileError(null);
+
+    let finalFileUrl = newDocForm.foto_url.trim();
+    let finalType: 'foto' | 'video' | 'dokumen_teknis' = newDocForm.tipe_file;
+
+    if (docUploadMode === 'file') {
+      if (!selectedDocFile && !docFilePreview) {
+        setDocFileError('Silakan pilih berkas foto atau video dari penyimpanan perangkat Anda.');
+        return;
+      }
+      setIsSubmittingDoc(true);
+
+      if (
+        selectedDocFile?.type.startsWith('video/') ||
+        (docFilePreview && docFilePreview.startsWith('data:video/'))
+      ) {
+        finalType = 'video';
+      } else {
+        finalType = 'foto';
+      }
+
+      if (selectedDocFile) {
+        try {
+          const uploaded = await apiService.uploadDokumentasi(
+            Number(newDocForm.proyek_id),
+            selectedDocFile
+          );
+          if (uploaded?.url_file) {
+            finalFileUrl = uploaded.url_file;
+            if (uploaded.tipe_media === 'video') finalType = 'video';
+          } else {
+            finalFileUrl = docFilePreview || '';
+          }
+        } catch {
+          finalFileUrl = docFilePreview || '';
+        }
+      } else if (docFilePreview) {
+        finalFileUrl = docFilePreview;
+      }
+    } else {
+      if (!finalFileUrl) {
+        setDocFileError('Silakan masukkan tautan/URL berkas foto atau video bukti.');
+        return;
+      }
+      if (/\.(mp4|mov|webm|avi)(\?|$)/i.test(finalFileUrl)) {
+        finalType = 'video';
+      }
+    }
+
+    if (!finalFileUrl) {
+      setIsSubmittingDoc(false);
+      setDocFileError('Gagal memproses berkas dokumentasi. Pastikan berkas atau URL valid.');
+      return;
+    }
+
     const selProj = projectList.find((p) => p.id === Number(newDocForm.proyek_id));
     const newDoc: DokumentasiProyek = {
       id: Date.now(),
       proyek_id: Number(newDocForm.proyek_id),
       nama_proyek: selProj?.nama_proyek || 'Pelebaran Jalan',
-      nama_tahap: newDocForm.nama_tahap,
-      judul: newDocForm.judul,
-      deskripsi: newDocForm.deskripsi,
-      foto_url: newDocForm.foto_url,
+      nama_tahap: newDocForm.nama_tahap || 'Inspeksi Fisik Lapangan',
+      judul: newDocForm.judul.trim(),
+      deskripsi: newDocForm.deskripsi.trim(),
+      foto_url: finalFileUrl,
       tanggal_unggah: new Date().toISOString().split('T')[0],
-      diunggah_oleh: `${currentUser.nama} (Admin Dinas PUPR)`,
-      tipe_file: 'foto',
+      diunggah_oleh: `${currentUser.nama} (${
+        currentUser.role === 'penanggung_jawab' ? 'Penanggung Jawab Proyek' : 'Admin Dinas PUPR'
+      })`,
+      tipe_file: finalType,
     };
-    setDokumentasiList([newDoc, ...dokumentasiList]);
+
+    const updatedList = [newDoc, ...dokumentasiList];
+    setDokumentasiList(updatedList);
+    try {
+      localStorage.setItem('civictrack_dokumentasi_proyek', JSON.stringify(updatedList));
+    } catch {}
+
+    setIsSubmittingDoc(false);
     setIsNewDocModalOpen(false);
+    handleClearDocFile();
     setNewDocForm({
-      proyek_id: 2,
+      proyek_id:
+        currentUser.role === 'penanggung_jawab' && unlockedProject ? unlockedProject.id : 2,
       nama_tahap: 'Galian & Pemadatan Lapis Pondasi',
       judul: '',
       deskripsi: '',
-      foto_url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18f15f6?w=800&auto=format&fit=crop&q=80',
+      foto_url: '',
       tipe_file: 'foto',
     });
   };
@@ -817,6 +1246,48 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     }
   };
 
+  // Helper normalisasi status proyek: hanya berjalan, selesai, ditangguhkan (tanpa dalam_peninjauan_ulang)
+  const getDisplayStatus = (st?: string, progres?: number): 'selesai' | 'berjalan' | 'ditangguhkan' => {
+    if (st === 'selesai' || (progres !== undefined && progres >= 100)) return 'selesai';
+    if (st === 'berjalan') return 'berjalan';
+    return 'ditangguhkan';
+  };
+
+  // Filter aduan dan evaluasi khusus proyek yang ditugaskan jika role = penanggung_jawab
+  const projectAduanList = useMemo(() => {
+    if (currentUser.role === 'penanggung_jawab' && unlockedProject) {
+      return aduanList.filter(
+        (item) =>
+          Number(item.proyek_id) === Number(unlockedProject.id) ||
+          (item.nama_proyek &&
+            unlockedProject.nama_proyek &&
+            (item.nama_proyek.toLowerCase().trim() === unlockedProject.nama_proyek.toLowerCase().trim() ||
+              item.nama_proyek.toLowerCase().includes(unlockedProject.nama_proyek.toLowerCase()) ||
+              unlockedProject.nama_proyek.toLowerCase().includes(item.nama_proyek.toLowerCase())))
+      );
+    }
+    return aduanList;
+  }, [aduanList, currentUser.role, unlockedProject]);
+
+  const projectAduanMenungguCount = useMemo(() => {
+    return projectAduanList.filter((a) => a.status === 'menunggu').length;
+  }, [projectAduanList]);
+
+  const projectEvaluasiList = useMemo(() => {
+    if (currentUser.role === 'penanggung_jawab' && unlockedProject) {
+      return evaluasiList.filter(
+        (item) =>
+          Number(item.proyek_id) === Number(unlockedProject.id) ||
+          (item.nama_proyek &&
+            unlockedProject.nama_proyek &&
+            (item.nama_proyek.toLowerCase().trim() === unlockedProject.nama_proyek.toLowerCase().trim() ||
+              item.nama_proyek.toLowerCase().includes(unlockedProject.nama_proyek.toLowerCase()) ||
+              unlockedProject.nama_proyek.toLowerCase().includes(item.nama_proyek.toLowerCase())))
+      );
+    }
+    return evaluasiList;
+  }, [evaluasiList, currentUser.role, unlockedProject]);
+
   // Quick stats calculation
   const totalAnggaran = projectList.reduce((acc, p) => acc + p.anggaran, 0);
   const berjalanCount = projectList.filter((p) => p.status === 'berjalan').length;
@@ -836,6 +1307,48 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     }
     return true;
   });
+
+  const isAnyFormOpen =
+    isNewProjectModalOpen ||
+    !!editingProject ||
+    isNewStageModalOpen ||
+    isNewDocModalOpen ||
+    !!selectedEvalToVerify ||
+    !!selectedAduanToReply;
+
+  useEffect(() => {
+    if (isAnyFormOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (isNewProjectModalOpen) {
+          setIsNewProjectModalOpen(false);
+          setCreateProjError(null);
+        }
+        if (editingProject) setEditingProject(null);
+        if (isNewStageModalOpen) setIsNewStageModalOpen(false);
+        if (isNewDocModalOpen) {
+          setIsNewDocModalOpen(false);
+          handleClearDocFile();
+        }
+        if (selectedEvalToVerify) setSelectedEvalToVerify(null);
+        if (selectedAduanToReply) {
+          setSelectedAduanToReply(null);
+          setReplyError(null);
+          setReplySuccessMessage(null);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.body.style.overflow = '';
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isAnyFormOpen, isNewProjectModalOpen, editingProject, isNewStageModalOpen, isNewDocModalOpen, selectedEvalToVerify, selectedAduanToReply]);
 
   // ── GERBANG AKSES VERIFIKASI PENANGGUNG JAWAB PROYEK ──
   if (currentUser.role === 'penanggung_jawab' && !unlockedProject) {
@@ -980,57 +1493,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       </div>
     );
   }
-
-  if (selectedAduanToReply) {
-    return (
-      <AduanDetailView
-        aduan={selectedAduanToReply}
-        currentUser={currentUser}
-        projects={projects}
-        onBack={() => setSelectedAduanToReply(null)}
-        onOpenProjectDetail={onOpenProjectDetail}
-        onAduanUpdated={(updated) => {
-          setAduanList((prev) =>
-            prev.map((item) => (item.id === updated.id ? updated : item))
-          );
-          setSelectedAduanToReply(updated);
-        }}
-      />
-    );
-  }
-
-  const isAnyFormOpen =
-    isNewProjectModalOpen ||
-    !!editingProject ||
-    isNewStageModalOpen ||
-    isNewDocModalOpen ||
-    !!selectedEvalToVerify;
-
-  useEffect(() => {
-    if (isAnyFormOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = '';
-    }
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        if (isNewProjectModalOpen) {
-          setIsNewProjectModalOpen(false);
-          setCreateProjError(null);
-        }
-        if (editingProject) setEditingProject(null);
-        if (isNewStageModalOpen) setIsNewStageModalOpen(false);
-        if (isNewDocModalOpen) setIsNewDocModalOpen(false);
-        if (selectedEvalToVerify) setSelectedEvalToVerify(null);
-      }
-    };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      document.body.style.overflow = '';
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [isAnyFormOpen, isNewProjectModalOpen, editingProject, isNewStageModalOpen, isNewDocModalOpen, selectedEvalToVerify]);
 
   return (
     <div className="space-y-6 animate-hero-in">
@@ -1766,24 +2228,109 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
 
                 {/* Sticky Responsive Footer */}
-                <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setEditingProject(null)}
-                    className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
-                  >
-                    Batal
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmittingEdit}
-                    className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5"
-                  >
-                    <Check className="w-3.5 h-3.5" />
-                    <span>{isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
-                  </button>
+                <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-between gap-2 sm:gap-2.5 shrink-0">
+                  <div>
+                    {currentUser.role !== 'penanggung_jawab' && (
+                      <button
+                        type="button"
+                        onClick={() => setIsDeleteConfirmOpen(true)}
+                        className="w-full sm:w-auto px-3.5 py-2 text-xs font-semibold text-red-700 bg-red-50 hover:bg-red-100 border border-red-200 rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
+                        title="Hapus Proyek Ini"
+                      >
+                        <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                        <span>Hapus Proyek</span>
+                      </button>
+                    )}
+                  </div>
+                  <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 sm:gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => setEditingProject(null)}
+                      className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
+                    >
+                      Batal
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingEdit}
+                      className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5"
+                    >
+                      <Check className="w-3.5 h-3.5" />
+                      <span>{isSubmittingEdit ? 'Menyimpan...' : 'Simpan Perubahan'}</span>
+                    </button>
+                  </div>
                 </div>
               </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL KONFIRMASI HAPUS PROYEK ── */}
+      {isDeleteConfirmOpen && editingProject && renderPortal(
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[10000] overflow-y-auto bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-fade-in"
+          onClick={() => setIsDeleteConfirmOpen(false)}
+        >
+          <div
+            className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-red-200 p-6 text-left space-y-4 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-red-100 flex items-center justify-center text-red-600 shrink-0">
+                <AlertTriangle className="w-5 h-5" />
+              </div>
+              <div>
+                <h4 className="font-heading font-bold text-base text-slate-900 leading-tight">
+                  Konfirmasi Hapus Proyek
+                </h4>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Tindakan ini permanen dan tidak dapat dibatalkan.
+                </p>
+              </div>
+            </div>
+
+            <div className="p-3.5 bg-red-50/70 border border-red-100 rounded-xl space-y-1.5 text-xs text-red-900">
+              <p className="font-semibold text-red-950">
+                Apakah Anda yakin ingin menghapus proyek ini?
+              </p>
+              <p className="font-mono font-bold text-[#184C78]">
+                {editingProject.kode_proyek ? `[${editingProject.kode_proyek}] ` : ''}{editingProject.nama_proyek}
+              </p>
+              <p className="text-[11px] text-red-700">
+                Seluruh data tahapan linimasa, dokumentasi pengerjaan, dan riwayat laporan warga terkait proyek ini akan ikut terhapus dari sistem.
+              </p>
+            </div>
+
+            <div className="flex items-center justify-end gap-2.5 pt-2">
+              <button
+                type="button"
+                onClick={() => setIsDeleteConfirmOpen(false)}
+                disabled={isDeletingProject}
+                className="px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer"
+              >
+                Batal
+              </button>
+              <button
+                type="button"
+                onClick={handleDeleteProject}
+                disabled={isDeletingProject}
+                className="px-4 py-2 text-xs font-semibold text-white bg-red-600 hover:bg-red-700 rounded-xl transition-colors cursor-pointer flex items-center gap-1.5 disabled:opacity-50"
+              >
+                {isDeletingProject ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Menghapus...</span>
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Ya, Hapus Proyek</span>
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>
@@ -1947,7 +2494,10 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setIsNewDocModalOpen(false)}
+                  onClick={() => {
+                    setIsNewDocModalOpen(false);
+                    handleClearDocFile();
+                  }}
                   className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
                   title="Tutup Modal"
                   aria-label="Tutup Modal"
@@ -1990,41 +2540,249 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     />
                   </div>
 
+                  {/* Pilihan Metode Sumber Berkas */}
                   <div>
-                    <label className="block font-semibold text-[#184C78] mb-1">URL Foto Bukti / Berkas File</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="https://... atau path berkas foto"
-                      value={newDocForm.foto_url}
-                      onChange={(e) => setNewDocForm({ ...newDocForm, foto_url: e.target.value })}
-                      className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
-                    />
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="text-[10px] text-slate-400">Contoh Cepat:</span>
+                    <label className="block font-semibold text-[#184C78] mb-1.5">
+                      Sumber Berkas Dokumentasi
+                    </label>
+                    <div className="grid grid-cols-2 gap-2 p-1 bg-[#F5F7FA] rounded-xl border border-[#DCE0E6]">
                       <button
                         type="button"
-                        onClick={() => setNewDocForm({ ...newDocForm, foto_url: 'https://images.unsplash.com/photo-1541888946425-d0fbb18fe111?w=800' })}
-                        className="text-[10px] text-[#2980B9] hover:underline cursor-pointer"
+                        onClick={() => {
+                          setDocUploadMode('file');
+                          setDocFileError(null);
+                        }}
+                        className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                          docUploadMode === 'file'
+                            ? 'bg-[#184C78] text-white shadow-xs'
+                            : 'text-[#6C757D] hover:text-[#184C78] hover:bg-white/60'
+                        }`}
                       >
-                        [Foto Aspal]
+                        <Upload className="w-3.5 h-3.5" />
+                        <span>Penyimpanan Perangkat</span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => setNewDocForm({ ...newDocForm, foto_url: 'https://images.unsplash.com/photo-1590496793929-36417d3117de?w=800' })}
-                        className="text-[10px] text-[#2980B9] hover:underline cursor-pointer"
+                        onClick={() => {
+                          setDocUploadMode('url');
+                          setDocFileError(null);
+                        }}
+                        className={`py-2 px-3 rounded-lg text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                          docUploadMode === 'url'
+                            ? 'bg-[#184C78] text-white shadow-xs'
+                            : 'text-[#6C757D] hover:text-[#184C78] hover:bg-white/60'
+                        }`}
                       >
-                        [Foto Beton]
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setNewDocForm({ ...newDocForm, foto_url: 'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800' })}
-                        className="text-[10px] text-[#2980B9] hover:underline cursor-pointer"
-                      >
-                        [Foto Drainase]
+                        <Globe className="w-3.5 h-3.5" />
+                        <span>Tautan / URL Web</span>
                       </button>
                     </div>
                   </div>
+
+                  {/* Mode 1: Upload dari Penyimpanan Eksternal / Perangkat */}
+                  {docUploadMode === 'file' ? (
+                    <div>
+                      <input
+                        ref={docFileInputRef}
+                        type="file"
+                        accept="image/*,video/*"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) handleDocFileSelect(file);
+                        }}
+                      />
+
+                      {!docFilePreview ? (
+                        <div
+                          onDragOver={(e) => {
+                            e.preventDefault();
+                            setIsDocDragging(true);
+                          }}
+                          onDragLeave={() => setIsDocDragging(false)}
+                          onDrop={(e) => {
+                            e.preventDefault();
+                            setIsDocDragging(false);
+                            const file = e.dataTransfer.files?.[0];
+                            if (file) handleDocFileSelect(file);
+                          }}
+                          onClick={() => docFileInputRef.current?.click()}
+                          className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
+                            isDocDragging
+                              ? 'border-[#2980B9] bg-[#EBF4FB]'
+                              : 'border-[#BDD7EE] bg-[#F8FAFC] hover:border-[#2980B9] hover:bg-[#F0F7FD]'
+                          }`}
+                        >
+                          <div className="w-12 h-12 mx-auto rounded-full bg-[#EBF4FB] text-[#2980B9] flex items-center justify-center mb-2.5">
+                            <Upload className="w-6 h-6" />
+                          </div>
+                          <div className="font-bold text-sm text-[#184C78]">
+                            Pilih Foto Lapangan atau Video Drone
+                          </div>
+                          <p className="text-[11px] text-[#6C757D] mt-1 max-w-sm mx-auto leading-relaxed">
+                            Klik untuk mencari berkas dari memori / penyimpanan perangkat Anda, atau tarik &amp; lepaskan berkas ke sini.
+                          </p>
+                          <div className="flex items-center justify-center gap-2 mt-3 flex-wrap">
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-[#184C78] border border-blue-200 text-[10px] font-semibold">
+                              <ImageIcon className="w-3 h-3 text-[#2980B9]" />
+                              <span>Foto: JPG, PNG, WebP</span>
+                            </span>
+                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-purple-50 text-purple-800 border border-purple-200 text-[10px] font-semibold">
+                              <Film className="w-3 h-3 text-purple-600" />
+                              <span>Video: MP4, WebM, MOV</span>
+                            </span>
+                            <span className="text-[10px] text-slate-400 font-medium font-mono">Maks. 50MB</span>
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="p-3 bg-[#F8FAFC] rounded-2xl border border-[#BDD7EE] space-y-2.5 animate-fade-in">
+                          {/* Media Preview Box */}
+                          <div className="relative rounded-xl overflow-hidden bg-slate-900 border border-slate-200 flex items-center justify-center max-h-56">
+                            {newDocForm.tipe_file === 'video' || docFilePreview.startsWith('data:video/') ? (
+                              <video
+                                src={docFilePreview}
+                                controls
+                                className="w-full max-h-56 object-contain"
+                              />
+                            ) : (
+                              <img
+                                src={docFilePreview}
+                                alt="Pratinjau Berkas Dokumentasi"
+                                className="w-full max-h-56 object-contain bg-slate-100"
+                              />
+                            )}
+                            <div className="absolute top-2 left-2 flex items-center gap-1.5 pointer-events-none">
+                              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-bold bg-black/75 text-white backdrop-blur-xs">
+                                {newDocForm.tipe_file === 'video' ? (
+                                  <>
+                                    <Film className="w-3 h-3 text-cyan-300" />
+                                    <span>Video Rekaman / Drone</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <ImageIcon className="w-3 h-3 text-emerald-300" />
+                                    <span>Foto Lapangan</span>
+                                  </>
+                                )}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* File info and change buttons */}
+                          <div className="flex items-center justify-between gap-2 pt-1 text-[11px]">
+                            <div className="min-w-0">
+                              <div className="font-bold text-[#184C78] truncate">
+                                {selectedDocFile?.name || 'Berkas Terpilih'}
+                              </div>
+                              <div className="text-[10px] text-slate-500 font-mono">
+                                {selectedDocFile
+                                  ? `${(selectedDocFile.size / (1024 * 1024)).toFixed(2)} MB • ${selectedDocFile.type || 'Media'}`
+                                  : 'Media Siap Diunggah'}
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 shrink-0">
+                              <button
+                                type="button"
+                                onClick={() => docFileInputRef.current?.click()}
+                                className="px-2.5 py-1 text-[11px] font-semibold text-[#184C78] bg-white border border-[#DCE0E6] hover:bg-[#EBF4FB] rounded-lg transition-colors cursor-pointer"
+                              >
+                                Ganti Berkas
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleClearDocFile}
+                                className="p-1 text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                title="Hapus Berkas"
+                                aria-label="Hapus Berkas"
+                              >
+                                <Trash2 className="w-4 h-4" />
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {docFileError && (
+                        <div className="mt-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-[11px] font-semibold flex items-center gap-2 animate-fade-in shadow-xs">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span>{docFileError}</span>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    /* Mode 2: Input Tautan / URL Web */
+                    <div>
+                      <label className="block font-semibold text-[#184C78] mb-1">
+                        URL Foto Bukti / Berkas File
+                      </label>
+                      <input
+                        type="url"
+                        placeholder="https://... tautan berkas foto atau video online"
+                        value={newDocForm.foto_url}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          const isVid = /\.(mp4|mov|webm|avi)(\?|$)/i.test(val);
+                          setNewDocForm({
+                            ...newDocForm,
+                            foto_url: val,
+                            tipe_file: isVid ? 'video' : 'foto',
+                          });
+                        }}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] text-xs"
+                      />
+                      <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+                        <span className="text-[10px] text-slate-400">Contoh Cepat:</span>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewDocForm({
+                              ...newDocForm,
+                              foto_url:
+                                'https://images.unsplash.com/photo-1541888946425-d0fbb18fe111?w=800',
+                              tipe_file: 'foto',
+                            })
+                          }
+                          className="text-[10px] text-[#2980B9] hover:underline cursor-pointer"
+                        >
+                          [Foto Aspal]
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewDocForm({
+                              ...newDocForm,
+                              foto_url:
+                                'https://images.unsplash.com/photo-1590496793929-36417d3117de?w=800',
+                              tipe_file: 'foto',
+                            })
+                          }
+                          className="text-[10px] text-[#2980B9] hover:underline cursor-pointer"
+                        >
+                          [Foto Beton]
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setNewDocForm({
+                              ...newDocForm,
+                              foto_url:
+                                'https://images.unsplash.com/photo-1581094794329-c8112a89af12?w=800',
+                              tipe_file: 'foto',
+                            })
+                          }
+                          className="text-[10px] text-[#2980B9] hover:underline cursor-pointer"
+                        >
+                          [Foto Drainase]
+                        </button>
+                      </div>
+                      {docFileError && (
+                        <div className="mt-2 p-2.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-[11px] font-semibold flex items-center gap-2 animate-fade-in shadow-xs">
+                          <AlertCircle className="w-3.5 h-3.5 text-rose-600 shrink-0" />
+                          <span>{docFileError}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   <div>
                     <label className="block font-semibold text-[#184C78] mb-1">Catatan Teknis Pengawas</label>
@@ -2043,17 +2801,21 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
                   <button
                     type="button"
-                    onClick={() => setIsNewDocModalOpen(false)}
+                    onClick={() => {
+                      setIsNewDocModalOpen(false);
+                      handleClearDocFile();
+                    }}
                     className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
                   >
                     Batal
                   </button>
                   <button
                     type="submit"
-                    className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5"
+                    disabled={isSubmittingDoc}
+                    className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60"
                   >
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Unggah Sekarang</span>
+                    <span>{isSubmittingDoc ? 'Mengunggah...' : 'Unggah Sekarang'}</span>
                   </button>
                 </div>
               </form>
@@ -2202,6 +2964,217 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
           </div>
         )}
 
+      {/* ── MODAL: RESPON & TANGGAPAN RESMI ADUAN WARGA ── */}
+      {selectedAduanToReply &&
+        renderPortal(
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="modal-reply-aduan-title"
+            className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
+            onClick={() => setSelectedAduanToReply(null)}
+          >
+            <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+              <div
+                className="relative w-full max-w-2xl sm:max-w-3xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Header */}
+                <div className="bg-gradient-to-r from-[#184C78] to-[#1F5F94] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                      <MessageSquare className="w-4 h-4 text-cyan-300" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="text-[10px] font-mono font-bold text-white bg-white/15 px-2 py-0.5 rounded border border-white/20">
+                          #ADUAN-{selectedAduanToReply.id}
+                        </span>
+                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full border bg-slate-400/20 text-slate-200 border-white/20">
+                          {selectedAduanToReply.status === 'selesai'
+                            ? 'Selesai & Ditanggapi'
+                            : selectedAduanToReply.status === 'diproses'
+                            ? 'Sedang Ditindaklanjuti'
+                            : 'Menunggu Telaah Dinas'}
+                        </span>
+                      </div>
+                      <h3
+                        id="modal-reply-aduan-title"
+                        className="font-heading text-base sm:text-lg font-bold leading-tight text-white mt-0.5 truncate"
+                      >
+                        Respon &amp; Tanggapan Resmi Aduan Warga
+                      </h3>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedAduanToReply(null)}
+                    className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                    title="Tutup Modal"
+                    aria-label="Tutup Modal"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                {/* Form Body */}
+                <form onSubmit={handleSubmitReplyAduan} className="flex flex-col flex-1 overflow-hidden min-h-0">
+                  <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
+                    {replySuccessMessage && (
+                      <div className="p-3.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-800 text-xs font-semibold flex items-center gap-2 animate-fade-in shadow-xs">
+                        <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+                        <span>{replySuccessMessage}</span>
+                      </div>
+                    )}
+                    {replyError && (
+                      <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs font-semibold flex items-center gap-2 animate-fade-in shadow-xs">
+                        <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                        <span>{replyError}</span>
+                      </div>
+                    )}
+
+                    {/* Report Details */}
+                    <div className="p-4 bg-[#F8FAFC] rounded-2xl border border-[#DCE0E6] space-y-3">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#DCE0E6] pb-2.5">
+                        <div>
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-[#6C757D]">
+                            Proyek Pembangunan Terkait:
+                          </span>
+                          <div className="font-heading font-bold text-sm text-[#184C78] mt-0.5">
+                            {selectedAduanToReply.nama_proyek}
+                          </div>
+                        </div>
+                        <span className="text-[10px] font-semibold text-[#2980B9] bg-[#EBF4FB] px-2.5 py-1 rounded-lg border border-[#c5def2] self-start sm:self-auto">
+                          {selectedAduanToReply.kategori_aduan || 'Pengaduan Teknis Lapangan'}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-[11px] text-[#6C757D]">
+                        <div className="flex items-center gap-1.5 font-medium">
+                          <User className="w-3.5 h-3.5 text-[#2980B9]" />
+                          <span>
+                            Pelapor: <strong>{selectedAduanToReply.nama_pelapor || 'Warga Masyarakat'}</strong>{' '}
+                            ({selectedAduanToReply.email_pelapor || 'warga@civictrack.id'})
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-1 text-slate-500 font-mono">
+                          <Calendar className="w-3.5 h-3.5 text-slate-400" />
+                          <span>{selectedAduanToReply.tanggal_lapor}</span>
+                        </div>
+                      </div>
+                      <div className="p-3 bg-white rounded-xl border border-[#DCE0E6] space-y-1">
+                        <div className="font-bold text-[#212529] text-xs">{selectedAduanToReply.judul}</div>
+                        <p className="text-slate-700 leading-relaxed italic whitespace-pre-wrap">
+                          "{selectedAduanToReply.isi_laporan}"
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Existing response if present */}
+                    {selectedAduanToReply.tanggapan_dinas && (
+                      <div className="p-3.5 bg-[#EBF4FB] rounded-xl border border-[#c5def2] space-y-1.5">
+                        <div className="flex items-center justify-between font-bold text-[#184C78] text-xs">
+                          <span className="flex items-center gap-1.5">
+                            <ShieldCheck className="w-4 h-4 text-emerald-600" />
+                            <span>Tanggapan Resmi yang Sedang Aktif:</span>
+                          </span>
+                          <span className="text-[10px] font-mono text-slate-500 font-normal">
+                            {selectedAduanToReply.tanggal_tanggapan || selectedAduanToReply.tanggal_lapor}
+                          </span>
+                        </div>
+                        <p className="text-slate-800 leading-relaxed whitespace-pre-wrap bg-white/70 p-2.5 rounded-lg border border-[#c5def2]/60">
+                          {selectedAduanToReply.tanggapan_dinas}
+                        </p>
+                      </div>
+                    )}
+
+                    {/* Template Buttons */}
+                    <div className="space-y-1.5">
+                      <label className="text-[11px] font-bold uppercase tracking-wider text-[#6C757D] flex items-center gap-1.5">
+                        <Sparkles className="w-3.5 h-3.5 text-[#2980B9]" />
+                        <span>Pilihan Template Tanggapan Cepat:</span>
+                      </label>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                        {TEMPLATE_TANGGAPAN.map((tpl, idx) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            onClick={() => setReplyText(tpl.text)}
+                            className="p-2.5 text-left rounded-xl bg-[#F5F7FA] hover:bg-[#EBF4FB] border border-[#DCE0E6] hover:border-[#2980B9] transition-all cursor-pointer group"
+                          >
+                            <div className="font-bold text-[#184C78] text-[11px] group-hover:text-[#2980B9] flex items-center justify-between">
+                              <span>{tpl.label}</span>
+                              <span className="text-[10px] text-blue-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                                Gunakan ➔
+                              </span>
+                            </div>
+                            <p className="text-[10.5px] text-[#6C757D] line-clamp-2 mt-0.5 leading-snug">
+                              {tpl.text}
+                            </p>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Status Selector */}
+                    <div>
+                      <label className="block font-semibold text-[#184C78] mb-1.5">
+                        Pilih Status Tindak Lanjut Aduan:
+                      </label>
+                      <select
+                        value={replyStatus}
+                        onChange={(e) => setReplyStatus(e.target.value as 'diproses' | 'selesai')}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-xl bg-white outline-none focus:border-[#2980B9] font-semibold text-xs"
+                      >
+                        <option value="diproses">🟡 Sedang Ditindaklanjuti Tim Lapangan &amp; Kontraktor</option>
+                        <option value="selesai">🟢 Tindak Lanjut Selesai / Rampung Sempurna</option>
+                      </select>
+                    </div>
+
+                    {/* Response Textarea */}
+                    <div>
+                      <div className="flex items-center justify-between mb-1.5">
+                        <label className="block font-semibold text-[#184C78]">
+                          Uraian Tanggapan &amp; Tindakan Konkret Dinas:
+                        </label>
+                        <span className="text-[11px] text-[#6C757D] font-mono">
+                          {replyText.length}/2000 Karakter
+                        </span>
+                      </div>
+                      <textarea
+                        rows={5}
+                        required
+                        placeholder="Tuliskan tindakan konkret yang telah atau sedang diambil oleh dinas teknis..."
+                        value={replyText}
+                        onChange={(e) => setReplyText(e.target.value)}
+                        className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] leading-relaxed text-xs"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Footer */}
+                  <div className="p-4 sm:p-5 bg-[#F5F7FA] border-t border-[#DCE0E6] flex flex-col-reverse sm:flex-row items-center justify-between gap-3 shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedAduanToReply(null)}
+                      className="w-full sm:w-auto px-4 py-2 text-xs font-semibold rounded-xl bg-white border border-[#DCE0E6] text-[#495057] hover:bg-slate-50 transition-colors cursor-pointer"
+                    >
+                      Batal / Tutup
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmittingReply || !replyText.trim()}
+                      className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5 px-5 disabled:opacity-60 cursor-pointer shadow-sm"
+                    >
+                      <Send className="w-3.5 h-3.5" />
+                      <span>{isSubmittingReply ? 'Mempublikasikan...' : 'Publikasikan Tanggapan Resmi'}</span>
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          </div>
+        )}
+
       {/* ── KONTEN UTAMA DASHBOARD ── */}
       <div className="space-y-6">
       {/* ── BANNER LEMBAR KERJA PROYEK AKTIF (KHUSUS PENANGGUNG JAWAB TERVERIFIKASI) ── */}
@@ -2214,24 +3187,24 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 <span>Lembar Kerja Terverifikasi</span>
               </span>
               <span className="font-mono text-xs font-bold bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20 text-white">
-                {unlockedProject.kode_proyek}
+                {unlockedProject.kode_proyek || 'PROYEK'}
               </span>
               <span className="text-[11px] font-bold uppercase bg-white/10 px-2.5 py-0.5 rounded text-white/90">
-                {unlockedProject.kategori}
+                {unlockedProject.kategori || 'jalan'}
               </span>
             </div>
             <h2 className="font-heading text-xl font-bold text-white">
-              {unlockedProject.nama_proyek}
+              {unlockedProject.nama_proyek || 'Proyek Pembangunan'}
             </h2>
             <div className="flex flex-wrap items-center gap-3 text-xs text-white/80">
               <span className="flex items-center gap-1">
                 <MapPin className="w-3.5 h-3.5 text-cyan-300" />
-                {unlockedProject.nama_wilayah} {unlockedProject.nama_desa ? `• ${unlockedProject.nama_desa}` : ''}
+                {unlockedProject.nama_wilayah || 'Kabupaten Lamongan'} {unlockedProject.nama_desa ? `• ${unlockedProject.nama_desa}` : ''}
               </span>
               <span>•</span>
-              <span>Pagu: <strong>Rp {unlockedProject.anggaran.toLocaleString('id-ID')}</strong></span>
+              <span>Pagu: <strong>Rp {Number(unlockedProject.anggaran || 0).toLocaleString('id-ID')}</strong></span>
               <span>•</span>
-              <span>Progres Fisik: <strong className="text-amber-300">{unlockedProject.progres_persen}%</strong></span>
+              <span>Progres Fisik: <strong className="text-amber-300">{unlockedProject.progres_persen || 0}%</strong></span>
             </div>
           </div>
 
@@ -2315,76 +3288,147 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       )}
 
       {/* ── METRICS OVERVIEW ── */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-        <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-          <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-            <span>Total Proyek</span>
-            <FolderKanban className="w-4 h-4 text-[#184C78]" />
+      {currentUser.role === 'penanggung_jawab' && unlockedProject ? (
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+          {/* Card 1: Pagu Anggaran Proyek (Disesuaikan khusus 1 proyek yang dipegang) */}
+          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+              <span>Pagu Anggaran</span>
+              <DollarSign className="w-4 h-4 text-[#2980B9]" />
+            </div>
+            <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
+              {Number(unlockedProject.anggaran || 0) >= 1000000000
+                ? `Rp ${(Number(unlockedProject.anggaran || 0) / 1000000000).toFixed(1).replace(/\.0$/, '')}M`
+                : `Rp ${(Number(unlockedProject.anggaran || 0) / 1000000).toFixed(0)} Jt`}
+            </div>
+            <div className="text-[11px] text-[#2980B9] font-semibold mt-1">
+              Total Kontrak: Rp {Number(unlockedProject.anggaran || 0).toLocaleString('id-ID')}
+            </div>
           </div>
-          <div className="text-2xl font-heading font-extrabold text-[#184C78] mt-1.5">
-            {projectList.length}
-          </div>
-          <div className="text-[11px] text-[#1A9E6E] font-semibold mt-1">
-            {berjalanCount} Sedang Berjalan
-          </div>
-        </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-          <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-            <span>Pagu Anggaran</span>
-            <DollarSign className="w-4 h-4 text-[#2980B9]" />
+          {/* Card 2: Realisasi Fisik Proyek */}
+          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+              <span>Realisasi Fisik</span>
+              <CheckCircle2 className="w-4 h-4 text-[#1A9E6E]" />
+            </div>
+            <div className="text-2xl font-heading font-extrabold text-[#1A9E6E] mt-1.5">
+              {unlockedProject.progres_persen || 0}%
+            </div>
+            <div className="text-[11px] font-semibold mt-1 capitalize text-[#1A9E6E]">
+              {getDisplayStatus(unlockedProject.status, unlockedProject.progres_persen) === 'selesai'
+                ? '100% Rampung (FHO)'
+                : getDisplayStatus(unlockedProject.status, unlockedProject.progres_persen) === 'ditangguhkan'
+                ? 'Ditangguhkan'
+                : 'Sedang Berjalan'}
+            </div>
           </div>
-          <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
-            Rp {(totalAnggaran / 1000000000).toFixed(1)}M
-          </div>
-          <div className="text-[11px] text-[#2980B9] font-semibold mt-1">
-            Serapan Fisik: 68.4%
-          </div>
-        </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-          <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-            <span>Selesai (FHO)</span>
-            <CheckCircle2 className="w-4 h-4 text-[#1A9E6E]" />
+          {/* Card 3: Aduan Warga Proyek (Real-time live sync) */}
+          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+              <span>Aduan Warga</span>
+              <MessageSquare className="w-4 h-4 text-[#E67E22]" />
+            </div>
+            <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
+              {projectAduanList.length}
+            </div>
+            <div className="text-[11px] text-[#E67E22] font-bold mt-1">
+              {projectAduanMenungguCount > 0
+                ? `${projectAduanMenungguCount} Perlu Ditanggapi!`
+                : projectAduanList.length > 0
+                ? 'Semua Telah Ditanggapi'
+                : 'Belum Ada Laporan Masuk'}
+            </div>
           </div>
-          <div className="text-2xl font-heading font-extrabold text-[#1A9E6E] mt-1.5">
-            {selesaiCount}
-          </div>
-          <div className="text-[11px] text-[#6C757D] mt-1">
-            {tertundaCount} Ditangguhkan
-          </div>
-        </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-          <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-            <span>Aduan Warga</span>
-            <MessageSquare className="w-4 h-4 text-[#E67E22]" />
-          </div>
-          <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
-            {aduanList.length}
-          </div>
-          <div className="text-[11px] text-[#E67E22] font-bold mt-1">
-            {aduanMenungguCount} Perlu Ditanggapi!
+          {/* Card 4: Evaluasi Cacat AI Proyek (Real-time live sync) */}
+          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+              <span>Evaluasi Cacat AI</span>
+              <Wrench className="w-4 h-4 text-[#E74C3C]" />
+            </div>
+            <div className="text-2xl font-heading font-extrabold text-[#E74C3C] mt-1.5">
+              {projectEvaluasiList.length}
+            </div>
+            <div className="text-[11px] text-[#E74C3C] font-semibold mt-1">
+              {projectEvaluasiList.length > 0 ? 'Masa Pemeliharaan' : 'Nihil Temuan Kerusakan'}
+            </div>
           </div>
         </div>
+      ) : (
+        /* Regular 5-column grid for aparatur_pemerintah / pimpinan_instansi / admin_dinas */
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+              <span>Total Proyek</span>
+              <FolderKanban className="w-4 h-4 text-[#184C78]" />
+            </div>
+            <div className="text-2xl font-heading font-extrabold text-[#184C78] mt-1.5">
+              {projectList.length}
+            </div>
+            <div className="text-[11px] text-[#1A9E6E] font-semibold mt-1">
+              {berjalanCount} Sedang Berjalan
+            </div>
+          </div>
 
-        <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-          <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-            <span>Evaluasi Cacat AI</span>
-            <Wrench className="w-4 h-4 text-[#E74C3C]" />
+          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+              <span>Pagu Anggaran</span>
+              <DollarSign className="w-4 h-4 text-[#2980B9]" />
+            </div>
+            <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
+              Rp {(totalAnggaran / 1000000000).toFixed(1)}M
+            </div>
+            <div className="text-[11px] text-[#2980B9] font-semibold mt-1">
+              Serapan Fisik: 68.4%
+            </div>
           </div>
-          <div className="text-2xl font-heading font-extrabold text-[#E74C3C] mt-1.5">
-            {evaluasiList.length}
+
+          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+              <span>Selesai (FHO)</span>
+              <CheckCircle2 className="w-4 h-4 text-[#1A9E6E]" />
+            </div>
+            <div className="text-2xl font-heading font-extrabold text-[#1A9E6E] mt-1.5">
+              {selesaiCount}
+            </div>
+            <div className="text-[11px] text-[#6C757D] mt-1">
+              {tertundaCount} Ditangguhkan
+            </div>
           </div>
-          <div className="text-[11px] text-[#E74C3C] font-semibold mt-1">
-            Masa Pemeliharaan
+
+          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+              <span>Aduan Warga</span>
+              <MessageSquare className="w-4 h-4 text-[#E67E22]" />
+            </div>
+            <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
+              {aduanList.length}
+            </div>
+            <div className="text-[11px] text-[#E67E22] font-bold mt-1">
+              {aduanMenungguCount} Perlu Ditanggapi!
+            </div>
+          </div>
+
+          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+              <span>Evaluasi Cacat AI</span>
+              <Wrench className="w-4 h-4 text-[#E74C3C]" />
+            </div>
+            <div className="text-2xl font-heading font-extrabold text-[#E74C3C] mt-1.5">
+              {evaluasiList.length}
+            </div>
+            <div className="text-[11px] text-[#E74C3C] font-semibold mt-1">
+              Masa Pemeliharaan
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* ── ACTIVE SECTION VIEW (DRIVEN BY SIDEBAR) ── */}
       {/* ── SECTION 1: DAFTAR PROYEK DINAS ── */}
-      {(activeTab === 'proyek' || activeTab === 'overview') && (
+      {(activeTab === 'proyek' || activeTab === 'overview' || !['linimasa', 'dokumentasi', 'aduan', 'evaluasi'].includes(activeTab)) && (
         <div className="space-y-4">
           {currentUser.role === 'penanggung_jawab' && unlockedProject ? (
             <div className="bg-white rounded-2xl border border-[#DCE0E6] p-6 shadow-xs space-y-6 animate-fade-in">
@@ -2392,10 +3436,16 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 <div>
                   <div className="flex items-center gap-2">
                     <span className="font-mono text-xs font-bold bg-[#EBF4FB] text-[#184C78] px-2.5 py-0.5 rounded border border-[#c5def2]">
-                      {unlockedProject.kode_proyek}
+                      {unlockedProject.kode_proyek || 'PROYEK'}
                     </span>
-                    <span className="text-[11px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-50 text-emerald-800 border border-emerald-200">
-                      Status: {unlockedProject.status}
+                    <span className={`text-[11px] font-bold uppercase px-2 py-0.5 rounded border ${
+                      getDisplayStatus(unlockedProject.status, unlockedProject.progres_persen) === 'selesai'
+                        ? 'bg-emerald-50 text-emerald-800 border-emerald-200'
+                        : getDisplayStatus(unlockedProject.status, unlockedProject.progres_persen) === 'ditangguhkan'
+                        ? 'bg-amber-50 text-amber-800 border-amber-200'
+                        : 'bg-blue-50 text-blue-800 border-blue-200'
+                    }`}>
+                      Status: {getDisplayStatus(unlockedProject.status, unlockedProject.progres_persen)}
                     </span>
                   </div>
                   <h3 className="font-heading text-lg font-bold text-[#184C78] mt-1.5">
@@ -2478,7 +3528,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                   />
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-2 text-[11px] text-[#6C757D]">
-                  <div>Pagu: <strong className="text-[#212529]">Rp {unlockedProject.anggaran.toLocaleString('id-ID')}</strong></div>
+                  <div>Pagu: <strong className="text-[#212529]">Rp {Number(unlockedProject.anggaran || 0).toLocaleString('id-ID')}</strong></div>
                   <div>Mulai: <strong className="text-[#212529]">{unlockedProject.tanggal_mulai || '-'}</strong></div>
                   <div>Target Selesai: <strong className="text-[#212529]">{unlockedProject.estimasi_selesai || '-'}</strong></div>
                   <div>Dinas: <strong className="text-[#212529]">{unlockedProject.nama_dinas || '-'}</strong></div>
@@ -2545,6 +3595,8 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                           return 'bg-[#FDEDEC] text-[#E74C3C] border-[#FADBD8]';
                         };
 
+                        const normalizedStatus = getDisplayStatus(p.status, p.progres_persen);
+
                         return (
                           <tr key={p.id} className="hover:bg-[#F5F7FA]/70 transition-colors">
                             <td className="p-3.5">
@@ -2590,8 +3642,8 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                               </div>
                             </td>
                             <td className="p-3.5">
-                              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border capitalize ${getBadge(p.status)}`}>
-                                {p.status}
+                              <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border capitalize ${getBadge(normalizedStatus)}`}>
+                                {normalizedStatus}
                               </span>
                             </td>
                             {currentUser.role !== 'penanggung_jawab' && (
@@ -2736,7 +3788,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                           ? 'bg-[#FEF3E7] text-[#E67E22]'
                           : 'bg-white text-[#6C757D] border border-[#DCE0E6]'
                       }`}>
-                        {stage.status.replace('_', ' ')}
+                        {stage.status ? stage.status.replace('_', ' ') : 'belum mulai'}
                       </span>
                     </div>
 
@@ -2790,7 +3842,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 ? dokumentasiList.filter(
                     (doc) =>
                       doc.proyek_id === unlockedProject.id ||
-                      doc.nama_proyek.toLowerCase() === unlockedProject.nama_proyek.toLowerCase()
+                      (doc.nama_proyek &&
+                        unlockedProject.nama_proyek &&
+                        doc.nama_proyek.toLowerCase() === unlockedProject.nama_proyek.toLowerCase())
                   )
                 : dokumentasiList;
 
@@ -2816,14 +3870,37 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     className="bg-white rounded-2xl border border-[#DCE0E6] overflow-hidden shadow-xs hover:shadow-md transition-all flex flex-col justify-between"
                   >
                     <div>
-                      <div className="relative h-44 bg-slate-100 overflow-hidden">
-                        <img
-                          src={doc.foto_url}
-                          alt={doc.judul}
-                          className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                        />
-                        <span className="absolute bottom-2 left-2 text-[10px] font-bold bg-black/70 text-white px-2 py-0.5 rounded backdrop-blur-xs">
-                          {doc.nama_tahap || 'Inspeksi Fisik'}
+                      <div className="relative h-44 bg-slate-900 overflow-hidden flex items-center justify-center">
+                        {doc.tipe_file === 'video' ||
+                        doc.foto_url.startsWith('data:video/') ||
+                        /\.(mp4|mov|webm|avi)(\?|$)/i.test(doc.foto_url) ? (
+                          <video
+                            src={doc.foto_url}
+                            controls
+                            preload="metadata"
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <img
+                            src={doc.foto_url}
+                            alt={doc.judul}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          />
+                        )}
+                        <span className="absolute bottom-2 left-2 text-[10px] font-bold bg-black/75 text-white px-2 py-0.5 rounded backdrop-blur-xs flex items-center gap-1 pointer-events-none">
+                          {doc.tipe_file === 'video' ||
+                          doc.foto_url.startsWith('data:video/') ||
+                          /\.(mp4|mov|webm|avi)(\?|$)/i.test(doc.foto_url) ? (
+                            <>
+                              <Film className="w-3 h-3 text-cyan-300" />
+                              <span>{doc.nama_tahap || 'Video Rekaman / Drone'}</span>
+                            </>
+                          ) : (
+                            <>
+                              <ImageIcon className="w-3 h-3 text-emerald-300" />
+                              <span>{doc.nama_tahap || 'Inspeksi Fisik'}</span>
+                            </>
+                          )}
                         </span>
                       </div>
 
@@ -2867,14 +3944,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
           </div>
 
           {(() => {
-            const filteredAduan =
-              currentUser.role === 'penanggung_jawab' && unlockedProject
-                ? aduanList.filter(
-                    (item) =>
-                      item.proyek_id === unlockedProject.id ||
-                      item.nama_proyek.toLowerCase() === unlockedProject.nama_proyek.toLowerCase()
-                  )
-                : aduanList;
+            const filteredAduan = projectAduanList;
 
             if (filteredAduan.length === 0) {
               return (
@@ -2931,14 +4001,12 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
                     <div className="pt-2 flex justify-end gap-2">
                       <button
-                        onClick={() => {
-                          setSelectedAduanToReply(item);
-                        }}
+                        onClick={() => handleOpenReplyModal(item)}
                         className={`${
                           item.tanggapan_dinas
                             ? 'btn-ghost border border-[#c5def2] text-[#184C78] hover:bg-[#EBF4FB]'
                             : 'btn-primary'
-                        } !h-8 text-xs flex items-center gap-1.5 shadow-xs`}
+                        } !h-8 text-xs flex items-center gap-1.5 shadow-xs cursor-pointer`}
                       >
                         <MessageSquare className="w-3.5 h-3.5" />
                         <span>{item.tanggapan_dinas ? 'Buka Halaman Detail & Riwayat Respon' : 'Buka Halaman Respon Tanggapan'}</span>
@@ -2970,63 +4038,75 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
           </div>
 
           <div className="space-y-3">
-            {evaluasiList.map((item) => (
-              <div key={item.id} className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#184C78] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg">
-                      {item.nama_proyek}
-                    </span>
-                    <span className="text-xs text-[#6C757D] font-mono">{item.tanggal_lapor}</span>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full ${
-                      item.skor_urgensi_ai >= 4
-                        ? 'bg-[#FDEDEC] text-[#E74C3C] border border-[#FADBD8]'
-                        : 'bg-[#FEF3E7] text-[#E67E22] border border-[#FBD8B3]'
-                    }`}>
-                      ⚡ AI Urgensi: Skor {item.skor_urgensi_ai} / 5
-                    </span>
-                    <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#EBF4FB] text-[#184C78]">
-                      {item.status_verifikasi.replace(/_/g, ' ')}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="text-xs text-[#212529]">
-                  <strong>Lokasi Titik:</strong> {item.lokasi_titik} | <strong>Kategori:</strong> {item.kategori_cacat}
-                  <p className="text-xs text-[#495057] mt-1 bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/50">
-                    "{item.deskripsi}"
-                  </p>
-                </div>
-
-                <div className="p-3 bg-[#f4f9fd] rounded-xl border-l-3 border-[#2980B9] text-xs">
-                  <div className="font-bold text-[#184C78]">Rekomendasi Analisis AI:</div>
-                  <p className="text-[#495057] text-[11px] mt-0.5">{item.analisis_ai.split('\n\n[RAW_AI_DEBUG]:')[0]}</p>
-                </div>
-
-                {item.status_verifikasi !== 'menunggu_verifikasi' && item.catatan_dinas ? (
-                  <div className="p-3 bg-[#E6F7F1] rounded-xl border border-[#B7EBD8] text-xs">
-                    <div className="font-bold text-[#1A9E6E]">Tindakan Verifikasi Dinas:</div>
-                    <p className="text-[#0E6243] text-[11px] mt-0.5">{item.catatan_dinas}</p>
-                  </div>
-                ) : (
-                  <div className="pt-2 flex justify-end">
-                    <button
-                      onClick={() => {
-                        setSelectedEvalToVerify(item);
-                        setTindakanDinasText('Tim Reaksi Cepat PUPR telah menginstruksikan pihak rekanan kontraktor untuk perbaikan masa garansi FHO.');
-                      }}
-                      className="btn-primary !h-8 text-xs flex items-center gap-1.5"
-                    >
-                      <Wrench className="w-3.5 h-3.5" />
-                      <span>Verifikasi &amp; Jadwalkan Tim Lapangan</span>
-                    </button>
-                  </div>
-                )}
+            {projectEvaluasiList.length === 0 ? (
+              <div className="bg-white rounded-2xl border border-dashed border-[#BDD7EE] p-8 text-center space-y-2">
+                <Sparkles className="w-8 h-8 text-[#2980B9] mx-auto opacity-60" />
+                <h4 className="font-bold text-sm text-[#184C78]">Tidak Ada Evaluasi Cacat Fisik AI</h4>
+                <p className="text-xs text-[#6C757D] max-w-md mx-auto">
+                  {currentUser.role === 'penanggung_jawab' && unlockedProject
+                    ? `Tidak ada temuan anomali atau aduan cacat fisik AI untuk proyek ${unlockedProject.nama_proyek}. Kondisi konstruksi prima.`
+                    : 'Belum ada evaluasi cacat fisik pasca konstruksi yang dilaporkan masyarakat.'}
+                </p>
               </div>
-            ))}
+            ) : (
+              projectEvaluasiList.map((item) => (
+                <div key={item.id} className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs space-y-3">
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-bold text-[#184C78] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg">
+                        {item.nama_proyek}
+                      </span>
+                      <span className="text-xs text-[#6C757D] font-mono">{item.tanggal_lapor}</span>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className={`text-[11px] font-extrabold px-2.5 py-0.5 rounded-full ${
+                        item.skor_urgensi_ai >= 4
+                          ? 'bg-[#FDEDEC] text-[#E74C3C] border border-[#FADBD8]'
+                          : 'bg-[#FEF3E7] text-[#E67E22] border border-[#FBD8B3]'
+                      }`}>
+                        ⚡ AI Urgensi: Skor {item.skor_urgensi_ai} / 5
+                      </span>
+                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-[#EBF4FB] text-[#184C78]">
+                        {item.status_verifikasi.replace(/_/g, ' ')}
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="text-xs text-[#212529]">
+                    <strong>Lokasi Titik:</strong> {item.lokasi_titik} | <strong>Kategori:</strong> {item.kategori_cacat}
+                    <p className="text-xs text-[#495057] mt-1 bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/50">
+                      "{item.deskripsi}"
+                    </p>
+                  </div>
+
+                  <div className="p-3 bg-[#f4f9fd] rounded-xl border-l-3 border-[#2980B9] text-xs">
+                    <div className="font-bold text-[#184C78]">Rekomendasi Analisis AI:</div>
+                    <p className="text-[#495057] text-[11px] mt-0.5">{item.analisis_ai.split('\n\n[RAW_AI_DEBUG]:')[0]}</p>
+                  </div>
+
+                  {item.status_verifikasi !== 'menunggu_verifikasi' && item.catatan_dinas ? (
+                    <div className="p-3 bg-[#E6F7F1] rounded-xl border border-[#B7EBD8] text-xs">
+                      <div className="font-bold text-[#1A9E6E]">Tindakan Verifikasi Dinas:</div>
+                      <p className="text-[#0E6243] text-[11px] mt-0.5">{item.catatan_dinas}</p>
+                    </div>
+                  ) : (
+                    <div className="pt-2 flex justify-end">
+                      <button
+                        onClick={() => {
+                          setSelectedEvalToVerify(item);
+                          setTindakanDinasText('Tim Reaksi Cepat PUPR telah menginstruksikan pihak rekanan kontraktor untuk perbaikan masa garansi FHO.');
+                        }}
+                        className="btn-primary !h-8 text-xs flex items-center gap-1.5 cursor-pointer"
+                      >
+                        <Wrench className="w-3.5 h-3.5" />
+                        <span>Verifikasi &amp; Jadwalkan Tim Lapangan</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   Award,
   TrendingUp,
@@ -27,6 +27,13 @@ interface PimpinanDashboardProps {
   onSelectSection?: (section: string) => void;
   onOpenMapExplorer?: () => void;
 }
+
+// Helper untuk format skor kinerja agar responsif & konsisten baik angka desimal maupun non-desimal
+const formatSkorKinerja = (score: number | string): string => {
+  const val = typeof score === 'number' ? score : parseFloat(String(score));
+  if (isNaN(val)) return String(score);
+  return Number.isInteger(val) ? String(val) : val.toFixed(1);
+};
 
 export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
   currentUser,
@@ -316,7 +323,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
 
       {/* ── ACTIVE SECTION VIEW (DRIVEN BY SIDEBAR) ── */}
       {/* ── SECTION 1: MATRIKS KINERJA DINAS ── */}
-      {(activeTab === 'kinerja_dinas' || activeTab === 'overview') && (
+      {(activeTab === 'kinerja_dinas' || activeTab === 'overview' || !['sebaran_wilayah', 'sentimen_ai', 'laporan_eksekutif'].includes(activeTab)) && (
         <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs overflow-hidden">
           <div className="p-4 border-b border-[#DCE0E6] flex items-center justify-between">
             <div>
@@ -330,16 +337,16 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
           </div>
 
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full text-left text-xs min-w-[820px]">
               <thead className="bg-[#F5F7FA] text-[#184C78] font-heading font-bold border-b border-[#DCE0E6]">
                 <tr>
-                  <th className="p-3.5">Organisasi Perangkat Daerah</th>
-                  <th className="p-3.5">Kepala Dinas</th>
-                  <th className="p-3.5 text-center">Proyek (Total / Selesai)</th>
-                  <th className="p-3.5">Serapan Anggaran</th>
-                  <th className="p-3.5 text-center">Penyelesaian Aduan</th>
-                  <th className="p-3.5 text-center">Rating Warga</th>
-                  <th className="p-3.5 text-right">Skor Kinerja</th>
+                  <th className="p-3.5 min-w-[200px]">Organisasi Perangkat Daerah</th>
+                  <th className="p-3.5 min-w-[150px]">Kepala Dinas</th>
+                  <th className="p-3.5 text-center whitespace-nowrap min-w-[130px]">Proyek (Total / Selesai)</th>
+                  <th className="p-3.5 min-w-[160px] w-48">Serapan Anggaran</th>
+                  <th className="p-3.5 text-center whitespace-nowrap min-w-[130px]">Penyelesaian Aduan</th>
+                  <th className="p-3.5 text-center whitespace-nowrap min-w-[95px]">Rating Warga</th>
+                  <th className="p-3.5 text-right whitespace-nowrap min-w-[125px]">Skor Kinerja</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-[#DCE0E6]">
@@ -358,7 +365,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
                       <td className="p-3.5 text-[#495057]">
                         {dinas.kepala_dinas}
                       </td>
-                      <td className="p-3.5 text-center font-semibold text-[#212529]">
+                      <td className="p-3.5 text-center font-semibold text-[#212529] whitespace-nowrap">
                         {dinas.total_proyek} / <span className="text-[#1A9E6E]">{dinas.proyek_selesai} Selesai</span>
                         {dinas.proyek_terlambat > 0 && (
                           <span className="text-[#E74C3C] block text-[10px]">({dinas.proyek_terlambat} Terlambat)</span>
@@ -376,22 +383,27 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
                           />
                         </div>
                       </td>
-                      <td className="p-3.5 text-center font-bold text-[#184C78]">
+                      <td className="p-3.5 text-center font-bold text-[#184C78] whitespace-nowrap">
                         <span className="text-[#1A9E6E]">{dinas.aduan_selesai}</span> / {dinas.aduan_total} ({aduanPersen}%)
                       </td>
-                      <td className="p-3.5 text-center font-bold text-amber-500">
+                      <td className="p-3.5 text-center font-bold text-amber-500 whitespace-nowrap">
                         ⭐ {dinas.rata_rata_rating.toFixed(2)}
                       </td>
-                      <td className="p-3.5 text-right">
-                        <span className={`text-xs font-extrabold px-3 py-1 rounded-full ${
-                          dinas.skor_kinerja >= 95
-                            ? 'bg-[#E6F7F1] text-[#1A9E6E] border border-[#B7EBD8]'
-                            : dinas.skor_kinerja >= 90
-                            ? 'bg-[#EBF4FB] text-[#184C78] border border-[#c5def2]'
-                            : 'bg-[#FEF3E7] text-[#E67E22] border border-[#FBD8B3]'
-                        }`}>
-                          {dinas.skor_kinerja} / 100
-                        </span>
+                      <td className="p-3.5 text-right whitespace-nowrap min-w-[125px]">
+                        <div className="flex items-center justify-end">
+                          <span
+                            className={`inline-flex items-center justify-center whitespace-nowrap px-2.5 sm:px-3 py-1 rounded-full text-xs font-extrabold tracking-tight tabular-nums shadow-2xs border transition-all ${
+                              dinas.skor_kinerja >= 95
+                                ? 'bg-[#E6F7F1] text-[#1A9E6E] border-[#B7EBD8]'
+                                : dinas.skor_kinerja >= 90
+                                ? 'bg-[#EBF4FB] text-[#184C78] border-[#c5def2]'
+                                : 'bg-[#FEF3E7] text-[#E67E22] border-[#FBD8B3]'
+                            }`}
+                          >
+                            <span className="font-black text-xs sm:text-[13px]">{formatSkorKinerja(dinas.skor_kinerja)}</span>
+                            <span className="text-[10px] sm:text-[11px] font-semibold opacity-70 ml-1">/ 100</span>
+                          </span>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -483,8 +495,8 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
                   const totalProyekKec = kec.total_proyek;
                   const berjalanPct = totalProyekKec > 0 ? ((kec.jumlah_berjalan / totalProyekKec) * 100).toFixed(0) : '0';
                   const selesaiPct = totalProyekKec > 0 ? ((kec.jumlah_selesai / totalProyekKec) * 100).toFixed(0) : '0';
-                  const tertundaPct = totalProyekKec > 0 ? ((kec.jumlah_tertunda / totalProyekKec) * 100).toFixed(0) : '0';
-                  const tinjauPct = totalProyekKec > 0 ? ((kec.jumlah_dalam_peninjauan_ulang / totalProyekKec) * 100).toFixed(0) : '0';
+                  const ditangguhkanCount = (kec.jumlah_tertunda || 0) + (kec.jumlah_dalam_peninjauan_ulang || 0);
+                  const ditangguhkanPct = totalProyekKec > 0 ? ((ditangguhkanCount / totalProyekKec) * 100).toFixed(0) : '0';
                   const totalAnggaranMiliar = (Number(kec.total_anggaran) / 1000000000).toFixed(2);
                   const penyerapanMiliar = (Number(kec.estimasi_penyerapan_anggaran) / 1000000000).toFixed(2);
 
@@ -524,18 +536,11 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
                               title={`Selesai: ${kec.jumlah_selesai} Proyek (${selesaiPct}%)`}
                             />
                           )}
-                          {kec.jumlah_tertunda > 0 && (
+                          {ditangguhkanCount > 0 && (
                             <div
-                              style={{ width: `${tertundaPct}%` }}
+                              style={{ width: `${ditangguhkanPct}%` }}
                               className="bg-[#E74C3C] h-full transition-all"
-                              title={`Tertunda: ${kec.jumlah_tertunda} Proyek (${tertundaPct}%)`}
-                            />
-                          )}
-                          {kec.jumlah_dalam_peninjauan_ulang > 0 && (
-                            <div
-                              style={{ width: `${tinjauPct}%` }}
-                              className="bg-[#E67E22] h-full transition-all"
-                              title={`Peninjauan Ulang: ${kec.jumlah_dalam_peninjauan_ulang} Proyek (${tinjauPct}%)`}
+                              title={`Ditangguhkan: ${ditangguhkanCount} Proyek (${ditangguhkanPct}%)`}
                             />
                           )}
                         </div>
@@ -548,10 +553,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
                         <div className="flex flex-wrap items-center gap-3">
                           <span>Sedang Berjalan: <strong className="text-[#2980B9] font-bold">{kec.jumlah_berjalan}</strong></span>
                           <span>Selesai (FHO): <strong className="text-[#1A9E6E] font-bold">{kec.jumlah_selesai}</strong></span>
-                          <span>Tertunda: <strong className={kec.jumlah_tertunda > 0 ? "text-[#E74C3C] font-bold" : "text-slate-500"}>{kec.jumlah_tertunda}</strong></span>
-                          {kec.jumlah_dalam_peninjauan_ulang > 0 && (
-                            <span>Tinjau Ulang: <strong className="text-[#E67E22] font-bold">{kec.jumlah_dalam_peninjauan_ulang}</strong></span>
-                          )}
+                          <span>Ditangguhkan: <strong className={ditangguhkanCount > 0 ? "text-[#E74C3C] font-bold" : "text-slate-500"}>{ditangguhkanCount}</strong></span>
                         </div>
                         <span className="text-[10px] bg-white px-2 py-0.5 rounded border border-slate-200 font-mono text-slate-600">
                           ID Wilayah: {kec.wilayah_id}

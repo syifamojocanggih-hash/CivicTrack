@@ -468,6 +468,78 @@ describe('AIRouteModal', () => {
     await user.click(walkBtn);
     expect(screen.getByText(/🚶 Jalan Kaki/i)).toBeInTheDocument();
   });
+
+  it('correctly displays open road UI and does NOT show "JALAN DITUTUP" for 100% completed projects', async () => {
+    const L = (await import('leaflet')).default;
+    render(
+      <AIRouteModal
+        isOpen={true}
+        onClose={vi.fn()}
+        projectName="Rekonstruksi Akses Wisata Bahari Lamongan & Sunan Drajat"
+        project={{
+          id: 30,
+          nama_proyek: 'Rekonstruksi Akses Wisata Bahari Lamongan & Sunan Drajat',
+          status: 'selesai',
+          progres_persen: 100,
+          nama_wilayah: 'Paciran',
+          latitude: -6.8732,
+          longitude: 112.3551,
+        } as any}
+      />
+    );
+
+    // Verify header indicates completed status with road opened
+    expect(screen.getByText(/telah rampung \(100% Selesai\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Akses jalan telah dibuka normal/i)).toBeInTheDocument();
+
+    // Verify map legend & button reflect completed status
+    expect(screen.getByText(/Jalur Dibuka \(Selesai\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Lokasi Proyek/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Area Ditutup/i)).not.toBeInTheDocument();
+
+    // Verify Leaflet divIcon call rendered JALUR DIBUKA rather than JALAN DITUTUP for main project
+    const divIconCalls = (L.divIcon as any).mock.calls;
+    const hasRoadOpenBadge = divIconCalls.some((c: any) =>
+      c[0]?.html?.includes('JALUR DIBUKA (SELESAI 100%)')
+    );
+    const hasRoadClosedBadge = divIconCalls.some((c: any) =>
+      c[0]?.html?.includes('JALAN DITUTUP')
+    );
+    expect(hasRoadOpenBadge).toBe(true);
+    expect(hasRoadClosedBadge).toBe(false);
+  });
+
+  it('displays "JALAN DITUTUP" and hazard zones for ongoing projects (< 100%)', async () => {
+    const L = (await import('leaflet')).default;
+    render(
+      <AIRouteModal
+        isOpen={true}
+        onClose={vi.fn()}
+        projectName="Pelebaran Jalan Veteran"
+        project={{
+          id: 12,
+          nama_proyek: 'Pelebaran Jalan Veteran',
+          status: 'berjalan',
+          progres_persen: 45,
+          nama_wilayah: 'Lamongan',
+          latitude: -7.1205,
+          longitude: 112.4155,
+        } as any}
+      />
+    );
+
+    // Verify legend and button reflect ongoing construction zone
+    expect(screen.getByText(/Area Ditutup/i)).toBeInTheDocument();
+    expect(screen.getByText(/Zona Proyek/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Jalur Dibuka \(Selesai\)/i)).not.toBeInTheDocument();
+
+    // Verify Leaflet divIcon call rendered JALAN DITUTUP
+    const divIconCalls = (L.divIcon as any).mock.calls;
+    const hasRoadClosedBadge = divIconCalls.some((c: any) =>
+      c[0]?.html?.includes('JALAN DITUTUP')
+    );
+    expect(hasRoadClosedBadge).toBe(true);
+  });
 });
 
 

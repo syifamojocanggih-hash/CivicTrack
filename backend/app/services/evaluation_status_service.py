@@ -24,7 +24,7 @@ def sync_project_status_on_new_evaluation(
     """
     Aturan 1 (Laporan Baru):
     Ketika sebuah evaluasi_pembangunan BARU dibuat untuk proyek yang berstatus 'selesai',
-    dan skor_urgensi_ai >= 4, proyek.status otomatis berubah menjadi 'dalam_peninjauan_ulang'.
+    dan skor_urgensi_ai >= 4, proyek.status otomatis berubah menjadi 'ditangguhkan'.
     Mencatat entri baru ke tahapan_progres (audit trail) dan mengirim notifikasi ke subscriber.
     Jika skor < 4, status proyek tetap 'selesai' dan menunggu verifikasi manual admin dinas.
     """
@@ -37,29 +37,21 @@ def sync_project_status_on_new_evaluation(
         and evaluasi.skor_urgensi_ai is not None
         and evaluasi.skor_urgensi_ai >= AMBANG_URGENSI_OTOMATIS
     ):
-        proyek.status = ProyekStatus.dalam_peninjauan_ulang
+        proyek.status = ProyekStatus.ditangguhkan
 
         catatan_audit = (
-            f"Status otomatis berubah ke 'dalam_peninjauan_ulang' akibat laporan evaluasi "
+            f"Status otomatis berubah ke 'ditangguhkan' akibat laporan evaluasi "
             f"#{evaluasi.id} ({evaluasi.kategori_masalah}) dengan skor urgensi AI {evaluasi.skor_urgensi_ai}."
         )
         histori = TahapanProgres(
             proyek_id=proyek.id,
-            nama_tahap="Peninjauan Ulang Proyek (Otomatis AI)",
+            nama_tahap="Penangguhan Proyek (Otomatis AI)",
             progres_persen=proyek.progres_persen,
             catatan=catatan_audit,
             dicatat_oleh=current_user_id
         )
         db.add(histori)
 
-        # Catat audit trail status log evaluasi untuk kejadian transisi otomatis AI.
-        # CATATAN DESAIN ARSITEKTUR:
-        # Nilai status_sebelumnya dan status_baru di sini sengaja diisi nilai yang sama
-        # (keduanya 'menunggu_verifikasi') karena status record evaluasi ITU SENDIRI BELUM BERUBAH
-        # (masih menunggu verifikasi resmi oleh admin dinas). Entri log ini dicatat sebagai jejak
-        # audit linimasa untuk membuktikan efek samping otomatis ke sistem: bahwa evaluasi ini
-        # telah memicu peninjauan ulang proyek (proyek.status -> 'dalam_peninjauan_ulang')
-        # karena skor urgensi analisis AI bernilai tinggi (skor >= 4).
         eval_log = EvaluasiStatusLog(
             evaluasi_id=evaluasi.id,
             status_sebelumnya=EvaluasiStatus.menunggu_verifikasi.value,
@@ -67,7 +59,7 @@ def sync_project_status_on_new_evaluation(
             diubah_oleh=current_user_id,
             catatan=(
                 f"Analisis Otomatis AI (skor urgensi {evaluasi.skor_urgensi_ai}/5): "
-                f"Status proyek #{proyek.id} otomatis ditransisikan ke 'dalam_peninjauan_ulang'."
+                f"Status proyek #{proyek.id} otomatis ditransisikan ke 'ditangguhkan'."
             )
         )
         db.add(eval_log)
@@ -75,7 +67,7 @@ def sync_project_status_on_new_evaluation(
         db.refresh(proyek)
 
         pesan_notif = (
-            f"Status proyek '{proyek.nama_proyek}' otomatis berubah menjadi 'dalam_peninjauan_ulang' "
+            f"Status proyek '{proyek.nama_proyek}' otomatis berubah menjadi 'ditangguhkan' "
             f"akibat laporan evaluasi pasca-proyek dengan skor urgensi tinggi ({evaluasi.skor_urgensi_ai}/5)."
         )
         background_tasks.add_task(
@@ -101,11 +93,11 @@ def sync_project_status_on_evaluation_verification(
     Aturan 2:
     Ketika evaluasi_pembangunan.status diubah MANUAL oleh admin dinas/pimpinan menjadi
     'terverifikasi_perlu_tindak_lanjut' (atau 'dalam_peninjauan_ulang'), dan proyek belum
-    'dalam_peninjauan_ulang', maka proyek.status otomatis berubah menjadi 'dalam_peninjauan_ulang'.
+    'ditangguhkan', maka proyek.status otomatis berubah menjadi 'ditangguhkan'.
 
     Aturan 3:
     Ketika evaluasi_pembangunan.status diubah menjadi 'selesai_ditindaklanjuti' atau 'ditolak_tidak_terbukti',
-    dan proyek saat ini berstatus 'dalam_peninjauan_ulang', cek apakah masih ada evaluasi aktif lain
+    dan proyek saat ini berstatus 'ditangguhkan', cek apakah masih ada evaluasi aktif lain
     (status 'menunggu_verifikasi', 'dalam_peninjauan_ulang', 'terverifikasi_perlu_tindak_lanjut')
     untuk proyek yang sama. Jika TIDAK ADA, proyek.status otomatis kembali ke 'selesai'.
     """
@@ -113,18 +105,18 @@ def sync_project_status_on_evaluation_verification(
     if not proyek:
         return False
 
-    # Aturan 2: Verifikasi memerlukan tindak lanjut -> masuk status 'dalam_peninjauan_ulang'
+    # Aturan 2: Verifikasi memerlukan tindak lanjut -> masuk status 'ditangguhkan'
     if status_baru in [EvaluasiStatus.terverifikasi_perlu_tindak_lanjut, EvaluasiStatus.dalam_peninjauan_ulang]:
-        if proyek.status != ProyekStatus.dalam_peninjauan_ulang:
-            proyek.status = ProyekStatus.dalam_peninjauan_ulang
+        if proyek.status != ProyekStatus.ditangguhkan:
+            proyek.status = ProyekStatus.ditangguhkan
             catatan_audit = (
-                f"Status proyek berubah ke 'dalam_peninjauan_ulang' setelah laporan evaluasi "
+                f"Status proyek berubah ke 'ditangguhkan' setelah laporan evaluasi "
                 f"#{evaluasi.id} ({evaluasi.kategori_masalah}) diverifikasi oleh {admin_user.nama} "
                 f"({status_baru.value}). Catatan: {catatan_admin or '-'}"
             )
             histori = TahapanProgres(
                 proyek_id=proyek.id,
-                nama_tahap="Peninjauan Ulang Proyek (Verifikasi Dinas)",
+                nama_tahap="Penangguhan Proyek (Verifikasi Dinas)",
                 progres_persen=proyek.progres_persen,
                 catatan=catatan_audit,
                 dicatat_oleh=admin_user.id
@@ -134,7 +126,7 @@ def sync_project_status_on_evaluation_verification(
             db.refresh(proyek)
 
             pesan_notif = (
-                f"Status proyek '{proyek.nama_proyek}' berubah menjadi 'dalam_peninjauan_ulang' "
+                f"Status proyek '{proyek.nama_proyek}' berubah menjadi 'ditangguhkan' "
                 f"setelah verifikasi dinas terhadap evaluasi #{evaluasi.id}."
             )
             background_tasks.add_task(
@@ -147,7 +139,20 @@ def sync_project_status_on_evaluation_verification(
 
     # Aturan 3: Evaluasi diselesaikan atau ditolak -> kembalikan ke 'selesai' jika tidak ada evaluasi aktif lain
     elif status_baru in [EvaluasiStatus.selesai_ditindaklanjuti, EvaluasiStatus.ditolak_tidak_terbukti]:
-        if proyek.status == ProyekStatus.dalam_peninjauan_ulang:
+        if proyek.status == ProyekStatus.ditangguhkan:
+            active_statuses = [
+                EvaluasiStatus.menunggu_verifikasi,
+                EvaluasiStatus.dalam_peninjauan_ulang,
+                EvaluasiStatus.terverifikasi_perlu_tindak_lanjut
+            ]
+            other_active_count = db.query(EvaluasiPembangunan).filter(
+                EvaluasiPembangunan.proyek_id == proyek.id,
+                EvaluasiPembangunan.id != evaluasi.id,
+                EvaluasiPembangunan.status.in_(active_statuses)
+            ).count()
+
+            if other_active_count == 0:
+                proyek.status = ProyekStatus.selesai
             active_statuses = [
                 EvaluasiStatus.menunggu_verifikasi,
                 EvaluasiStatus.dalam_peninjauan_ulang,

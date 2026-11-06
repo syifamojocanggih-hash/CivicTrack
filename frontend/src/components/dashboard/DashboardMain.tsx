@@ -1,9 +1,10 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { DashboardSidebar } from './DashboardSidebar';
 import { DashboardHeader } from './DashboardHeader';
 import { WargaDashboard } from './WargaDashboard';
 import { AdminDinasDashboard } from './AdminDinasDashboard';
 import { PimpinanDashboard } from './PimpinanDashboard';
+import { ErrorBoundary } from '../ErrorBoundary';
 import type { UserProfile, ProyekItem, UserRole } from '../../types';
 
 interface DashboardMainProps {
@@ -40,11 +41,28 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
     return 'overview';
   };
 
-  const [activeNavSection, setActiveNavSection] = useState<string>(getDefaultSection(currentUser.role));
+  // Persist active section across page refreshes within the session
+  const [activeNavSection, setActiveNavSection] = useState<string>(() => {
+    try {
+      const saved = sessionStorage.getItem('civictrack_active_nav_section');
+      if (saved) return saved;
+    } catch {}
+    return getDefaultSection(currentUser.role);
+  });
 
-  // Reset section when role switches
   useEffect(() => {
-    setActiveNavSection(getDefaultSection(currentUser.role));
+    try {
+      sessionStorage.setItem('civictrack_active_nav_section', activeNavSection);
+    } catch {}
+  }, [activeNavSection]);
+
+  // Reset section only when role switches
+  useEffect(() => {
+    const defaultSec = getDefaultSection(currentUser.role);
+    setActiveNavSection(defaultSec);
+    try {
+      sessionStorage.setItem('civictrack_active_nav_section', defaultSec);
+    } catch {}
   }, [currentUser.role]);
 
   // Compute title for the top header breadcrumb
@@ -121,23 +139,51 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
 
         {/* Main Content View (Driven by Active Role & Section) */}
         <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6 space-y-6">
-          {/* Role 1: Warga Masyarakat */}
-          {currentUser.role === 'warga' && (
-            <WargaDashboard
-              currentUser={currentUser}
-              projects={projects}
-              onOpenProjectDetail={onOpenProjectDetail}
-              onOpenAIRoute={onOpenAIRoute}
-              activeSection={activeNavSection}
-              onSelectSection={(sec) => setActiveNavSection(sec)}
-              onOpenMapExplorer={onOpenMapExplorer}
-              onProjectUpdated={onProjectUpdated}
-            />
-          )}
+          <ErrorBoundary fallbackTitle="Panel Dashboard Sedang Memuat">
+            {/* Role 1: Warga Masyarakat */}
+            {currentUser.role === 'warga' && (
+              <WargaDashboard
+                currentUser={currentUser}
+                projects={projects}
+                onOpenProjectDetail={onOpenProjectDetail}
+                onOpenAIRoute={onOpenAIRoute}
+                activeSection={activeNavSection}
+                onSelectSection={(sec) => setActiveNavSection(sec)}
+                onOpenMapExplorer={onOpenMapExplorer}
+                onProjectUpdated={onProjectUpdated}
+              />
+            )}
 
-          {/* Role 2: Aparatur Pemerintah & Pimpinan Instansi (Monitoring Eksekutif & Manajemen Proyek) */}
-          {(currentUser.role === 'aparatur_pemerintah' || currentUser.role === 'pimpinan_instansi') && (
-            ['proyek', 'linimasa', 'dokumentasi', 'aduan', 'evaluasi'].includes(activeNavSection) ? (
+            {/* Role 2: Aparatur Pemerintah & Pimpinan Instansi (Monitoring Eksekutif & Manajemen Proyek) */}
+            {(currentUser.role === 'aparatur_pemerintah' || currentUser.role === 'pimpinan_instansi') && (
+              ['proyek', 'linimasa', 'dokumentasi', 'aduan', 'evaluasi'].includes(activeNavSection) ? (
+                <AdminDinasDashboard
+                  currentUser={currentUser}
+                  projects={projects}
+                  onOpenProjectDetail={onOpenProjectDetail}
+                  activeSection={activeNavSection}
+                  onSelectSection={(sec) => setActiveNavSection(sec)}
+                  onOpenMapExplorer={onOpenMapExplorer}
+                  onProjectCreated={onProjectCreated}
+                  onProjectUpdated={onProjectUpdated}
+                />
+              ) : (
+                <PimpinanDashboard
+                  currentUser={currentUser}
+                  projects={projects}
+                  onOpenProjectDetail={onOpenProjectDetail}
+                  activeSection={activeNavSection}
+                  onSelectSection={(sec) => setActiveNavSection(sec)}
+                  onOpenMapExplorer={onOpenMapExplorer}
+                />
+              )
+            )}
+
+            {/* Role 3: Penanggung Jawab Proyek (Kelola Proyek, Update Tahapan, Upload Foto/Video & Respon Aduan) */}
+            {(currentUser.role === 'penanggung_jawab' ||
+              currentUser.role === 'admin_dinas' ||
+              currentUser.role === 'pemerintah' ||
+              (!['warga', 'aparatur_pemerintah', 'pimpinan_instansi'].includes(currentUser.role))) && (
               <AdminDinasDashboard
                 currentUser={currentUser}
                 projects={projects}
@@ -148,31 +194,8 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
                 onProjectCreated={onProjectCreated}
                 onProjectUpdated={onProjectUpdated}
               />
-            ) : (
-              <PimpinanDashboard
-                currentUser={currentUser}
-                projects={projects}
-                onOpenProjectDetail={onOpenProjectDetail}
-                activeSection={activeNavSection}
-                onSelectSection={(sec) => setActiveNavSection(sec)}
-                onOpenMapExplorer={onOpenMapExplorer}
-              />
-            )
-          )}
-
-          {/* Role 3: Penanggung Jawab Proyek (Kelola Proyek, Update Tahapan, Upload Foto/Video & Respon Aduan) */}
-          {(currentUser.role === 'penanggung_jawab' || currentUser.role === 'admin_dinas' || currentUser.role === 'pemerintah') && (
-            <AdminDinasDashboard
-              currentUser={currentUser}
-              projects={projects}
-              onOpenProjectDetail={onOpenProjectDetail}
-              activeSection={activeNavSection}
-              onSelectSection={(sec) => setActiveNavSection(sec)}
-              onOpenMapExplorer={onOpenMapExplorer}
-              onProjectCreated={onProjectCreated}
-              onProjectUpdated={onProjectUpdated}
-            />
-          )}
+            )}
+          </ErrorBoundary>
         </main>
 
         {/* Footer for Dashboard */}

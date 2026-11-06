@@ -175,9 +175,9 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 9,
-    nama_proyek: 'Pembangunan Jembatan Gantung Penghubung Laren - Maduran',
+    nama_proyek: 'Pembangunan Jembatan Penghubung Laren - Maduran',
     kategori: 'jalan',
-    deskripsi: 'Pembangunan jembatan melintasi Sungai Bengawan Solo untuk mempercepat mobilitas komoditas pertanian antar-kecamatan.',
+    deskripsi: 'Pembangunan jembatan melintasi Sungai Bengawan Solo untuk mempercepat mobilitas komoditas pertanian dan warga antar-kecamatan Laren dan Maduran.',
     latitude: -6.9850,
     longitude: 112.2750,
     wilayah_id: 9,
@@ -191,7 +191,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
     nama_dinas: 'Dinas PU Bina Marga Lamongan',
     rata_rata_rating: 4.1,
     jumlah_rating: 25,
-    tahap_terkini: 'Pemasangan kabel seling utama & fondasi abtumen'
+    tahap_terkini: 'Ereksi struktur rangka baja & pengecoran pilar jembatan'
   },
   {
     id: 10,

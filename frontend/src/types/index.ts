@@ -1,4 +1,4 @@
-export type ProyekStatus = 'berjalan' | 'selesai' | 'ditangguhkan' | 'dalam_peninjauan_ulang';
+export type ProyekStatus = 'berjalan' | 'selesai' | 'ditangguhkan';
 
 export type ProyekKategori = 'jalan' | 'taman' | 'drainase' | 'fasilitas';
 
@@ -399,6 +399,7 @@ export interface SubscribedProject {
 export interface StatusCountItem {
   berjalan: number;
   selesai: number;
+  ditangguhkan?: number;
   tertunda: number;
   dalam_peninjauan_ulang: number;
 }
@@ -409,6 +410,7 @@ export interface WilayahStatItem {
   nama_wilayah: string;
   jumlah_berjalan: number;
   jumlah_selesai: number;
+  jumlah_ditangguhkan?: number;
   jumlah_tertunda: number;
   jumlah_dalam_peninjauan_ulang: number;
   status_proyek: StatusCountItem;

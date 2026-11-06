@@ -1,5 +1,6 @@
 import type {
   ProyekItem,
+  ProyekStatus,
   ProyekUpdatePayload,
   ProyekCreatePayload,
   TahapanCreatePayload,
@@ -135,7 +136,13 @@ export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
     desa_id: p.desa_id !== undefined ? p.desa_id : (p.desa ? p.desa.id : null),
     dinas_id: p.dinas_id || (p.dinas ? p.dinas.id : 1),
     anggaran: Number(p.anggaran) || 0,
-    status: (p.status === 'tertunda' ? 'ditangguhkan' : p.status) as any,
+    status: (
+      (Number(p.progres_persen) >= 100 || p.status === 'selesai')
+        ? 'selesai'
+        : (p.status === 'ditangguhkan' || p.status === 'tertunda' || p.status === 'dalam_peninjauan_ulang')
+        ? 'ditangguhkan'
+        : 'berjalan'
+    ) as ProyekStatus,
     progres_persen: p.progres_persen || 0,
     tanggal_mulai: p.tanggal_mulai ? String(p.tanggal_mulai).split('T')[0] : '2024-01-01',
     estimasi_selesai: p.estimasi_selesai ? String(p.estimasi_selesai).split('T')[0] : '2024-12-31',
@@ -490,8 +497,8 @@ export const apiService = {
     if (payload.kategori === 'fasilitas') {
       payload.kategori = 'gedung_publik';
     }
-    if (payload.status === 'ditangguhkan') {
-      payload.status = 'tertunda';
+    if (payload.status === 'tertunda' || payload.status === 'dalam_peninjauan_ulang') {
+      payload.status = 'ditangguhkan';
     }
 
     const res = await fetch(`${BASE_URL}/proyek/${id}`, {
@@ -508,6 +515,43 @@ export const apiService = {
     return mapBackendToProyekItem(updated);
   },
 
+  async deleteProject(id: number): Promise<boolean> {
+    const headers = getAuthHeaders();
+    try {
+      const res = await fetch(`${BASE_URL}/proyek/${id}`, {
+        method: 'DELETE',
+        headers,
+      });
+
+      if (!res.ok && res.status !== 404) {
+        await handleApiError(res, 'Gagal menghapus proyek.');
+      }
+    } catch (e: any) {
+      console.warn('Backend DELETE /proyek failed or offline, updating local state:', e);
+    }
+
+    // Selalu sinkronkan localStorage & broadcast event hapus real-time
+    try {
+      const raw = localStorage.getItem('civictrack_all_projects');
+      if (raw) {
+        const list: ProyekItem[] = JSON.parse(raw);
+        const filtered = list.filter((p) => p.id !== id);
+        localStorage.setItem('civictrack_all_projects', JSON.stringify(filtered));
+      }
+      localStorage.removeItem(`civictrack_project_stages_${id}`);
+    } catch {}
+
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(
+        new CustomEvent('civictrack_project_deleted', {
+          detail: { projectId: id },
+        })
+      );
+    }
+
+    return true;
+  },
+
   // ── Manajemen Proyek & Linimasa ──
 
   async createProject(data: ProyekCreatePayload): Promise<ProyekItem> {
@@ -520,7 +564,9 @@ export const apiService = {
     if (backendKategori === 'fasilitas') backendKategori = 'gedung_publik';
 
     let backendStatus = data.status || 'berjalan';
-    if (backendStatus === 'ditangguhkan') backendStatus = 'tertunda' as any;
+    if (backendStatus === 'tertunda' || (backendStatus as any) === 'dalam_peninjauan_ulang') {
+      backendStatus = 'ditangguhkan';
+    }
 
     const parseCoordinate = (val: any, fallback: number): number => {
       if (typeof val === 'number') return isNaN(val) ? fallback : val;
@@ -1472,5 +1518,38 @@ export const apiService = {
       created_at: new Date().toISOString(),
       updated_at: new Date().toISOString(),
     };
-  }
+  },
+
+  async uploadDokumentasi(
+    proyekId: number,
+    file: File,
+    tahapanId?: number
+  ): Promise<{ id: number; url_file: string; tipe_media: string } | null> {
+    const token = localStorage.getItem('civictrack_token');
+    const formData = new FormData();
+    formData.append('file', file);
+    if (tahapanId) {
+      formData.append('tahapan_id', String(tahapanId));
+    }
+
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    try {
+      const res = await fetch(`${BASE_URL}/proyek/${proyekId}/dokumentasi`, {
+        method: 'POST',
+        headers,
+        body: formData,
+      });
+      if (!res.ok) {
+        await handleApiError(res, 'Gagal mengunggah berkas dokumentasi fisik');
+      }
+      return await res.json();
+    } catch (err) {
+      console.warn('Backend uploadDokumentasi failed or unavailable, fallback to local media URL:', err);
+      return null;
+    }
+  },
 };

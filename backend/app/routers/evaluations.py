@@ -45,9 +45,9 @@ def submit_post_project_evaluation(
     if not proyek:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyek tidak ditemukan.")
 
-    if proyek.status not in [ProyekStatus.selesai, ProyekStatus.dalam_peninjauan_ulang]:
-        # Jika warga melaporkan cacat fisik pasca-proyek/finishing, otomatis beralih ke peninjauan ulang
-        proyek.status = ProyekStatus.dalam_peninjauan_ulang
+    if proyek.status not in [ProyekStatus.selesai, ProyekStatus.ditangguhkan]:
+        # Jika warga melaporkan cacat fisik pasca-proyek/finishing, otomatis beralih ke status ditangguhkan
+        proyek.status = ProyekStatus.ditangguhkan
         db.add(proyek)
         db.commit()
         db.refresh(proyek)

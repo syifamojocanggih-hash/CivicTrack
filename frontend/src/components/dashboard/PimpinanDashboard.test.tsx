@@ -56,4 +56,35 @@ describe('PimpinanDashboard', () => {
     expect(await screen.findByText('Kecamatan Glagah')).toBeInTheDocument();
     expect(screen.getAllByText(/0 Proyek/i).length).toBeGreaterThan(0);
   });
+
+  it('renders OPD performance scores responsively for both decimal and non-decimal numbers', async () => {
+    vi.mocked(apiService.getRingkasanStats).mockResolvedValue({
+      total_proyek: 10, total_anggaran: 1000000000, rasio_penyerapan_persen: 50, total_warga_terdaftar: 50, total_dinas_terlibat: 5, total_aduan: 2,
+    } as any);
+
+    render(
+      <PimpinanDashboard
+        currentUser={{ id: 1, role: 'pimpinan_instansi', nama: 'Bupati', email: 'test@banyuwangi.go.id' }}
+        projects={[]}
+        activeSection="kinerja_dinas"
+      />
+    );
+
+    // Verify table header
+    expect(screen.getByText('Tabel Komparasi Efektivitas 5 Organisasi Perangkat Daerah (OPD)')).toBeInTheDocument();
+    expect(screen.getByText('Skor Kinerja')).toBeInTheDocument();
+
+    // Verify decimal scores (e.g. 91.8, 96.2, 88.5, 93.4)
+    expect(screen.getByText('91.8')).toBeInTheDocument();
+    expect(screen.getByText('96.2')).toBeInTheDocument();
+    expect(screen.getByText('88.5')).toBeInTheDocument();
+    expect(screen.getByText('93.4')).toBeInTheDocument();
+
+    // Verify non-decimal / integer score (e.g. 95)
+    expect(screen.getByText('95')).toBeInTheDocument();
+
+    // Verify max score scale suffix
+    const maxScoreBadges = screen.getAllByText('/ 100');
+    expect(maxScoreBadges.length).toBe(5);
+  });
 });

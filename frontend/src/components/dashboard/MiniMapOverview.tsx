@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Compass, Maximize2, MapPin, Layers, ArrowRight } from 'lucide-react';
@@ -21,94 +21,129 @@ export const MiniMapOverview: React.FC<MiniMapOverviewProps> = ({
 
     // Clean up if already exists
     if (mapInstanceRef.current) {
-      mapInstanceRef.current.remove();
+      try {
+        mapInstanceRef.current.remove();
+      } catch (e) {
+        console.warn('MiniMap clean error:', e);
+      }
       mapInstanceRef.current = null;
     }
 
-    // Default center: Kabupaten Lamongan coordinates
-    const defaultCenter: [number, number] = [-7.118, 112.416];
-    const initialCenter =
-      projects.length > 0 && projects[0].latitude && projects[0].longitude
-        ? ([projects[0].latitude, projects[0].longitude] as [number, number])
-        : defaultCenter;
+    // Crucial: remove existing leaflet ID and reset inner HTML to prevent "Map container is already initialized"
+    if ((mapContainerRef.current as any)._leaflet_id) {
+      delete (mapContainerRef.current as any)._leaflet_id;
+    }
+    mapContainerRef.current.innerHTML = '';
 
-    const map = L.map(mapContainerRef.current, {
-      center: initialCenter,
-      zoom: 12,
-      zoomControl: false,
-      attributionControl: false,
-      scrollWheelZoom: false,
-      doubleClickZoom: false,
-      touchZoom: false,
-      dragging: false,
-      boxZoom: false,
-    });
-
-    mapInstanceRef.current = map;
-
-    // OpenStreetMap tile layer (Free, public, no API key required, no watermark)
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '&copy; OpenStreetMap contributors',
-    }).addTo(map);
-
-    // Color mapper for project categories
-    const getCategoryColor = (kategori: string) => {
-      switch (kategori) {
-        case 'jalan':
-          return '#E67E22';
-        case 'taman':
-          return '#27AE60';
-        case 'drainase':
-          return '#2980B9';
-        case 'fasilitas':
-          return '#8E44AD';
-        default:
-          return '#184C78';
+    try {
+      // Default center: Kabupaten Lamongan coordinates
+      const defaultCenter: [number, number] = [-7.118, 112.416];
+      let initialCenter = defaultCenter;
+      if (projects && projects.length > 0) {
+        const firstValid = projects.find(
+          (p) =>
+            !isNaN(Number(p.latitude)) &&
+            !isNaN(Number(p.longitude)) &&
+            Number(p.latitude) !== 0 &&
+            Number(p.longitude) !== 0
+        );
+        if (firstValid) {
+          initialCenter = [Number(firstValid.latitude), Number(firstValid.longitude)];
+        }
       }
-    };
 
-    const validMarkers: L.LatLngExpression[] = [];
-
-    // Add pulsing markers for each project
-    projects.forEach((proj) => {
-      if (!proj.latitude || !proj.longitude) return;
-
-      const color = getCategoryColor(proj.kategori);
-      const latLng: [number, number] = [proj.latitude, proj.longitude];
-      validMarkers.push(latLng);
-
-      const customIcon = L.divIcon({
-        className: 'custom-minimap-marker',
-        html: `
-          <div style="position: relative; width: 28px; height: 28px; cursor: pointer;">
-            <div style="position: absolute; inset: 0; border-radius: 9999px; background-color: ${color}; opacity: 0.35; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
-            <div style="position: relative; width: 28px; height: 28px; border-radius: 9999px; background-color: ${color}; border: 2.5px solid #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px;">
-              ${proj.progres_persen}%
-            </div>
-          </div>
-        `,
-        iconSize: [28, 28],
-        iconAnchor: [14, 14],
+      const map = L.map(mapContainerRef.current, {
+        center: initialCenter,
+        zoom: 12,
+        zoomControl: false,
+        attributionControl: false,
+        scrollWheelZoom: false,
+        doubleClickZoom: false,
+        touchZoom: false,
+        dragging: false,
+        boxZoom: false,
       });
 
-      const marker = L.marker(latLng, { icon: customIcon }).addTo(map);
-      marker.bindTooltip(
-        `<strong>${proj.nama_proyek}</strong><br/><span style="font-size:11px; color:#64748b;">${proj.progres_persen}% progres • ${proj.kategori.toUpperCase()}</span>`,
-        { direction: 'top', offset: [0, -12] }
-      );
-    });
+      mapInstanceRef.current = map;
 
-    // Fit bounds if markers exist
-    if (validMarkers.length > 0) {
-      const bounds = L.latLngBounds(validMarkers);
-      map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      // OpenStreetMap tile layer (Free, public, no API key required, no watermark)
+      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; OpenStreetMap contributors',
+      }).addTo(map);
+
+      // Color mapper for project categories
+      const getCategoryColor = (kategori?: string) => {
+        switch ((kategori || '').toLowerCase()) {
+          case 'jalan':
+            return '#E67E22';
+          case 'taman':
+            return '#27AE60';
+          case 'drainase':
+            return '#2980B9';
+          case 'fasilitas':
+            return '#8E44AD';
+          default:
+            return '#184C78';
+        }
+      };
+
+      const validMarkers: L.LatLngExpression[] = [];
+
+      // Add pulsing markers for each project
+      (projects || []).forEach((proj) => {
+        const lat = Number(proj.latitude);
+        const lng = Number(proj.longitude);
+        if (isNaN(lat) || isNaN(lng) || lat === 0 || lng === 0) return;
+
+        const color = getCategoryColor(proj.kategori);
+        const latLng: [number, number] = [lat, lng];
+        validMarkers.push(latLng);
+
+        const customIcon = L.divIcon({
+          className: 'custom-minimap-marker',
+          html: `
+            <div style="position: relative; width: 28px; height: 28px; cursor: pointer;">
+              <div style="position: absolute; inset: 0; border-radius: 9999px; background-color: ${color}; opacity: 0.35; animation: ping 2s cubic-bezier(0, 0, 0.2, 1) infinite;"></div>
+              <div style="position: relative; width: 28px; height: 28px; border-radius: 9999px; background-color: ${color}; border: 2.5px solid #ffffff; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; color: white; font-weight: bold; font-size: 11px;">
+                ${proj.progres_persen ?? 0}%
+              </div>
+            </div>
+          `,
+          iconSize: [28, 28],
+          iconAnchor: [14, 14],
+        });
+
+        const marker = L.marker(latLng, { icon: customIcon }).addTo(map);
+        const safeNama = proj.nama_proyek || 'Proyek Pembangunan';
+        const safeCat = (proj.kategori || 'jalan').toUpperCase();
+        const safePct = proj.progres_persen ?? 0;
+        marker.bindTooltip(
+          `<strong>${safeNama}</strong><br/><span style="font-size:11px; color:#64748b;">${safePct}% progres • ${safeCat}</span>`,
+          { direction: 'top', offset: [0, -12] }
+        );
+      });
+
+      // Fit bounds if markers exist
+      if (validMarkers.length > 0) {
+        const bounds = L.latLngBounds(validMarkers);
+        map.fitBounds(bounds, { padding: [40, 40], maxZoom: 13 });
+      }
+    } catch (err) {
+      console.warn('MiniMapOverview map render warning:', err);
     }
 
     return () => {
       if (mapInstanceRef.current) {
-        mapInstanceRef.current.remove();
+        try {
+          mapInstanceRef.current.remove();
+        } catch (e) {
+          console.warn('MiniMap cleanup error:', e);
+        }
         mapInstanceRef.current = null;
+      }
+      if (mapContainerRef.current && (mapContainerRef.current as any)._leaflet_id) {
+        delete (mapContainerRef.current as any)._leaflet_id;
       }
     };
   }, [projects]);

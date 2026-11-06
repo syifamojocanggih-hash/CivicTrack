@@ -15,6 +15,7 @@ import { OpenDataModal } from './components/OpenDataModal';
 import { DashboardMain } from './components/dashboard/DashboardMain';
 import { NearbyMapModal } from './components/NearbyMapModal';
 import { PublicMapExplorer } from './components/PublicMapExplorer';
+import { ErrorBoundary } from './components/ErrorBoundary';
 import { apiService } from './services/api';
 
 import {
@@ -45,7 +46,13 @@ export function App() {
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<ProyekKategori | null>(null);
   const [activeNav, setActiveNav] = useState<string>('peta');
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      const savedUser = localStorage.getItem('civictrack_user');
+      if (savedUser) return JSON.parse(savedUser);
+    } catch {}
+    return null;
+  });
   const [currentView, setCurrentView] = useState<CurrentView>(getInitialView);
   const [authNotice, setAuthNotice] = useState<string>('');
   const [postLoginRedirect, setPostLoginRedirect] = useState<'dashboard' | 'map-explorer' | null>(null);
@@ -57,15 +64,25 @@ export function App() {
     // 0. Check real authenticated user session from database
     const token = localStorage.getItem('civictrack_token');
     if (token) {
-      apiService.getCurrentUser().then((user) => {
-        if (user) {
-          setCurrentUser(user);
-        } else {
+      apiService
+        .getCurrentUser()
+        .then((user) => {
+          if (user) {
+            setCurrentUser(user);
+            try {
+              localStorage.setItem('civictrack_user', JSON.stringify(user));
+            } catch {}
+          } else {
+            localStorage.removeItem('civictrack_token');
+            localStorage.removeItem('civictrack_user');
+            setCurrentUser(null);
+          }
+        })
+        .catch(() => {
           localStorage.removeItem('civictrack_token');
-        }
-      }).catch(() => {
-        localStorage.removeItem('civictrack_token');
-      });
+          localStorage.removeItem('civictrack_user');
+          setCurrentUser(null);
+        });
     }
 
     // 1. Fetch live projects from backend
@@ -124,6 +141,32 @@ export function App() {
     }
     apiService.getStats().then((resStats) => setStats(resStats)).catch(() => {});
   };
+
+  // Listener sinkronisasi live global (Live Sync)
+  useEffect(() => {
+    const handleGlobalLiveSync = (e: any) => {
+      const updated = e.detail as ProyekItem;
+      if (!updated || !updated.id) return;
+      handleProjectUpdated(updated);
+    };
+
+    const handleGlobalLiveDelete = (e: any) => {
+      const deletedId = e.detail?.projectId;
+      if (!deletedId) return;
+      setProjects((prev) => prev.filter((p) => p.id !== deletedId));
+      if (selectedProject && selectedProject.id === deletedId) {
+        setSelectedProject(null);
+      }
+      apiService.getStats().then((resStats) => setStats(resStats)).catch(() => {});
+    };
+
+    window.addEventListener('civictrack_project_updated', handleGlobalLiveSync as EventListener);
+    window.addEventListener('civictrack_project_deleted', handleGlobalLiveDelete as EventListener);
+    return () => {
+      window.removeEventListener('civictrack_project_updated', handleGlobalLiveSync as EventListener);
+      window.removeEventListener('civictrack_project_deleted', handleGlobalLiveDelete as EventListener);
+    };
+  }, [selectedProject]);
 
   // Filtered projects
   const filteredProjects = useMemo(() => {
@@ -225,6 +268,9 @@ export function App() {
 
   const handleLoginSuccess = (user: UserProfile) => {
     setCurrentUser(user);
+    try {
+      localStorage.setItem('civictrack_user', JSON.stringify(user));
+    } catch {}
     if (postLoginRedirect === 'map-explorer') {
       navigateToView('map-explorer');
       setPostLoginRedirect(null);
@@ -246,6 +292,9 @@ export function App() {
 
   const handleLogout = () => {
     localStorage.removeItem('civictrack_token');
+    localStorage.removeItem('civictrack_user');
+    sessionStorage.removeItem('civictrack_pj_unlocked_project');
+    sessionStorage.removeItem('civictrack_active_nav_section');
     setCurrentUser(null);
     navigateToView('landing');
     setPostLoginRedirect(null);
@@ -300,30 +349,34 @@ export function App() {
           }}
         />
       ) : currentView === 'map-explorer' ? (
-        <PublicMapExplorer
-          currentUser={currentUser}
-          projects={projects}
-          onBackToLanding={() => navigateToView('landing')}
-          onOpenDashboard={() => navigateToView('dashboard')}
-          onOpenProjectDetail={(proj) => setSelectedProject(proj)}
-          onOpenAIRoute={(name, proj) => handleOpenAIRoute(name, proj)}
-          onOpenAuth={(mode) => handleOpenAuth(mode)}
-        />
+        <ErrorBoundary fallbackTitle="Peta Spasial Sedang Dioptimalkan">
+          <PublicMapExplorer
+            currentUser={currentUser}
+            projects={projects}
+            onBackToLanding={() => navigateToView('landing')}
+            onOpenDashboard={() => navigateToView('dashboard')}
+            onOpenProjectDetail={(proj) => setSelectedProject(proj)}
+            onOpenAIRoute={(name, proj) => handleOpenAIRoute(name, proj)}
+            onOpenAuth={(mode) => handleOpenAuth(mode)}
+          />
+        </ErrorBoundary>
       ) : currentView === 'dashboard' && currentUser ? (
-        <DashboardMain
-          currentUser={currentUser}
-          projects={projects}
-          onOpenMapExplorer={() => navigateToView('map-explorer')}
-          onLogout={handleLogout}
-          onSwitchRole={handleSwitchRole}
-          onOpenProjectDetail={(proj) => setSelectedProject(proj)}
-          onOpenAIRoute={(name, proj) => {
-            handleOpenAIRoute(name, proj);
-          }}
-          onOpenOpenDataModal={() => setIsOpenDataModalOpen(true)}
-          onProjectCreated={handleProjectCreated}
-          onProjectUpdated={handleProjectUpdated}
-        />
+        <ErrorBoundary fallbackTitle="Dashboard CivicTrack Sedang Dioptimalkan">
+          <DashboardMain
+            currentUser={currentUser}
+            projects={projects}
+            onOpenMapExplorer={() => navigateToView('map-explorer')}
+            onLogout={handleLogout}
+            onSwitchRole={handleSwitchRole}
+            onOpenProjectDetail={(proj) => setSelectedProject(proj)}
+            onOpenAIRoute={(name, proj) => {
+              handleOpenAIRoute(name, proj);
+            }}
+            onOpenOpenDataModal={() => setIsOpenDataModalOpen(true)}
+            onProjectCreated={handleProjectCreated}
+            onProjectUpdated={handleProjectUpdated}
+          />
+        </ErrorBoundary>
       ) : (
         <>
           {/* ── NAVBAR ── */}

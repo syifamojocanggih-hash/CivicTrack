@@ -199,12 +199,14 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
     }
   };
 
+  const isCompleted = project.status === 'selesai' || project.progres_persen >= 100;
+
   const timelineSteps = [
     { title: 'Penyusunan DED & Lelang Proyek', date: 'Jan 2024', pct: 20, done: true, note: 'Tender selesai dimenangkan penyedia jasa terverifikasi LPSE.' },
-    { title: 'Pembersihan Lahan & Mobilisasi Alat Berat', date: 'Feb 2024', pct: 40, done: project.progres_persen >= 40, note: 'Pematangan tanah dan relokasi utilitas sementara.' },
-    { title: 'Konstruksi Struktur & Pengerjaan Fisik Utama', date: 'Apr 2024', pct: 65, done: project.progres_persen >= 65, note: 'Pengecoran dan instalasi elemen struktur inti.' },
-    { title: 'Finishing, Uji Beban & Uji Fungsi Kelayakan', date: 'Agu 2024', pct: 90, done: project.progres_persen >= 90, note: 'Pengecatan, rambu, dan uji kelayakan teknis lapangan.' },
-    { title: 'Serah Terima Pekerjaan Akhir (FHO)', date: project.estimasi_selesai || 'Des 2024', pct: 100, done: project.progres_persen === 100, note: 'Pemeriksaan tim teknis dinas dan peresmian untuk publik.' },
+    { title: 'Pembersihan Lahan & Mobilisasi Alat Berat', date: 'Feb 2024', pct: 40, done: isCompleted || project.progres_persen >= 40, note: 'Pematangan tanah dan relokasi utilitas sementara.' },
+    { title: 'Konstruksi Struktur & Pengerjaan Fisik Utama', date: 'Apr 2024', pct: 65, done: isCompleted || project.progres_persen >= 65, note: 'Pengecoran dan instalasi elemen struktur inti.' },
+    { title: 'Finishing, Uji Beban & Uji Fungsi Kelayakan', date: 'Agu 2024', pct: 90, done: isCompleted || project.progres_persen >= 90, note: 'Pengecatan, rambu, dan uji kelayakan teknis lapangan.' },
+    { title: 'Serah Terima Pekerjaan Akhir (FHO)', date: project.estimasi_selesai || 'Des 2024', pct: 100, done: isCompleted, note: 'Pemeriksaan tim teknis dinas dan peresmian untuk publik.' },
   ];
 
   const modalContent = (
@@ -235,19 +237,15 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full ${
                 project.status === 'selesai'
                   ? 'bg-[#E6F7F1] text-[#1A9E6E]'
-                  : project.status === 'dalam_peninjauan_ulang'
-                  ? 'bg-amber-100 text-amber-800 border border-amber-300'
                   : project.status === 'ditangguhkan'
-                  ? 'bg-slate-200 text-slate-700'
+                  ? 'bg-rose-100 text-rose-800 border border-rose-300'
                   : 'bg-[#FEF3E7] text-[#E67E22]'
               }`}>
-                {project.status === 'berjalan'
-                  ? 'Sedang Berjalan'
-                  : project.status === 'selesai'
+                {project.status === 'selesai'
                   ? 'Selesai'
-                  : project.status === 'dalam_peninjauan_ulang'
-                  ? 'Dalam Peninjauan Ulang'
-                  : 'Ditangguhkan'}
+                  : project.status === 'ditangguhkan'
+                  ? 'Ditangguhkan'
+                  : 'Sedang Berjalan'}
               </span>
               <span className="text-xs text-white/70">ID #{project.id.toString().padStart(4, '0')}</span>
             </div>
@@ -461,7 +459,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                       </p>
                     </div>
                     <div className="mt-2 pt-2 border-t border-[#DCE0E6]/60 flex items-center justify-between text-[10px] text-[#6C757D]">
-                      <span>Bobot Realisasi: {project?.progres_persen || 65}%</span>
+                      <span>Bobot Realisasi: {project?.progres_persen !== undefined ? project.progres_persen : 0}%</span>
                       <span className="text-emerald-700 font-semibold">Terverifikasi Resmi</span>
                     </div>
                   </div>

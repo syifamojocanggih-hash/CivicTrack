@@ -196,7 +196,8 @@ export const generateNavigationSteps = (
   routeIndex: number,
   origPt: [number, number],
   destPt: [number, number],
-  closureCenter: [number, number]
+  closureCenter: [number, number],
+  isCompleted = false
 ): NavigationStep[] => {
   const oName = (origin || 'Titik Awal').trim();
   const dName = (destination || 'Tujuan').trim();
@@ -342,8 +343,53 @@ export const generateNavigationSteps = (
     }
   }
 
-  // Kasus Proyek dengan Penutupan Jalan Fisik
+  // Kasus Proyek yang Berada di Koridor
   if (isNearProject) {
+    if (isCompleted) {
+      return [
+        {
+          nomor: 1,
+          instruksi: `Berangkat dari ${oName}, arahkan kendaraan menuju koridor jalan poros penghubung.`,
+          jarak: '450 m',
+          tipe: 'start',
+          keterangan: 'Mulai perjalanan dengan kecepatan aman.',
+        },
+        {
+          nomor: 2,
+          instruksi: `Melintasi kawasan proyek "${pName}" yang telah selesai 100%. Kondisi jalan beraspal mulus dan jalur dibuka normal dua arah.`,
+          jarak: '400 m',
+          tipe: 'straight',
+          keterangan: 'Pekerjaan konstruksi tuntas, bebas dari penutupan jalan.',
+        },
+        {
+          nomor: 3,
+          instruksi:
+            routeIndex === 0
+              ? 'Lanjutkan perjalanan lurus menyusuri jalan baru yang mulus dengan nyaman dan lancar.'
+              : routeIndex === 1
+              ? 'Gunakan Jalur Lingkar Luar Sekunder untuk alternatif menghindari kepadatan pusat kota.'
+              : 'Gunakan Jalur Lingkungan Pemukiman khusus sepeda motor dengan batas 30 km/jam.',
+          jarak: `${Math.max(1.2, totalDistKm * 0.55).toFixed(1)} km`,
+          tipe: routeIndex === 1 ? 'turn-right' : 'straight',
+          keterangan: 'Kondisi jalan layak dan telah diverifikasi petugas perhubungan.',
+        },
+        {
+          nomor: 4,
+          instruksi: 'Teruskan perjalanan menyusuri rute utama menuju arah titik tujuan.',
+          jarak: '450 m',
+          tipe: 'straight',
+          keterangan: 'Arus lalu lintas lancar dua arah.',
+        },
+        {
+          nomor: 5,
+          instruksi: `Lanjutkan hingga tiba di titik tujuan ${dName}.`,
+          jarak: '250 m',
+          tipe: 'finish',
+          keterangan: 'Perjalanan lancar melintasi proyek yang telah rampung.',
+        },
+      ];
+    }
+
     return [
       {
         nomor: 1,

@@ -38,6 +38,7 @@ import { apiService } from '../services/api';
 import { CivicTrackLogo } from './CivicTrackLogo';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON, LAMONGAN_DESA_GEOJSON } from '../data/geoWilayahData';
 import { getRealProjectImage } from '../utils/projectImages';
+import { generateProjectMilestones } from '../utils/projectConsistency';
 
 // Bounding box resmi gabungan seluruh 27 Kecamatan di Kab. Lamongan (dihitung dari poligon GeoJSON BPS/BIG)
 const ALL_LAMONGAN_BOUNDS: L.LatLngBoundsExpression = [
@@ -253,7 +254,26 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   // Real-time telemetry state
   const [liveTelemetryTick, setLiveTelemetryTick] = useState<number>(0);
   const [activeLayer, setActiveLayer] = useState<'standard' | 'satellite'>('standard');
-  const [liveProjects, setLiveProjects] = useState<ProyekItem[]>(projects);
+  const [liveProjects, setLiveProjects] = useState<ProyekItem[]>(() => {
+    try {
+      const localSaved = localStorage.getItem('civictrack_all_projects');
+      if (localSaved) {
+        const parsed: ProyekItem[] = JSON.parse(localSaved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const map = new Map(projects.map((p) => [p.id, p]));
+          parsed.forEach((p) => map.set(p.id, { ...(map.get(p.id) || {}), ...p }));
+          return Array.from(map.values());
+        }
+      }
+    } catch {}
+    return projects;
+  });
+
+  const [lastSyncTime, setLastSyncTime] = useState<string>(() => {
+    const now = new Date();
+    return `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+  });
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
   // Sync projects from backend on mount or fall back to 27 comprehensive projects
   useEffect(() => {
@@ -262,11 +282,109 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         const existingIds = new Set(res.projects.map((p) => p.id));
         const merged = [...res.projects, ...projects.filter((p) => !existingIds.has(p.id))];
         setLiveProjects(merged);
+        const now = new Date();
+        setLastSyncTime(
+          `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
+        );
       } else {
         setLiveProjects(projects);
       }
     });
   }, [projects]);
+
+  // Listener real-time sinkronisasi proyek tanpa refresh (Live Sync)
+  useEffect(() => {
+    const handleLiveUpdate = (e: any) => {
+      const updated = e.detail as ProyekItem;
+      if (!updated || !updated.id) return;
+
+      setLiveProjects((prev) => {
+        const exists = prev.some((p) => p.id === updated.id);
+        if (exists) {
+          return prev.map((p) => (p.id === updated.id ? { ...p, ...updated } : p));
+        }
+        return [updated, ...prev];
+      });
+
+      const now = new Date();
+      setLastSyncTime(
+        `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
+      );
+    };
+
+    const handleLiveDelete = (e: any) => {
+      const deletedId = e.detail?.projectId;
+      if (!deletedId) return;
+      setLiveProjects((prev) => prev.filter((p) => p.id !== deletedId));
+      if (selectedProjectId === deletedId) {
+        setIsDetailPanelOpen(false);
+      }
+    };
+
+    window.addEventListener('civictrack_project_updated', handleLiveUpdate as EventListener);
+    window.addEventListener('civictrack_project_deleted', handleLiveDelete as EventListener);
+    return () => {
+      window.removeEventListener('civictrack_project_updated', handleLiveUpdate as EventListener);
+      window.removeEventListener('civictrack_project_deleted', handleLiveDelete as EventListener);
+    };
+  }, []);
+
+  // Polling latar belakang berkala (15 detik) untuk sinkronisasi telemetry & status data
+  useEffect(() => {
+    const interval = setInterval(async () => {
+      try {
+        const res = await apiService.getProjects();
+        if (res.isFromBackend && res.projects.length > 0) {
+          setLiveProjects((prev) => {
+            const map = new Map(prev.map((p) => [p.id, p]));
+            res.projects.forEach((p) => map.set(p.id, { ...(map.get(p.id) || {}), ...p }));
+            return Array.from(map.values());
+          });
+          const now = new Date();
+          setLastSyncTime(
+            `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
+          );
+        }
+      } catch {}
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Manual Live Sync Handler
+  const handleManualSync = async () => {
+    if (isSyncing) return;
+    setIsSyncing(true);
+    try {
+      const res = await apiService.getProjects();
+      if (res.isFromBackend && res.projects.length > 0) {
+        setLiveProjects((prev) => {
+          const map = new Map(prev.map((p) => [p.id, p]));
+          res.projects.forEach((p) => map.set(p.id, { ...(map.get(p.id) || {}), ...p }));
+          return Array.from(map.values());
+        });
+      }
+      try {
+        const localSaved = localStorage.getItem('civictrack_all_projects');
+        if (localSaved) {
+          const parsed: ProyekItem[] = JSON.parse(localSaved);
+          if (Array.isArray(parsed) && parsed.length > 0) {
+            setLiveProjects((prev) => {
+              const map = new Map(prev.map((p) => [p.id, p]));
+              parsed.forEach((p) => map.set(p.id, { ...(map.get(p.id) || {}), ...p }));
+              return Array.from(map.values());
+            });
+          }
+        }
+      } catch {}
+
+      const now = new Date();
+      setLastSyncTime(
+        `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
+      );
+    } finally {
+      setTimeout(() => setIsSyncing(false), 500);
+    }
+  };
 
   // Fetch cascading desa/kelurahan when kecamatan is selected (pure API-driven)
   useEffect(() => {
@@ -439,26 +557,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         telemetryTick: liveTelemetryTick,
         liveDistanceKm: dist,
         distanceStr: `${dist} km`,
-        milestones: [
-          {
-            title: 'Persiapan Lahan & Perizinan Amdal',
-            date: 'Jan 2024',
-            status: 'completed',
-            note: 'Pembongkaran, perataan tanah dan instalasi utilitas dasar selesai 100%.',
-          },
-          {
-            title: 'Tahap 2: Konstruksi Fisik & Struktur',
-            date: 'Aktif (Saat Ini)',
-            status: 'current',
-            note: 'Pengecoran aspal/beton, penguatan pondasi & pemasangan drainase.',
-          },
-          {
-            title: 'Finishing & Serah Terima Hasil (PHO)',
-            date: p.estimasi_selesai || 'Okt 2024',
-            status: 'upcoming',
-            note: 'Uji kelayakan keselamatan, marka jalan & peresmian akses publik.',
-          },
-        ],
+        milestones: generateProjectMilestones(p),
       };
     });
   }, [liveProjects, userLocation.lat, userLocation.lng, liveTelemetryTick]);
@@ -522,12 +621,19 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     );
   }, [selectedDesaId]);
 
-  // Selected project object
+  // Selected project object (prioritas proyek yang di-klik user, fallback ke proyek terdekat dari user)
   const currentProject = useMemo(() => {
-    return (
-      enrichedProjects.find((p) => p.id === selectedProjectId) ||
-      enrichedProjects[0]
-    );
+    if (selectedProjectId) {
+      const found = enrichedProjects.find((p) => p.id === selectedProjectId);
+      if (found) return found;
+    }
+    if (enrichedProjects.length > 0) {
+      const sortedByProximity = [...enrichedProjects].sort(
+        (a, b) => (a.liveDistanceKm ?? 999) - (b.liveDistanceKm ?? 999)
+      );
+      return sortedByProximity[0] || enrichedProjects[0];
+    }
+    return enrichedProjects[0];
   }, [selectedProjectId, enrichedProjects]);
 
   // Nearby projects calculated by spatial distance (Haversine) from currentProject
@@ -1347,6 +1453,23 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
         {/* Right: AI Route & User */}
         <div className="flex items-center gap-2.5">
+          {/* Live Sync Real-time Pill */}
+          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold shadow-2xs">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+            </span>
+            <span>Live Sync • {lastSyncTime}</span>
+            <button
+              onClick={handleManualSync}
+              className={`p-0.5 text-emerald-700 hover:text-emerald-950 transition-transform cursor-pointer ${isSyncing ? 'animate-spin' : ''}`}
+              title="Sinkronisasi Live (Tanpa Refresh Halaman)"
+              aria-label="Sinkronisasi Live"
+            >
+              <RefreshCw className="w-3 h-3" />
+            </button>
+          </div>
+
           {/* Rute Alternatif AI Button */}
           <button
             onClick={() => onOpenAIRoute(currentProject?.nama_proyek || 'Pelebaran Jalan Veteran - Lamongan', currentProject)}

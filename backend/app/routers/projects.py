@@ -307,6 +307,14 @@ def create_project(
     # Kunci Akses Penanggung Jawab: otomatis generate PIN acak jika kosong
     kode_akses = req.kode_akses.strip() if req.kode_akses else generate_default_access_code()
 
+    # Validasi konsistensi status dan progres
+    initial_status = req.status
+    initial_progres = req.progres_persen
+    if initial_progres >= 100 and initial_status != ProyekStatus.selesai:
+        initial_status = ProyekStatus.selesai
+    elif initial_status == ProyekStatus.selesai and initial_progres < 100:
+        initial_progres = 100
+
     proyek = Proyek(
         nama_proyek=req.nama_proyek,
         kategori=req.kategori,
@@ -317,8 +325,8 @@ def create_project(
         desa_id=req.desa_id,
         dinas_id=req.dinas_id,
         anggaran=req.anggaran,
-        status=req.status,
-        progres_persen=req.progres_persen,
+        status=initial_status,
+        progres_persen=initial_progres,
         tanggal_mulai=req.tanggal_mulai,
         estimasi_selesai=req.estimasi_selesai,
         dibuat_oleh=current_user.id,
@@ -459,9 +467,11 @@ def update_project(
     for field, value in update_data.items():
         setattr(proyek, field, value)
 
-    # Jika progres mencapai 100%, update status menjadi selesai
-    if proyek.progres_persen == 100 and proyek.status != ProyekStatus.selesai:
+    # Jaminan konsistensi progres dan status proyek
+    if proyek.progres_persen >= 100 and proyek.status != ProyekStatus.selesai:
         proyek.status = ProyekStatus.selesai
+    elif proyek.status == ProyekStatus.selesai and proyek.progres_persen < 100:
+        proyek.progres_persen = 100
 
     db.commit()
     db.refresh(proyek)
@@ -531,10 +541,12 @@ def add_project_stage(
     )
     db.add(tahap)
 
-    # Sinkronkan persentase progres di proyek utama
+    # Sinkronkan persentase progres di proyek utama dengan jaminan konsistensi status
     proyek.progres_persen = req.progres_persen
-    if req.progres_persen == 100:
+    if req.progres_persen >= 100:
         proyek.status = ProyekStatus.selesai
+    elif proyek.status == ProyekStatus.selesai and req.progres_persen < 100:
+        proyek.status = ProyekStatus.berjalan
 
     db.commit()
     db.refresh(tahap)
@@ -549,4 +561,34 @@ def add_project_stage(
     )
 
     return tahap
+
+@router.delete("/{id}", status_code=status.HTTP_200_OK)
+def delete_project(
+    id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
+):
+    """
+    Hapus proyek pembangunan beserta seluruh data terkait (tahapan linimasa, dokumentasi, aduan, rating).
+    Hanya dapat dilakukan oleh Admin Dinas penanggung jawab atau Pimpinan Instansi.
+    """
+    proyek = db.query(Proyek).filter(Proyek.id == id).first()
+    if not proyek:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyek tidak ditemukan.")
+
+    if current_user.role == UserRole.admin_dinas and current_user.dinas_id and current_user.dinas_id != proyek.dinas_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Anda tidak memiliki wewenang untuk menghapus proyek milik dinas lain."
+        )
+
+    nama_proyek = proyek.nama_proyek
+    db.delete(proyek)
+    db.commit()
+
+    return {
+        "success": True,
+        "message": f"Proyek '{nama_proyek}' berhasil dihapus.",
+        "id": id
+    }
 

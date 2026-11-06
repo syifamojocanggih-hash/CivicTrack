@@ -5,6 +5,7 @@ from pydantic import BaseModel
 class StatusCount(BaseModel):
     berjalan: int = 0
     selesai: int = 0
+    ditangguhkan: int = 0
     tertunda: int = 0
     dalam_peninjauan_ulang: int = 0
 

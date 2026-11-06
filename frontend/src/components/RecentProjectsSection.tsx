@@ -1,4 +1,4 @@
-﻿import React from 'react';
+import React from 'react';
 import { MapPin, ArrowRight, FilterX } from 'lucide-react';
 import type { ProyekItem, ProyekKategori } from '../types';
 
@@ -33,15 +33,9 @@ export const RecentProjectsSection: React.FC<RecentProjectsSectionProps> = ({
             Selesai
           </span>
         );
-      case 'dalam_peninjauan_ulang':
-        return (
-          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap bg-amber-50 text-amber-800 border border-amber-300">
-            Peninjauan Ulang
-          </span>
-        );
       case 'ditangguhkan':
         return (
-          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap bg-[#F5F7FA] text-[#6C757D] border border-[#DCE0E6]">
+          <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full whitespace-nowrap bg-rose-50 text-rose-700 border border-rose-200">
             Ditangguhkan
           </span>
         );
@@ -54,17 +48,14 @@ export const RecentProjectsSection: React.FC<RecentProjectsSectionProps> = ({
         return <span className="w-2.5 h-2.5 rounded-full bg-[#E67E22] shrink-0" />;
       case 'selesai':
         return <span className="w-2.5 h-2.5 rounded-full bg-[#1A9E6E] shrink-0" />;
-      case 'dalam_peninjauan_ulang':
-        return <span className="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0" />;
       case 'ditangguhkan':
-        return <span className="w-2.5 h-2.5 rounded-full bg-[#adb5bd] shrink-0" />;
+        return <span className="w-2.5 h-2.5 rounded-full bg-rose-500 shrink-0" />;
     }
   };
 
   const getProgressBarColor = (status: ProyekItem['status']) => {
     if (status === 'selesai') return 'bg-[#1A9E6E]';
-    if (status === 'dalam_peninjauan_ulang') return 'bg-amber-500';
-    if (status === 'ditangguhkan') return 'bg-[#9BA5B0]';
+    if (status === 'ditangguhkan') return 'bg-rose-500';
     return 'bg-gradient-to-r from-[#2980B9] to-[#184C78]';
   };
 

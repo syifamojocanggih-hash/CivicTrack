@@ -78,7 +78,8 @@ const buildDefaultRoutes = (
   center: [number, number],
   projName = '',
   customOrigPt?: [number, number] | null,
-  customDestPt?: [number, number] | null
+  customDestPt?: [number, number] | null,
+  isCompleted = false
 ): RouteItem[] => {
   const origPt = customOrigPt || resolvePlaceCoords(orig, center, true);
   const destPt = customDestPt || resolvePlaceCoords(dest, center, false);
@@ -93,20 +94,26 @@ const buildDefaultRoutes = (
       id: 1,
       nama_rute: isMasjidAgungToNamira
         ? `${orig} ➔ Jl. Lamongrejo ➔ Jl. Sunan Drajat ➔ Jl. Raya Tikung ➔ ${dest}`
+        : isCompleted
+        ? `${orig} ➔ Jalur Utama Langsung (Proyek Rampung) ➔ ${dest}`
         : `${orig} ➔ Jalur Alternatif Tercepat ➔ ${dest}`,
       prioritas: 'utama',
       estimasi_jarak_km: isMasjidAgungToNamira ? 5.2 : 2.6,
       estimasi_waktu_menit: isMasjidAgungToNamira ? 16 : 8,
-      alasan_rekomendasi: isMasjidAgungToNamira
+      alasan_rekomendasi: isCompleted
+        ? 'Rute utama melintasi proyek yang telah rampung 100%. Jalur telah dibuka normal, beraspal mulus, dan lancar dilalui tanpa hambatan penutupan jalan.'
+        : isMasjidAgungToNamira
         ? 'Rute arteri perkotaan utama paling mulus, beraspal lebar, dan sepenuhnya bebas dari penutupan proyek.'
         : 'Rute alternatif arteri perkotaan menghindari jalan ditutup, menggunakan jalur kota yang aman untuk seluruh jenis kendaraan.',
       vehicle_type: 'Semua Kendaraan (Mobil, Bus, Truk, Motor)',
       waypoints: isMasjidAgungToNamira
         ? [orig, 'Jl. Lamongrejo', 'Jl. Sunan Drajat', 'Jl. Raya Tikung', dest]
+        : isCompleted
+        ? [orig, 'Jalur Utama (Selesai 100%)', dest]
         : [orig, 'Jalur Alternatif Tercepat', dest],
       coordinates: generateCleanDetourPath(origPt, destPt, center, 0),
       geografis_terverifikasi: true,
-      petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 0, origPt, destPt, center),
+      petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 0, origPt, destPt, center, isCompleted),
     },
     {
       id: 2,
@@ -118,6 +125,8 @@ const buildDefaultRoutes = (
       estimasi_waktu_menit: isMasjidAgungToNamira ? 18 : 10,
       alasan_rekomendasi: isMasjidAgungToNamira
         ? 'Jalur lingkar timur alternatif pengurai kepadatan lampu merah pusat kota.'
+        : isCompleted
+        ? 'Jalur lingkar sekunder sebagai opsi alternatif lalu lintas dengan kapasitas jalan optimal.'
         : 'Jalur alternatif sekunder pengurai kepadatan jalan utama, cocok untuk roda empat dan mobilitas harian.',
       vehicle_type: 'Mobil Pribadi & Angkutan Ringan',
       waypoints: isMasjidAgungToNamira
@@ -125,7 +134,7 @@ const buildDefaultRoutes = (
         : [orig, 'Jalur Alternatif Sekunder', dest],
       coordinates: generateCleanDetourPath(origPt, destPt, center, 1),
       geografis_terverifikasi: true,
-      petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 1, origPt, destPt, center),
+      petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 1, origPt, destPt, center, isCompleted),
     },
     {
       id: 3,
@@ -137,6 +146,8 @@ const buildDefaultRoutes = (
       estimasi_waktu_menit: isMasjidAgungToNamira ? 10 : 3,
       alasan_rekomendasi: isMasjidAgungToNamira
         ? 'Akses pemukiman terpendek beraspal/paving halus, dikhususkan untuk sepeda motor.'
+        : isCompleted
+        ? 'Akses pemukiman terdekat beraspal/paving halus, optimal khusus untuk sepeda motor dan mobilitas warga lokal.'
         : 'Jalur tembus lingkungan terdekat, optimal dan gesit khusus untuk sepeda motor dan warga lokal.',
       vehicle_type: 'Khusus Sepeda Motor & Roda Dua',
       waypoints: isMasjidAgungToNamira
@@ -144,7 +155,7 @@ const buildDefaultRoutes = (
         : [orig, 'Pintas Alternatif Lingkungan', dest],
       coordinates: generateCleanDetourPath(origPt, destPt, center, 2),
       geografis_terverifikasi: true,
-      petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 2, origPt, destPt, center),
+      petunjuk_langkah: generateNavigationSteps(orig, dest, projName, 2, origPt, destPt, center, isCompleted),
     },
   ];
 };
@@ -169,6 +180,20 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     }
   }, [isOpen, project, projectName, allProjects]);
 
+  const currentProj = activeProject || project;
+  const currentName = activeProjectName || projectName || currentProj?.nama_proyek || 'Area Konstruksi Lamongan';
+
+  // Evaluasi cerdas status proyek: jika progres >= 100% atau status 'selesai', jalan dinyatakan DIBUKA normal (bukan ditutup)
+  const isProjectCompleted = useMemo(() => {
+    if (!currentProj) return false;
+    const isStatusSelesai = currentProj.status === 'selesai';
+    const is100Percent = Number(currentProj.progres_persen) >= 100;
+    const isFisik100 =
+      (currentProj as any).progress_fisik !== undefined &&
+      Number((currentProj as any).progress_fisik) >= 100;
+    return isStatusSelesai || is100Percent || isFisik100;
+  }, [currentProj]);
+
   // Daftar seluruh proyek pemerintah yang sedang berjalan (belum selesai / progres < 100%)
   const ongoingProjects = useMemo(() => {
     if (!allProjects || allProjects.length === 0) {
@@ -182,8 +207,13 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     return list;
   }, [allProjects, activeProject]);
 
-  const currentProj = activeProject || project;
-  const currentName = activeProjectName || projectName || currentProj?.nama_proyek || 'Area Konstruksi Lamongan';
+  // Daftar komprehensif seluruh proyek untuk switcher (memungkinkan memilih proyek aktif maupun selesai)
+  const selectableProjects = useMemo(() => {
+    if (!allProjects || allProjects.length === 0) {
+      return currentProj ? [currentProj] : [];
+    }
+    return allProjects;
+  }, [allProjects, currentProj]);
 
   const projectLat = currentProj?.latitude ? Number(currentProj.latitude) : -7.1205;
   const projectLng = currentProj?.longitude ? Number(currentProj.longitude) : 112.4155;
@@ -246,7 +276,9 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
   const dStartProj = originCoords ? getDistanceMeters(originCoords, projectCoords) : 0;
   const dEndProj = destCoords ? getDistanceMeters(destCoords, projectCoords) : 0;
-  const isRouteCrossingClosure = (originCoords && dStartProj < 4000) || (destCoords && dEndProj < 4000);
+  // Jika proyek telah selesai 100%, jalan sudah dibuka sehingga rute tidak dianggap melintasi penutupan jalan
+  const isRouteCrossingClosure =
+    !isProjectCompleted && ((originCoords && dStartProj < 4000) || (destCoords && dEndProj < 4000));
 
   // State rute rekomendasi (kosong saat titik awal belum ditentukan)
   const [routes, setRoutes] = useState<RouteItem[]>([]);
@@ -337,12 +369,13 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       origin,
       destination,
       projectCoords,
-      projectName,
+      currentName,
       customOriginCoords,
-      customDestCoords
+      customDestCoords,
+      isProjectCompleted
     );
     setRoutes(newRoutes);
-  }, [origin, destination, customOriginCoords, customDestCoords, projectLat, projectLng, projectName]);
+  }, [origin, destination, customOriginCoords, customDestCoords, projectLat, projectLng, currentName, isProjectCompleted]);
 
   // Pengambilan rute jalan riil dari OpenStreetMap (OSRM) secara asinkron
   // Menjamin polylines 100% menempel pada jaringan jalan resmi, tanpa garis potong kompas
@@ -390,16 +423,16 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
         const evaluated: EvaluatedRoute[] = [];
 
-        // Evaluasi rute langsung dengan radius penutupan proyek yang relevan per moda
+        // Evaluasi rute langsung: jika proyek selesai 100%, jalan dibuka normal sehingga direct route TIDAK dianggap memotong penutupan
         const directCrosses =
-          directRes && directRes.coordinates && directRes.coordinates.length > 0
+          !isProjectCompleted && directRes && directRes.coordinates && directRes.coordinates.length > 0
             ? doesRouteIntersectClosure(directRes.coordinates, projectCoords, checkRadius)
             : false;
 
-        // PENTING: Rute langsung HANYA boleh dimasukkan jika 100% AMAN (TIDAK memotong jalan ditutup)
+        // Rute langsung dimasukkan jika aman atau proyek telah 100% rampung
         if (directRes && directRes.coordinates && directRes.coordinates.length > 0 && !directCrosses) {
           evaluated.push({
-            label: 'Rute Langsung Bebas Penutupan',
+            label: isProjectCompleted ? 'Rute Langsung via Proyek Selesai' : 'Rute Langsung Bebas Penutupan',
             osrmRes: directRes,
             crosses: false,
             profile: primaryProfile,
@@ -409,7 +442,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         // Evaluasi semua kandidat alternatif detour
         for (const item of candResults) {
           if (item.res && item.res.coordinates && item.res.coordinates.length > 0) {
-            const crosses = doesRouteIntersectClosure(item.res.coordinates, projectCoords, checkRadius);
+            const crosses = !isProjectCompleted ? doesRouteIntersectClosure(item.res.coordinates, projectCoords, checkRadius) : false;
             evaluated.push({
               label: item.label,
               osrmRes: item.res,
@@ -535,21 +568,35 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
               customName = idx === 0
                 ? `${origin} ➔ Pintas ${primaryRoad} (Jalan Tikus) ➔ ${destination}`
                 : `${origin} ➔ ${primaryRoad} ➔ ${destination}`;
-              dynamicReason = idx === 0
-                ? `Jalan tikus lingkungan tercepat via ${primaryRoad}. Menembus langsung lewat gang beraspal/paving mulus tanpa harus memutar ke jalan raya utama pantura.`
-                : idx === 1
-                ? `Jalan alternatif pemukiman via ${primaryRoad}. Pengurai kepadatan lalu lintas, gesit dan aman untuk roda dua.`
-                : `Akses pintas lingkungan warga via ${primaryRoad}. Bebas kemacetan, optimal khusus sepeda motor.`;
+              dynamicReason = isProjectCompleted
+                ? (idx === 0
+                  ? `Jalur utama langsung via ${primaryRoad}. Proyek telah selesai dikerjakan 100%, beraspal halus dan lancar dilalui tanpa hambatan.`
+                  : idx === 1
+                  ? `Jalan alternatif pemukiman via ${primaryRoad}. Pengurai kepadatan lalu lintas, gesit dan aman untuk roda dua.`
+                  : `Akses pintas lingkungan warga via ${primaryRoad}. Bebas kemacetan, optimal khusus sepeda motor.`)
+                : (idx === 0
+                  ? `Jalan tikus lingkungan tercepat via ${primaryRoad}. Menembus langsung lewat gang beraspal/paving mulus tanpa harus memutar ke jalan raya utama pantura.`
+                  : idx === 1
+                  ? `Jalan alternatif pemukiman via ${primaryRoad}. Pengurai kepadatan lalu lintas, gesit dan aman untuk roda dua.`
+                  : `Akses pintas lingkungan warga via ${primaryRoad}. Bebas kemacetan, optimal khusus sepeda motor.`);
             } else if (travelMode === 'walking') {
               customName = `${origin} ➔ Trotoar & Gang ${primaryRoad} ➔ ${destination}`;
-              dynamicReason = `Jalur pejalan kaki terdekat via ${primaryRoad}. Melintasi trotoar & gang pemukiman yang aman, teduh, dan ramah pejalan kaki.`;
+              dynamicReason = isProjectCompleted
+                ? `Jalur pejalan kaki via ${primaryRoad}. Trotoar dan badan jalan telah rampung 100%, nyaman dan aman bagi pejalan kaki.`
+                : `Jalur pejalan kaki terdekat via ${primaryRoad}. Melintasi trotoar & gang pemukiman yang aman, teduh, dan ramah pejalan kaki.`;
             } else {
               customName = `${origin} ➔ ${primaryRoad} ➔ ${destination}`;
-              dynamicReason = idx === 0
-                ? `Jalur alternatif tercepat via ${primaryRoad}. 100% bebas dari blokade jalan, memotong waktu tempuh untuk mobil & motor.`
-                : idx === 1
-                ? `Jalur alternatif sekunder via ${primaryRoad}. Pengurai kepadatan jalur tengah kota, jalan lebar beraspal halus.`
-                : `Jalur pintas alternatif lingkungan via ${primaryRoad}. Akses terpendek dan gesit khusus sepeda motor & warga lokal.`;
+              dynamicReason = isProjectCompleted
+                ? (idx === 0
+                  ? `Jalur utama tercepat via ${primaryRoad}. Proyek telah rampung 100% dan jalan dibuka normal untuk umum, aspal mulus dan bebas penutupan jalan.`
+                  : idx === 1
+                  ? `Jalur alternatif sekunder via ${primaryRoad}. Pengurai kepadatan jalur tengah kota, jalan lebar beraspal halus.`
+                  : `Jalur pintas alternatif lingkungan via ${primaryRoad}. Akses terpendek dan gesit khusus kendaraan lokal.`)
+                : (idx === 0
+                  ? `Jalur alternatif tercepat via ${primaryRoad}. 100% bebas dari blokade jalan, memotong waktu tempuh untuk mobil & motor.`
+                  : idx === 1
+                  ? `Jalur alternatif sekunder via ${primaryRoad}. Pengurai kepadatan jalur tengah kota, jalan lebar beraspal halus.`
+                  : `Jalur pintas alternatif lingkungan via ${primaryRoad}. Akses terpendek dan gesit khusus sepeda motor & warga lokal.`);
             }
 
             return {
@@ -583,7 +630,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, [originCoords, destCoords, projectCoords, origin, destination, travelMode]);
+  }, [originCoords, destCoords, projectCoords, origin, destination, travelMode, isProjectCompleted]);
 
   // Otomatis tutup banner notifikasi setelah beberapa detik
   useEffect(() => {
@@ -694,7 +741,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       setIsAnalyzing(true);
 
       try {
-        const projectId = project?.id || 1;
+        const projectId = currentProj?.id || project?.id || 1;
 
         // 1. Coba baca rute yang sudah tersimpan di database HANYA jika bukan titik kustom pilihan pengguna
         const isCustomEndpoints = Boolean(
@@ -727,7 +774,9 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            catatan_penutupan: `Rute dari ${activeOrigin} menuju ${activeDest} melintasi proyek ${projectName || 'Pelebaran Jalan'}`,
+            catatan_penutupan: isProjectCompleted
+              ? `Rute dari ${activeOrigin} menuju ${activeDest} melintasi proyek ${currentName} (Status: Rampung 100%, akses jalan dibuka normal)`
+              : `Rute dari ${activeOrigin} menuju ${activeDest} melintasi proyek ${currentName}`,
             origin_lat: activeOrigPt ? activeOrigPt[0] : undefined,
             origin_lng: activeOrigPt ? activeOrigPt[1] : undefined,
             dest_lat: activeDestPt ? activeDestPt[0] : undefined,
@@ -749,11 +798,11 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         }
 
         // Fallback contextual routes jika backend belum memiliki rute tersimpan
-        setRoutes(buildDefaultRoutes(activeOrigin, activeDest, projectCoords, projectName, activeOrigPt, activeDestPt));
+        setRoutes(buildDefaultRoutes(activeOrigin, activeDest, projectCoords, currentName, activeOrigPt, activeDestPt, isProjectCompleted));
       } catch (err) {
         if (reqId === currentRequestIdRef.current) {
           console.warn('Gagal memuat rute alternatif dari backend:', err);
-          setRoutes(buildDefaultRoutes(activeOrigin, activeDest, projectCoords, projectName, activeOrigPt, activeDestPt));
+          setRoutes(buildDefaultRoutes(activeOrigin, activeDest, projectCoords, currentName, activeOrigPt, activeDestPt, isProjectCompleted));
         }
       } finally {
         if (reqId === currentRequestIdRef.current) {
@@ -761,7 +810,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         }
       }
     },
-    [origin, destination, projectName, project?.id, projectCoords, customOriginCoords, customDestCoords, routeCtx]
+    [origin, destination, currentName, currentProj?.id, projectCoords, customOriginCoords, customDestCoords, routeCtx, isProjectCompleted]
   );
 
   // Handler untuk beralih fokus ke proyek konstruksi lain
@@ -791,7 +840,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     setCustomDestCoords(null);
     setPickingMode(null);
     setPickingNotice(null);
-    setRoutes(buildDefaultRoutes(newOrigin, newDest, projectCoords, currentName, null, null));
+    setRoutes(buildDefaultRoutes(newOrigin, newDest, projectCoords, currentName, null, null, isProjectCompleted));
     fetchLiveRoutes(true, newOrigin, newDest, null, null);
   };
 
@@ -933,51 +982,109 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
     layerGroup.clearLayers();
 
-    // 1. Zona Penutupan Proyek Fisik (Penting: Ditampilkan jelas dengan radius adaptif sesuai moda)
+    // 1. Indikator Status Proyek (Zona Penutupan jika belum selesai, atau Jalur Dibuka jika sudah selesai 100%)
     const visualRadius = travelMode === 'walking' ? 120 : travelMode === 'motorcycle' ? 190 : 260;
-    const closureCircle = L.circle(projectCoords, {
-      radius: visualRadius,
-      color: '#DC2626',
-      fillColor: '#EF4444',
-      fillOpacity: 0.28,
-      weight: 3,
-      dashArray: '6, 6',
-    }).addTo(layerGroup);
 
-    closureCircle.bindTooltip(
-      `<div class="text-xs font-bold text-rose-700 p-1">
-        🚧 Zona Penutupan Proyek Utama (${currentName})
-      </div>`,
-      { sticky: true }
-    );
+    if (isProjectCompleted) {
+      // PROYEK SELESAI (100%): Tampilkan status JALUR DIBUKA (Hijau Emerald)
+      const openCircle = L.circle(projectCoords, {
+        radius: visualRadius,
+        color: '#059669',
+        fillColor: '#10B981',
+        fillOpacity: 0.18,
+        weight: 2,
+      }).addTo(layerGroup);
 
-    const barrierIcon = L.divIcon({
-      className: 'project-barrier-icon',
-      html: `
-        <div class="relative flex items-center justify-center w-10 h-10 -ml-5 -mt-5 cursor-pointer">
-          <span class="absolute w-12 h-12 bg-rose-500/35 rounded-full animate-ping"></span>
-          <div class="w-9 h-9 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-base shadow-2xl border-2 border-white ring-2 ring-rose-400">
-            🚧
+      openCircle.bindTooltip(
+        `<div class="text-xs font-bold text-emerald-800 p-1">
+          🛣️ Proyek Selesai 100% • Akses Jalan Dibuka Normal (${currentName})
+        </div>`,
+        { sticky: true }
+      );
+
+      const openIcon = L.divIcon({
+        className: 'project-open-icon',
+        html: `
+          <div class="relative flex items-center justify-center w-10 h-10 -ml-5 -mt-5 cursor-pointer">
+            <span class="absolute w-12 h-12 bg-emerald-500/25 rounded-full animate-pulse"></span>
+            <div class="w-9 h-9 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-base shadow-2xl border-2 border-white ring-2 ring-emerald-400">
+              🛣️
+            </div>
+            <div class="absolute -bottom-6 bg-slate-900 text-emerald-300 text-[9px] font-black px-2 py-0.5 rounded-md shadow whitespace-nowrap border border-emerald-400/40">
+              JALUR DIBUKA (SELESAI 100%)
+            </div>
           </div>
-          <div class="absolute -bottom-6 bg-slate-900 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow whitespace-nowrap border border-white/20">
-            JALAN DITUTUP
-          </div>
-        </div>
-      `,
-      iconSize: [0, 0],
-    });
-    L.marker(projectCoords, { icon: barrierIcon })
-      .bindTooltip(`<div class="text-xs font-bold text-rose-800">🚧 Proyek Utama: ${currentName}</div>`)
-      .addTo(layerGroup);
+        `,
+        iconSize: [0, 0],
+      });
+      L.marker(projectCoords, { icon: openIcon })
+        .bindTooltip(
+          `<div class="text-xs font-bold text-emerald-800">
+            ✓ Proyek Selesai 100%: ${currentName}
+            <div class="text-[10px] text-slate-500 font-normal mt-0.5">Akses jalan dibuka normal untuk semua kendaraan</div>
+          </div>`
+        )
+        .addTo(layerGroup);
+    } else {
+      // PROYEK BELUM SELESAI (< 100%): Tampilkan JALAN DITUTUP (Merah)
+      const closureCircle = L.circle(projectCoords, {
+        radius: visualRadius,
+        color: '#DC2626',
+        fillColor: '#EF4444',
+        fillOpacity: 0.28,
+        weight: 3,
+        dashArray: '6, 6',
+      }).addTo(layerGroup);
 
-    // 1b. Render Seluruh Proyek Konstruksi yang Belum Selesai Lainnya di Peta
-    const otherProjects = ongoingProjects.filter(
+      closureCircle.bindTooltip(
+        `<div class="text-xs font-bold text-rose-700 p-1">
+          🚧 Zona Penutupan Proyek Utama (${currentName})
+        </div>`,
+        { sticky: true }
+      );
+
+      const barrierIcon = L.divIcon({
+        className: 'project-barrier-icon',
+        html: `
+          <div class="relative flex items-center justify-center w-10 h-10 -ml-5 -mt-5 cursor-pointer">
+            <span class="absolute w-12 h-12 bg-rose-500/35 rounded-full animate-ping"></span>
+            <div class="w-9 h-9 rounded-full bg-rose-600 text-white flex items-center justify-center font-bold text-base shadow-2xl border-2 border-white ring-2 ring-rose-400">
+              🚧
+            </div>
+            <div class="absolute -bottom-6 bg-slate-900 text-white text-[9px] font-black px-2 py-0.5 rounded-md shadow whitespace-nowrap border border-white/20">
+              JALAN DITUTUP
+            </div>
+          </div>
+        `,
+        iconSize: [0, 0],
+      });
+      L.marker(projectCoords, { icon: barrierIcon })
+        .bindTooltip(
+          `<div class="text-xs font-bold text-rose-800">
+            🚧 Proyek Utama: ${currentName} (${currentProj?.progres_persen ?? 0}% • Belum Selesai)
+          </div>`
+        )
+        .addTo(layerGroup);
+    }
+
+    // 1b. Render Seluruh Proyek Lainnya di Peta (Diferensiasi Selesai 100% vs Berjalan)
+    const otherProjectsList = (allProjects && allProjects.length > 0 ? allProjects : ongoingProjects).filter(
       (p) => p.id !== currentProj?.id && p.latitude && p.longitude
     );
-    otherProjects.forEach((p) => {
+    otherProjectsList.forEach((p) => {
+      const isOtherFinished = p.status === 'selesai' || Number(p.progres_persen) >= 100;
       const otherProjIcon = L.divIcon({
         className: 'other-project-marker',
-        html: `
+        html: isOtherFinished ? `
+          <div class="relative flex flex-col items-center justify-center cursor-pointer group hover:scale-120 transition-transform">
+            <div class="w-7 h-7 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-xs shadow-md border-2 border-white ring-2 ring-emerald-300">
+              ✓
+            </div>
+            <div class="absolute -bottom-5 bg-slate-900/90 text-emerald-300 text-[8px] font-bold px-1.5 py-0.2 rounded shadow whitespace-nowrap border border-emerald-400/30">
+              100% • Selesai
+            </div>
+          </div>
+        ` : `
           <div class="relative flex flex-col items-center justify-center cursor-pointer group hover:scale-120 transition-transform">
             <span class="absolute -inset-1 rounded-full bg-amber-400/25 animate-ping"></span>
             <div class="w-8 h-8 rounded-full bg-amber-500 text-white flex items-center justify-center font-bold text-xs shadow-lg border-2 border-white ring-2 ring-amber-300">
@@ -994,13 +1101,13 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       const otherMarker = L.marker([Number(p.latitude), Number(p.longitude)], { icon: otherProjIcon })
         .bindTooltip(
           `<div class="p-1.5 font-heading text-xs">
-            <div class="flex items-center gap-1 text-amber-800 font-bold mb-0.5">
-              <span>🚧</span>
-              <span>Proyek Sedang Berjalan:</span>
+            <div class="flex items-center gap-1 ${isOtherFinished ? 'text-emerald-800' : 'text-amber-800'} font-bold mb-0.5">
+              <span>${isOtherFinished ? '✓' : '🚧'}</span>
+              <span>${isOtherFinished ? 'Proyek Selesai (Jalur Dibuka):' : 'Proyek Sedang Berjalan:'}</span>
             </div>
             <strong class="text-slate-900 text-xs block leading-tight mb-1">${p.nama_proyek}</strong>
             <div class="flex items-center justify-between text-[10px] text-slate-600 border-t border-slate-100 pt-1">
-              <span>Progres: <b class="text-amber-700">${p.progres_persen}%</b></span>
+              <span>Progres: <b class="${isOtherFinished ? 'text-emerald-700' : 'text-amber-700'}">${p.progres_persen}%</b></span>
               <span class="text-slate-500">${p.nama_wilayah?.split(',')[0] || 'Lamongan'}</span>
             </div>
             <div class="text-[9.5px] text-blue-600 font-bold mt-1 bg-blue-50 px-1.5 py-0.5 rounded text-center">
@@ -1180,7 +1287,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     } else {
       map.setView(projectCoords, 14);
     }
-  }, [routes, selectedRouteIndex, isOpen, projectCoords, projectName, origin, destination, originCoords, destCoords, travelMode]);
+  }, [routes, selectedRouteIndex, isOpen, projectCoords, projectName, currentName, currentProj, origin, destination, originCoords, destCoords, travelMode, isProjectCompleted, allProjects, ongoingProjects]);
 
   // Simulasi Navigasi Animasi Kendaraan Berjalan
   const handleStartSimulation = () => {
@@ -1306,36 +1413,51 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
               Visualisasi &amp; Generator Rute Alternatif Cerdas
             </h2>
             <p className="text-xs text-white/80 mt-1 max-w-2xl leading-relaxed">
-              Menyajikan pengalihan arus lalu lintas terstruktur dengan pemetaan visual langsung pada jaringan jalan Kab. Lamongan untuk proyek: <strong className="text-white underline decoration-amber-400 underline-offset-2">{currentName}</strong>
+              {isProjectCompleted ? (
+                <>
+                  Menampilkan panduan rute navigasi optimal melintasi proyek infrastruktur yang <strong className="text-emerald-300">telah rampung (100% Selesai)</strong>: <strong className="text-white underline decoration-emerald-400 underline-offset-2">{currentName}</strong>. Akses jalan telah dibuka normal untuk umum.
+                </>
+              ) : (
+                <>
+                  Menyajikan pengalihan arus lalu lintas terstruktur dengan pemetaan visual langsung pada jaringan jalan Kab. Lamongan untuk proyek: <strong className="text-white underline decoration-amber-400 underline-offset-2">{currentName}</strong>
+                </>
+              )}
             </p>
 
-            {/* Interactive Project Switcher (Sinkronisasi Seluruh Proyek Belum Selesai) */}
+            {/* Interactive Project Switcher (Sinkronisasi Seluruh Proyek Aktif & Selesai) */}
             <div className="flex flex-wrap items-center gap-2 mt-2.5 pt-2.5 border-t border-white/10">
-              <span className="text-[11px] font-bold text-amber-300 flex items-center gap-1 shrink-0">
-                <span>🚧</span>
-                <span>Fokus Proyek Pengalihan:</span>
+              <span className={`text-[11px] font-bold flex items-center gap-1 shrink-0 ${isProjectCompleted ? 'text-emerald-300' : 'text-amber-300'}`}>
+                <span>{isProjectCompleted ? '🛣️' : '🚧'}</span>
+                <span>{isProjectCompleted ? 'Fokus Proyek (Selesai):' : 'Fokus Proyek Pengalihan:'}</span>
               </span>
               <div className="relative inline-flex items-center">
                 <select
                   value={currentProj?.id || ''}
                   onChange={(e) => {
                     const selectedId = Number(e.target.value);
-                    const found = ongoingProjects.find((p) => p.id === selectedId);
+                    const found = selectableProjects.find((p) => p.id === selectedId);
                     if (found) handleSelectProject(found);
                   }}
                   className="bg-white/15 hover:bg-white/25 text-white border border-white/30 rounded-xl px-3 py-1 text-xs font-bold outline-none cursor-pointer backdrop-blur-md transition-colors pr-7 appearance-none max-w-[280px] sm:max-w-[420px] truncate"
                   aria-label="Pilih Proyek Konstruksi Pemerintah"
                 >
-                  {ongoingProjects.map((p) => (
-                    <option key={p.id} value={p.id} className="text-slate-900 bg-white font-medium">
-                      {p.nama_proyek} ({p.progres_persen}% • {p.nama_wilayah?.split(',')[0] || 'Lamongan'})
-                    </option>
-                  ))}
+                  {selectableProjects.map((p) => {
+                    const isFin = p.status === 'selesai' || Number(p.progres_persen) >= 100;
+                    return (
+                      <option key={p.id} value={p.id} className="text-slate-900 bg-white font-medium">
+                        {isFin ? '✅ [Selesai 100%]' : `🚧 [Progres ${p.progres_persen}%]`} {p.nama_proyek} ({p.nama_wilayah?.split(',')[0] || 'Lamongan'})
+                      </option>
+                    );
+                  })}
                 </select>
                 <ChevronDown className="w-3.5 h-3.5 text-white/70 absolute right-2 pointer-events-none" />
               </div>
-              <span className="text-[10px] text-emerald-200 bg-emerald-500/20 border border-emerald-300/30 px-2 py-0.5 rounded-full font-bold">
-                ✓ {ongoingProjects.length} Proyek Konstruksi Aktif di Peta
+              <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${
+                isProjectCompleted
+                  ? 'text-emerald-200 bg-emerald-500/25 border-emerald-300/40'
+                  : 'text-amber-200 bg-amber-500/25 border-amber-300/40'
+              }`}>
+                {isProjectCompleted ? '✓ Jalan Dibuka Normal (Selesai 100%)' : `🚧 ${ongoingProjects.length} Proyek Konstruksi Aktif`}
               </span>
             </div>
           </div>
@@ -1485,11 +1607,17 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                 </button>
                 <button
                   onClick={handleFocusProject}
-                  className="px-2.5 py-1.5 bg-white/95 hover:bg-white text-rose-700 text-xs font-bold rounded-xl shadow-lg border border-slate-200 flex items-center gap-1 transition-all cursor-pointer"
-                  title="Zoom langsung ke titik proyek yang ditutup"
+                  className={`px-2.5 py-1.5 bg-white/95 hover:bg-white ${
+                    isProjectCompleted ? 'text-emerald-700' : 'text-rose-700'
+                  } text-xs font-bold rounded-xl shadow-lg border border-slate-200 flex items-center gap-1 transition-all cursor-pointer`}
+                  title={isProjectCompleted ? "Zoom langsung ke lokasi proyek yang telah selesai" : "Zoom langsung ke titik proyek yang ditutup"}
                 >
-                  <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
-                  <span className="hidden sm:inline">Zona Proyek</span>
+                  {isProjectCompleted ? (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                  ) : (
+                    <AlertTriangle className="w-3.5 h-3.5 text-rose-600" />
+                  )}
+                  <span className="hidden sm:inline">{isProjectCompleted ? 'Lokasi Proyek' : 'Zona Proyek'}</span>
                 </button>
                 {!isSimulating ? (
                   <button
@@ -1515,8 +1643,8 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
             {/* Floating Bottom: Legend Peta (Kompak di sisi kiri tanpa menabrak kontrol zoom Leaflet) */}
             <div className="absolute bottom-3 left-3 z-[400] bg-white/95 backdrop-blur-md px-3 py-2 rounded-2xl shadow-xl border border-slate-200/90 flex flex-wrap items-center gap-2.5 text-[11px] font-semibold text-slate-700 max-w-[calc(100%-80px)] pointer-events-auto">
               <div className="flex items-center gap-1.5">
-                <span className="w-3 h-3 rounded-full bg-rose-600 border border-white shadow-xs"></span>
-                <span className="text-slate-800 font-bold">Area Ditutup</span>
+                <span className={`w-3 h-3 rounded-full ${isProjectCompleted ? 'bg-emerald-600' : 'bg-rose-600'} border border-white shadow-xs`}></span>
+                <span className="text-slate-800 font-bold">{isProjectCompleted ? 'Jalur Dibuka (Selesai)' : 'Area Ditutup'}</span>
               </div>
               <div className="flex items-center gap-1.5">
                 <span className="w-3.5 h-1.5 rounded-full bg-emerald-600"></span>
@@ -2027,18 +2155,25 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                         </div>
 
                         {/* Banner status apakah rute memotong area proyek atau bebas hambatan */}
-                        {isRouteCrossingClosure ? (
+                        {isProjectCompleted ? (
+                          <div className="mb-2 p-2 bg-emerald-50/90 border border-emerald-300 rounded-xl flex items-start gap-1.5 text-[10px] text-emerald-900 leading-snug">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
+                            <span>
+                              <strong>Proyek Telah Selesai (100%):</strong> Jalur pada <strong>{currentName}</strong> telah rampung dan dibuka normal untuk seluruh kendaraan tanpa penutupan jalan.
+                            </span>
+                          </div>
+                        ) : isRouteCrossingClosure ? (
                           <div className="mb-2 p-2 bg-amber-50/90 border border-amber-300 rounded-xl flex items-start gap-1.5 text-[10px] text-amber-900 leading-snug">
                             <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0 mt-0.5" />
                             <span>
-                              <strong>Rekayasa Pengalihan:</strong> Rute ini disesuaikan untuk membelok mengitari zona tertutup proyek <strong>{projectName || 'Pekerjaan Fisik'}</strong>.
+                              <strong>Rekayasa Pengalihan:</strong> Rute ini disesuaikan untuk membelok mengitari zona tertutup proyek <strong>{currentName}</strong> ({currentProj?.progres_persen ?? 0}% belum selesai).
                             </span>
                           </div>
                         ) : (
                           <div className="mb-2 p-2 bg-emerald-50/90 border border-emerald-300 rounded-xl flex items-start gap-1.5 text-[10px] text-emerald-900 leading-snug">
                             <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0 mt-0.5" />
                             <span>
-                              <strong>Jalur Lancar & Bebas Proyek:</strong> Perjalanan dari <strong>{origin}</strong> ke <strong>{destination}</strong> tidak melintasi penutupan proyek <strong>{projectName || 'Pekerjaan Fisik'}</strong>.
+                              <strong>Jalur Lancar &amp; Bebas Proyek:</strong> Perjalanan dari <strong>{origin}</strong> ke <strong>{destination}</strong> tidak melintasi penutupan proyek <strong>{currentName}</strong>.
                             </span>
                           </div>
                         )}

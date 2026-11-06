@@ -18,8 +18,13 @@ class ProyekKategori(str, enum.Enum):
 class ProyekStatus(str, enum.Enum):
     berjalan = "berjalan"
     selesai = "selesai"
-    tertunda = "tertunda"
-    dalam_peninjauan_ulang = "dalam_peninjauan_ulang"
+    ditangguhkan = "ditangguhkan"
+
+    @classmethod
+    def _missing_(cls, value):
+        if value in ("dalam_peninjauan_ulang", "tertunda", "pending", "review"):
+            return cls.ditangguhkan
+        return super()._missing_(value)
 
 class MediaType(str, enum.Enum):
     foto = "foto"
