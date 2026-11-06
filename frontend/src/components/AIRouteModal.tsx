@@ -18,7 +18,6 @@ import {
   Play,
   RotateCcw,
   CheckCircle2,
-  Globe,
   Radio,
   LocateFixed,
   AlertTriangle,
@@ -1302,20 +1301,6 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
             >
               <X className="w-5 h-5" />
             </button>
-
-            <div className="flex flex-wrap items-center gap-1.5 sm:gap-2 mb-2 pr-8 sm:pr-0">
-              <span className="inline-flex items-center gap-1.5 bg-amber-400/20 text-amber-300 border border-amber-400/30 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold backdrop-blur-xs">
-                <Sparkles className="w-3.5 h-3.5 text-amber-300 animate-pulse" />
-                Groq AI Route Engine
-              </span>
-              <span className="inline-flex items-center gap-1.5 bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 px-2.5 sm:px-3 py-0.5 sm:py-1 rounded-full text-[11px] sm:text-xs font-semibold backdrop-blur-xs">
-                <Globe className="w-3.5 h-3.5 text-emerald-300" />
-                OpenStreetMap Overpass Geometry
-              </span>
-              <span className="bg-white/10 text-white/90 px-2.5 py-0.5 rounded-full text-[10px] sm:text-[11px] font-medium border border-white/15">
-                Simulasi Mitigasi Rekayasa Lalu Lintas
-              </span>
-            </div>
 
             <h2 id="modal-ai-route-title" className="font-heading text-lg sm:text-2xl font-bold tracking-tight pr-8 sm:pr-0">
               Visualisasi &amp; Generator Rute Alternatif Cerdas

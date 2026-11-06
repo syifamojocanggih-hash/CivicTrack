@@ -251,12 +251,9 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   });
 
   // Real-time telemetry state
-  const [lastSyncTime, setLastSyncTime] = useState<string>('Baru saja');
-  const [isSyncing, setIsSyncing] = useState<boolean>(false);
   const [liveTelemetryTick, setLiveTelemetryTick] = useState<number>(0);
   const [activeLayer, setActiveLayer] = useState<'standard' | 'satellite'>('standard');
   const [liveProjects, setLiveProjects] = useState<ProyekItem[]>(projects);
-  const [isBackendConnected, setIsBackendConnected] = useState<boolean>(false);
 
   // Sync projects from backend on mount or fall back to 27 comprehensive projects
   useEffect(() => {
@@ -265,7 +262,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         const existingIds = new Set(res.projects.map((p) => p.id));
         const merged = [...res.projects, ...projects.filter((p) => !existingIds.has(p.id))];
         setLiveProjects(merged);
-        setIsBackendConnected(true);
       } else {
         setLiveProjects(projects);
       }
@@ -430,10 +426,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   useEffect(() => {
     const timer = setInterval(() => {
       setLiveTelemetryTick((t) => t + 1);
-      const now = new Date();
-      setLastSyncTime(
-        `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
-      );
     }, 12000);
     return () => clearInterval(timer);
   }, []);
@@ -1325,27 +1317,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     }
   };
 
-  const handleManualSync = async () => {
-    setIsSyncing(true);
-    try {
-      const res = await apiService.getProjects();
-      if (res.isFromBackend && res.projects.length > 0) {
-        const existingIds = new Set(res.projects.map((p) => p.id));
-        const merged = [...res.projects, ...projects.filter((p) => !existingIds.has(p.id))];
-        setLiveProjects(merged);
-        setIsBackendConnected(true);
-      }
-    } catch (err) {
-      console.warn('Sync error:', err);
-    } finally {
-      setIsSyncing(false);
-      const now = new Date();
-      setLastSyncTime(
-        `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
-      );
-    }
-  };
-
   return (
     <div className="fixed inset-0 z-40 bg-[#F8FAFC] flex flex-col font-sans text-[#212529] select-none overflow-hidden">
       {/* ── TOP NAV HEADER ── */}
@@ -1374,24 +1345,8 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           </div>
         </div>
 
-        {/* Right: Live Sync, AI Route & User */}
+        {/* Right: AI Route & User */}
         <div className="flex items-center gap-2.5">
-          {/* Live Sync Badge */}
-          <div className="hidden sm:flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-50 border border-emerald-200 text-emerald-800 text-[11px] font-semibold">
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span>{isBackendConnected ? 'Backend Aktif' : 'Live Sync'} • {lastSyncTime}</span>
-            <button
-              onClick={handleManualSync}
-              className={`p-0.5 hover:text-emerald-950 transition-transform cursor-pointer ${isSyncing ? 'animate-spin' : ''}`}
-              title="Refresh Data dari Server"
-            >
-              <RefreshCw className="w-3 h-3" />
-            </button>
-          </div>
-
           {/* Rute Alternatif AI Button */}
           <button
             onClick={() => onOpenAIRoute(currentProject?.nama_proyek || 'Pelebaran Jalan Veteran - Lamongan', currentProject)}
@@ -1656,42 +1611,48 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           }`}
         >
           {/* Header */}
-          <div className="p-4 sm:p-5 border-b border-slate-100 shrink-0 bg-white flex items-start justify-between">
-            <div>
-              <h1 className="font-heading text-xl font-bold text-slate-900 tracking-tight">
-                Cari Proyek Pembangunan
-              </h1>
-              <p className="text-xs text-slate-500 mt-0.5 font-medium">
-                {filteredProjects.length} proyek infrastruktur ditemukan
-              </p>
+          <div className="p-4 sm:p-5 border-b border-slate-100 shrink-0 bg-white">
+            <div className="flex items-start justify-between gap-3">
+              <div>
+                <h1 className="font-heading text-lg sm:text-xl font-bold text-slate-900 tracking-tight">
+                  Cari Proyek Pembangunan
+                </h1>
+                <p className="text-xs text-slate-500 mt-0.5 font-medium">
+                  {filteredProjects.length} proyek infrastruktur ditemukan
+                </p>
+              </div>
+              <button
+                onClick={() => setIsSidebarCollapsed(true)}
+                className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition-colors cursor-pointer shrink-0"
+                title="Sembunyikan Panel Filter"
+                aria-label="Sembunyikan Panel Filter"
+              >
+                <ChevronLeft className="w-5 h-5" />
+              </button>
             </div>
-            <button
-              onClick={() => setIsSidebarCollapsed(true)}
-              className="p-1.5 hover:bg-slate-100 rounded-xl text-slate-400 hover:text-slate-700 transition-colors cursor-pointer"
-              title="Sembunyikan Panel Filter"
-            >
-              <ChevronLeft className="w-5 h-5" />
-            </button>
 
             {/* Segmented Status Pills */}
-            <div className="mt-3.5 bg-slate-100/90 p-1 rounded-2xl flex items-center gap-1 border border-slate-200/60">
+            <div className="mt-3.5 bg-slate-100/90 p-1 rounded-xl sm:rounded-2xl grid grid-cols-3 gap-1 border border-slate-200/70 w-full shadow-inner">
               {[
                 { id: 'all', label: 'Semua' },
                 { id: 'berjalan', label: 'Berjalan' },
                 { id: 'selesai', label: 'Selesai' },
-              ].map((tab) => (
-                <button
-                  key={tab.id}
-                  onClick={() => setSelectedStatus(tab.id as any)}
-                  className={`flex-1 py-1.5 rounded-xl text-xs font-bold transition-all text-center cursor-pointer ${
-                    selectedStatus === tab.id
-                      ? 'bg-[#2563EB] text-white shadow-sm'
-                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/50'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
+              ].map((tab) => {
+                const isActive = selectedStatus === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    onClick={() => setSelectedStatus(tab.id as 'all' | 'berjalan' | 'selesai')}
+                    className={`w-full py-1.5 sm:py-2 px-2 rounded-lg sm:rounded-xl text-xs font-bold transition-all duration-200 text-center cursor-pointer select-none flex items-center justify-center ${
+                      isActive
+                        ? 'bg-[#2563EB] text-white shadow-xs ring-1 ring-blue-500/20'
+                        : 'text-slate-600 hover:text-slate-900 hover:bg-white/80 active:scale-98'
+                    }`}
+                  >
+                    {tab.label}
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -2647,15 +2608,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               : 'right-4'
           }`}
         >
-          {/* Rute Alternatif AI Floating Quick Button */}
-          <button
-            onClick={() => onOpenAIRoute(currentProject?.nama_proyek || 'Pelebaran Jalan Veteran - Lamongan', currentProject)}
-            className="w-10 h-10 bg-white/95 backdrop-blur-md hover:bg-gradient-to-r hover:from-[#6D28D9] hover:to-[#184C78] hover:text-white border border-purple-200/90 rounded-2xl shadow-md flex items-center justify-center text-[#6D28D9] transition-all active:scale-95 cursor-pointer group"
-            title="Input & Analisis Rute Alternatif AI"
-          >
-            <Sparkles className="w-4 h-4 text-amber-500 group-hover:text-amber-300 transition-colors" />
-          </button>
-
           {/* Fokus Seluruh Wilayah Kab. Lamongan (27 Kecamatan) */}
           <button
             onClick={handleFitAllLamongan}
