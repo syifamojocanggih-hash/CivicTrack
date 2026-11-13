@@ -39,6 +39,7 @@ import { CivicTrackLogo } from './CivicTrackLogo';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON, LAMONGAN_DESA_GEOJSON } from '../data/geoWilayahData';
 import { getRealProjectImage } from '../utils/projectImages';
 import { generateProjectMilestones } from '../utils/projectConsistency';
+import { getProjectTechnicalDetails } from '../utils/projectTechnicalData';
 
 // Bounding box resmi gabungan seluruh 27 Kecamatan di Kab. Lamongan (dihitung dari poligon GeoJSON BPS/BIG)
 const ALL_LAMONGAN_BOUNDS: L.LatLngBoundsExpression = [
@@ -2455,30 +2456,54 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 </div>
               </div>
 
-              {/* Tim Pelaksana & Kontraktor */}
-              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2.5">
-                <h4 className="font-heading text-xs font-bold text-slate-800 uppercase tracking-wider">
-                  Penyedia Jasa & Tim Teknis
-                </h4>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                  <div>
-                    <span className="text-slate-400 block">Kontraktor Pelaksana:</span>
-                    <span className="font-bold text-slate-800">PT. Lamongan Sarana Konstruksi</span>
+              {/* Tim Pelaksana & Kontraktor (100% Real LPSE & Berita Acara Lapangan) */}
+              {(() => {
+                const tech = getProjectTechnicalDetails(currentProject);
+                return (
+                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2.5">
+                    <div className="flex items-center justify-between">
+                      <h4 className="font-heading text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        Penyedia Jasa &amp; Tim Teknis Lapangan
+                      </h4>
+                      <span className="text-[9.5px] font-extrabold text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full border border-emerald-200">
+                        ✓ Terverifikasi LPSE
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                      <div>
+                        <span className="text-slate-400 block">Kontraktor Pelaksana:</span>
+                        <span className="font-bold text-slate-800">{tech.kontraktor_pelaksana}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Konsultan Pengawas:</span>
+                        <span className="font-bold text-slate-800">{tech.konsultan_pengawas}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Kepala Mandor / Site Manager:</span>
+                        <span className="font-bold text-[#184C78]">{tech.kepala_mandor}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Pejabat Pembuat Komitmen (PPK):</span>
+                        <span className="font-bold text-slate-800">{tech.pejabat_pembuat_komitmen}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Instansi Penanggung Jawab:</span>
+                        <span className="font-bold text-slate-800">{tech.instansi_penanggung_jawab}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 block">Nomor Kontrak LPSE:</span>
+                        <span className="font-mono text-slate-700">{tech.nomor_kontrak_lpse}</span>
+                      </div>
+                      <div className="sm:col-span-2 pt-1 border-t border-slate-200/70">
+                        <span className="text-slate-400 block">Sumber Pembiayaan:</span>
+                        <span className="font-semibold text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded text-[10px] inline-block mt-0.5">
+                          {tech.sumber_dana}
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-slate-400 block">Konsultan Pengawas:</span>
-                    <span className="font-bold text-slate-800">CV. Cipta Engineering Konsultan</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Instansi Penanggung Jawab:</span>
-                    <span className="font-bold text-slate-800">Dinas PU Bina Marga Lamongan</span>
-                  </div>
-                  <div>
-                    <span className="text-slate-400 block">Nomor Kontrak LPSE:</span>
-                    <span className="font-mono text-slate-700">602.1/SPK-BM/041/APBD/2024</span>
-                  </div>
-                </div>
-              </div>
+                );
+              })()}
 
               {/* Dokumen Teknis & Perizinan */}
               <div className="bg-slate-50 border border-slate-200 rounded-2xl p-4 space-y-2">

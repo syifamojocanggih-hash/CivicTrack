@@ -25,6 +25,12 @@ export interface ProyekItem {
   rata_rata_rating?: number | null;
   jumlah_rating?: number;
   tahap_terkini?: string;
+  kontraktor_pelaksana?: string;
+  konsultan_pengawas?: string;
+  kepala_mandor?: string;
+  pejabat_pembuat_komitmen?: string;
+  nomor_kontrak_lpse?: string;
+  sumber_dana?: string;
 }
 
 export interface ProyekUpdatePayload {

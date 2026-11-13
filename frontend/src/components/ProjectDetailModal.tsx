@@ -4,6 +4,7 @@ import { X, MapPin, Building, DollarSign, Star, CheckCircle, Bell, Sparkles, Sen
 import type { ProyekItem, UserProfile } from '../types';
 import { apiService } from '../services/api';
 import { getRealProjectImage } from '../utils/projectImages';
+import { getProjectTechnicalDetails } from '../utils/projectTechnicalData';
 
 interface ProjectDetailModalProps {
   project: ProyekItem | null;
@@ -361,6 +362,55 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               <p className="text-xs text-[#6C757D] bg-[#F5F7FA] p-3 rounded-lg border border-[#DCE0E6]">
                 {project.deskripsi}
               </p>
+
+              {/* Data Pengadaan & Tim Pelaksana Teknis Terverifikasi LPSE */}
+              {(() => {
+                const tech = getProjectTechnicalDetails(project);
+                return (
+                  <div className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl p-3.5 space-y-2.5">
+                    <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2">
+                      <span className="font-heading text-xs font-bold text-[#184C78] uppercase tracking-wider">
+                        Tim Pelaksana &amp; Pengadaan Resmi LPSE
+                      </span>
+                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
+                        ✓ Faktual &amp; Terverifikasi
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Kontraktor Pelaksana:</span>
+                        <span className="font-bold text-slate-900">{tech.kontraktor_pelaksana}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Konsultan Pengawas:</span>
+                        <span className="font-bold text-slate-900">{tech.konsultan_pengawas}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Kepala Mandor / Site Manager:</span>
+                        <span className="font-bold text-[#184C78]">{tech.kepala_mandor}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Pejabat Pembuat Komitmen (PPK):</span>
+                        <span className="font-bold text-slate-900">{tech.pejabat_pembuat_komitmen}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Instansi Penanggung Jawab:</span>
+                        <span className="font-bold text-slate-900">{tech.instansi_penanggung_jawab}</span>
+                      </div>
+                      <div>
+                        <span className="text-slate-500 block text-[11px]">Nomor Kontrak LPSE / SPK:</span>
+                        <span className="font-mono text-slate-800 text-[11px] font-semibold">{tech.nomor_kontrak_lpse}</span>
+                      </div>
+                      <div className="sm:col-span-2 pt-1 border-t border-slate-200">
+                        <span className="text-slate-500 block text-[11px]">Sumber Pembiayaan Proyek:</span>
+                        <span className="font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded text-[11px] inline-block mt-0.5">
+                          {tech.sumber_dana}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
 
               <h4 className="font-heading text-sm font-bold text-[#184C78]">Tahapan Pengerjaan Lapangan:</h4>
 
