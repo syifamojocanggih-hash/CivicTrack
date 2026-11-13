@@ -313,7 +313,21 @@ export const apiService = {
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
-      throw new Error(errorData.detail || 'Gagal melakukan pendaftaran.');
+      let msg = 'Gagal melakukan pendaftaran.';
+      if (typeof errorData.detail === 'string') {
+        msg = errorData.detail;
+      } else if (Array.isArray(errorData.detail) && errorData.detail.length > 0) {
+        msg = errorData.detail
+          .map((item: any) => {
+            const field = Array.isArray(item.loc) ? item.loc[item.loc.length - 1] : '';
+            if (field === 'password') return 'Kata sandi minimal 6 karakter.';
+            if (field === 'email') return 'Format alamat email tidak valid.';
+            if (field === 'nama') return 'Nama lengkap minimal 2 karakter.';
+            return item.msg || item.message || 'Data pendaftaran tidak valid.';
+          })
+          .join(' ');
+      }
+      throw new Error(msg);
     }
 
     const data = await res.json();

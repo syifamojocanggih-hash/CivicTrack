@@ -55,7 +55,12 @@ import {
 } from '../../data/dashboardMockData';
 import { apiService } from '../../services/api';
 import { MiniMapOverview } from './MiniMapOverview';
+import { LocationPickerMap } from '../LocationPickerMap';
 import { WILAYAH_DATA } from '../../data/geoWilayahData';
+import {
+  findWilayahByCoordinates,
+  findCoordinatesByDesa,
+} from '../../utils/spatial';
 import {
   getProjectTimelineStages,
   saveProjectTimelineStages,
@@ -315,17 +320,22 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
             const mapped = res.map((d) => ({ id: d.id, nama_wilayah: d.nama_wilayah }));
             setDesaOptions(mapped);
             if (newProjectForm.skala_proyek === 'skala_desa') {
-              const first = mapped[0];
+              const matchedDesa = mapped.find(
+                (d) =>
+                  d.id === newProjectForm.desa_id ||
+                  d.nama_wilayah.toLowerCase() === (newProjectForm.nama_desa || '').toLowerCase()
+              );
+              const selectedDesa = matchedDesa || mapped[0];
               const newCode = generateProjectSerialNumber(
                 newProjectForm.nama_wilayah,
-                first.nama_wilayah,
+                selectedDesa.nama_wilayah,
                 'skala_desa',
                 projectList
               );
               setNewProjectForm((prev) => ({
                 ...prev,
-                desa_id: first.id,
-                nama_desa: first.nama_wilayah,
+                desa_id: selectedDesa.id,
+                nama_desa: selectedDesa.nama_wilayah,
                 kode_proyek: newCode,
               }));
             }
@@ -337,6 +347,26 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 .filter((d) => d !== 'Semua Desa / Kelurahan')
                 .map((d, idx) => ({ id: 9000 + idx, nama_wilayah: d }));
               setDesaOptions(fallbackList);
+              if (newProjectForm.skala_proyek === 'skala_desa' && fallbackList.length > 0) {
+                const matchedDesa = fallbackList.find(
+                  (d) =>
+                    d.id === newProjectForm.desa_id ||
+                    d.nama_wilayah.toLowerCase() === (newProjectForm.nama_desa || '').toLowerCase()
+                );
+                const selectedDesa = matchedDesa || fallbackList[0];
+                const newCode = generateProjectSerialNumber(
+                  newProjectForm.nama_wilayah,
+                  selectedDesa.nama_wilayah,
+                  'skala_desa',
+                  projectList
+                );
+                setNewProjectForm((prev) => ({
+                  ...prev,
+                  desa_id: selectedDesa.id,
+                  nama_desa: selectedDesa.nama_wilayah,
+                  kode_proyek: newCode,
+                }));
+              }
             }
           }
         })
@@ -347,6 +377,26 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
               .filter((d) => d !== 'Semua Desa / Kelurahan')
               .map((d, idx) => ({ id: 9000 + idx, nama_wilayah: d }));
             setDesaOptions(fallbackList);
+            if (newProjectForm.skala_proyek === 'skala_desa' && fallbackList.length > 0) {
+              const matchedDesa = fallbackList.find(
+                (d) =>
+                  d.id === newProjectForm.desa_id ||
+                  d.nama_wilayah.toLowerCase() === (newProjectForm.nama_desa || '').toLowerCase()
+              );
+              const selectedDesa = matchedDesa || fallbackList[0];
+              const newCode = generateProjectSerialNumber(
+                newProjectForm.nama_wilayah,
+                selectedDesa.nama_wilayah,
+                'skala_desa',
+                projectList
+              );
+              setNewProjectForm((prev) => ({
+                ...prev,
+                desa_id: selectedDesa.id,
+                nama_desa: selectedDesa.nama_wilayah,
+                kode_proyek: newCode,
+              }));
+            }
           }
         })
         .finally(() => {
@@ -359,9 +409,54 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
           .filter((d) => d !== 'Semua Desa / Kelurahan')
           .map((d, idx) => ({ id: 9000 + idx, nama_wilayah: d }));
         setDesaOptions(fallbackList);
+        if (newProjectForm.skala_proyek === 'skala_desa' && fallbackList.length > 0) {
+          const matchedDesa = fallbackList.find(
+            (d) =>
+              d.id === newProjectForm.desa_id ||
+              d.nama_wilayah.toLowerCase() === (newProjectForm.nama_desa || '').toLowerCase()
+          );
+          const selectedDesa = matchedDesa || fallbackList[0];
+          const newCode = generateProjectSerialNumber(
+            newProjectForm.nama_wilayah,
+            selectedDesa.nama_wilayah,
+            'skala_desa',
+            projectList
+          );
+          setNewProjectForm((prev) => ({
+            ...prev,
+            desa_id: selectedDesa.id,
+            nama_desa: selectedDesa.nama_wilayah,
+            kode_proyek: newCode,
+          }));
+        }
       }
     }
   }, [newProjectForm.nama_wilayah]);
+
+  // Sinkronisasi otomatis saat user memilih titik di peta (klik/geser marker) atau ketik koordinat
+  const handleMapLocationChange = ({ lat, lng }: { lat: number; lng: number }) => {
+    const detected = findWilayahByCoordinates(lat, lng);
+    const targetKecamatan = detected.kecamatan;
+    const targetDesa = detected.desa || newProjectForm.nama_desa;
+    const targetDesaId = detected.desaId || newProjectForm.desa_id;
+
+    const newCode = generateProjectSerialNumber(
+      targetKecamatan,
+      newProjectForm.skala_proyek === 'skala_desa' ? targetDesa : undefined,
+      newProjectForm.skala_proyek,
+      projectList
+    );
+
+    setNewProjectForm((prev) => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
+      nama_wilayah: targetKecamatan,
+      nama_desa: targetDesa,
+      desa_id: targetDesaId,
+      kode_proyek: newCode,
+    }));
+  };
 
   // Handle verifikasi akses penanggung jawab proyek
   const handleVerifyGate = async (e?: React.FormEvent, directCode?: string, directPw?: string) => {
@@ -1628,6 +1723,55 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
               </div>
 
+              {/* Titik Lokasi Peta & Koordinat Spasial (Diposisikan di atas Skala & Cakupan Wilayah) */}
+              <div className="space-y-3">
+                <LocationPickerMap
+                  latitude={newProjectForm.latitude}
+                  longitude={newProjectForm.longitude}
+                  onChange={handleMapLocationChange}
+                  kategori={newProjectForm.kategori}
+                  wilayahName={newProjectForm.nama_wilayah}
+                  desaName={newProjectForm.nama_desa}
+                />
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="latitude" className="block font-semibold text-[#184C78] mb-1">
+                      Latitude (Lintang)
+                    </label>
+                    <input
+                      id="latitude"
+                      type="number"
+                      step="0.0001"
+                      required
+                      value={newProjectForm.latitude}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        handleMapLocationChange({ lat: val, lng: newProjectForm.longitude });
+                      }}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="longitude" className="block font-semibold text-[#184C78] mb-1">
+                      Longitude (Bujur)
+                    </label>
+                    <input
+                      id="longitude"
+                      type="number"
+                      step="0.0001"
+                      required
+                      value={newProjectForm.longitude}
+                      onChange={(e) => {
+                        const val = parseFloat(e.target.value) || 0;
+                        handleMapLocationChange({ lat: newProjectForm.latitude, lng: val });
+                      }}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                    />
+                  </div>
+                </div>
+              </div>
+
               {/* Cakupan Skala Proyek & Lokasi Administratif Berjenjang */}
               <div className="p-4 bg-[#F8FAFC] rounded-2xl border border-[#DCE0E6] space-y-3.5">
                 <div>
@@ -1636,8 +1780,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                       <Layers className="w-4 h-4 text-[#2980B9]" />
                       Skala &amp; Cakupan Wilayah Proyek
                     </span>
-                    <span className="text-[10.5px] font-normal text-[#6C757D]">
-                      Menentukan struktur kode seri nomor registrasi
+                    <span className="text-[10.5px] font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      Sinkronisasi Otomatis dari Titik Peta
                     </span>
                   </label>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -1770,6 +1915,15 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                           const selId = Number(e.target.value);
                           const selDesa = desaOptions.find((d) => d.id === selId);
                           const selName = selDesa ? selDesa.nama_wilayah : 'Kelurahan';
+
+                          // Cari titik koordinat spasial desa tersebut agar peta otomatis bergeser
+                          const desaCoords =
+                            findCoordinatesByDesa(selId, newProjectForm.nama_wilayah) ||
+                            findCoordinatesByDesa(selName, newProjectForm.nama_wilayah);
+
+                          const newLat = desaCoords ? desaCoords[0] : newProjectForm.latitude;
+                          const newLng = desaCoords ? desaCoords[1] : newProjectForm.longitude;
+
                           const newCode = generateProjectSerialNumber(
                             newProjectForm.nama_wilayah,
                             selName,
@@ -1780,6 +1934,8 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                             ...newProjectForm,
                             desa_id: selId,
                             nama_desa: selName,
+                            latitude: newLat,
+                            longitude: newLng,
                             kode_proyek: newCode,
                           });
                         }}
@@ -1921,48 +2077,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                       Berikan password ini kepada mandor/kontraktor penanggung jawab
                     </p>
                   </div>
-                </div>
-              </div>
-
-              {/* Koordinat Lintang & Bujur */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label htmlFor="latitude" className="block font-semibold text-[#184C78] mb-1">
-                    Latitude (Lintang)
-                  </label>
-                  <input
-                    id="latitude"
-                    type="number"
-                    step="0.0001"
-                    required
-                    value={newProjectForm.latitude}
-                    onChange={(e) =>
-                      setNewProjectForm({
-                        ...newProjectForm,
-                        latitude: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="longitude" className="block font-semibold text-[#184C78] mb-1">
-                    Longitude (Bujur)
-                  </label>
-                  <input
-                    id="longitude"
-                    type="number"
-                    step="0.0001"
-                    required
-                    value={newProjectForm.longitude}
-                    onChange={(e) =>
-                      setNewProjectForm({
-                        ...newProjectForm,
-                        longitude: parseFloat(e.target.value) || 0,
-                      })
-                    }
-                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                  />
                 </div>
               </div>
 

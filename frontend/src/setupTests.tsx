@@ -31,7 +31,17 @@ vi.mock('react-leaflet', () => ({
 vi.mock('leaflet.markercluster', () => ({}));
 vi.mock('leaflet', () => ({
   default: {
-    map: vi.fn(() => ({ setView: vi.fn(), on: vi.fn(), remove: vi.fn(), fitBounds: vi.fn(), addLayer: vi.fn(), invalidateSize: vi.fn(), flyToBounds: vi.fn(), flyTo: vi.fn() })),
+    map: vi.fn(() => ({
+      setView: vi.fn(),
+      on: vi.fn(),
+      remove: vi.fn(),
+      fitBounds: vi.fn(),
+      addLayer: vi.fn(),
+      invalidateSize: vi.fn(),
+      flyToBounds: vi.fn(),
+      flyTo: vi.fn(),
+      panTo: vi.fn(),
+    })),
     tileLayer: vi.fn(() => ({ addTo: vi.fn() })),
     layerGroup: vi.fn(() => ({ addTo: vi.fn(), clearLayers: vi.fn() })),
     markerClusterGroup: vi.fn(() => ({ addTo: vi.fn(), clearLayers: vi.fn(), addLayer: vi.fn() })),
@@ -43,12 +53,20 @@ vi.mock('leaflet', () => ({
       clearLayers: vi.fn(),
       resetStyle: vi.fn(),
     })),
+    circle: vi.fn(() => {
+      const c: any = {};
+      c.addTo = vi.fn(() => c);
+      c.setLatLng = vi.fn(() => c);
+      return c;
+    }),
     marker: vi.fn(() => {
       const m: any = {};
       m.bindPopup = vi.fn(() => m);
       m.addTo = vi.fn(() => m);
       m.bindTooltip = vi.fn(() => m);
       m.on = vi.fn(() => m);
+      m.getLatLng = vi.fn(() => ({ lat: -7.1197, lng: 112.415 }));
+      m.setLatLng = vi.fn(() => m);
       return m;
     }),
   },

@@ -15,6 +15,15 @@ class ProyekKategori(str, enum.Enum):
     gedung_publik = "gedung_publik"
     lainnya = "lainnya"
 
+    @classmethod
+    def _missing_(cls, value):
+        val_str = str(value).lower().strip()
+        if val_str in ("fasilitas", "fasilitas_publik", "gedung", "gedung publik", "fasilitas publik"):
+            return cls.gedung_publik
+        if val_str in ("jembatan", "bridge"):
+            return cls.jembatan
+        return super()._missing_(value)
+
 class ProyekStatus(str, enum.Enum):
     berjalan = "berjalan"
     selesai = "selesai"

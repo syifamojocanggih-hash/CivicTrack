@@ -1,6 +1,6 @@
 export type ProyekStatus = 'berjalan' | 'selesai' | 'ditangguhkan';
 
-export type ProyekKategori = 'jalan' | 'taman' | 'drainase' | 'fasilitas';
+export type ProyekKategori = 'jalan' | 'taman' | 'drainase' | 'fasilitas' | 'gedung_publik' | 'jembatan' | 'lainnya';
 
 export interface ProyekItem {
   id: number;

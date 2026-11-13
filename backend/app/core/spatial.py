@@ -223,6 +223,10 @@ def validate_coordinates_in_wilayah(
                     is_inside = is_point_in_shapely_geometry(shape_geom, latitude, longitude)
                     if not is_inside:
                         dist_meters = calculate_distance_to_boundary_meters(shape_geom, latitude, longitude)
+                        # Berikan toleransi hingga 2000 meter untuk mengakomodasi simplifikasi poligon BPS/BIG,
+                        # proyek koridor jalan lintas batas kecamatan, serta toleransi klik peta UI.
+                        if dist_meters <= 2000.0:
+                            return True, None
                         return (
                             False,
                             f"Koordinat ({latitude:.6f}, {longitude:.6f}) berada di luar batas poligon "

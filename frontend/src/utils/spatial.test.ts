@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { isPointInPolygon, validateCoordinatesInKecamatan } from './spatial';
+import {
+  isPointInPolygon,
+  validateCoordinatesInKecamatan,
+  findWilayahByCoordinates,
+  findCoordinatesByDesa,
+  findCoordinatesByKecamatan,
+} from './spatial';
 
 describe('spatial utils', () => {
   describe('isPointInPolygon', () => {
@@ -53,4 +59,35 @@ describe('spatial utils', () => {
       expect(result.matchedKecamatan).toBeUndefined();
     });
   });
+
+  describe('findWilayahByCoordinates', () => {
+    it('identifies kecamatan and desa for Lamongan city coordinates', () => {
+      // Near Lamongan Kota center [-7.1197, 112.4150]
+      const result = findWilayahByCoordinates(-7.1197, 112.4150);
+      expect(result.kecamatan).toBe('Kecamatan Lamongan (Kota)');
+      expect(result.desa).toBeTruthy();
+      expect(typeof result.desaId).toBe('number');
+    });
+
+    it('returns default fallback when given zeros or NaN', () => {
+      const result = findWilayahByCoordinates(0, 0);
+      expect(result.kecamatan).toBe('Kecamatan Lamongan (Kota)');
+    });
+  });
+
+  describe('findCoordinatesByDesa and findCoordinatesByKecamatan', () => {
+    it('returns coordinates for known kecamatan', () => {
+      const coords = findCoordinatesByKecamatan('Kecamatan Sukorame');
+      expect(coords).not.toBeNull();
+      expect(coords![0]).toBeCloseTo(-7.3510, 2);
+    });
+
+    it('returns coordinates for known desa by name or id', () => {
+      const coords = findCoordinatesByDesa('Kelurahan Sukorejo', 'Kecamatan Lamongan (Kota)');
+      expect(coords).not.toBeNull();
+      expect(Array.isArray(coords)).toBe(true);
+      expect(coords![0]).toBeLessThan(0); // Southern hemisphere
+    });
+  });
 });
+

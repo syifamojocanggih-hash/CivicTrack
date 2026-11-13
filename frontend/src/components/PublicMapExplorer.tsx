@@ -55,6 +55,7 @@ interface PublicMapExplorerProps {
   onOpenProjectDetail: (project: ProyekItem) => void;
   onOpenAIRoute: (projectName: string, project?: ProyekItem) => void;
   onOpenAuth: (mode?: 'login' | 'register') => void;
+  initialProjectId?: number | null;
 }
 
 // Calculate Haversine distance in kilometers
@@ -180,13 +181,14 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   onOpenDashboard,
   onOpenAIRoute,
   onOpenAuth,
+  initialProjectId,
 }) => {
   // Filter & Search states (Matches Image 1)
   const [selectedCategory, setSelectedCategory] = useState<ProyekKategori | 'all'>('all');
   const [selectedStatus, setSelectedStatus] = useState<'all' | 'berjalan' | 'selesai'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedProjectId, setSelectedProjectId] = useState<number>(1);
-  const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState<number>(initialProjectId || 1);
+  const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(!!initialProjectId);
   const [bookmarkedIds, setBookmarkedIds] = useState<number[]>([]);
 
   // UX & Visual states (Legenda peta & Responsivitas Mobile)
@@ -1300,6 +1302,13 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       });
     }
   }, [enrichedProjects]);
+
+  // Synchronize initial project selection when navigated from external modal/dashboard
+  useEffect(() => {
+    if (initialProjectId && enrichedProjects.some((p) => p.id === initialProjectId)) {
+      handleSelectPin(initialProjectId);
+    }
+  }, [initialProjectId, enrichedProjects, handleSelectPin]);
 
   // Open / expand search & filter panel
   const handleOpenSearchPanel = useCallback(() => {

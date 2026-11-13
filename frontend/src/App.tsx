@@ -102,6 +102,7 @@ export function App() {
 
   // Modal States
   const [selectedProject, setSelectedProject] = useState<ProyekItem | null>(null);
+  const [initialMapProjectId, setInitialMapProjectId] = useState<number | null>(null);
   const [isNearbyModalOpen, setIsNearbyModalOpen] = useState<boolean>(false);
   const [aiRouteModal, setAIRouteModal] = useState<{
     isOpen: boolean;
@@ -113,6 +114,12 @@ export function App() {
     project: null,
   });
   const [isOpenDataModalOpen, setIsOpenDataModalOpen] = useState<boolean>(false);
+
+  const handleNavigateToMap = (proj: ProyekItem) => {
+    setSelectedProject(null);
+    setInitialMapProjectId(proj.id);
+    navigateToView('map-explorer');
+  };
 
   const handleOpenAIRoute = (name: string, proj?: ProyekItem | null) => {
     const matchedProject = proj || projects.find((p) => p.nama_proyek === name) || null;
@@ -358,6 +365,7 @@ export function App() {
             onOpenProjectDetail={(proj) => setSelectedProject(proj)}
             onOpenAIRoute={(name, proj) => handleOpenAIRoute(name, proj)}
             onOpenAuth={(mode) => handleOpenAuth(mode)}
+            initialProjectId={initialMapProjectId}
           />
         </ErrorBoundary>
       ) : currentView === 'dashboard' && currentUser ? (
@@ -471,6 +479,7 @@ export function App() {
         onOpenAIRoute={(name) => handleOpenAIRoute(name, selectedProject)}
         onOpenAuth={() => handleOpenAuth('login')}
         onProjectUpdated={handleProjectUpdated}
+        onNavigateToMap={handleNavigateToMap}
       />
 
       <AIRouteModal

@@ -109,6 +109,11 @@ describe('AdminDinasDashboard Form Validation', () => {
     const addTabs = await screen.findAllByText(/Input Proyek Baru/i);
     await user.click(addTabs[0]);
 
+    // Verify Interactive Location Picker Map is present in modal and placed above Skala & Cakupan
+    expect(screen.getByText(/Pilih Titik Lokasi Langsung di Peta/i)).toBeInTheDocument();
+    expect(screen.getByText(/Klik pada peta atau geser pin/i)).toBeInTheDocument();
+    expect(screen.getByText(/Sinkronisasi Otomatis dari Titik Peta/i)).toBeInTheDocument();
+
     await user.type(screen.getByLabelText(/Nama Proyek/i), 'Proyek Test Valid');
     await user.selectOptions(screen.getByLabelText(/Kategori Sektor/i), 'jalan');
     await user.type(screen.getByLabelText(/Pagu Anggaran/i), '500000000');

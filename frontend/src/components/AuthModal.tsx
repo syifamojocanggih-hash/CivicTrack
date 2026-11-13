@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, AlertCircle, Loader2, Check } from 'lucide-react';
 import type { UserProfile } from '../types';
@@ -59,6 +59,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         onLoginSuccess(res.user);
         onClose();
       } else {
+        if (!agreeTerms) {
+          setErrorMsg('Harap centang persetujuan Syarat & Ketentuan untuk melanjutkan pendaftaran.');
+          setIsLoading(false);
+          return;
+        }
+        if (password.length < 6) {
+          setErrorMsg('Kata sandi minimal harus 6 karakter.');
+          setIsLoading(false);
+          return;
+        }
         const res = await apiService.register(name, email, password, role);
         onLoginSuccess(res.user);
         onClose();
@@ -338,7 +348,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-2.5 sm:gap-3">
                 <button
                   type="submit"
-                  disabled={isLoading || !agreeTerms}
+                  disabled={isLoading}
                   className="w-full sm:flex-1 py-2.5 px-6 rounded-full bg-gradient-to-r from-[#184C78] to-[#2980B9] hover:from-[#0f3252] hover:to-[#184C78] text-white font-bold text-sm shadow-[0_4px_14px_rgba(24,76,120,0.3)] hover:shadow-lg transition-all cursor-pointer flex items-center justify-center gap-2 disabled:opacity-60"
                 >
                   {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}

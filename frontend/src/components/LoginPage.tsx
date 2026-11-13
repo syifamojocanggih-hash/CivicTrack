@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   User,
   Lock,
@@ -92,6 +92,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
       } else {
         if (!agreeTerms) {
           setErrorMsg('Harap setujui Syarat & Ketentuan untuk melanjutkan pendaftaran.');
+          setIsLoading(false);
+          return;
+        }
+        if (password.length < 6) {
+          setErrorMsg('Kata sandi minimal harus 6 karakter.');
           setIsLoading(false);
           return;
         }

@@ -314,4 +314,76 @@ describe('WargaDashboard', () => {
     // After refresh / remount, the persisted review MUST still be present
     expect(screen.getByText(/"Mantap sekali pengerjaannya sangat rapi!"/i)).toBeInTheDocument();
   });
+
+  it('renders rute tab empty initially with prompt and no dummy cards, then generates real Lamongan recommendations upon text input', async () => {
+    const user = userEvent.setup();
+    const handleOpenAIRoute = vi.fn();
+
+    render(
+      <WargaDashboard
+        currentUser={mockUser}
+        projects={mockProjects}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={handleOpenAIRoute}
+        activeSection="rute"
+      />
+    );
+
+    // Initial state MUST be empty (no Malang dummy cards)
+    expect(screen.getByText(/Belum Ada Rekomendasi Rute yang Diproses/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Via Jl. Borobudur/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Via Simpang Cengger Ayam/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Via Gang Jati Murni/i)).not.toBeInTheDocument();
+
+    // Type route query
+    const textarea = screen.getByPlaceholderText(/Contoh: Saya mau berangkat dari Alun-Alun Lamongan/i);
+    await user.type(textarea, 'Dari Alun-Alun Lamongan ke Deket naik mobil');
+
+    // Submit consultation
+    const submitBtn = screen.getByRole('button', { name: /Dapatkan Rekomendasi Rute AI/i });
+    await user.click(submitBtn);
+
+    // After analysis finishes, Masukan AI and 3 real Lamongan routes MUST be displayed
+    expect(await screen.findByText(/Masukan & Analisis Lapangan AI/i)).toBeInTheDocument();
+    expect(screen.getByText(/3 Rekomendasi Jalur Pengalihan Resmi/i)).toBeInTheDocument();
+
+    // Verify Lamongan routes (NOT Malang!)
+    expect(screen.getByText(/Via Jl. Panglima Sudirman/i)).toBeInTheDocument();
+    expect(screen.getByText(/Rute Utama \(Prioritas 1\)/i)).toBeInTheDocument();
+    expect(screen.getByText(/Rute Kedua \(Prioritas 2\)/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/Rute Khusus Lingkungan/i).length).toBeGreaterThanOrEqual(1);
+
+    // Test clicking full interactive map simulation button
+    const mapSimBtn = screen.getByRole('button', { name: /Buka Simulasi Peta Interaktif Lengkap/i });
+    await user.click(mapSimBtn);
+    expect(handleOpenAIRoute).toHaveBeenCalledTimes(1);
+  });
+
+  it('resets route recommendations back to empty state when reset button is clicked', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <WargaDashboard
+        currentUser={mockUser}
+        projects={mockProjects}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={() => {}}
+        activeSection="rute"
+      />
+    );
+
+    // Click quick suggestion chip
+    const quickChip = screen.getByRole('button', { name: /Alun-Alun ➔ Deket/i });
+    await user.click(quickChip);
+
+    // Wait for result
+    expect(await screen.findByText(/Masukan & Analisis Lapangan AI/i)).toBeInTheDocument();
+
+    // Click Reset
+    const resetBtn = screen.getByRole('button', { name: /Reset/i });
+    await user.click(resetBtn);
+
+    // Should return to empty state
+    expect(screen.getByText(/Belum Ada Rekomendasi Rute yang Diproses/i)).toBeInTheDocument();
+  });
 });

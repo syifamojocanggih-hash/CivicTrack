@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MapPin, Building, DollarSign, Star, CheckCircle, Bell, Sparkles, Send, Check, AlertCircle } from 'lucide-react';
+import { X, MapPin, Building, DollarSign, Star, CheckCircle, Bell, Sparkles, Send, Check, AlertCircle, Compass } from 'lucide-react';
 import type { ProyekItem, UserProfile } from '../types';
 import { apiService } from '../services/api';
-import { getRealProjectImage } from '../utils/projectImages';
+import { getProjectPhotoGallery } from '../utils/projectImages';
 import { getProjectTechnicalDetails } from '../utils/projectTechnicalData';
+import { ProjectLocationMiniMap } from './ProjectLocationMiniMap';
 
 interface ProjectDetailModalProps {
   project: ProyekItem | null;
@@ -14,6 +15,7 @@ interface ProjectDetailModalProps {
   onOpenAIRoute: (projectName: string) => void;
   onOpenAuth: () => void;
   onProjectUpdated?: (project: ProyekItem) => void;
+  onNavigateToMap?: (project: ProyekItem) => void;
 }
 
 export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
@@ -24,6 +26,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   onOpenAIRoute,
   onOpenAuth,
   onProjectUpdated,
+  onNavigateToMap,
 }) => {
   const [activeTab, setActiveTab] = useState<'timeline' | 'gallery' | 'report' | 'rating'>('timeline');
   const [isSubscribed, setIsSubscribed] = useState(false);
@@ -285,6 +288,17 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           </div>
 
           <div className="flex items-center gap-2 flex-wrap">
+            {onNavigateToMap && (
+              <button
+                onClick={() => onNavigateToMap(project)}
+                className="text-xs px-2.5 sm:px-3 py-1.5 rounded-lg font-semibold bg-[#184C78] hover:bg-[#0f3252] text-white flex items-center gap-1.5 transition-colors cursor-pointer shadow-sm"
+                title="Buka lokasi proyek di Peta Eksplorasi Spasial"
+              >
+                <Compass className="w-3.5 h-3.5" />
+                <span>Lihat di Peta</span>
+              </button>
+            )}
+
             <button
               onClick={handleToggleSubscribe}
               disabled={isSubscribing}
@@ -444,12 +458,17 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             </div>
           )}
 
-          {/* TAB 2: DOKUMENTASI FOTO & VIDEO */}
+          {/* TAB 2: DOKUMENTASI FOTO, VIDEO & SPASIAL */}
           {activeTab === 'gallery' && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <h4 className="font-heading text-sm font-bold text-[#184C78]">Dokumentasi Fisik Lapangan:</h4>
-                <span className="text-[11px] text-[#6C757D] font-medium">Foto Berkas &amp; Rekaman Video Drone</span>
+            <div className="space-y-5">
+              <div className="flex items-center justify-between flex-wrap gap-2">
+                <div>
+                  <h4 className="font-heading text-sm font-bold text-[#184C78]">Dokumentasi Fisik Lapangan &amp; Spasial:</h4>
+                  <p className="text-[11px] text-[#6C757D]">Foto berkas, video drone, dan integrasi geotagging peta lokasi terverifikasi</p>
+                </div>
+                <span className="text-[10px] font-bold text-[#184C78] bg-[#EBF4FB] px-2.5 py-1 rounded-full border border-[#CBD5E1]">
+                  100% Data Riil &amp; Faktual
+                </span>
               </div>
 
               {/* Grid of Photos and Videos */}
@@ -487,33 +506,47 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                   </div>
                 </div>
 
-                {/* Item 2: Foto Progres Konstruksi */}
-                <div className="bg-white rounded-xl overflow-hidden border border-[#DCE0E6] shadow-sm flex flex-col">
-                  <div className="relative h-44 bg-slate-100 overflow-hidden">
-                    <img
-                      src={getRealProjectImage(project)}
-                      alt="Foto Fisik Real"
-                      className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-2 left-2 bg-[#184C78]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                      📸 Bukti Fisik Lapangan Real
+                {/* Items 2+: Foto Progres Konstruksi & Geotagging */}
+                {getProjectPhotoGallery(project).map((photo) => (
+                  <div key={photo.id} className="bg-white rounded-xl overflow-hidden border border-[#DCE0E6] shadow-sm flex flex-col">
+                    <div className="relative h-44 bg-slate-100 overflow-hidden">
+                      <img
+                        src={photo.url}
+                        alt={photo.title}
+                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                      />
+                      <div className="absolute top-2 left-2 bg-[#184C78]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                        {photo.tag}
+                      </div>
+                      <div className="absolute bottom-2 left-2 right-2 bg-black/65 backdrop-blur-xs text-white text-[10px] font-mono px-2 py-1 rounded flex items-center justify-between">
+                        <span className="truncate">📍 {photo.locationName}</span>
+                        <span className="text-emerald-400 font-bold shrink-0">{photo.geotagCoords}</span>
+                      </div>
+                    </div>
+                    <div className="p-3 bg-white text-xs flex-1 flex flex-col justify-between">
+                      <div>
+                        <span className="font-bold text-[#184C78] block">
+                          {photo.title}
+                        </span>
+                        <p className="text-[11px] text-[#6C757D] mt-1 leading-relaxed">
+                          {photo.description}
+                        </p>
+                      </div>
+                      <div className="mt-2 pt-2 border-t border-[#DCE0E6]/60 flex items-center justify-between text-[10px] text-[#6C757D]">
+                        <span>Bobot Realisasi: {project?.progres_persen !== undefined ? project.progres_persen : 0}%</span>
+                        <span className="text-emerald-700 font-semibold">{photo.date}</span>
+                      </div>
                     </div>
                   </div>
-                  <div className="p-3 bg-white text-xs flex-1 flex flex-col justify-between">
-                    <div>
-                      <span className="font-bold text-[#184C78] block">
-                        Dokumentasi Proyek: {project?.nama_proyek || 'Infrastruktur Daerah'}
-                      </span>
-                      <p className="text-[11px] text-[#6C757D] mt-1">
-                        Dokumentasi visual berkala tim verifikator dinas daerah untuk validasi progres fisik lapangan.
-                      </p>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-[#DCE0E6]/60 flex items-center justify-between text-[10px] text-[#6C757D]">
-                      <span>Bobot Realisasi: {project?.progres_persen !== undefined ? project.progres_persen : 0}%</span>
-                      <span className="text-emerald-700 font-semibold">Terverifikasi Resmi</span>
-                    </div>
-                  </div>
-                </div>
+                ))}
+              </div>
+
+              {/* Integrated Spatial Leaflet MiniMap (Sync with Maps) */}
+              <div className="pt-1">
+                <ProjectLocationMiniMap
+                  project={project}
+                  onNavigateToMap={onNavigateToMap}
+                />
               </div>
             </div>
           )}

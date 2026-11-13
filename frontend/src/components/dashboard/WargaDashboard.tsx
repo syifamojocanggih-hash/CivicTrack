@@ -1,4 +1,4 @@
-﻿import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Bookmark,
@@ -23,6 +23,10 @@ import {
   X,
   MessageSquare,
   SlidersHorizontal,
+  Compass,
+  Car,
+  Bike,
+  RotateCcw,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -41,6 +45,7 @@ import {
 import { apiService } from '../../services/api';
 import { MiniMapOverview } from './MiniMapOverview';
 import { AduanDetailView } from './AduanDetailView';
+import { generateLamonganRouteConsultation, type RouteConsultationResult } from '../../utils/aiRouteConsultation';
 
 interface WargaDashboardProps {
   currentUser: UserProfile;
@@ -207,6 +212,48 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     lokasi_titik: '',
     kategori_cacat: 'Struktur Beton / Retak Ambles',
   });
+
+  // Tab Rute Alternatif AI State
+  const [routeQueryText, setRouteQueryText] = useState('');
+  const [selectedRouteProject, setSelectedRouteProject] = useState<number | 'all'>('all');
+  const [routeVehicleType, setRouteVehicleType] = useState<'semua' | 'mobil' | 'motor'>('semua');
+  const [isAnalyzingRoute, setIsAnalyzingRoute] = useState(false);
+  const [routeAnalysisResult, setRouteAnalysisResult] = useState<RouteConsultationResult | null>(null);
+  const [routeFormError, setRouteFormError] = useState<string | null>(null);
+
+  const handleConsultRoute = (e?: React.FormEvent, customQuery?: string) => {
+    if (e) e.preventDefault();
+    const q = customQuery !== undefined ? customQuery : routeQueryText;
+    if (!q.trim() && selectedRouteProject === 'all') {
+      setRouteFormError('Silakan ketik pertanyaan rute perjalanan Anda atau pilih proyek yang ingin dihindari.');
+      return;
+    }
+    setRouteFormError(null);
+    setIsAnalyzingRoute(true);
+
+    if (customQuery !== undefined) {
+      setRouteQueryText(customQuery);
+    }
+
+    setTimeout(() => {
+      const res = generateLamonganRouteConsultation(
+        q,
+        selectedRouteProject,
+        routeVehicleType,
+        projects
+      );
+      setRouteAnalysisResult(res);
+      setIsAnalyzingRoute(false);
+    }, 600);
+  };
+
+  const handleResetRouteConsultation = () => {
+    setRouteAnalysisResult(null);
+    setRouteQueryText('');
+    setSelectedRouteProject('all');
+    setRouteVehicleType('semua');
+    setRouteFormError(null);
+  };
 
   // Lock body scroll and support Escape key when any modal is open
   useEffect(() => {
@@ -2183,71 +2230,287 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
       {/* ── TAB CONTENT 5: RUTE ALTERNATIF AI ── */}
       {activeTab === 'rute' && (
-        <div className="bg-white rounded-2xl border border-[#DCE0E6] p-6 shadow-xs space-y-5">
-          <div className="flex items-center justify-between">
+        <div className="bg-white rounded-2xl border border-[#DCE0E6] p-4 sm:p-6 shadow-xs space-y-6">
+          {/* Header */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
             <div>
               <div className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-[#E67E22]" />
-                <h2 className="text-base font-bold font-heading text-[#184C78]">
+                <div className="w-8 h-8 rounded-lg bg-orange-100 text-[#E67E22] flex items-center justify-center">
+                  <Sparkles className="w-4 h-4" />
+                </div>
+                <h2 className="text-base sm:text-lg font-bold font-heading text-[#184C78]">
                   Sistem Rekomendasi Rute Pengalihan AI
                 </h2>
               </div>
               <p className="text-xs text-[#6C757D] mt-1">
-                Rekomendasi jalur cerdas terstruktur untuk menghindari titik proyek pembangunan yang sedang dalam pengerjaan konstruksi.
+                Konsultasikan perjalanan Anda untuk mendapatkan masukan teknis dan 3 rute pengalihan terverifikasi OpenStreetMap di Kabupaten Lamongan.
               </p>
             </div>
-            <button
-              onClick={() => onOpenAIRoute('Pelebaran Jalan Soekarno Hatta KM 4–7')}
-              className="btn-primary !h-9 text-xs flex items-center gap-1.5"
-            >
-              <span>Buka Analisis AI Lengkap</span>
-              <ExternalLink className="w-3.5 h-3.5" />
-            </button>
+
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2.5 py-1 rounded-full flex items-center gap-1 shrink-0">
+                <ShieldCheck className="w-3 h-3 text-emerald-600" />
+                <span>OSM Lamongan Grounded</span>
+              </span>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl bg-[#EBF4FB] border border-[#c5def2] space-y-2">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-[#184C78] flex items-center justify-between">
-                <span>Rute Utama (Prioritas 1)</span>
-                <span className="bg-[#184C78] text-white px-2 py-0.5 rounded text-[10px]">Mobil &amp; Bus</span>
-              </div>
-              <h4 className="font-bold text-sm text-[#212529]">Via Jl. Borobudur &rarr; Jl. Candi Mendut</h4>
-              <p className="text-xs text-[#495057] leading-relaxed">
-                Jalan lebar dua lajur dengan kapasitas kendaraan sedang hingga tinggi. Rekomendasi utama pada jam kerja sibuk (07:00–09:00).
-              </p>
-              <div className="text-[11px] text-[#184C78] font-semibold pt-1">
-                Estimasi tambahan waktu: +6 Menit
-              </div>
-            </div>
-
-            <div className="p-4 rounded-xl bg-[#FEF3E7] border border-[#FBD8B3] space-y-2">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-[#9A4C08] flex items-center justify-between">
-                <span>Rute Kedua (Prioritas 2)</span>
-                <span className="bg-[#E67E22] text-white px-2 py-0.5 rounded text-[10px]">Motor &amp; Mobil</span>
-              </div>
-              <h4 className="font-bold text-sm text-[#212529]">Via Simpang Cengger Ayam &rarr; Candi Panggung</h4>
-              <p className="text-xs text-[#495057] leading-relaxed">
-                Jalur penghubung koridor barat. Cocok untuk roda dua dan mobil pribadi yang ingin menghindari simpang lampu merah utama.
-              </p>
-              <div className="text-[11px] text-[#9A4C08] font-semibold pt-1">
-                Estimasi tambahan waktu: +8 Menit
+          {/* Interactive Route Consultation Input Form */}
+          <form onSubmit={(e) => handleConsultRoute(e)} className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-2xl p-4 sm:p-5 space-y-4">
+            <div>
+              <label className="block text-xs font-bold text-[#184C78] mb-1.5 flex items-center justify-between">
+                <span>Tuliskan Titik Awal, Tujuan, atau Pertanyaan Rute Anda:</span>
+                <span className="text-[11px] font-normal text-slate-500">Mendukung bahasa bebas</span>
+              </label>
+              <div className="relative">
+                <textarea
+                  rows={3}
+                  value={routeQueryText}
+                  onChange={(e) => {
+                    setRouteQueryText(e.target.value);
+                    if (routeFormError) setRouteFormError(null);
+                  }}
+                  placeholder="Contoh: Saya mau berangkat dari Alun-Alun Lamongan menuju Babat mengendarai mobil, jalur mana yang aman dari perbaikan jalan poros Deket/Pucuk?"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm bg-white border border-[#DCE0E6] rounded-xl focus:border-[#2980B9] focus:ring-2 focus:ring-[#2980B9]/20 outline-none transition-all placeholder:text-slate-400"
+                />
               </div>
             </div>
 
-            <div className="p-4 rounded-xl bg-[#E6F7F1] border border-[#B7EBD8] space-y-2">
-              <div className="text-[11px] font-bold uppercase tracking-wider text-[#0E6243] flex items-center justify-between">
-                <span>Rute Khusus Lingkungan</span>
-                <span className="bg-[#1A9E6E] text-white px-2 py-0.5 rounded text-[10px]">Khusus Roda 2</span>
+            {/* Supporting Filters: Target Project & Vehicle Type */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                  Hindari Proyek Konstruksi Tertentu:
+                </label>
+                <select
+                  value={selectedRouteProject}
+                  onChange={(e) => setSelectedRouteProject(e.target.value === 'all' ? 'all' : Number(e.target.value))}
+                  className="w-full px-3 py-2 text-xs bg-white border border-[#DCE0E6] rounded-lg focus:border-[#2980B9] outline-none text-slate-700 cursor-pointer"
+                >
+                  <option value="all">🔍 Deteksi Otomatis dari Input Teks</option>
+                  {projects.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      #{p.id.toString().padStart(4, '0')} {p.nama_proyek} ({p.nama_wilayah || 'Lamongan'})
+                    </option>
+                  ))}
+                </select>
               </div>
-              <h4 className="font-bold text-sm text-[#212529]">Via Gang Jati Murni Barat</h4>
-              <p className="text-xs text-[#495057] leading-relaxed">
-                Jalur pintas pemukiman warga hanya untuk sepeda motor dengan kecepatan maksimal 20 km/jam untuk menjaga ketenangan warga.
-              </p>
-              <div className="text-[11px] text-[#0E6243] font-semibold pt-1">
-                Estimasi tambahan waktu: +3 Menit
+
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-700 mb-1">
+                  Moda Kendaraan Perjalanan:
+                </label>
+                <div className="grid grid-cols-3 gap-1.5 bg-slate-200/60 p-1 rounded-lg">
+                  <button
+                    type="button"
+                    onClick={() => setRouteVehicleType('semua')}
+                    className={`py-1.5 text-xs font-semibold rounded-md transition-all cursor-pointer ${
+                      routeVehicleType === 'semua' ? 'bg-white text-[#184C78] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    Semua
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRouteVehicleType('mobil')}
+                    className={`py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                      routeVehicleType === 'mobil' ? 'bg-white text-[#184C78] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Car className="w-3 h-3" />
+                    <span>Mobil</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRouteVehicleType('motor')}
+                    className={`py-1.5 text-xs font-semibold rounded-md transition-all flex items-center justify-center gap-1 cursor-pointer ${
+                      routeVehicleType === 'motor' ? 'bg-white text-[#184C78] shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                    }`}
+                  >
+                    <Bike className="w-3 h-3" />
+                    <span>Motor</span>
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+
+            {routeFormError && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs flex items-center gap-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                <span>{routeFormError}</span>
+              </div>
+            )}
+
+            {/* Submit & Quick Action Bar */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-1 border-t border-slate-200/70">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="text-[11px] text-slate-500 font-medium">Contoh Cepat:</span>
+                <button
+                  type="button"
+                  onClick={() => handleConsultRoute(undefined, 'Dari Alun-Alun Lamongan ke Kecamatan Deket membawa mobil pribadi')}
+                  className="text-[11px] bg-white hover:bg-slate-100 text-[#184C78] border border-slate-300 px-2 py-0.5 rounded-full transition-colors cursor-pointer"
+                >
+                  Alun-Alun ➔ Deket
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleConsultRoute(undefined, 'Jalur cepat Babat ke Lamongan Kota tanpa macet proyek Pucuk')}
+                  className="text-[11px] bg-white hover:bg-slate-100 text-[#184C78] border border-slate-300 px-2 py-0.5 rounded-full transition-colors cursor-pointer"
+                >
+                  Babat ➔ Pucuk
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleConsultRoute(undefined, 'Rute pintas sepeda motor menghindari penyempitan jalan poros')}
+                  className="text-[11px] bg-white hover:bg-slate-100 text-[#184C78] border border-slate-300 px-2 py-0.5 rounded-full transition-colors cursor-pointer"
+                >
+                  Jalur Roda 2
+                </button>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {routeAnalysisResult && (
+                  <button
+                    type="button"
+                    onClick={handleResetRouteConsultation}
+                    className="px-3 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 bg-white border border-slate-300 rounded-xl transition-colors flex items-center gap-1 cursor-pointer"
+                  >
+                    <RotateCcw className="w-3.5 h-3.5" />
+                    <span>Reset</span>
+                  </button>
+                )}
+                <button
+                  type="submit"
+                  disabled={isAnalyzingRoute}
+                  className="px-4 py-2 bg-[#184C78] hover:bg-[#0f3252] text-white font-bold rounded-xl text-xs transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-50"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                  <span>{isAnalyzingRoute ? 'Menganalisis Rute...' : 'Dapatkan Rekomendasi Rute AI'}</span>
+                </button>
+              </div>
+            </div>
+          </form>
+
+          {/* Loading Indicator */}
+          {isAnalyzingRoute && (
+            <div className="p-8 text-center bg-slate-50 border border-slate-200 rounded-2xl space-y-3 animate-fade-in">
+              <div className="w-10 h-10 border-3 border-[#184C78] border-t-transparent rounded-full animate-spin mx-auto" />
+              <div className="text-xs font-bold text-[#184C78]">
+                Sedang Memetakan Kondisi Lapangan &amp; Jaringan Jalan Lamongan...
+              </div>
+              <p className="text-[11px] text-slate-500 max-w-md mx-auto">
+                AI sedang mencocokkan titik awal, tujuan, dan perlintasan proyek konstruksi menggunakan koridor jalan OpenStreetMap terverifikasi.
+              </p>
+            </div>
+          )}
+
+          {/* EMPTY STATE: Saat belum ada analisis (ini harusnya kosong) */}
+          {!routeAnalysisResult && !isAnalyzingRoute && (
+            <div className="p-8 sm:p-12 text-center bg-slate-50/70 border border-dashed border-slate-300 rounded-2xl space-y-3">
+              <div className="w-14 h-14 rounded-2xl bg-white border border-slate-200 shadow-xs flex items-center justify-center text-slate-400 mx-auto">
+                <Compass className="w-7 h-7 text-[#184C78]" />
+              </div>
+              <h3 className="font-heading text-sm sm:text-base font-bold text-slate-800">
+                Belum Ada Rekomendasi Rute yang Diproses
+              </h3>
+              <p className="text-xs text-slate-500 max-w-md mx-auto leading-relaxed">
+                Tuliskan pertanyaan atau rencana perjalanan Anda pada formulir di atas, lalu tekan tombol <strong>"Dapatkan Rekomendasi Rute AI"</strong> untuk menampilkan masukan teknis dan 3 rute pengalihan nyata di Kabupaten Lamongan.
+              </p>
+            </div>
+          )}
+
+          {/* RESULT STATE: Masukan dan Rekomendasi yang Benar */}
+          {routeAnalysisResult && !isAnalyzingRoute && (
+            <div className="space-y-5 animate-fade-in">
+              {/* Masukan & Analisis Cerdas AI */}
+              <div className="bg-[#FEF3E7] border border-[#FBD8B3] rounded-2xl p-4 sm:p-5 space-y-3 text-xs">
+                <div className="flex items-center justify-between border-b border-[#FBD8B3]/60 pb-2.5 flex-wrap gap-2">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="w-4 h-4 text-[#E67E22]" />
+                    <span className="font-heading font-bold text-[#9A4C08] uppercase tracking-wider text-xs">
+                      Masukan &amp; Analisis Lapangan AI
+                    </span>
+                  </div>
+                  <span className="text-[11px] font-bold text-[#184C78] bg-white px-2.5 py-0.5 rounded-full border border-[#CBD5E1]">
+                    Proyek: {routeAnalysisResult.targetProject.nama_proyek}
+                  </span>
+                </div>
+
+                <div className="space-y-2 text-[#495057] leading-relaxed">
+                  <p>
+                    <strong className="text-slate-900">Ringkasan Analisis:</strong> {routeAnalysisResult.feedback.summary}
+                  </p>
+                  <p>
+                    <strong className="text-slate-900">Dampak Pekerjaan Fisik:</strong> {routeAnalysisResult.feedback.impactAnalysis}
+                  </p>
+                  <p>
+                    <strong className="text-slate-900">Saran Pengalihan:</strong> {routeAnalysisResult.feedback.recommendationTips}
+                  </p>
+                  <p className="text-[11px] text-slate-500 pt-1 border-t border-[#FBD8B3]/50">
+                    *Himbauan Keselamatan: {routeAnalysisResult.feedback.safetyAdvice}
+                  </p>
+                </div>
+              </div>
+
+              {/* 3 Rekomendasi Rute yang Benar di Lamongan */}
+              <div>
+                <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
+                  <h3 className="font-heading text-xs font-bold text-[#184C78] uppercase tracking-wider">
+                    3 Rekomendasi Jalur Pengalihan Resmi (Terverifikasi Lamongan):
+                  </h3>
+                  <span className="text-[11px] text-slate-500 font-medium">Berdasarkan data spasial PU Bina Marga</span>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {routeAnalysisResult.routes.map((rute) => (
+                    <div
+                      key={rute.id}
+                      className={`p-4 rounded-xl ${rute.cardBgColor} border ${rute.borderColor} flex flex-col justify-between space-y-3 shadow-2xs hover:shadow-xs transition-shadow`}
+                    >
+                      <div className="space-y-2">
+                        <div className={`text-[11px] font-bold uppercase tracking-wider ${rute.accentTextColor} flex items-center justify-between`}>
+                          <span>{rute.priorityLabel}</span>
+                          <span className={`${rute.badgeBgColor} text-white px-2 py-0.5 rounded text-[10px]`}>
+                            {rute.vehicleBadge}
+                          </span>
+                        </div>
+                        <h4 className="font-bold text-sm text-[#212529] leading-snug">
+                          {rute.title}
+                        </h4>
+                        <p className="text-xs text-[#495057] leading-relaxed">
+                          {rute.description}
+                        </p>
+                      </div>
+
+                      <div className="pt-2 border-t border-black/5 flex items-center justify-between text-[11px]">
+                        <span className={`font-semibold ${rute.accentTextColor}`}>{rute.timeEst}</span>
+                        <span className="text-slate-500 font-mono text-[10px]">{rute.distanceEst}</span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Action Buttons to View Interactive Simulation */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-xs text-slate-600">
+                  <strong className="text-slate-900 block font-bold">Ingin Melihat Simulasi Jalur &amp; Rambu Lengkap di Peta?</strong>
+                  Buka peta interaktif untuk melihat simulasi laju kendaraan, titik penutupan jalan, dan alternatif rute di peta wilayah.
+                </div>
+
+                <div className="flex items-center gap-2 w-full sm:w-auto shrink-0">
+                  <button
+                    onClick={() => onOpenAIRoute(routeAnalysisResult.targetProject.nama_proyek, routeAnalysisResult.targetProject)}
+                    className="btn-primary !h-9 text-xs flex items-center justify-center gap-1.5 w-full sm:w-auto cursor-pointer shadow-xs"
+                  >
+                    <Compass className="w-3.5 h-3.5" />
+                    <span>Buka Simulasi Peta Interaktif Lengkap</span>
+                    <ExternalLink className="w-3 h-3" />
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
       </div>
