@@ -533,7 +533,8 @@ INSERT INTO users (id, nama, email, password_hash, role, dinas_id, is_active) VA
 (7, 'Drs. Joko Prasetyo, M.Si (Aparatur Pemerintah Daerah)', 'aparatur.pemerintah@civictrack.demo', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'pimpinan_instansi', 1, TRUE),
 (8, 'Admin CivicTrack', 'admin@civictrack.id', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'admin_dinas', 1, TRUE),
 (9, 'Pimpinan CivicTrack', 'pimpinan@civictrack.id', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'pimpinan_instansi', 1, TRUE),
-(10, 'Warga CivicTrack', 'warga@civictrack.id', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'warga', NULL, TRUE);
+(10, 'Warga CivicTrack', 'warga@civictrack.id', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'warga', NULL, TRUE),
+(11, 'Admin Dinas PU Lamongan', 'admindinaspu@civictrack.id', '$2b$12$HzOARqYWL3j1juLnrBy8Z.8lHThMRvICY09HSkGLVW4EyYalf7vDO', 'admin_dinas', 1, TRUE);
 
 -- 4. Data 35 Proyek Infrastruktur Terverifikasi Lamongan
 INSERT INTO proyek (id, nama_proyek, kategori, deskripsi, latitude, longitude, wilayah_id, desa_id, dinas_id, anggaran, status, progres_persen, tanggal_mulai, estimasi_selesai, dibuat_oleh) VALUES
@@ -572,6 +573,44 @@ INSERT INTO proyek (id, nama_proyek, kategori, deskripsi, latitude, longitude, w
 (33, 'Pembangunan Embung Konservasi Air Tani Sukorame', 'drainase', 'Embung geomembrane HDPE 1.5 mm kapasitas 45.000 m3, pelimpah spillway beton bertulang, pompa tenaga surya suplai 120 ha sawah tadah hujan. Sumber Pembiayaan: DAK Fisik Pertanian & APBD Kab. Lamongan. Rekanan Pelaksana: CV Bintang Tani Mandiri / CV Mitra Konsultan Pratama. Kode Paket: LAM-DRA-2024-007 (SiRUP-4832901).', -7.345800, 112.115200, 2, 32, 4, 3400000000.00, 'selesai', 100, '2023-09-01', '2024-05-31', 1),
 (34, 'Peningkatan Akses Wisata Bahari Lamongan (WBL) & Makam Sunan Drajat', 'jalan', 'Pelebaran jalan menjadi 4 lajur (2x2) median tengah, lapis aspal AC-BC & AC-WC 10 cm, lampu penerangan jalan etnik pesisir 68 tiang, drainase trotoar. Sumber Pembiayaan: APBD Kab. Lamongan & BK Pariwisata Prov. Jatim. Rekanan Pelaksana: PT Pesisir Jaya Konstruksi / CV Artha Buana Desain. Kode Paket: LAM-JML-2024-014 (SiRUP-4825120).', -6.885400, 112.375200, 15, 259, 1, 16800000000.00, 'selesai', 100, '2023-09-01', '2024-07-31', 1),
 (35, 'Pembangunan Jalan Lingkar Utara (JLU) Seksi Deket - Sukodadi', 'jalan', 'Konstruksi jalan by-pass pengurai kemacetan perlintasan sebidang KA nasional, panjang 7.15 km, rigid beton tebal 30 cm, jembatan box traffic crossing. Sumber Pembiayaan: SBSN APBN KemenPUPR & APBD Kab. (Lahan). Rekanan Pelaksana: PT Wijaya Karya (Persero) Tbk / PT Disi Putera Mandiri. Kode Paket: LAM-JML-2024-015 (SiRUP-4825700).', -7.105400, 112.421500, 23, 409, 1, 78500000000.00, 'berjalan', 62, '2023-09-01', '2024-06-30', 1);
+
+-- Update kode seri proyek dan kunci akses khusus penanggung jawab proyek
+UPDATE proyek SET kode_proyek = 'SKD-SKD-001', kode_akses = 'PJ-17409' WHERE id = 1;
+UPDATE proyek SET kode_proyek = 'PCK-PCK-002', kode_akses = 'PJ-28315' WHERE id = 2;
+UPDATE proyek SET kode_proyek = 'SGO-GDL-003', kode_akses = 'PJ-39142' WHERE id = 3;
+UPDATE proyek SET kode_proyek = 'BBT-BBT-004', kode_akses = 'PJ-41850' WHERE id = 4;
+UPDATE proyek SET kode_proyek = 'DKT-SDR-005', kode_akses = 'PJ-52671' WHERE id = 5;
+UPDATE proyek SET kode_proyek = 'TUR-TUR-006', kode_akses = 'PJ-63782' WHERE id = 6;
+UPDATE proyek SET kode_proyek = 'BRD-BRD-007', kode_akses = 'PJ-74893' WHERE id = 7;
+UPDATE proyek SET kode_proyek = 'SMB-ARD-008', kode_akses = 'PJ-85904' WHERE id = 8;
+UPDATE proyek SET kode_proyek = 'SKR-SKR-009', kode_akses = 'PJ-96015' WHERE id = 9;
+UPDATE proyek SET kode_proyek = 'LRN-PLG-010', kode_akses = 'PJ-10234' WHERE id = 10;
+UPDATE proyek SET kode_proyek = 'TKG-WNK-011', kode_akses = 'PJ-21345' WHERE id = 11;
+UPDATE proyek SET kode_proyek = 'MDO-MJR-012', kode_akses = 'PJ-32456' WHERE id = 12;
+UPDATE proyek SET kode_proyek = 'KBN-KUR-013', kode_akses = 'PJ-43567' WHERE id = 13;
+UPDATE proyek SET kode_proyek = 'KBN-KUR-014', kode_akses = 'PJ-54678' WHERE id = 14;
+UPDATE proyek SET kode_proyek = 'KTG-PCG-015', kode_akses = 'PJ-65789' WHERE id = 15;
+UPDATE proyek SET kode_proyek = 'LMG-SKR-016', kode_akses = 'PJ-76890' WHERE id = 16;
+UPDATE proyek SET kode_proyek = 'SGO-KDB-017', kode_akses = 'PJ-87901' WHERE id = 17;
+UPDATE proyek SET kode_proyek = 'KGN-KGN-018', kode_akses = 'PJ-98012' WHERE id = 18;
+UPDATE proyek SET kode_proyek = 'BBT-BBT-019', kode_akses = 'PJ-19123' WHERE id = 19;
+UPDATE proyek SET kode_proyek = 'KBN-KUR-020', kode_akses = 'PJ-20234' WHERE id = 20;
+UPDATE proyek SET kode_proyek = 'BRD-BRD-021', kode_akses = 'PJ-31345' WHERE id = 21;
+UPDATE proyek SET kode_proyek = 'LMG-BNJ-022', kode_akses = 'PJ-42456' WHERE id = 22;
+UPDATE proyek SET kode_proyek = 'LMG-SKR-023', kode_akses = 'PJ-53567' WHERE id = 23;
+UPDATE proyek SET kode_proyek = 'DKT-SDR-024', kode_akses = 'PJ-64678' WHERE id = 24;
+UPDATE proyek SET kode_proyek = 'LMG-JTS-025', kode_akses = 'PJ-75789' WHERE id = 25;
+UPDATE proyek SET kode_proyek = 'BBT-BBT-026', kode_akses = 'PJ-86890' WHERE id = 26;
+UPDATE proyek SET kode_proyek = 'MDR-PNG-027', kode_akses = 'PJ-97901' WHERE id = 27;
+UPDATE proyek SET kode_proyek = 'SLK-SLK-028', kode_akses = 'PJ-18012' WHERE id = 28;
+UPDATE proyek SET kode_proyek = 'BRD-BRD-029', kode_akses = 'PJ-29123' WHERE id = 29;
+UPDATE proyek SET kode_proyek = 'NGB-NGB-030', kode_akses = 'PJ-30234' WHERE id = 30;
+UPDATE proyek SET kode_proyek = 'SKD-SKD-031', kode_akses = 'PJ-41345' WHERE id = 31;
+UPDATE proyek SET kode_proyek = 'KBN-BLW-032', kode_akses = 'PJ-52456' WHERE id = 32;
+UPDATE proyek SET kode_proyek = 'SKR-SKR-033', kode_akses = 'PJ-63567' WHERE id = 33;
+UPDATE proyek SET kode_proyek = 'PCR-PCR-034', kode_akses = 'PJ-74678' WHERE id = 34;
+UPDATE proyek SET kode_proyek = 'LMG-PLW-035', kode_akses = 'PJ-85789' WHERE id = 35;
+
 
 -- 5. Data Tahapan Progres
 INSERT INTO tahapan_progres (id, proyek_id, nama_tahap, progres_persen, catatan, dicatat_oleh) VALUES

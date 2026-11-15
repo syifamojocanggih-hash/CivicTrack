@@ -27,12 +27,17 @@ class ProyekKategori(str, enum.Enum):
 class ProyekStatus(str, enum.Enum):
     berjalan = "berjalan"
     selesai = "selesai"
+    tertunda = "tertunda"
+    dalam_peninjauan_ulang = "dalam_peninjauan_ulang"
     ditangguhkan = "ditangguhkan"
 
     @classmethod
     def _missing_(cls, value):
-        if value in ("dalam_peninjauan_ulang", "tertunda", "pending", "review"):
-            return cls.ditangguhkan
+        val_str = str(value).lower().strip()
+        if val_str in ("pending", "review", "peninjauan"):
+            return cls.dalam_peninjauan_ulang
+        if val_str in ("ditangguhkan", "pause", "hold"):
+            return cls.tertunda
         return super()._missing_(value)
 
 class MediaType(str, enum.Enum):

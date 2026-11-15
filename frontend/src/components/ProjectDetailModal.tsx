@@ -518,6 +518,18 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                       <div className="absolute top-2 left-2 bg-[#184C78]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
                         {photo.tag}
                       </div>
+                      {photo.googleStreetViewUrl && (
+                        <a
+                          href={photo.googleStreetViewUrl}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="absolute top-2 right-2 bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm transition-all hover:scale-105"
+                          title="Buka titik koordinat proyek langsung di Google Street View 360°"
+                        >
+                          <Compass className="w-3 h-3 text-cyan-400" />
+                          <span>Street View 360° ↗</span>
+                        </a>
+                      )}
                       <div className="absolute bottom-2 left-2 right-2 bg-black/65 backdrop-blur-xs text-white text-[10px] font-mono px-2 py-1 rounded flex items-center justify-between">
                         <span className="truncate">📍 {photo.locationName}</span>
                         <span className="text-emerald-400 font-bold shrink-0">{photo.geotagCoords}</span>

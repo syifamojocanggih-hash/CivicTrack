@@ -553,6 +553,50 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                 </button>
               </div>
             )}
+
+            {/* Quick Demo Fill Buttons (1-Click) */}
+            {mode === 'login' && (
+              <div className="pt-4 border-t border-slate-100">
+                <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider block mb-2">
+                  Akun Demo Siap Pakai (1-Klik):
+                </span>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('admindinaspu@civictrack.id');
+                      setPassword('password123');
+                      setErrorMsg(null);
+                    }}
+                    className="px-2.5 py-1 text-xs rounded-full border border-blue-200 bg-blue-50/70 text-[#184C78] hover:bg-blue-100 font-medium transition-all cursor-pointer"
+                  >
+                    🏛️ Admin Dinas PU
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('pimpinan@civictrack.id');
+                      setPassword('password123');
+                      setErrorMsg(null);
+                    }}
+                    className="px-2.5 py-1 text-xs rounded-full border border-purple-200 bg-purple-50/70 text-purple-800 hover:bg-purple-100 font-medium transition-all cursor-pointer"
+                  >
+                    👔 Pimpinan Daerah
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('warga@civictrack.id');
+                      setPassword('password123');
+                      setErrorMsg(null);
+                    }}
+                    className="px-2.5 py-1 text-xs rounded-full border border-emerald-200 bg-emerald-50/70 text-emerald-800 hover:bg-emerald-100 font-medium transition-all cursor-pointer"
+                  >
+                    👥 Warga Masyarakat
+                  </button>
+                </div>
+              </div>
+            )}
           </form>
         </div>
 

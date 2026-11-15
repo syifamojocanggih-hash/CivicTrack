@@ -32,12 +32,13 @@ import {
   Info,
   ChevronLeft,
   MapPin,
+  ExternalLink,
 } from 'lucide-react';
 import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem } from '../types';
 import { apiService } from '../services/api';
 import { CivicTrackLogo } from './CivicTrackLogo';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON, LAMONGAN_DESA_GEOJSON } from '../data/geoWilayahData';
-import { getRealProjectImage } from '../utils/projectImages';
+import { getRealProjectImage, getGoogleStreetViewUrl } from '../utils/projectImages';
 import { generateProjectMilestones } from '../utils/projectConsistency';
 import { getProjectTechnicalDetails } from '../utils/projectTechnicalData';
 
@@ -2257,7 +2258,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           {/* Tab 1: Ringkasan Proyek */}
           {detailTab === 'ringkasan' && (
             <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 scrollbar-thin animate-fade-in">
-              {/* Photo Showcase with Telemetry Tag */}
+              {/* Photo Showcase with Telemetry Tag & Street View Direct Link */}
               <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
                 <img
                   src={getRealProjectImage(currentProject)}
@@ -2268,8 +2269,24 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
                   <span>Real-time Field Telemetry</span>
                 </div>
+                <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                  <a
+                    href={getGoogleStreetViewUrl(Number(currentProject.latitude) || -7.1197, Number(currentProject.longitude) || 112.4150)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md transition-all hover:scale-105"
+                    title="Buka titik koordinat proyek langsung di Google Street View 360°"
+                  >
+                    <Compass className="w-3 h-3 text-cyan-400" />
+                    <span>Street View 360°</span>
+                    <ExternalLink className="w-2.5 h-2.5 opacity-80" />
+                  </a>
+                </div>
                 <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md text-[#184C78] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md">
                   {currentProject.distanceStr} dari lokasi Anda
+                </div>
+                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-white text-[9px] font-mono px-2 py-0.5 rounded-full">
+                  📍 {Number(currentProject.latitude).toFixed(4)}°, {Number(currentProject.longitude).toFixed(4)}°
                 </div>
               </div>
 
