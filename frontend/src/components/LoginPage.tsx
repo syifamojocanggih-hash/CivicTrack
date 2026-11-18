@@ -564,18 +564,51 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      setEmail('admindinaspu@civictrack.id');
+                      setEmail('admin.binamarga@civictrack.demo');
                       setPassword('password123');
                       setErrorMsg(null);
                     }}
                     className="px-2.5 py-1 text-xs rounded-full border border-blue-200 bg-blue-50/70 text-[#184C78] hover:bg-blue-100 font-medium transition-all cursor-pointer"
                   >
-                    🏛️ Admin Dinas PU
+                    🏛️ Admin PU Bina Marga
                   </button>
                   <button
                     type="button"
                     onClick={() => {
-                      setEmail('pimpinan@civictrack.id');
+                      setEmail('admin.sda@civictrack.demo');
+                      setPassword('password123');
+                      setErrorMsg(null);
+                    }}
+                    className="px-2.5 py-1 text-xs rounded-full border border-cyan-200 bg-cyan-50/70 text-cyan-800 hover:bg-cyan-100 font-medium transition-all cursor-pointer"
+                  >
+                    💧 Admin Dinas SDA
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('admin.kesehatan@civictrack.demo');
+                      setPassword('password123');
+                      setErrorMsg(null);
+                    }}
+                    className="px-2.5 py-1 text-xs rounded-full border border-rose-200 bg-rose-50/70 text-rose-800 hover:bg-rose-100 font-medium transition-all cursor-pointer"
+                  >
+                    🏥 Admin Kesehatan
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('admin.prkpck@civictrack.demo');
+                      setPassword('password123');
+                      setErrorMsg(null);
+                    }}
+                    className="px-2.5 py-1 text-xs rounded-full border border-amber-200 bg-amber-50/70 text-amber-800 hover:bg-amber-100 font-medium transition-all cursor-pointer"
+                  >
+                    🌳 Admin PRKPCK
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEmail('pimpinan.lamongan@civictrack.demo');
                       setPassword('password123');
                       setErrorMsg(null);
                     }}
@@ -586,13 +619,13 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   <button
                     type="button"
                     onClick={() => {
-                      setEmail('warga@civictrack.id');
+                      setEmail('budi.santoso@civictrack.demo');
                       setPassword('password123');
                       setErrorMsg(null);
                     }}
                     className="px-2.5 py-1 text-xs rounded-full border border-emerald-200 bg-emerald-50/70 text-emerald-800 hover:bg-emerald-100 font-medium transition-all cursor-pointer"
                   >
-                    👥 Warga Masyarakat
+                    👥 Warga (Budi Santoso)
                   </button>
                 </div>
               </div>

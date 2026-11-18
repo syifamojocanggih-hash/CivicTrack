@@ -1,11 +1,12 @@
 import enum
-from sqlalchemy import Column, BigInteger, String, Text, SmallInteger, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Text, SmallInteger, Date, DateTime, Enum, ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base, PK_BIGINT
 from app.models.project import MediaType
 
 class EvaluasiStatus(str, enum.Enum):
+    terjadwal = "terjadwal"
     menunggu_verifikasi = "menunggu_verifikasi"
     dalam_peninjauan_ulang = "dalam_peninjauan_ulang"
     terverifikasi_perlu_tindak_lanjut = "terverifikasi_perlu_tindak_lanjut"
@@ -23,6 +24,7 @@ class EvaluasiPembangunan(Base):
     skor_urgensi_ai = Column(SmallInteger, nullable=True) # 1 - 5
     ringkasan_analisis_ai = Column(Text, nullable=True)
     status = Column(Enum(EvaluasiStatus), nullable=False, default=EvaluasiStatus.menunggu_verifikasi, index=True)
+    tanggal_verifikasi = Column(Date, nullable=True)
     ditinjau_oleh = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)

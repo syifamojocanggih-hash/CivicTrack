@@ -3,6 +3,7 @@ import uuid
 import json
 import logging
 from typing import List, Optional
+from datetime import date
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Query, status, BackgroundTasks
 from sqlalchemy.orm import Session
 from app.core.config import settings
@@ -147,6 +148,7 @@ def get_evaluation_detail(eval_id: int, db: Session = Depends(get_db)):
         skor_urgensi_ai=evaluasi.skor_urgensi_ai,
         ringkasan_analisis_ai=evaluasi.ringkasan_analisis_ai,
         status=evaluasi.status,
+        tanggal_verifikasi=evaluasi.tanggal_verifikasi,
         ditinjau_oleh=evaluasi.ditinjau_oleh,
         created_at=evaluasi.created_at,
         updated_at=evaluasi.updated_at,
@@ -215,6 +217,10 @@ def verify_evaluation(
     status_lama = evaluasi.status.value
     evaluasi.status = req.status
     evaluasi.ditinjau_oleh = current_user.id
+    if req.status == EvaluasiStatus.selesai_ditindaklanjuti:
+        evaluasi.tanggal_verifikasi = date.today()
+    elif req.status == EvaluasiStatus.terjadwal:
+        evaluasi.tanggal_verifikasi = None
 
     # Catat audit log
     log = EvaluasiStatusLog(

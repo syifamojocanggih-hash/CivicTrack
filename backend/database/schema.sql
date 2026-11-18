@@ -255,12 +255,14 @@ CREATE TABLE evaluasi_pembangunan (
     skor_urgensi_ai SMALLINT NULL COMMENT 'Skor urgensi 1 (ringan) s/d 5 (sangat mendesak)',
     ringkasan_analisis_ai TEXT NULL,
     status ENUM(
+        'terjadwal',
         'menunggu_verifikasi',
         'dalam_peninjauan_ulang',
         'terverifikasi_perlu_tindak_lanjut',
         'selesai_ditindaklanjuti',
         'ditolak_tidak_terbukti'
     ) NOT NULL DEFAULT 'menunggu_verifikasi',
+    tanggal_verifikasi DATE NULL COMMENT 'Tanggal verifikasi FHO selesai (NULL jika terjadwal/belum diverifikasi)',
     ditinjau_oleh BIGINT NULL,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
