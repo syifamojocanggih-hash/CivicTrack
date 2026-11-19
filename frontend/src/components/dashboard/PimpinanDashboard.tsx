@@ -152,10 +152,6 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
       <div className="bg-gradient-to-r from-[#184C78] via-[#0f3252] to-[#1a6fa8] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/20 text-amber-200 border border-amber-400/30 rounded-full text-xs font-semibold tracking-wide mb-3">
-              <Award className="w-4 h-4 text-amber-300" />
-              <span>Executive Dashboard Pimpinan Daerah</span>
-            </div>
             <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight">
               {currentUser.nama}
             </h1>

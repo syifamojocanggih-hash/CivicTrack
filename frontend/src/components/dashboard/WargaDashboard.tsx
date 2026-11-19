@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Bookmark,
@@ -15,6 +15,7 @@ import {
   Sparkles,
   ExternalLink,
   ChevronRight,
+  ChevronDown,
   Check,
   History,
   FileText,
@@ -27,6 +28,7 @@ import {
   Car,
   Bike,
   RotateCcw,
+  ArrowLeft,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -95,7 +97,15 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     }
   }, [activeAuditTrailId]);
 
-  const activeTab = (activeSection as any) || 'overview';
+  const [internalTab, setInternalTab] = useState<string>('overview');
+  const activeTab = (activeSection as any) || internalTab;
+
+  const handleBackToOverview = () => {
+    if (onSelectSection) {
+      onSelectSection('overview');
+    }
+    setInternalTab('overview');
+  };
 
   // Subscribed state
   const [subscribedList, setSubscribedList] = useState<SubscribedProject[]>(MOCK_SUBSCRIBED_PROJECTS);
@@ -110,6 +120,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     kategori_aduan: 'Dampak Lingkungan & Keselamatan',
   });
   const [reportFilter, setReportFilter] = useState<'semua' | 'menunggu' | 'diproses' | 'selesai'>('semua');
+  const [reportSortBy, setReportSortBy] = useState<'terbaru' | 'terlama' | 'terbanyak'>('terbaru');
   const [selectedAduanDetail, setSelectedAduanDetail] = useState<LaporanAduan | null>(null);
   const [showFullDetailView, setShowFullDetailView] = useState<boolean>(false);
   const [editingAduan, setEditingAduan] = useState<LaporanAduan | null>(null);
@@ -153,6 +164,29 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     komentar: '',
   });
   const [ratingSuccessMessage, setRatingSuccessMessage] = useState('');
+  const [isEditingRating, setIsEditingRating] = useState(false);
+
+  // Check whether current user already submitted a rating for the selected project
+  const userExistingRating = useMemo(() => {
+    return ratingList.find(
+      (item) =>
+        item.proyek_id === Number(ratingForm.proyek_id) &&
+        ((currentUser?.id && item.user_id === currentUser.id) ||
+          (currentUser?.nama && item.nama_warga && item.nama_warga.trim().toLowerCase() === currentUser.nama.trim().toLowerCase()))
+    );
+  }, [ratingList, ratingForm.proyek_id, currentUser]);
+
+  const handleStartEditRating = (existing: RatingUlasanItem) => {
+    setRatingForm({
+      proyek_id: existing.proyek_id,
+      bintang: existing.bintang,
+      aspek_kualitas: existing.aspek_kualitas,
+      aspek_ketepatan_waktu: existing.aspek_ketepatan_waktu,
+      aspek_manfaat: existing.aspek_manfaat,
+      komentar: existing.komentar || '',
+    });
+    setIsEditingRating(true);
+  };
 
   // Rating real-time synchronization helpers
   const calculatedAvgRating = Number(
@@ -569,8 +603,10 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         }
       );
 
+      const targetId = userExistingRating?.id || resRating.id || Date.now();
+
       const newRating: RatingUlasanItem = {
-        id: resRating.id,
+        id: targetId,
         proyek_id: pId,
         nama_proyek: selProj?.nama_proyek || resRating.nama_proyek || 'Proyek Selesai',
         user_id: currentUser.id,
@@ -583,17 +619,24 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         tanggal: new Date().toISOString().split('T')[0],
       };
 
-      setRatingList((prev) => [newRating, ...prev.filter((item) => item.id !== newRating.id)]);
-      setRatingSuccessMessage('Penilaian Anda berhasil disimpan ke database! Terima kasih atas partisipasi aktif Anda.');
+      setRatingList((prev) => [
+        newRating,
+        ...prev.filter(
+          (item) =>
+            item.id !== targetId &&
+            !(item.proyek_id === pId && (
+              (currentUser?.id && item.user_id === currentUser.id) ||
+              (currentUser?.nama && item.nama_warga && item.nama_warga.trim().toLowerCase() === currentUser.nama.trim().toLowerCase())
+            ))
+        ),
+      ]);
+      setRatingSuccessMessage(
+        isEditingRating
+          ? 'Ulasan dan penilaian Anda berhasil diperbarui!'
+          : 'Penilaian Anda berhasil disimpan ke database! Terima kasih atas partisipasi aktif Anda.'
+      );
       setTimeout(() => setRatingSuccessMessage(''), 4000);
-      setRatingForm({
-        proyek_id: projects.find((p) => p.status === 'selesai')?.id || 3,
-        bintang: 5,
-        aspek_kualitas: 5,
-        aspek_ketepatan_waktu: 5,
-        aspek_manfaat: 5,
-        komentar: '',
-      });
+      setIsEditingRating(false);
 
       if (onProjectUpdated) {
         apiService.getProjectDetail(pId).then((updated) => onProjectUpdated(updated)).catch(() => {});
@@ -665,10 +708,57 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     }
   };
 
-  const filteredLaporan = laporanList.filter((item) => {
-    if (reportFilter === 'semua') return true;
-    return item.status === reportFilter;
-  });
+  // Helper untuk parsing tanggal laporan ke timestamp numerik (mendukung ISO maupun format lokal DD/MM/YY)
+  const parseReportDate = (d?: string): number => {
+    if (!d) return 0;
+    const slashMatch = d.match(/^(\d{1,2})\/(\d{1,2})\/(\d{2,4})(?:[,\s]+(\d{1,2})[.:](\d{1,2}))?/);
+    if (slashMatch) {
+      const day = parseInt(slashMatch[1], 10);
+      const month = parseInt(slashMatch[2], 10) - 1;
+      let year = parseInt(slashMatch[3], 10);
+      if (year < 100) year += 2000;
+      const hour = slashMatch[4] ? parseInt(slashMatch[4], 10) : 0;
+      const minute = slashMatch[5] ? parseInt(slashMatch[5], 10) : 0;
+      return new Date(year, month, day, hour, minute).getTime();
+    }
+    const timestamp = Date.parse(d);
+    return isNaN(timestamp) ? 0 : timestamp;
+  };
+
+  // Hitung jumlah laporan akumulatif per proyek untuk mendukung pengurutan "paling banyak aduan"
+  const projectReportCounts = useMemo(() => {
+    const map: Record<number, number> = {};
+    laporanList.forEach((lap) => {
+      map[lap.proyek_id] = (map[lap.proyek_id] || 0) + 1;
+    });
+    return map;
+  }, [laporanList]);
+
+  // Filter status dan sorting berurutan: terbaru, terlama, atau paling banyak terdapat aduan
+  const filteredLaporan = useMemo(() => {
+    const list = laporanList.filter((item) => {
+      if (reportFilter === 'semua') return true;
+      return item.status === reportFilter;
+    });
+
+    return [...list].sort((a, b) => {
+      if (reportSortBy === 'terbanyak') {
+        const countA = projectReportCounts[a.proyek_id] || 0;
+        const countB = projectReportCounts[b.proyek_id] || 0;
+        if (countB !== countA) return countB - countA;
+        return b.id - a.id;
+      }
+      if (reportSortBy === 'terlama') {
+        const timeA = parseReportDate(a.tanggal_lapor) || a.id;
+        const timeB = parseReportDate(b.tanggal_lapor) || b.id;
+        return timeA - timeB;
+      }
+      // Default: 'terbaru'
+      const timeA = parseReportDate(a.tanggal_lapor) || a.id;
+      const timeB = parseReportDate(b.tanggal_lapor) || b.id;
+      return timeB - timeA;
+    });
+  }, [laporanList, reportFilter, reportSortBy, projectReportCounts]);
 
   const completedProjects = projects.filter((p) => p.status === 'selesai');
 
@@ -1304,16 +1394,30 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
       {/* ── KONTEN UTAMA DASHBOARD ── */}
       <div className="space-y-6">
+        {/* ── TOP NAVIGATION BACK BAR (KEMBALI KE OVERVIEW) ── */}
+        {activeTab !== 'overview' && (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white p-3.5 sm:px-5 sm:py-3 rounded-2xl border border-[#DCE0E6] shadow-2xs">
+            <button
+              type="button"
+              onClick={handleBackToOverview}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#F8FAFC] hover:bg-[#EBF4FB] text-[#184C78] border border-[#DCE0E6] hover:border-[#BFDBFE] rounded-xl text-xs font-bold transition-all shadow-2xs cursor-pointer group self-start sm:self-auto"
+            >
+              <ArrowLeft className="w-4 h-4 text-[#184C78] group-hover:-translate-x-0.5 transition-transform" />
+              <span>Kembali ke Overview</span>
+            </button>
+            <div className="flex items-center gap-2 text-xs text-slate-500 font-medium">
+              <Compass className="w-4 h-4 text-emerald-600" />
+              <span>Halaman Utama Peta Spasial GIS &amp; Transparansi Proyek</span>
+            </div>
+          </div>
+        )}
+
       {/* ── TAB CONTENT 1: DASHBOARD OVERVIEW (RINGKASAN & MONITORING) ── */}
       {activeTab === 'overview' && (
         <>
           {/* ── TOP HERO BANNER WARGA ── */}
           <div className="bg-gradient-to-r from-[#184C78] via-[#1a6fa8] to-[#2980B9] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
             <div className="relative z-10 max-w-3xl">
-              <div className="inline-flex items-center gap-2 px-3 py-1 bg-white/15 backdrop-blur-md rounded-full text-xs font-semibold tracking-wide mb-3">
-                <ShieldCheck className="w-4 h-4 text-emerald-300" />
-                <span>Portal Partisipasi &amp; Pengawasan Warga</span>
-              </div>
               <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight">
                 Selamat Datang, {currentUser.nama}! 👋
               </h1>
@@ -1338,6 +1442,16 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                   <Sparkles className="w-4 h-4 text-amber-300" />
                   <span>Cek Rute Alternatif AI</span>
                 </button>
+                {onOpenMapExplorer && (
+                  <button
+                    type="button"
+                    onClick={onOpenMapExplorer}
+                    className="w-full sm:w-auto px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white font-semibold text-xs rounded-xl backdrop-blur-md flex items-center justify-center gap-2 transition-all cursor-pointer active:scale-98 min-h-[42px]"
+                  >
+                    <Compass className="w-4 h-4 text-emerald-300" />
+                    <span>Jelajahi Peta &amp; Data Spasial</span>
+                  </button>
+                )}
               </div>
             </div>
 
@@ -1714,6 +1828,43 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
             </div>
           </div>
 
+          {/* Sub-bar Filter & Urutan Aduan (Dropdown Rapi & Modern) */}
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white px-4 py-3 rounded-xl border border-[#DCE0E6] shadow-2xs">
+            <div className="flex items-center gap-2 text-xs text-slate-600">
+              <span className="font-heading font-bold text-[#184C78] text-sm">
+                {filteredLaporan.length}
+              </span>
+              <span className="font-medium text-slate-500">Laporan ditampilkan</span>
+              {reportFilter !== 'semua' && (
+                <span className="text-[10px] font-bold text-[#184C78] bg-[#EBF4FB] px-2 py-0.5 rounded-full border border-[#c5def2] capitalize">
+                  Status: {reportFilter}
+                </span>
+              )}
+            </div>
+
+            <div className="flex items-center gap-2.5">
+              <label htmlFor="sort-laporan-select" className="text-xs font-semibold text-slate-600 flex items-center gap-1.5 shrink-0">
+                <SlidersHorizontal className="w-3.5 h-3.5 text-[#184C78]" />
+                <span>Urutkan:</span>
+              </label>
+
+              <div className="relative min-w-[230px]">
+                <select
+                  id="sort-laporan-select"
+                  aria-label="Urutkan Riwayat Laporan"
+                  value={reportSortBy}
+                  onChange={(e) => setReportSortBy(e.target.value as any)}
+                  className="w-full text-xs font-semibold bg-white border border-[#DCE0E6] text-slate-800 rounded-xl pl-3 pr-8 py-2 appearance-none focus:outline-none focus:border-[#184C78] focus:ring-1 focus:ring-[#184C78] shadow-2xs cursor-pointer hover:border-slate-400 transition-colors"
+                >
+                  <option value="terbaru">⏳ Terbaru (Paling Baru)</option>
+                  <option value="terlama">🕰️ Terlama (Laporan Awal)</option>
+                  <option value="terbanyak">🔥 Paling Banyak Terdapat Aduan</option>
+                </select>
+                <ChevronDown className="w-4 h-4 text-slate-400 absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+              </div>
+            </div>
+          </div>
+
           <div className="space-y-3">
             {filteredLaporan.map((lap) => {
               const getStatusBadge = (st: string) => {
@@ -1743,6 +1894,11 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                       <span className="text-xs text-[#6C757D] font-mono">
                         {lap.tanggal_lapor}
                       </span>
+                      {projectReportCounts[lap.proyek_id] > 1 && (
+                        <span className="ml-2 text-[10px] font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-200 inline-flex items-center gap-1">
+                          🔥 {projectReportCounts[lap.proyek_id]} Aduan Terkait
+                        </span>
+                      )}
                     </div>
                     <span className={`inline-flex items-center gap-1 text-xs font-bold px-2.5 py-1 rounded-full border ${statusInfo.bg}`}>
                       {lap.status === 'selesai' && <CheckCircle2 className="w-3.5 h-3.5" />}
@@ -1821,32 +1977,34 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
       {/* ── TAB CONTENT 3: RATING & ULASAN ── */}
       {activeTab === 'rating' && (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Rating Submission Form */}
-          <div className="lg:col-span-1 bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs h-fit space-y-4">
-            <div>
-              <h2 className="font-heading font-bold text-base text-[#184C78]">
-                Beri Penilaian Proyek Selesai
-              </h2>
-              <p className="text-xs text-[#6C757D] mt-1">
-                Khusus proyek yang telah berstatus 100% Selesai untuk mengukur kepuasan publik.
-              </p>
-            </div>
-
-            {ratingSuccessMessage && (
-              <div className="p-3 bg-[#E6F7F1] text-[#1A9E6E] text-xs font-semibold rounded-xl border border-[#B7EBD8] flex items-center gap-2">
-                <Check className="w-4 h-4 shrink-0" />
-                <span>{ratingSuccessMessage}</span>
-              </div>
-            )}
-
-            <form onSubmit={handleSubmitRating} className="space-y-3.5 text-xs">
+        <div className="space-y-6">
+          {/* Rating Submission / Edit Card (Full Width - Satu Kotak Sampai Ujung) */}
+          <div className="bg-white p-5 sm:p-7 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-5">
+            {/* Header & Project Selector */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-[#DCE0E6]">
               <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Pilih Proyek Selesai</label>
+                <h2 className="font-heading font-bold text-base sm:text-lg text-[#184C78]">
+                  Beri Penilaian Proyek Selesai
+                </h2>
+                <p className="text-xs text-[#6C757D] mt-0.5">
+                  Khusus proyek yang telah berstatus 100% Selesai untuk mengukur kepuasan publik.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <label htmlFor="pilih-proyek-rating-select" className="text-xs font-semibold text-[#184C78] shrink-0">
+                  Pilih Proyek Selesai:
+                </label>
                 <select
+                  id="pilih-proyek-rating-select"
+                  aria-label="Pilih Proyek Selesai"
                   value={ratingForm.proyek_id}
-                  onChange={(e) => setRatingForm({ ...ratingForm, proyek_id: Number(e.target.value) })}
-                  className="w-full p-2 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                  onChange={(e) => {
+                    const nextPid = Number(e.target.value);
+                    setRatingForm((prev) => ({ ...prev, proyek_id: nextPid }));
+                    setIsEditingRating(false);
+                  }}
+                  className="px-3 py-1.5 border border-[#DCE0E6] rounded-xl bg-white text-xs font-medium text-slate-800 outline-none focus:border-[#2980B9] shadow-2xs max-w-[260px] sm:max-w-[320px] truncate"
                 >
                   {completedProjects.length > 0 ? (
                     completedProjects.map((p) => (
@@ -1859,218 +2017,378 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                   )}
                 </select>
               </div>
+            </div>
 
-              {/* Skor Bintang Keseluruhan (Real-time Synced) */}
-              <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] p-4 rounded-xl border border-[#DCE0E6] shadow-xs space-y-2.5">
-                <div className="flex items-center justify-between gap-2">
-                  <div>
-                    <label className="block font-bold text-xs text-[#184C78]">
-                      Skor Bintang Keseluruhan
-                    </label>
-                    <span className="text-[10px] text-gray-500">
-                      Otomatis tersinkronisasi realtime dengan 3 parameter
-                    </span>
-                  </div>
-                  <span
-                    className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-2xs ${
-                      getScoreDescriptor(calculatedAvgRating).badgeClass
-                    }`}
-                  >
-                    {getScoreDescriptor(calculatedAvgRating).label}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between pt-0.5">
-                  <div className="flex items-center gap-1">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        type="button"
-                        key={star}
-                        onClick={() => handleOverallStarClick(star)}
-                        title={`Beri rating ${star} bintang (menyelaraskan semua parameter)`}
-                        className="p-0.5 text-2xl text-amber-400 hover:scale-125 active:scale-95 transition-all cursor-pointer focus:outline-hidden"
-                      >
-                        {star <= ratingForm.bintang ? '★' : '☆'}
-                      </button>
-                    ))}
-                  </div>
-
-                  <div className="flex items-baseline gap-1 bg-white px-2.5 py-1 rounded-lg border border-[#DCE0E6] shadow-2xs">
-                    <span className="text-lg font-black text-[#184C78] tabular-nums">
-                      {calculatedAvgRating.toFixed(1)}
-                    </span>
-                    <span className="text-[11px] font-semibold text-gray-400">/ 5.0</span>
-                  </div>
-                </div>
+            {ratingSuccessMessage && (
+              <div className="p-3 bg-[#E6F7F1] text-[#1A9E6E] text-xs font-semibold rounded-xl border border-[#B7EBD8] flex items-center gap-2">
+                <Check className="w-4 h-4 shrink-0" />
+                <span>{ratingSuccessMessage}</span>
               </div>
+            )}
 
-              {/* Penilaian Parameter Detail (1 - 5) */}
-              <div className="space-y-3 bg-[#F8FAFC] p-3.5 rounded-xl border border-[#DCE0E6]">
-                <div className="flex items-center justify-between pb-1 border-b border-[#E2E8F0]">
-                  <div className="flex items-center gap-1.5">
-                    <SlidersHorizontal className="w-3.5 h-3.5 text-[#184C78]" />
-                    <span className="font-bold text-[#184C78] text-[11px] uppercase tracking-wider">
-                      Penilaian Parameter Detail (1 - 5)
-                    </span>
-                  </div>
-                  <span className="text-[10px] font-semibold text-[#184C78] bg-[#EBF4FB] px-2 py-0.5 rounded border border-[#BFDBFE]">
-                    Rapi &amp; Realtime
-                  </span>
-                </div>
-
-                {[
-                  {
-                    key: 'aspek_kualitas' as const,
-                    label: 'Mutu & Kerapian Fisik',
-                    desc: 'Kekokohan material, finishing halus & kerapian',
-                    icon: ShieldCheck,
-                    val: ratingForm.aspek_kualitas,
-                  },
-                  {
-                    key: 'aspek_ketepatan_waktu' as const,
-                    label: 'Ketepatan Waktu Pelaksanaan',
-                    desc: 'Kesesuaian durasi pengerjaan dengan jadwal rencana',
-                    icon: Clock,
-                    val: ratingForm.aspek_ketepatan_waktu,
-                  },
-                  {
-                    key: 'aspek_manfaat' as const,
-                    label: 'Kemanfaatan bagi Warga',
-                    desc: 'Dampak nyata fasilitas bagi mobilitas & kenyamanan publik',
-                    icon: Sparkles,
-                    val: ratingForm.aspek_manfaat,
-                  },
-                ].map((param) => {
-                  const ParamIcon = param.icon;
-                  const fillPercent = ((param.val - 1) / 4) * 100;
-                  return (
-                    <div
-                      key={param.key}
-                      className="bg-white p-3 rounded-lg border border-[#E2E8F0] shadow-2xs space-y-2 hover:border-[#BFDBFE] transition-colors"
-                    >
-                      <div className="flex items-center justify-between gap-2">
-                        <div className="flex items-center gap-2 min-w-0">
-                          <div className="w-6 h-6 rounded-md bg-[#EBF4FB] text-[#184C78] flex items-center justify-center shrink-0">
-                            <ParamIcon className="w-3.5 h-3.5" />
-                          </div>
-                          <div className="min-w-0">
-                            <span className="font-bold text-xs text-[#184C78] block truncate">
-                              {param.label}
-                            </span>
-                            <span className="text-[10px] text-gray-400 block truncate">
-                              {param.desc}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex items-center gap-1.5 shrink-0">
-                          <span className="text-[10px] font-semibold text-gray-500 hidden sm:inline">
-                            {getParamValueDescriptor(param.val)}
-                          </span>
-                          <span className="px-2 py-0.5 text-xs font-black rounded-md bg-[#184C78] text-white tabular-nums shadow-2xs">
-                            {param.val} / 5
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* Interactive Custom Range Bar */}
-                      <div className="pt-0.5">
-                        <input
-                          type="range"
-                          min="1"
-                          max="5"
-                          step="1"
-                          aria-label={param.label}
-                          value={param.val}
-                          onChange={(e) => handleParameterChange(param.key, Number(e.target.value))}
-                          style={{
-                            background: `linear-gradient(to right, #184C78 0%, #2980B9 ${fillPercent}%, #E2E8F0 ${fillPercent}%, #E2E8F0 100%)`,
-                          }}
-                          className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-[#184C78] focus:outline-hidden"
-                        />
-                      </div>
-
-                      {/* Quick 1-5 Step Buttons */}
-                      <div className="flex justify-between items-center px-0.5 text-[10px] pt-0.5">
-                        {[1, 2, 3, 4, 5].map((step) => {
-                          const isActive = param.val === step;
-                          return (
-                            <button
-                              type="button"
-                              key={step}
-                              onClick={() => handleParameterChange(param.key, step)}
-                              className={`w-6 h-5.5 flex items-center justify-center rounded font-bold text-xs transition-all cursor-pointer ${
-                                isActive
-                                  ? 'bg-[#184C78] text-white shadow-2xs scale-105 ring-2 ring-[#184C78]/25'
-                                  : 'bg-[#F8FAFC] text-gray-500 border border-gray-200 hover:border-[#184C78] hover:text-[#184C78]'
-                              }`}
-                              title={`Pilih nilai ${step} untuk ${param.label}`}
-                            >
-                              {step}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Ulasan &amp; Testimoni Warga</label>
-                <textarea
-                  rows={3}
-                  required
-                  placeholder="Bagikan pengalaman atau dampak positif infrastruktur yang selesai dibangun bagi kenyamanan warga..."
-                  value={ratingForm.komentar}
-                  onChange={(e) => setRatingForm({ ...ratingForm, komentar: e.target.value })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
-                />
-              </div>
-
-              <button
-                type="submit"
-                className="w-full py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-bold rounded-lg text-xs transition-colors shadow-xs cursor-pointer"
-              >
-                Kirim Penilaian Kepuasan
-              </button>
-            </form>
-          </div>
-
-          {/* List of Public Ratings */}
-          <div className="lg:col-span-2 space-y-3">
-            <h2 className="font-heading font-bold text-base text-[#184C78]">
-              Daftar Ulasan &amp; Indeks Kepuasan Terkini
-            </h2>
-
-            {ratingList.map((item) => (
-              <div key={item.id} className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-2.5">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-7 h-7 rounded-full bg-[#EBF4FB] text-[#184C78] font-bold text-xs flex items-center justify-center">
-                      {(item.nama_warga || 'W').charAt(0).toUpperCase()}
+            {userExistingRating && !isEditingRating ? (
+              /* Tampilan Jika Warga Sudah Pernah Rating (Hanya Ada Opsi Edit Ulasan) */
+              <div className="space-y-5">
+                {/* Banner Status Sudah Dinilai */}
+                <div className="p-4 bg-emerald-50/80 border border-emerald-200/90 rounded-xl flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                      <CheckCircle2 className="w-5 h-5 text-emerald-600" />
                     </div>
                     <div>
-                      <div className="font-bold text-xs text-[#212529]">{item.nama_warga || 'Warga Masyarakat'}</div>
-                      <div className="text-[10px] text-[#6C757D]">{item.nama_proyek || 'Proyek Selesai'}</div>
+                      <div className="flex items-center gap-2">
+                        <h3 className="text-xs sm:text-sm font-bold text-emerald-950">
+                          Anda Sudah Memberikan Penilaian untuk Proyek Ini
+                        </h3>
+                        <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded-full">
+                          Terverifikasi
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-emerald-700 mt-0.5">
+                        Tercatat pada {userExistingRating.tanggal || 'hari ini'}. Anda dapat memperbarui penilaian sewaktu-waktu.
+                      </p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-1 text-amber-500 font-bold text-xs">
-                    <span>{'★'.repeat(item.bintang)}</span>
-                    <span className="text-[#6C757D] font-normal text-[11px] ml-1">({item.tanggal})</span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleStartEditRating(userExistingRating)}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-white hover:bg-emerald-100 text-emerald-800 text-xs font-bold rounded-xl border border-emerald-300 shadow-2xs transition-colors cursor-pointer shrink-0 self-start sm:self-auto"
+                  >
+                    <Edit3 className="w-3.5 h-3.5 text-emerald-600" />
+                    <span>Edit Ulasan</span>
+                  </button>
+                </div>
+
+                {/* Bagian Atas: Bagian Penilaian */}
+                <div className="space-y-2.5">
+                  <span className="text-[11px] font-bold text-[#184C78] uppercase tracking-wider block">
+                    Bagian Penilaian Anda
+                  </span>
+
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-3.5">
+                    {/* Skor Bintang card */}
+                    <div className="bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] p-4 rounded-xl border border-[#DCE0E6] flex flex-col justify-between space-y-2">
+                      <span className="text-[11px] font-semibold text-slate-500">Skor Bintang Keseluruhan</span>
+                      <div className="flex items-baseline gap-1.5">
+                        <span className="text-2xl font-black text-[#184C78] tabular-nums">
+                          {userExistingRating.bintang.toFixed(1)}
+                        </span>
+                        <span className="text-xs font-semibold text-slate-400">/ 5.0</span>
+                      </div>
+                      <div className="text-amber-400 text-base">
+                        {'★'.repeat(userExistingRating.bintang)}{'☆'.repeat(5 - userExistingRating.bintang)}
+                      </div>
+                      <span className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border self-start shadow-2xs ${getScoreDescriptor(userExistingRating.bintang).badgeClass}`}>
+                        {getScoreDescriptor(userExistingRating.bintang).label}
+                      </span>
+                    </div>
+
+                    {/* 3 Parameter cards */}
+                    <div className="md:col-span-3 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="bg-[#F8FAFC] p-3.5 rounded-xl border border-[#DCE0E6] flex flex-col justify-between">
+                        <div className="flex items-center gap-2 text-[#184C78] mb-2">
+                          <ShieldCheck className="w-4 h-4 shrink-0" />
+                          <span className="font-bold text-xs truncate">Mutu &amp; Kerapian Fisik</span>
+                        </div>
+                        <div>
+                          <div className="text-xl font-black text-[#184C78]">{userExistingRating.aspek_kualitas} <span className="text-xs font-semibold text-slate-400">/ 5</span></div>
+                          <span className="text-[10px] font-semibold text-slate-500 mt-1 block">{getParamValueDescriptor(userExistingRating.aspek_kualitas)}</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#F8FAFC] p-3.5 rounded-xl border border-[#DCE0E6] flex flex-col justify-between">
+                        <div className="flex items-center gap-2 text-[#184C78] mb-2">
+                          <Clock className="w-4 h-4 shrink-0" />
+                          <span className="font-bold text-xs truncate">Ketepatan Waktu</span>
+                        </div>
+                        <div>
+                          <div className="text-xl font-black text-[#184C78]">{userExistingRating.aspek_ketepatan_waktu} <span className="text-xs font-semibold text-slate-400">/ 5</span></div>
+                          <span className="text-[10px] font-semibold text-slate-500 mt-1 block">{getParamValueDescriptor(userExistingRating.aspek_ketepatan_waktu)}</span>
+                        </div>
+                      </div>
+
+                      <div className="bg-[#F8FAFC] p-3.5 rounded-xl border border-[#DCE0E6] flex flex-col justify-between">
+                        <div className="flex items-center gap-2 text-[#184C78] mb-2">
+                          <Sparkles className="w-4 h-4 shrink-0" />
+                          <span className="font-bold text-xs truncate">Kemanfaatan bagi Warga</span>
+                        </div>
+                        <div>
+                          <div className="text-xl font-black text-[#184C78]">{userExistingRating.aspek_manfaat} <span className="text-xs font-semibold text-slate-400">/ 5</span></div>
+                          <span className="text-[10px] font-semibold text-slate-500 mt-1 block">{getParamValueDescriptor(userExistingRating.aspek_manfaat)}</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
 
-                <p className="text-xs text-[#495057] leading-relaxed bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/50">
-                  "{item.komentar}"
-                </p>
-
-                <div className="flex gap-4 text-[11px] text-[#6C757D] pt-1">
-                  <span>Mutu: <strong className="text-[#184C78]">{item.aspek_kualitas}/5</strong></span>
-                  <span>Waktu: <strong className="text-[#184C78]">{item.aspek_ketepatan_waktu}/5</strong></span>
-                  <span>Manfaat: <strong className="text-[#184C78]">{item.aspek_manfaat}/5</strong></span>
+                {/* Bagian Bawah: Isi Ulasan */}
+                <div className="space-y-2 pt-2 border-t border-[#E2E8F0]">
+                  <span className="text-[11px] font-bold text-[#184C78] uppercase tracking-wider block">
+                    Isi Ulasan &amp; Testimoni Anda
+                  </span>
+                  <div className="bg-[#F8FAFC] p-4 rounded-xl border border-[#DCE0E6] text-xs sm:text-sm text-slate-800 leading-relaxed">
+                    {userExistingRating.komentar || 'Belum ada komentar tertulis.'}
+                  </div>
                 </div>
               </div>
-            ))}
+            ) : (
+              /* Form Mode: Baru atau Mode Edit */
+              <form onSubmit={handleSubmitRating} className="space-y-5 text-xs">
+                {isEditingRating && (
+                  <div className="p-3 bg-amber-50 text-amber-900 border border-amber-200 rounded-xl flex items-center justify-between gap-2">
+                    <div className="flex items-center gap-2">
+                      <Edit3 className="w-4 h-4 text-amber-700 shrink-0" />
+                      <span className="font-semibold text-xs">
+                        Mode Edit Ulasan: Ubah penilaian bintang atau testimoni Anda di bawah.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingRating(false)}
+                      className="text-xs text-amber-800 font-bold hover:underline cursor-pointer"
+                    >
+                      Batal Edit
+                    </button>
+                  </div>
+                )}
+
+                {/* BAGIAN ATAS: BAGIAN PENILAIAN */}
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5">
+                      <SlidersHorizontal className="w-3.5 h-3.5 text-[#184C78]" />
+                      <span className="font-bold text-[#184C78] text-xs uppercase tracking-wider">
+                        Bagian Penilaian (Skor Bintang &amp; Parameter Detail)
+                      </span>
+                    </div>
+                    <span className="text-[10px] font-semibold text-[#184C78] bg-[#EBF4FB] px-2.5 py-0.5 rounded-full border border-[#BFDBFE]">
+                      Rapi &amp; Realtime
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
+                    {/* Skor Bintang Keseluruhan (Real-time Synced) */}
+                    <div className="lg:col-span-4 bg-gradient-to-br from-[#F8FAFC] to-[#F1F5F9] p-4 sm:p-5 rounded-xl border border-[#DCE0E6] shadow-xs flex flex-col justify-between space-y-3">
+                      <div>
+                        <div className="flex items-center justify-between gap-2">
+                          <label className="block font-bold text-xs text-[#184C78]">
+                            Skor Bintang Keseluruhan
+                          </label>
+                          <span
+                            className={`px-2.5 py-0.5 text-[10px] font-bold rounded-full border shadow-2xs ${
+                              getScoreDescriptor(calculatedAvgRating).badgeClass
+                            }`}
+                          >
+                            {getScoreDescriptor(calculatedAvgRating).label}
+                          </span>
+                        </div>
+                        <p className="text-[10px] text-gray-500 mt-1">
+                          Otomatis tersinkronisasi realtime dengan 3 parameter
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between pt-1">
+                        <div className="flex items-center gap-1">
+                          {[1, 2, 3, 4, 5].map((star) => (
+                            <button
+                              type="button"
+                              key={star}
+                              onClick={() => handleOverallStarClick(star)}
+                              title={`Beri rating ${star} bintang (menyelaraskan semua parameter)`}
+                              className="p-0.5 text-2xl text-amber-400 hover:scale-125 active:scale-95 transition-all cursor-pointer focus:outline-hidden"
+                            >
+                              {star <= ratingForm.bintang ? '★' : '☆'}
+                            </button>
+                          ))}
+                        </div>
+
+                        <div className="flex items-baseline gap-1 bg-white px-3 py-1 rounded-lg border border-[#DCE0E6] shadow-2xs">
+                          <span className="text-xl font-black text-[#184C78] tabular-nums">
+                            {calculatedAvgRating.toFixed(1)}
+                          </span>
+                          <span className="text-[11px] font-semibold text-gray-400">/ 5.0</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Penilaian Parameter Detail (1 - 5) */}
+                    <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {[
+                        {
+                          key: 'aspek_kualitas' as const,
+                          label: 'Mutu & Kerapian Fisik',
+                          desc: 'Kekokohan material, finishing halus & kerapian',
+                          icon: ShieldCheck,
+                          val: ratingForm.aspek_kualitas,
+                        },
+                        {
+                          key: 'aspek_ketepatan_waktu' as const,
+                          label: 'Ketepatan Waktu Pelaksanaan',
+                          desc: 'Kesesuaian durasi pengerjaan dengan jadwal rencana',
+                          icon: Clock,
+                          val: ratingForm.aspek_ketepatan_waktu,
+                        },
+                        {
+                          key: 'aspek_manfaat' as const,
+                          label: 'Kemanfaatan bagi Warga',
+                          desc: 'Dampak nyata fasilitas bagi mobilitas & kenyamanan publik',
+                          icon: Sparkles,
+                          val: ratingForm.aspek_manfaat,
+                        },
+                      ].map((param) => {
+                        const ParamIcon = param.icon;
+                        const fillPercent = ((param.val - 1) / 4) * 100;
+                        return (
+                          <div
+                            key={param.key}
+                            className="bg-white p-3.5 rounded-xl border border-[#E2E8F0] shadow-2xs space-y-2 hover:border-[#BFDBFE] transition-colors flex flex-col justify-between"
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-1 mb-1">
+                                <div className="flex items-center gap-1.5 min-w-0">
+                                  <div className="w-5 h-5 rounded-md bg-[#EBF4FB] text-[#184C78] flex items-center justify-center shrink-0">
+                                    <ParamIcon className="w-3 h-3" />
+                                  </div>
+                                  <span className="font-bold text-xs text-[#184C78] truncate">
+                                    {param.label}
+                                  </span>
+                                </div>
+                                <span className="px-1.5 py-0.5 text-[11px] font-black rounded-md bg-[#184C78] text-white tabular-nums shrink-0">
+                                  {param.val} / 5
+                                </span>
+                              </div>
+                              <p className="text-[10px] text-gray-400 line-clamp-1 mb-2">
+                                {param.desc}
+                              </p>
+
+                              {/* Interactive Custom Range Bar */}
+                              <div className="pt-0.5">
+                                <input
+                                  type="range"
+                                  min="1"
+                                  max="5"
+                                  step="1"
+                                  aria-label={param.label}
+                                  value={param.val}
+                                  onChange={(e) => handleParameterChange(param.key, Number(e.target.value))}
+                                  style={{
+                                    background: `linear-gradient(to right, #184C78 0%, #2980B9 ${fillPercent}%, #E2E8F0 ${fillPercent}%, #E2E8F0 100%)`,
+                                  }}
+                                  className="w-full h-2 rounded-lg appearance-none cursor-pointer accent-[#184C78] focus:outline-hidden"
+                                />
+                              </div>
+                            </div>
+
+                            {/* Quick 1-5 Step Buttons */}
+                            <div className="flex justify-between items-center px-0.5 text-[10px] pt-1">
+                              {[1, 2, 3, 4, 5].map((step) => {
+                                const isActive = param.val === step;
+                                return (
+                                  <button
+                                    type="button"
+                                    key={step}
+                                    onClick={() => handleParameterChange(param.key, step)}
+                                    className={`w-6 h-5.5 flex items-center justify-center rounded font-bold text-xs transition-all cursor-pointer ${
+                                      isActive
+                                        ? 'bg-[#184C78] text-white shadow-2xs scale-105 ring-2 ring-[#184C78]/25'
+                                        : 'bg-[#F8FAFC] text-gray-500 border border-gray-200 hover:border-[#184C78] hover:text-[#184C78]'
+                                    }`}
+                                    title={`Pilih nilai ${step} untuk ${param.label}`}
+                                  >
+                                    {step}
+                                  </button>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+                {/* BAGIAN BAWAH: ISI ULASAN */}
+                <div className="space-y-2 pt-2 border-t border-[#E2E8F0]">
+                  <label className="block font-semibold text-[#184C78]">
+                    Ulasan &amp; Testimoni Warga
+                  </label>
+                  <textarea
+                    rows={3}
+                    required
+                    placeholder="Bagikan pengalaman atau dampak positif infrastruktur yang selesai dibangun bagi kenyamanan warga..."
+                    value={ratingForm.komentar}
+                    onChange={(e) => setRatingForm({ ...ratingForm, komentar: e.target.value })}
+                    className="w-full p-3 border border-[#DCE0E6] rounded-xl outline-none focus:border-[#2980B9] bg-white text-xs leading-relaxed"
+                  />
+                </div>
+
+                {/* Tombol Aksi */}
+                <div className="flex items-center gap-3">
+                  <button
+                    type="submit"
+                    className="px-6 py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white font-bold rounded-xl text-xs transition-colors shadow-xs cursor-pointer"
+                  >
+                    {isEditingRating ? 'Simpan Pembaruan Ulasan' : 'Kirim Penilaian Kepuasan'}
+                  </button>
+                  {isEditingRating && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingRating(false)}
+                      className="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-xl text-xs transition-colors cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                  )}
+                </div>
+              </form>
+            )}
+          </div>
+
+          {/* List of Public Ratings (Full Width) */}
+          <div className="space-y-3.5">
+            <div className="flex items-center justify-between">
+              <h2 className="font-heading font-bold text-base text-[#184C78]">
+                Daftar Ulasan &amp; Indeks Kepuasan Terkini
+              </h2>
+              <span className="text-xs text-[#6C757D] font-medium bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">
+                {ratingList.length} Ulasan Masuk
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {ratingList.map((item) => (
+                <div key={item.id} className="bg-white p-5 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-2.5 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-8 h-8 rounded-full bg-[#EBF4FB] text-[#184C78] font-bold text-xs flex items-center justify-center shrink-0">
+                          {(item.nama_warga || 'W').charAt(0).toUpperCase()}
+                        </div>
+                        <div className="min-w-0">
+                          <div className="font-bold text-xs text-[#212529] truncate">{item.nama_warga || 'Warga Masyarakat'}</div>
+                          <div className="text-[10px] text-[#6C757D] truncate">{item.nama_proyek || 'Proyek Selesai'}</div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-1 text-amber-500 font-bold text-xs shrink-0">
+                        <span>{'★'.repeat(item.bintang)}</span>
+                        <span className="text-[#6C757D] font-normal text-[11px] ml-1">({item.tanggal})</span>
+                      </div>
+                    </div>
+
+                    <p className="text-xs text-[#495057] leading-relaxed bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/50 mt-3">
+                      "{item.komentar}"
+                    </p>
+                  </div>
+
+                  <div className="flex gap-4 text-[11px] text-[#6C757D] pt-2 border-t border-slate-100 mt-2">
+                    <span>Mutu: <strong className="text-[#184C78]">{item.aspek_kualitas}/5</strong></span>
+                    <span>Waktu: <strong className="text-[#184C78]">{item.aspek_ketepatan_waktu}/5</strong></span>
+                    <span>Manfaat: <strong className="text-[#184C78]">{item.aspek_manfaat}/5</strong></span>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       )}

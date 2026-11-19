@@ -313,6 +313,16 @@ describe('WargaDashboard', () => {
 
     // After refresh / remount, the persisted review MUST still be present
     expect(screen.getByText(/"Mantap sekali pengerjaannya sangat rapi!"/i)).toBeInTheDocument();
+
+    // And since the citizen has already rated this project, the top box shows "Anda Sudah Memberikan Penilaian untuk Proyek Ini" with "Edit Ulasan"
+    expect(screen.getByText(/Anda Sudah Memberikan Penilaian untuk Proyek Ini/i)).toBeInTheDocument();
+    const editReviewBtn = screen.getByRole('button', { name: /Edit Ulasan/i });
+    expect(editReviewBtn).toBeInTheDocument();
+
+    // Clicking "Edit Ulasan" allows the citizen to update their review
+    await user.click(editReviewBtn);
+    expect(screen.getByText(/Mode Edit Ulasan/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /Simpan Pembaruan Ulasan/i })).toBeInTheDocument();
   });
 
   it('renders rute tab empty initially with prompt and no dummy cards, then generates real Lamongan recommendations upon text input', async () => {
@@ -385,5 +395,66 @@ describe('WargaDashboard', () => {
 
     // Should return to empty state
     expect(screen.getByText(/Belum Ada Rekomendasi Rute yang Diproses/i)).toBeInTheDocument();
+  });
+
+  it('filters and sorts citizen reports using the sorting dropdown (terbaru, terlama, terbanyak)', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <WargaDashboard
+        currentUser={mockUser}
+        projects={mockProjects}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={() => {}}
+        activeSection="laporan"
+      />
+    );
+
+    // Verify sort select exists
+    const sortSelect = screen.getByRole('combobox', { name: /Urutkan Riwayat Laporan/i });
+    expect(sortSelect).toBeInTheDocument();
+    expect(sortSelect).toHaveValue('terbaru');
+
+    // Change to 'terlama'
+    await user.selectOptions(sortSelect, 'terlama');
+    expect(sortSelect).toHaveValue('terlama');
+
+    // Change to 'terbanyak'
+    await user.selectOptions(sortSelect, 'terbanyak');
+    expect(sortSelect).toHaveValue('terbanyak');
+  });
+
+  it('renders "Kembali ke Overview" button on sub-tabs and calls onSelectSection("overview") when clicked', async () => {
+    const user = userEvent.setup();
+    const handleSelectSection = vi.fn();
+
+    const { rerender } = render(
+      <WargaDashboard
+        currentUser={mockUser}
+        projects={mockProjects}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={() => {}}
+        activeSection="rating"
+        onSelectSection={handleSelectSection}
+      />
+    );
+
+    const backBtn = screen.getByRole('button', { name: /Kembali ke Overview/i });
+    expect(backBtn).toBeInTheDocument();
+    await user.click(backBtn);
+    expect(handleSelectSection).toHaveBeenCalledWith('overview');
+
+    // On overview tab, back button should not be displayed
+    rerender(
+      <WargaDashboard
+        currentUser={mockUser}
+        projects={mockProjects}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={() => {}}
+        activeSection="overview"
+        onSelectSection={handleSelectSection}
+      />
+    );
+    expect(screen.queryByRole('button', { name: /Kembali ke Overview/i })).not.toBeInTheDocument();
   });
 });

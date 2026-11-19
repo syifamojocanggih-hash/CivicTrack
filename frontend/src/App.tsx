@@ -408,7 +408,6 @@ export function App() {
             setActiveNav={setActiveNav}
             currentView={currentView}
             onNavigateView={(view) => navigateToView(view)}
-            onOpenOpenData={() => setIsOpenDataModalOpen(true)}
             onSelectProjectNotification={(proyekId) => {
               const proj = projects.find((p) => p.id === proyekId);
               if (proj) setSelectedProject(proj);

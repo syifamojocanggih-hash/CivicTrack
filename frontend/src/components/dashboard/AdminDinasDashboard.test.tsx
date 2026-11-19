@@ -427,6 +427,25 @@ describe('AdminDinasDashboard Aduan Response Modal', () => {
       await screen.findByText(/Tanggapan resmi dinas berhasil dipublikasikan secara transparan/i)
     ).toBeInTheDocument();
   });
+
+  it('displays only full project name and complaint text on aduan cards, hiding reporter and response until opened', async () => {
+    render(
+      <AdminDinasDashboard
+        currentUser={{ id: 2, role: 'admin_dinas', nama: 'Admin PUPR', email: 'admin@lamongan.go.id' }}
+        projects={[]}
+        activeSection="aduan"
+        onOpenProjectDetail={() => {}}
+      />
+    );
+
+    // Full project name is displayed without truncation
+    expect(await screen.findByText('Pelebaran Jalan Veteran')).toBeInTheDocument();
+    expect(screen.getByText(/Debu sangat tebal di lokasi proyek/i)).toBeInTheDocument();
+
+    // Reporter name and active response are NOT visible on the card preview
+    expect(screen.queryByText(/Pelapor: Ahmad Warga/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Tanggapan Resmi Dinas \(Bambang/i)).not.toBeInTheDocument();
+  });
 });
 
 describe('AdminDinasDashboard Dokumentasi Fisik Upload', () => {
@@ -619,9 +638,9 @@ describe('AdminDinasDashboard Dokumentasi Fisik Upload', () => {
     await user.type(pwInput, 'PJ-10006');
     await user.click(unlockBtn);
 
-    // Dashboard should unlock and display the project banner
+    // Dashboard should unlock and display the project info
     await waitFor(() => {
-      expect(screen.getByText(/Lembar Kerja Terverifikasi/i)).toBeInTheDocument();
+      expect(screen.queryByText(/Gerbang Akses Penanggung Jawab Proyek/i)).not.toBeInTheDocument();
       expect(screen.getAllByText(/Pengaspalan & Penerangan Jalan Poros Pucuk - Babat/i).length).toBeGreaterThan(0);
     });
 

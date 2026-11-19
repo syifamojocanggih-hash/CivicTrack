@@ -1,9 +1,10 @@
-﻿import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Menu,
   Bell,
   LogOut,
   Check,
+  ArrowLeft,
 } from 'lucide-react';
 import type { UserProfile, NotificationItem } from '../../types';
 import { MOCK_DYNAMIC_NOTIFICATIONS } from '../../data/dashboardMockData';
@@ -17,6 +18,7 @@ interface DashboardHeaderProps {
   onToggleMobileSidebar: () => void;
   activeNavTitle?: string;
   unreadCount?: number;
+  onOpenMapExplorer?: () => void;
 }
 
 export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
@@ -25,6 +27,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   onSelectProjectNotification,
   onToggleMobileSidebar,
   activeNavTitle = 'Dashboard Utama',
+  onOpenMapExplorer,
 }) => {
   const [showNotifMenu, setShowNotifMenu] = useState(false);
   const [notifications, setNotifications] = useState<NotificationItem[]>(MOCK_DYNAMIC_NOTIFICATIONS);
@@ -151,10 +154,22 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
           </div>
         </div>
 
-        {/* Right: Notifications, Profile & Logout */}
-        <div className="flex items-center gap-3">
+        {/* Right: Notifications, Back to Map, Profile & Logout */}
+        <div className="flex items-center gap-2.5 sm:gap-3">
+          {onOpenMapExplorer && (
+            <button
+              type="button"
+              onClick={onOpenMapExplorer}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F0F7FD] hover:bg-[#E1EFFB] text-[#184C78] border border-[#BFDBFE] rounded-xl text-xs font-bold transition-all shadow-2xs hover:shadow-xs cursor-pointer group"
+              title="Kembali ke Beranda Peta & Data Proyek"
+            >
+              <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" />
+              <span className="hidden sm:inline">Peta &amp; Data Proyek</span>
+              <span className="sm:hidden">Peta</span>
+            </button>
+          )}
 
-            {/* Notification Bell with Dynamic Feed */}
+          {/* Notification Bell with Dynamic Feed */}
             <div className="relative" ref={notifRef}>
               <button
                 onClick={() => setShowNotifMenu(!showNotifMenu)}

@@ -135,6 +135,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
             if (found) onOpenProjectDetail(found);
           }}
           unreadCount={2}
+          onOpenMapExplorer={onOpenMapExplorer}
         />
 
         {/* Main Content View (Driven by Active Role & Section) */}

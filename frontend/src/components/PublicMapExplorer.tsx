@@ -31,7 +31,6 @@ import {
   Compass,
   Info,
   ChevronLeft,
-  MapPin,
   ExternalLink,
   Copy,
   Lock,
@@ -206,7 +205,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   // Right Detail Drawer Tabs & Citizen Report form
-  const [detailTab, setDetailTab] = useState<'ringkasan' | 'transparansi' | 'aduan' | 'sekitar'>('ringkasan');
+  const [detailTab, setDetailTab] = useState<'ringkasan' | 'transparansi' | 'aduan'>('ringkasan');
   const [reportTitle, setReportTitle] = useState('');
   const [reportDesc, setReportDesc] = useState('');
   const [reportCategory, setReportCategory] = useState('keterlambatan');
@@ -2300,7 +2299,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   { id: 'ringkasan', label: 'Ringkasan' },
                   { id: 'transparansi', label: isAPBN ? 'Transparansi APBN & APBD' : 'Transparansi APBD' },
                   { id: 'aduan', label: 'Aduan Warga' },
-                  { id: 'sekitar', label: 'Proyek Sekitar' },
                 ].map((tab) => (
                   <button
                     key={tab.id}
@@ -2895,114 +2893,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   </button>
                 </form>
               ); })()}
-            </div>
-          )}
-
-          {/* Tab 4: Proyek Sekitar (Matches Image 2) */}
-          {detailTab === 'sekitar' && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-3 scrollbar-thin animate-fade-in">
-              <div className="flex items-center justify-between mb-2">
-                <h4 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Infrastruktur Terkait di Sekitar Wilayah
-                </h4>
-                <span className="text-[10px] font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full">
-                  Maks. radius 25 km
-                </span>
-              </div>
-
-              {nearbyProjects.length === 0 ? (
-                <div className="py-12 px-4 text-center bg-slate-50 border border-dashed border-slate-200 rounded-2xl">
-                  <div className="w-12 h-12 rounded-full bg-blue-50 text-[#2563EB] mx-auto flex items-center justify-center mb-3">
-                    <MapPin className="w-6 h-6" />
-                  </div>
-                  <h5 className="font-heading text-sm font-bold text-slate-800 mb-1">
-                    Tidak Ada Proyek Lain di Sekitar Wilayah Ini
-                  </h5>
-                  <p className="text-xs text-slate-500 max-w-xs mx-auto leading-relaxed">
-                    Tidak ditemukan proyek pembangunan lain dalam radius 25 km dari {currentProject.nama_wilayah || 'lokasi proyek ini'}.
-                  </p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {nearbyProjects.map((p) => {
-                    const isFav = bookmarkedIds.includes(p.id);
-                    return (
-                      <div
-                        key={p.id}
-                        onClick={() => handleSelectPin(p.id)}
-                        className="p-3 bg-white hover:bg-slate-50/90 border border-slate-200/90 rounded-2xl transition-all shadow-xs hover:shadow-md cursor-pointer flex flex-col gap-2.5 group"
-                      >
-                        <div className="flex gap-3">
-                          {/* Image Thumbnail on Left */}
-                          <img
-                            src={getRealProjectImage(p)}
-                            alt={p.nama_proyek}
-                            className="w-24 h-24 rounded-2xl object-cover shrink-0 shadow-2xs group-hover:scale-102 transition-transform"
-                          />
-
-                          {/* Content on Right */}
-                          <div className="flex-1 min-w-0 flex flex-col justify-between">
-                            <div>
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-baseline gap-1">
-                                  <span className="font-heading text-sm font-bold text-slate-900 group-hover:text-[#2980B9] transition-colors">
-                                    Rp {(p.anggaran / 1000000000).toFixed(1)} M
-                                  </span>
-                                  <span className="text-[10px] text-slate-400 font-normal">/proyek</span>
-                                </div>
-                                <span className="w-4 h-4 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center text-[10px] shrink-0">
-                                  <Check className="w-2.5 h-2.5" />
-                                </span>
-                              </div>
-
-                              <span className="text-[10px] text-slate-400 block mt-0.5 font-medium truncate">
-                                Est: {p.estimasi_selesai || '2024'} • {p.nama_wilayah || 'Lamongan'}
-                              </span>
-
-                              <h5 className="text-xs font-semibold text-slate-800 line-clamp-1 mt-1">
-                                {p.nama_proyek}
-                              </h5>
-                            </div>
-
-                            {/* Specs Line with Icons */}
-                            <div className="flex items-center gap-1.5 text-[10px] text-slate-500 mt-1">
-                              <span>🏷️ {p.kategori.toUpperCase()}</span>
-                              <span>•</span>
-                              <span className="font-semibold text-blue-700">📏 {p.distFromCurrentStr || p.distanceStr} dari proyek ini</span>
-                              <span>•</span>
-                              <span className="font-bold text-emerald-600">{p.progres_persen}%</span>
-                            </div>
-                          </div>
-                        </div>
-
-                      {/* Black Phone Pill Button & Heart Bookmark */}
-                      <div className="flex items-center gap-2 pt-1 border-t border-slate-100">
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            handleSelectPin(p.id);
-                          }}
-                          className="flex-1 py-1.5 px-3 bg-[#111827] hover:bg-black text-white text-[11px] font-bold rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs active:scale-98"
-                        >
-                          <Phone className="w-3 h-3" />
-                          <span>+62 (322) 321-450</span>
-                        </button>
-
-                        <button
-                          onClick={(e) => toggleBookmark(p.id, e)}
-                          className="p-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
-                          title="Simpan Proyek"
-                        >
-                          <Heart
-                            className={`w-3.5 h-3.5 ${isFav ? 'fill-rose-500 text-rose-500' : ''}`}
-                          />
-                        </button>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
             </div>
           )}
         </aside>

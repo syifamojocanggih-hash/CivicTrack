@@ -3657,51 +3657,10 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
       {/* ── KONTEN UTAMA DASHBOARD ── */}
       <div className="space-y-6">
-      {/* ── BANNER LEMBAR KERJA PROYEK AKTIF (KHUSUS PENANGGUNG JAWAB TERVERIFIKASI) ── */}
-      {currentUser.role === 'penanggung_jawab' && unlockedProject && (
-        <div className="bg-gradient-to-r from-[#0f3252] via-[#184C78] to-[#1F5F94] rounded-2xl p-6 text-white shadow-lg border border-[#184C78] flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div className="space-y-2">
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30 text-[11px] font-bold">
-                <ShieldCheck className="w-3.5 h-3.5" />
-                <span>Lembar Kerja Terverifikasi</span>
-              </span>
-              <span className="font-mono text-xs font-bold bg-white/15 px-2.5 py-0.5 rounded-lg border border-white/20 text-white">
-                {getProjectEffectiveCode(unlockedProject)}
-              </span>
-              <span className="text-[11px] font-bold uppercase bg-white/10 px-2.5 py-0.5 rounded text-white/90">
-                {unlockedProject.kategori || 'jalan'}
-              </span>
-            </div>
-            <h2 className="font-heading text-xl font-bold text-white">
-              {unlockedProject.nama_proyek || 'Proyek Pembangunan'}
-            </h2>
-            <div className="flex flex-wrap items-center gap-3 text-xs text-white/80">
-              <span className="flex items-center gap-1">
-                <MapPin className="w-3.5 h-3.5 text-cyan-300" />
-                {unlockedProject.nama_wilayah || 'Kabupaten Lamongan'} {unlockedProject.nama_desa ? `• ${unlockedProject.nama_desa}` : ''}
-              </span>
-              <span>•</span>
-              <span>Pagu: <strong>Rp {Number(unlockedProject.anggaran || 0).toLocaleString('id-ID')}</strong></span>
-              <span>•</span>
-              <span>Progres Fisik: <strong className="text-amber-300">{unlockedProject.progres_persen || 0}%</strong></span>
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── TOP PENANGGUNG JAWAB PROYEK BANNER ── */}
       <div className="bg-gradient-to-r from-[#0f3252] via-[#184C78] to-[#1a6fa8] rounded-2xl p-6 sm:p-8 text-white shadow-md relative overflow-hidden">
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div className="max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-amber-400/20 text-amber-200 border border-amber-400/30 rounded-full text-xs font-semibold tracking-wide mb-3">
-              <Building2 className="w-4 h-4 text-amber-300" />
-              <span>
-                {currentUser.role === 'pimpinan_instansi' || currentUser.role === 'aparatur_pemerintah'
-                  ? 'Portal Pimpinan & Pengelola Pembangunan Daerah'
-                  : 'Portal Penanggung Jawab Proyek (Dinas Pelaksana & Rekanan)'}
-              </span>
-            </div>
             <h1 className="font-heading text-2xl sm:text-3xl font-extrabold tracking-tight">
               {currentUser.nama}
             </h1>
@@ -3748,157 +3707,157 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/5 rounded-full blur-2xl pointer-events-none -mr-16 -mb-16" />
       </div>
 
-      {/* ── SPATIAL MINIMAP OVERVIEW WIDGET (GIS PREVIEW) ── */}
-      {onOpenMapExplorer && (
-        <MiniMapOverview
-          projects={projects}
-          onOpenMapExplorer={onOpenMapExplorer}
-        />
-      )}
-
-      {/* ── METRICS OVERVIEW ── */}
-      {currentUser.role === 'penanggung_jawab' && unlockedProject ? (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {/* Card 1: Pagu Anggaran Proyek (Disesuaikan khusus 1 proyek yang dipegang) */}
-          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-              <span>Pagu Anggaran</span>
-              <DollarSign className="w-4 h-4 text-[#2980B9]" />
-            </div>
-            <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
-              {Number(unlockedProject.anggaran || 0) >= 1000000000
-                ? `Rp ${(Number(unlockedProject.anggaran || 0) / 1000000000).toFixed(1).replace(/\.0$/, '')}M`
-                : `Rp ${(Number(unlockedProject.anggaran || 0) / 1000000).toFixed(0)} Jt`}
-            </div>
-            <div className="text-[11px] text-[#2980B9] font-semibold mt-1">
-              Total Kontrak: Rp {Number(unlockedProject.anggaran || 0).toLocaleString('id-ID')}
-            </div>
-          </div>
-
-          {/* Card 2: Realisasi Fisik Proyek */}
-          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-              <span>Realisasi Fisik</span>
-              <CheckCircle2 className="w-4 h-4 text-[#1A9E6E]" />
-            </div>
-            <div className="text-2xl font-heading font-extrabold text-[#1A9E6E] mt-1.5">
-              {unlockedProject.progres_persen || 0}%
-            </div>
-            <div className="text-[11px] font-semibold mt-1 capitalize text-[#1A9E6E]">
-              {getDisplayStatus(unlockedProject.status, unlockedProject.progres_persen) === 'selesai'
-                ? '100% Rampung (FHO)'
-                : getDisplayStatus(unlockedProject.status, unlockedProject.progres_persen) === 'ditangguhkan'
-                ? 'Ditangguhkan'
-                : 'Sedang Berjalan'}
-            </div>
-          </div>
-
-          {/* Card 3: Aduan Warga Proyek (Real-time live sync) */}
-          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-              <span>Aduan Warga</span>
-              <MessageSquare className="w-4 h-4 text-[#E67E22]" />
-            </div>
-            <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
-              {projectAduanList.length}
-            </div>
-            <div className="text-[11px] text-[#E67E22] font-bold mt-1">
-              {projectAduanMenungguCount > 0
-                ? `${projectAduanMenungguCount} Perlu Ditanggapi!`
-                : projectAduanList.length > 0
-                ? 'Semua Telah Ditanggapi'
-                : 'Belum Ada Laporan Masuk'}
-            </div>
-          </div>
-
-          {/* Card 4: Evaluasi Cacat AI Proyek (Real-time live sync) */}
-          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-              <span>Evaluasi Cacat AI</span>
-              <Wrench className="w-4 h-4 text-[#E74C3C]" />
-            </div>
-            <div className="text-2xl font-heading font-extrabold text-[#E74C3C] mt-1.5">
-              {projectEvaluasiList.length}
-            </div>
-            <div className="text-[11px] text-[#E74C3C] font-semibold mt-1">
-              {projectEvaluasiList.length > 0 ? 'Masa Pemeliharaan' : 'Nihil Temuan Kerusakan'}
-            </div>
-          </div>
-        </div>
-      ) : (
-        /* Regular 5-column grid for aparatur_pemerintah / pimpinan_instansi / admin_dinas */
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
-          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-              <span>Total Proyek</span>
-              <FolderKanban className="w-4 h-4 text-[#184C78]" />
-            </div>
-            <div className="text-2xl font-heading font-extrabold text-[#184C78] mt-1.5">
-              {projectList.length}
-            </div>
-            <div className="text-[11px] text-[#1A9E6E] font-semibold mt-1">
-              {berjalanCount} Sedang Berjalan
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-              <span>Pagu Anggaran</span>
-              <DollarSign className="w-4 h-4 text-[#2980B9]" />
-            </div>
-            <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
-              Rp {(totalAnggaran / 1000000000).toFixed(1)}M
-            </div>
-            <div className="text-[11px] text-[#2980B9] font-semibold mt-1">
-              Serapan Fisik: 68.4%
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-              <span>Selesai (FHO)</span>
-              <CheckCircle2 className="w-4 h-4 text-[#1A9E6E]" />
-            </div>
-            <div className="text-2xl font-heading font-extrabold text-[#1A9E6E] mt-1.5">
-              {selesaiCount}
-            </div>
-            <div className="text-[11px] text-[#6C757D] mt-1">
-              {tertundaCount} Ditangguhkan
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-              <span>Aduan Warga</span>
-              <MessageSquare className="w-4 h-4 text-[#E67E22]" />
-            </div>
-            <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
-              {aduanList.length}
-            </div>
-            <div className="text-[11px] text-[#E67E22] font-bold mt-1">
-              {aduanMenungguCount} Perlu Ditanggapi!
-            </div>
-          </div>
-
-          <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
-            <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
-              <span>Evaluasi Cacat AI</span>
-              <Wrench className="w-4 h-4 text-[#E74C3C]" />
-            </div>
-            <div className="text-2xl font-heading font-extrabold text-[#E74C3C] mt-1.5">
-              {evaluasiList.length}
-            </div>
-            <div className="text-[11px] text-[#E74C3C] font-semibold mt-1">
-              Masa Pemeliharaan
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* ── ACTIVE SECTION VIEW (DRIVEN BY SIDEBAR) ── */}
-      {/* ── SECTION 1: DAFTAR PROYEK DINAS ── */}
+      {/* ── SECTION 1: DAFTAR PROYEK DINAS / KELOLA DATA PROYEK ── */}
       {(activeTab === 'proyek' || activeTab === 'overview' || !['linimasa', 'dokumentasi', 'aduan', 'evaluasi'].includes(activeTab)) && (
         <div className="space-y-4">
+          {/* ── SPATIAL MINIMAP OVERVIEW WIDGET (GIS PREVIEW) - KHUSUS HALAMAN KELOLA DATA PROYEK ── */}
+          {onOpenMapExplorer && (
+            <MiniMapOverview
+              projects={projects}
+              onOpenMapExplorer={onOpenMapExplorer}
+            />
+          )}
+
+          {/* ── METRICS OVERVIEW - KHUSUS HALAMAN KELOLA DATA PROYEK ── */}
+          {currentUser.role === 'penanggung_jawab' && unlockedProject ? (
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3.5">
+              {/* Card 1: Pagu Anggaran Proyek (Disesuaikan khusus 1 proyek yang dipegang) */}
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+                <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+                  <span>Pagu Anggaran</span>
+                  <DollarSign className="w-4 h-4 text-[#2980B9]" />
+                </div>
+                <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
+                  {Number(unlockedProject.anggaran || 0) >= 1000000000
+                    ? `Rp ${(Number(unlockedProject.anggaran || 0) / 1000000000).toFixed(1).replace(/\.0$/, '')}M`
+                    : `Rp ${(Number(unlockedProject.anggaran || 0) / 1000000).toFixed(0)} Jt`}
+                </div>
+                <div className="text-[11px] text-[#2980B9] font-semibold mt-1">
+                  Total Kontrak: Rp {Number(unlockedProject.anggaran || 0).toLocaleString('id-ID')}
+                </div>
+              </div>
+
+              {/* Card 2: Realisasi Fisik Proyek */}
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+                <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+                  <span>Realisasi Fisik</span>
+                  <CheckCircle2 className="w-4 h-4 text-[#1A9E6E]" />
+                </div>
+                <div className="text-2xl font-heading font-extrabold text-[#1A9E6E] mt-1.5">
+                  {unlockedProject.progres_persen || 0}%
+                </div>
+                <div className="text-[11px] font-semibold mt-1 capitalize text-[#1A9E6E]">
+                  {getDisplayStatus(unlockedProject.status, unlockedProject.progres_persen) === 'selesai'
+                    ? '100% Rampung (FHO)'
+                    : getDisplayStatus(unlockedProject.status, unlockedProject.progres_persen) === 'ditangguhkan'
+                    ? 'Ditangguhkan'
+                    : 'Sedang Berjalan'}
+                </div>
+              </div>
+
+              {/* Card 3: Aduan Warga Proyek (Real-time live sync) */}
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+                <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+                  <span>Aduan Warga</span>
+                  <MessageSquare className="w-4 h-4 text-[#E67E22]" />
+                </div>
+                <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
+                  {projectAduanList.length}
+                </div>
+                <div className="text-[11px] text-[#E67E22] font-bold mt-1">
+                  {projectAduanMenungguCount > 0
+                    ? `${projectAduanMenungguCount} Perlu Ditanggapi!`
+                    : projectAduanList.length > 0
+                    ? 'Semua Telah Ditanggapi'
+                    : 'Belum Ada Laporan Masuk'}
+                </div>
+              </div>
+
+              {/* Card 4: Evaluasi Cacat AI Proyek (Real-time live sync) */}
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+                <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+                  <span>Evaluasi Cacat AI</span>
+                  <Wrench className="w-4 h-4 text-[#E74C3C]" />
+                </div>
+                <div className="text-2xl font-heading font-extrabold text-[#E74C3C] mt-1.5">
+                  {projectEvaluasiList.length}
+                </div>
+                <div className="text-[11px] text-[#E74C3C] font-semibold mt-1">
+                  {projectEvaluasiList.length > 0 ? 'Masa Pemeliharaan' : 'Nihil Temuan Kerusakan'}
+                </div>
+              </div>
+            </div>
+          ) : (
+            /* Regular 5-column grid for aparatur_pemerintah / pimpinan_instansi / admin_dinas */
+            <div className="grid grid-cols-2 lg:grid-cols-5 gap-3.5">
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+                <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+                  <span>Total Proyek</span>
+                  <FolderKanban className="w-4 h-4 text-[#184C78]" />
+                </div>
+                <div className="text-2xl font-heading font-extrabold text-[#184C78] mt-1.5">
+                  {projectList.length}
+                </div>
+                <div className="text-[11px] text-[#1A9E6E] font-semibold mt-1">
+                  {berjalanCount} Sedang Berjalan
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+                <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+                  <span>Pagu Anggaran</span>
+                  <DollarSign className="w-4 h-4 text-[#2980B9]" />
+                </div>
+                <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
+                  Rp {(totalAnggaran / 1000000000).toFixed(1)}M
+                </div>
+                <div className="text-[11px] text-[#2980B9] font-semibold mt-1">
+                  Serapan Fisik: 68.4%
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+                <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+                  <span>Selesai (FHO)</span>
+                  <CheckCircle2 className="w-4 h-4 text-[#1A9E6E]" />
+                </div>
+                <div className="text-2xl font-heading font-extrabold text-[#1A9E6E] mt-1.5">
+                  {selesaiCount}
+                </div>
+                <div className="text-[11px] text-[#6C757D] mt-1">
+                  {tertundaCount} Ditangguhkan
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+                <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+                  <span>Aduan Warga</span>
+                  <MessageSquare className="w-4 h-4 text-[#E67E22]" />
+                </div>
+                <div className="text-2xl font-heading font-extrabold text-[#212529] mt-1.5">
+                  {aduanList.length}
+                </div>
+                <div className="text-[11px] text-[#E67E22] font-bold mt-1">
+                  {aduanMenungguCount} Perlu Ditanggapi!
+                </div>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-[#DCE0E6] shadow-xs">
+                <div className="text-xs text-[#6C757D] font-medium flex items-center justify-between">
+                  <span>Evaluasi Cacat AI</span>
+                  <Wrench className="w-4 h-4 text-[#E74C3C]" />
+                </div>
+                <div className="text-2xl font-heading font-extrabold text-[#E74C3C] mt-1.5">
+                  {evaluasiList.length}
+                </div>
+                <div className="text-[11px] text-[#E74C3C] font-semibold mt-1">
+                  Masa Pemeliharaan
+                </div>
+              </div>
+            </div>
+          )}
+
           {currentUser.role === 'penanggung_jawab' && unlockedProject ? (
             <div className="bg-white rounded-2xl border border-[#DCE0E6] p-6 shadow-xs space-y-6 animate-fade-in">
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-[#DCE0E6]">
@@ -4046,7 +4005,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                       <tr>
                         <th className="p-3.5">Kode Proyek</th>
                         <th className="p-3.5">Nama Proyek</th>
-                        <th className="p-3.5">Kategori</th>
                         <th className="p-3.5">Anggaran (Pagu)</th>
                         <th className="p-3.5">Progres Fisik</th>
                         <th className="p-3.5">Status</th>
@@ -4090,11 +4048,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                                 <MapPin className="w-3 h-3 text-[#2980B9]" />
                                 <span>{p.nama_wilayah} {p.nama_desa ? `• ${p.nama_desa}` : ''}</span>
                               </div>
-                            </td>
-                            <td className="p-3.5">
-                              <span className="uppercase text-[10px] font-bold px-2 py-0.5 rounded bg-[#EBF4FB] text-[#184C78]">
-                                {p.kategori}
-                              </span>
                             </td>
                             <td className="p-3.5 font-mono font-semibold text-[#212529]">
                               Rp {(p.anggaran).toLocaleString('id-ID')}
@@ -4427,58 +4380,59 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
             return (
               <div className="space-y-3">
-                {filteredAduan.map((item) => (
-                  <div key={item.id} className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs space-y-3">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                      <div>
-                        <span className="text-xs font-bold text-[#184C78] bg-[#EBF4FB] px-2.5 py-0.5 rounded-lg mr-2">
+                {filteredAduan.map((item) => {
+                  const hasDistinctJudul =
+                    item.judul &&
+                    item.judul !== 'Aduan Warga' &&
+                    item.judul !== item.isi_laporan &&
+                    !item.isi_laporan.startsWith(item.judul.replace(/\.{3}$/, '').trim());
+
+                  return (
+                    <div
+                      key={item.id}
+                      onClick={() => handleOpenReplyModal(item)}
+                      className="bg-white rounded-2xl border border-[#DCE0E6] p-5 shadow-xs space-y-3.5 hover:border-[#184C78]/50 hover:shadow-md transition-all cursor-pointer group"
+                    >
+                      <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3">
+                        <h3 className="font-heading font-bold text-base sm:text-lg text-[#184C78] group-hover:text-[#0f3252] transition-colors leading-snug">
                           {item.nama_proyek}
+                        </h3>
+                        <span className={`text-[11px] font-bold px-3 py-1 rounded-full capitalize shrink-0 self-start ${
+                          item.status === 'selesai'
+                            ? 'bg-[#E6F7F1] text-[#1A9E6E] border border-[#B7EBD8]'
+                            : item.status === 'diproses'
+                            ? 'bg-[#FEF3E7] text-[#E67E22] border border-[#FBD8B3]'
+                            : 'bg-[#FDEDEC] text-[#E74C3C] border border-[#FADBD8]'
+                        }`}>
+                          Status: {item.status}
                         </span>
-                        <span className="text-xs text-[#6C757D]">Pelapor: <strong>{item.nama_pelapor}</strong> ({item.email_pelapor})</span>
                       </div>
-                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize ${
-                        item.status === 'selesai'
-                          ? 'bg-[#E6F7F1] text-[#1A9E6E]'
-                          : item.status === 'diproses'
-                          ? 'bg-[#FEF3E7] text-[#E67E22]'
-                          : 'bg-[#FDEDEC] text-[#E74C3C]'
-                      }`}>
-                        Status: {item.status}
-                      </span>
-                    </div>
 
-                    <div>
-                      <h4 className="font-heading font-bold text-sm text-[#212529]">{item.judul}</h4>
-                      <p className="text-xs text-[#495057] mt-1 bg-[#F5F7FA] p-3 rounded-xl border border-[#DCE0E6]/50">
-                        "{item.isi_laporan}"
-                      </p>
-                    </div>
-
-                    {item.tanggapan_dinas && (
-                      <div className="p-3 bg-[#EBF4FB] rounded-xl border border-[#c5def2] text-xs space-y-1">
-                        <div className="font-bold text-[#184C78] flex items-center justify-between">
-                          <span>Tanggapan Resmi Dinas ({item.petugas_penjawab}):</span>
-                          <span className="text-[10px] text-[#6C757D] font-mono">{item.tanggal_tanggapan}</span>
-                        </div>
-                        <p className="text-[#212529] leading-relaxed line-clamp-3">{item.tanggapan_dinas}</p>
+                      <div>
+                        {hasDistinctJudul && (
+                          <h4 className="font-heading font-bold text-sm text-[#212529] mb-1.5">{item.judul}</h4>
+                        )}
+                        <p className="text-xs sm:text-sm text-[#495057] leading-relaxed bg-[#F5F7FA] p-3.5 rounded-xl border border-[#DCE0E6]/50 italic">
+                          "{item.isi_laporan}"
+                        </p>
                       </div>
-                    )}
 
-                    <div className="pt-2 flex justify-end gap-2">
-                      <button
-                        onClick={() => handleOpenReplyModal(item)}
-                        className={`${
-                          item.tanggapan_dinas
-                            ? 'btn-ghost border border-[#c5def2] text-[#184C78] hover:bg-[#EBF4FB]'
-                            : 'btn-primary'
-                        } !h-8 text-xs flex items-center gap-1.5 shadow-xs cursor-pointer`}
-                      >
-                        <MessageSquare className="w-3.5 h-3.5" />
-                        <span>{item.tanggapan_dinas ? 'Buka Halaman Detail & Riwayat Respon' : 'Buka Halaman Respon Tanggapan'}</span>
-                      </button>
+                      <div className="pt-2 flex items-center justify-end border-t border-[#DCE0E6]/50">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenReplyModal(item);
+                          }}
+                          className="text-xs font-bold text-[#184C78] hover:text-[#2980B9] hover:underline flex items-center gap-1.5 cursor-pointer py-1 transition-colors"
+                        >
+                          <MessageSquare className="w-3.5 h-3.5" />
+                          <span>{item.tanggapan_dinas ? 'Buka Halaman Detail & Riwayat Respon' : 'Buka Halaman Respon Tanggapan'}</span>
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             );
           })()}

@@ -339,20 +339,11 @@ describe('PublicMapExplorer', () => {
     expect(sukorameCards.length).toBeGreaterThanOrEqual(1);
     await user.click(sukorameCards[0]);
 
-    // Switch to Tab "Proyek Sekitar"
-    const sekitarTab = screen.getByRole('button', { name: /Proyek Sekitar/i });
-    await user.click(sekitarTab);
-
-    const nearbyHeading = screen.getByText('Infrastruktur Terkait di Sekitar Wilayah');
-    const nearbyContainer = nearbyHeading.closest('.flex-1') as HTMLElement;
-
-    // Nearby project (Bluluk) should be shown in Tab 4
-    expect(within(nearbyContainer).getByText('Jalan Bluluk Dekat')).toBeInTheDocument();
-    // Distance from current project indicator should be rendered
-    expect(within(nearbyContainer).getByText(/dari proyek ini/i)).toBeInTheDocument();
-
-    // Distant project (Brondong ~50 km) must NOT be shown in Tab 4 Proyek Sekitar
-    expect(within(nearbyContainer).queryByText('Pelabuhan Brondong Jauh')).not.toBeInTheDocument();
+    // Verify only the 3 essential tabs are rendered (Proyek Sekitar tab is removed per request)
+    expect(screen.getByRole('button', { name: /^Ringkasan$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Transparansi APBD$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Aduan Warga$/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /Proyek Sekitar/i })).not.toBeInTheDocument();
   });
 
   it('selects and displays the newly added project when clicking the Show button', async () => {

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LogOut, Menu, X, Shield, Database, Bell, Check } from 'lucide-react';
+import { LogOut, Menu, X, Shield, Bell, Check } from 'lucide-react';
 import type { UserProfile, ApiNotificationItem, CurrentView } from '../types';
 import { apiService } from '../services/api';
 import { CivicTrackLogo } from './CivicTrackLogo';
@@ -13,7 +13,6 @@ interface NavbarProps {
   onFilterCategory?: (cat: string | null) => void;
   currentView?: CurrentView;
   onNavigateView?: (view: CurrentView) => void;
-  onOpenOpenData?: () => void;
   onSelectProjectNotification?: (proyekId: number) => void;
 }
 
@@ -25,7 +24,6 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveNav,
   currentView = 'landing',
   onNavigateView,
-  onOpenOpenData,
   onSelectProjectNotification,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -178,16 +176,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             Alur Partisipasi
           </button>
-
-          {onOpenOpenData && (
-            <button
-              onClick={onOpenOpenData}
-              className="px-3 py-1.5 text-xs font-semibold rounded-lg text-[#6C757D] hover:bg-[#F5F7FA] hover:text-[#184C78] transition-colors cursor-pointer flex items-center gap-1"
-            >
-              <Database className="w-3 h-3 text-slate-400" />
-              <span>Open Data</span>
-            </button>
-          )}
         </div>
 
         {/* Right action buttons / User status */}
@@ -366,19 +354,6 @@ export const Navbar: React.FC<NavbarProps> = ({
           >
             🧭 Alur Partisipasi
           </button>
-
-          {onOpenOpenData && (
-            <button
-              onClick={() => {
-                setIsMobileMenuOpen(false);
-                onOpenOpenData();
-              }}
-              className="text-left px-3 py-2 text-sm font-semibold rounded-lg text-slate-700 hover:bg-[#F5F7FA] flex items-center gap-2"
-            >
-              <Database className="w-4 h-4 text-slate-400" />
-              <span>Open Data REST API</span>
-            </button>
-          )}
 
           <div className="pt-2 border-t border-[#DCE0E6] flex flex-col gap-2">
             {currentUser ? (
