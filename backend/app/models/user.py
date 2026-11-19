@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, BigInteger, String, Boolean, DateTime, Enum, ForeignKey, Text
+from sqlalchemy import Column, BigInteger, String, Boolean, DateTime, Enum, ForeignKey, Text, Numeric
 from sqlalchemy.orm import relationship, backref
 from sqlalchemy.sql import func
 from app.core.database import Base, PK_BIGINT
@@ -52,6 +52,11 @@ class User(Base):
     password_hash = Column(String(255), nullable=False)
     role = Column(Enum(UserRole), nullable=False, default=UserRole.warga)
     dinas_id = Column(BigInteger, ForeignKey("dinas.id", ondelete="SET NULL"), nullable=True)
+    latitude = Column(Numeric(10, 7), nullable=True)
+    longitude = Column(Numeric(10, 7), nullable=True)
+    wilayah_id = Column(BigInteger, ForeignKey("wilayah_administratif.id", ondelete="SET NULL"), nullable=True)
+    desa_id = Column(BigInteger, ForeignKey("wilayah_administratif.id", ondelete="SET NULL"), nullable=True)
+    push_token = Column(String(255), nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)

@@ -1,0 +1,21 @@
+{
+  "short_name": "CivicTrack",
+  "name": "CivicTrack Lamongan - Early-Warning & GIS Infrastruktur",
+  "icons": [
+    {
+      "src": "/logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#0F172A",
+  "theme_color": "#184C78",
+  "display": "standalone",
+  "orientation": "portrait"
+}

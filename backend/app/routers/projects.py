@@ -117,7 +117,14 @@ def get_projects(
     if kategori:
         query = query.filter(Proyek.kategori == kategori)
     if status_proyek:
-        query = query.filter(Proyek.status == status_proyek)
+        if status_proyek in (ProyekStatus.berjalan, ProyekStatus.in_progress):
+            query = query.filter(Proyek.status.in_([ProyekStatus.berjalan, ProyekStatus.in_progress]))
+        elif status_proyek in (ProyekStatus.selesai, ProyekStatus.completed):
+            query = query.filter(Proyek.status.in_([ProyekStatus.selesai, ProyekStatus.completed]))
+        elif status_proyek in (ProyekStatus.ditangguhkan, ProyekStatus.suspended, ProyekStatus.tertunda):
+            query = query.filter(Proyek.status.in_([ProyekStatus.ditangguhkan, ProyekStatus.suspended, ProyekStatus.tertunda]))
+        else:
+            query = query.filter(Proyek.status == status_proyek)
     if min_anggaran is not None:
         query = query.filter(Proyek.anggaran >= min_anggaran)
     if max_anggaran is not None:
@@ -161,6 +168,12 @@ def get_projects(
             progres_persen=p.progres_persen,
             tanggal_mulai=p.tanggal_mulai,
             estimasi_selesai=p.estimasi_selesai,
+            tanggal_kontrak_terbit=p.tanggal_kontrak_terbit,
+            tanggal_mulai_rencana=p.tanggal_mulai_rencana,
+            tanggal_input_sistem=p.tanggal_input_sistem,
+            radius_dampak_meter=p.radius_dampak_meter if p.radius_dampak_meter is not None else 1500,
+            jalur_terdampak=p.jalur_terdampak,
+            lead_time_hari=p.lead_time_hari,
             kode_proyek=p.kode_proyek,
             kode_akses=p.kode_akses,
             created_at=p.created_at,
@@ -310,9 +323,9 @@ def create_project(
     # Validasi konsistensi status dan progres
     initial_status = req.status
     initial_progres = req.progres_persen
-    if initial_progres >= 100 and initial_status != ProyekStatus.selesai:
+    if initial_progres >= 100 and initial_status not in (ProyekStatus.selesai, ProyekStatus.completed):
         initial_status = ProyekStatus.selesai
-    elif initial_status == ProyekStatus.selesai and initial_progres < 100:
+    elif initial_status in (ProyekStatus.selesai, ProyekStatus.completed) and initial_progres < 100:
         initial_progres = 100
 
     proyek = Proyek(
@@ -329,6 +342,10 @@ def create_project(
         progres_persen=initial_progres,
         tanggal_mulai=req.tanggal_mulai,
         estimasi_selesai=req.estimasi_selesai,
+        tanggal_kontrak_terbit=req.tanggal_kontrak_terbit,
+        tanggal_mulai_rencana=req.tanggal_mulai_rencana,
+        radius_dampak_meter=req.radius_dampak_meter,
+        jalur_terdampak=req.jalur_terdampak,
         dibuat_oleh=current_user.id,
         kode_proyek=kode_proyek,
         kode_akses=kode_akses
@@ -349,6 +366,14 @@ def create_project(
         db.add(tahap_awal)
         db.commit()
         db.refresh(proyek)
+
+    # Trigger Notifikasi Early-Warning jika proyek dibuat berstatus 'planned'
+    if proyek.status in (ProyekStatus.planned, "planned", "direncanakan"):
+        try:
+            from app.services.notification_dispatcher import NotificationDispatcher
+            NotificationDispatcher.dispatch_planned_created(proyek, db)
+        except Exception as e:
+            logger.error(f"Gagal dispatch notifikasi planned_created: {e}")
 
     return get_project_detail(proyek.id, db)
 
@@ -481,9 +506,9 @@ def update_project(
         setattr(proyek, field, value)
 
     # Jaminan konsistensi progres dan status proyek
-    if proyek.progres_persen >= 100 and proyek.status != ProyekStatus.selesai:
+    if proyek.progres_persen >= 100 and proyek.status not in (ProyekStatus.selesai, ProyekStatus.completed):
         proyek.status = ProyekStatus.selesai
-    elif proyek.status == ProyekStatus.selesai and proyek.progres_persen < 100:
+    elif proyek.status in (ProyekStatus.selesai, ProyekStatus.completed) and proyek.progres_persen < 100:
         proyek.progres_persen = 100
 
     db.commit()
@@ -507,6 +532,21 @@ def update_project(
             pesan=pesan_notif,
             exclude_user_id=current_user.id
         )
+
+        # Dispatch notifikasi sistem & simpan log ke notification_logs
+        try:
+            from app.services.notification_dispatcher import NotificationDispatcher
+            if status_changed:
+                old_val = old_status.value if hasattr(old_status, 'value') else str(old_status)
+                new_val = proyek.status.value if hasattr(proyek.status, 'value') else str(proyek.status)
+                NotificationDispatcher.dispatch_status_change(proyek, old_val, new_val, db, create_in_app=False)
+            if progres_changed:
+                if old_progres < 50 <= proyek.progres_persen:
+                    NotificationDispatcher.dispatch_milestone(proyek, 50, db, create_in_app=False)
+                if old_progres < 100 <= proyek.progres_persen:
+                    NotificationDispatcher.dispatch_milestone(proyek, 100, db, create_in_app=False)
+        except Exception as e:
+            logger.error(f"Gagal dispatch notification dispatcher: {e}")
 
     return get_project_detail(proyek.id, db)
 
@@ -545,6 +585,8 @@ def add_project_stage(
                 )
             )
 
+    old_progres_stage = proyek.progres_persen
+
     tahap = TahapanProgres(
         proyek_id=proyek.id,
         nama_tahap=req.nama_tahap,
@@ -556,15 +598,15 @@ def add_project_stage(
 
     # Sinkronkan persentase progres di proyek utama dengan jaminan konsistensi status
     proyek.progres_persen = req.progres_persen
-    if req.progres_persen >= 100:
+    if req.progres_persen >= 100 and proyek.status not in (ProyekStatus.selesai, ProyekStatus.completed):
         proyek.status = ProyekStatus.selesai
-    elif proyek.status == ProyekStatus.selesai and req.progres_persen < 100:
+    elif proyek.status in (ProyekStatus.selesai, ProyekStatus.completed) and req.progres_persen < 100:
         proyek.status = ProyekStatus.berjalan
 
     db.commit()
     db.refresh(tahap)
 
-    # Pemicu notifikasi otomatis via BackgroundTasks
+    # Pemicu notifikasi otomatis via BackgroundTasks & Dispatcher
     pesan_notif = f"Pembaruan Proyek: Tahap '{req.nama_tahap}' dicatat. Progres '{proyek.nama_proyek}' mencapai {req.progres_persen}%."
     background_tasks.add_task(
         send_project_update_notifications,
@@ -572,6 +614,15 @@ def add_project_stage(
         pesan=pesan_notif,
         exclude_user_id=current_user.id
     )
+
+    try:
+        from app.services.notification_dispatcher import NotificationDispatcher
+        if old_progres_stage < 50 <= req.progres_persen:
+            NotificationDispatcher.dispatch_milestone(proyek, 50, db, create_in_app=False)
+        if old_progres_stage < 100 <= req.progres_persen:
+            NotificationDispatcher.dispatch_milestone(proyek, 100, db, create_in_app=False)
+    except Exception as e:
+        logger.error(f"Gagal dispatch milestone notification di tahapan: {e}")
 
     return tahap
 
@@ -604,4 +655,23 @@ def delete_project(
         "message": f"Proyek '{nama_proyek}' berhasil dihapus.",
         "id": id
     }
+
+@router.post("/cron/lifecycle-scheduler")
+def trigger_project_lifecycle_scheduler(
+    target_date: Optional[str] = Query(None, description="Opsional tanggal pengujian YYYY-MM-DD"),
+    db: Session = Depends(get_db)
+):
+    """
+    Eksekusi cron harian / scheduled job untuk transisi status 'planned' -> 'scheduled'
+    dan trigger notifikasi H-14, H-1, H-0 berbasis radius Haversine.
+    """
+    from datetime import datetime
+    from app.services.notification_dispatcher import run_daily_project_lifecycle_scheduler
+    parsed_date = None
+    if target_date:
+        try:
+            parsed_date = datetime.strptime(target_date.strip(), "%Y-%m-%d").date()
+        except Exception:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Format target_date harus YYYY-MM-DD")
+    return run_daily_project_lifecycle_scheduler(db, target_date=parsed_date)
 

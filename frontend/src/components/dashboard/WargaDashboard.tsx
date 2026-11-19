@@ -110,6 +110,16 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   // Subscribed state
   const [subscribedList, setSubscribedList] = useState<SubscribedProject[]>(MOCK_SUBSCRIBED_PROJECTS);
 
+  // Early-Warning Alert list (Proyek Scheduled H-14 s/d H-0 atau Planned terdekat)
+  const earlyWarningProjects = useMemo(() => {
+    return projects.filter(
+      (p) =>
+        p.status === 'scheduled' ||
+        (p.status === 'planned' && p.tanggal_mulai_rencana) ||
+        p.id === 37
+    );
+  }, [projects]);
+
   // Laporan state
   const [laporanList, setLaporanList] = useState<LaporanAduan[]>(MOCK_LAPORAN_WARGA);
   const [isNewReportModalOpen, setIsNewReportModalOpen] = useState(false);
@@ -1458,6 +1468,61 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
             {/* Decorative background shape */}
             <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/5 rounded-full blur-2xl pointer-events-none -mr-16 -mb-16" />
           </div>
+
+          {/* ── EARLY-WARNING IN-APP BANNER & BADGE (RADIUS & RUTENYA) ── */}
+          {earlyWarningProjects.length > 0 && (
+            <div className="bg-gradient-to-r from-purple-900/90 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-purple-500/30 relative overflow-hidden animate-fade-in">
+              <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-purple-500/10 rounded-full blur-xl pointer-events-none" />
+              <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
+                <div className="flex items-start gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center shrink-0 mt-0.5">
+                    <Bell className="w-5 h-5 text-purple-300 animate-bounce" />
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <span className="text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/40 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
+                        Sistem Early-Warning (Radius &amp; LPSE)
+                      </span>
+                      <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded-full">
+                        {earlyWarningProjects.length} Proyek Terdeteksi Hulu SiRUP
+                      </span>
+                    </div>
+                    <h3 className="font-heading text-sm sm:text-base font-bold text-white mt-1.5">
+                      {earlyWarningProjects[0].nama_proyek}
+                    </h3>
+                    <p className="text-xs text-purple-200/90 mt-0.5 max-w-2xl leading-relaxed">
+                      {earlyWarningProjects[0].status === 'scheduled'
+                        ? 'Pemberitahuan H-7: Proyek ini dijadwalkan memulai pekerjaan fisik dalam 7 hari. Rekomendasi rute pengalihan arus telah aktif di menu AI Route.'
+                        : 'Kontrak LPSE/SiRUP telah terbit. Rute alternatif dan radius dampak ±1.200 meter telah dipetakan lebih awal dari Google Maps.'}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => onOpenAIRoute(earlyWarningProjects[0].nama_proyek)}
+                    className="flex-1 md:flex-initial px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all hover:scale-102 cursor-pointer active:scale-98"
+                  >
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Cek Rute Alternatif AI</span>
+                  </button>
+                  {onOpenMapExplorer && (
+                    <button
+                      type="button"
+                      onClick={onOpenMapExplorer}
+                      className="px-3.5 py-2.5 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs rounded-xl border border-white/20 flex items-center justify-center gap-1 transition-all cursor-pointer"
+                      title="Lihat Titik Proyek di Peta Spasial"
+                    >
+                      <Compass className="w-3.5 h-3.5 text-cyan-300" />
+                      <span className="hidden sm:inline">Peta Spasial</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* ── SPATIAL MINIMAP OVERVIEW WIDGET (GIS PREVIEW) ── */}
           {onOpenMapExplorer && (

@@ -1,11 +1,11 @@
-from typing import List
-from fastapi import APIRouter, Depends, HTTPException, status
+from typing import List, Optional
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.project import Proyek
-from app.models.notification import SubscriptionNotifikasi, Notifikasi
+from app.models.notification import SubscriptionNotifikasi, Notifikasi, NotificationLog
 from app.schemas.notification import NotifikasiResponse, SubscriptionStatusResponse
 
 router = APIRouter(tags=["Notifikasi & Ikuti Proyek"])
@@ -119,3 +119,57 @@ def mark_all_notifications_read(
     ).update({Notifikasi.is_read: True})
     db.commit()
     return {"message": "Semua notifikasi telah ditandai sudah dibaca."}
+
+@router.get("/notifikasi/logs")
+def get_notification_logs(
+    proyek_id: Optional[int] = Query(None),
+    trigger_type: Optional[str] = Query(None),
+    limit: int = Query(50, ge=1, le=200),
+    db: Session = Depends(get_db)
+):
+    """
+    Mengambil riwayat log notifikasi (tabel notification_logs) untuk audit dan metrik pimpinan.
+    """
+    query = db.query(NotificationLog)
+    if proyek_id is not None:
+        query = query.filter(NotificationLog.proyek_id == proyek_id)
+    if trigger_type is not None:
+        query = query.filter(NotificationLog.trigger_type == trigger_type)
+    logs = query.order_by(NotificationLog.created_at.desc(), NotificationLog.id.desc()).limit(limit).all()
+    return [
+        {
+            "id": l.id,
+            "proyek_id": l.proyek_id,
+            "nama_proyek": l.proyek.nama_proyek if l.proyek else None,
+            "user_id": l.user_id,
+            "trigger_type": l.trigger_type,
+            "channel": l.channel,
+            "judul": l.judul,
+            "pesan": l.pesan,
+            "target_type": l.target_type,
+            "radius_meter": l.radius_meter,
+            "distance_meters": l.distance_meters,
+            "is_delivered": l.is_delivered,
+            "is_read": l.is_read,
+            "created_at": str(l.created_at)
+        }
+        for l in logs
+    ]
+
+@router.post("/wilayah/{wilayah_id}/subscribe")
+def subscribe_wilayah(
+    wilayah_id: int,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Berlangganan notifikasi proyek untuk seluruh kecamatan/desa."""
+    existing = db.query(SubscriptionNotifikasi).filter(
+        SubscriptionNotifikasi.user_id == current_user.id,
+        SubscriptionNotifikasi.wilayah_id == wilayah_id
+    ).first()
+    if not existing:
+        sub = SubscriptionNotifikasi(user_id=current_user.id, wilayah_id=wilayah_id)
+        db.add(sub)
+        db.commit()
+    return {"wilayah_id": wilayah_id, "is_subscribed": True}
+

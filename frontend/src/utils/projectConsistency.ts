@@ -261,10 +261,15 @@ export function saveProjectTimelineStages(projectId: number, stages: LinimasaTah
 export function broadcastProjectUpdate(updatedProject: ProyekItem): void {
   // Pastikan status strictly bernilai 'berjalan' | 'selesai' | 'ditangguhkan'
   let cleanStatus: ProyekStatus = 'berjalan';
-  if (updatedProject.progres_persen >= 100 || updatedProject.status === 'selesai') {
+  if (updatedProject.status === 'planned' || (updatedProject.status as any) === 'direncanakan') {
+    cleanStatus = 'planned';
+  } else if (updatedProject.status === 'scheduled' || (updatedProject.status as any) === 'akan_dimulai') {
+    cleanStatus = 'scheduled';
+  } else if (updatedProject.progres_persen >= 100 || updatedProject.status === 'selesai' || updatedProject.status === 'completed') {
     cleanStatus = 'selesai';
   } else if (
     updatedProject.status === 'ditangguhkan' ||
+    updatedProject.status === 'suspended' ||
     (updatedProject.status as any) === 'tertunda' ||
     (updatedProject.status as any) === 'dalam_peninjauan_ulang'
   ) {

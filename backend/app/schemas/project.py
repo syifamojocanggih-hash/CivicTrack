@@ -48,6 +48,10 @@ class ProyekBase(BaseModel):
     progres_persen: int = Field(0, ge=0, le=100)
     tanggal_mulai: date
     estimasi_selesai: date
+    tanggal_kontrak_terbit: Optional[date] = None
+    tanggal_mulai_rencana: Optional[date] = None
+    radius_dampak_meter: int = Field(1500, ge=100, le=50000)
+    jalur_terdampak: Optional[str] = None
     kode_proyek: Optional[str] = None
     kode_akses: Optional[str] = None
 
@@ -116,6 +120,10 @@ class ProyekUpdate(BaseModel):
     progres_persen: Optional[int] = Field(None, ge=0, le=100)
     tanggal_mulai: Optional[date] = None
     estimasi_selesai: Optional[date] = None
+    tanggal_kontrak_terbit: Optional[date] = None
+    tanggal_mulai_rencana: Optional[date] = None
+    radius_dampak_meter: Optional[int] = Field(None, ge=100, le=50000)
+    jalur_terdampak: Optional[str] = None
     kode_proyek: Optional[str] = None
     kode_akses: Optional[str] = None
     catatan_perubahan: Optional[str] = None
@@ -171,6 +179,8 @@ class ProyekUpdate(BaseModel):
 class ProyekResponse(ProyekBase):
     id: int
     dibuat_oleh: int
+    tanggal_input_sistem: Optional[datetime] = None
+    lead_time_hari: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     wilayah: Optional[WilayahBrief] = None
@@ -198,6 +208,12 @@ class ProyekListItem(BaseModel):
     progres_persen: int
     tanggal_mulai: date
     estimasi_selesai: date
+    tanggal_kontrak_terbit: Optional[date] = None
+    tanggal_mulai_rencana: Optional[date] = None
+    tanggal_input_sistem: Optional[datetime] = None
+    radius_dampak_meter: int = 1500
+    jalur_terdampak: Optional[str] = None
+    lead_time_hari: Optional[int] = None
     created_at: datetime
     updated_at: datetime
     kode_proyek: Optional[str] = None

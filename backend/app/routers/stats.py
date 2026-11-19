@@ -26,9 +26,12 @@ def get_dashboard_statistics(db: Session = Depends(get_db)):
     """
     total_proyek = db.query(Proyek).count()
 
-    berjalan = db.query(Proyek).filter(Proyek.status == ProyekStatus.berjalan).count()
-    selesai = db.query(Proyek).filter(Proyek.status == ProyekStatus.selesai).count()
-    ditangguhkan = db.query(Proyek).filter(Proyek.status == ProyekStatus.ditangguhkan).count()
+    berjalan = db.query(Proyek).filter(Proyek.status.in_([ProyekStatus.berjalan, ProyekStatus.in_progress])).count()
+    selesai = db.query(Proyek).filter(Proyek.status.in_([ProyekStatus.selesai, ProyekStatus.completed])).count()
+    tertunda = db.query(Proyek).filter(Proyek.status.in_([ProyekStatus.tertunda, ProyekStatus.ditangguhkan, ProyekStatus.suspended])).count()
+    dalam_peninjauan = db.query(Proyek).filter(Proyek.status == ProyekStatus.dalam_peninjauan_ulang).count()
+    planned = db.query(Proyek).filter(Proyek.status == ProyekStatus.planned).count()
+    scheduled = db.query(Proyek).filter(Proyek.status == ProyekStatus.scheduled).count()
 
     total_anggaran_raw = db.query(func.sum(Proyek.anggaran)).scalar()
     total_anggaran = Decimal(str(total_anggaran_raw)) if total_anggaran_raw else Decimal("0")
@@ -72,9 +75,11 @@ def get_dashboard_statistics(db: Session = Depends(get_db)):
         status_proyek=StatusCount(
             berjalan=berjalan,
             selesai=selesai,
-            ditangguhkan=ditangguhkan,
-            tertunda=ditangguhkan,
-            dalam_peninjauan_ulang=0
+            ditangguhkan=tertunda,
+            tertunda=tertunda,
+            dalam_peninjauan_ulang=dalam_peninjauan,
+            planned=planned,
+            scheduled=scheduled
         ),
         total_anggaran=total_anggaran,
         rata_rata_progres=round(avg_progres, 2),
@@ -103,11 +108,13 @@ def get_wilayah_statistics(db: Session = Depends(get_db)):
         WilayahAdministratif.kode_wilayah,
         WilayahAdministratif.nama_wilayah,
         func.count(Proyek.id).label("total_proyek"),
-        func.coalesce(func.sum(case((Proyek.status == ProyekStatus.berjalan, 1), else_=0)), 0).label("berjalan"),
-        func.coalesce(func.sum(case((Proyek.status == ProyekStatus.selesai, 1), else_=0)), 0).label("selesai"),
-        func.coalesce(func.sum(case((Proyek.status == ProyekStatus.ditangguhkan, 1), else_=0)), 0).label("ditangguhkan"),
-        func.coalesce(func.sum(case((Proyek.status == ProyekStatus.ditangguhkan, 1), else_=0)), 0).label("tertunda"),
-        func.coalesce(func.sum(case((Proyek.status == ProyekStatus.ditangguhkan, 0), else_=0)), 0).label("dalam_peninjauan_ulang"),
+        func.coalesce(func.sum(case((Proyek.status.in_([ProyekStatus.berjalan, ProyekStatus.in_progress]), 1), else_=0)), 0).label("berjalan"),
+        func.coalesce(func.sum(case((Proyek.status.in_([ProyekStatus.selesai, ProyekStatus.completed]), 1), else_=0)), 0).label("selesai"),
+        func.coalesce(func.sum(case((Proyek.status.in_([ProyekStatus.ditangguhkan, ProyekStatus.tertunda, ProyekStatus.suspended]), 1), else_=0)), 0).label("ditangguhkan"),
+        func.coalesce(func.sum(case((Proyek.status.in_([ProyekStatus.ditangguhkan, ProyekStatus.tertunda, ProyekStatus.suspended]), 1), else_=0)), 0).label("tertunda"),
+        func.coalesce(func.sum(case((Proyek.status == ProyekStatus.dalam_peninjauan_ulang, 1), else_=0)), 0).label("dalam_peninjauan_ulang"),
+        func.coalesce(func.sum(case((Proyek.status == ProyekStatus.planned, 1), else_=0)), 0).label("planned"),
+        func.coalesce(func.sum(case((Proyek.status == ProyekStatus.scheduled, 1), else_=0)), 0).label("scheduled"),
         func.coalesce(func.sum(Proyek.anggaran), 0).label("total_anggaran"),
         func.coalesce(func.sum(Proyek.anggaran * Proyek.progres_persen / 100), 0).label("estimasi_penyerapan"),
         func.coalesce(func.avg(Proyek.progres_persen), 0).label("rata_rata_progres"),
@@ -127,14 +134,16 @@ def get_wilayah_statistics(db: Session = Depends(get_db)):
                 nama_wilayah=row.nama_wilayah,
                 jumlah_berjalan=int(row.berjalan),
                 jumlah_selesai=int(row.selesai),
-                jumlah_tertunda=int(row.ditangguhkan),
-                jumlah_dalam_peninjauan_ulang=0,
+                jumlah_tertunda=int(row.tertunda),
+                jumlah_dalam_peninjauan_ulang=int(row.dalam_peninjauan_ulang),
                 status_proyek=StatusCount(
                     berjalan=int(row.berjalan),
                     selesai=int(row.selesai),
                     ditangguhkan=int(row.ditangguhkan),
-                    tertunda=int(row.ditangguhkan),
-                    dalam_peninjauan_ulang=0,
+                    tertunda=int(row.tertunda),
+                    dalam_peninjauan_ulang=int(row.dalam_peninjauan_ulang),
+                    planned=int(row.planned),
+                    scheduled=int(row.scheduled),
                 ),
                 total_proyek=int(row.total_proyek),
                 total_anggaran=total_anggaran,
@@ -152,9 +161,12 @@ def get_ringkasan_kabupaten(db: Session = Depends(get_db)):
     rasio penyerapan persen, dan rata-rata progres fisik keseluruhan.
     """
     total_proyek = db.query(Proyek).count()
-    berjalan = db.query(Proyek).filter(Proyek.status == ProyekStatus.berjalan).count()
-    selesai = db.query(Proyek).filter(Proyek.status == ProyekStatus.selesai).count()
-    ditangguhkan = db.query(Proyek).filter(Proyek.status == ProyekStatus.ditangguhkan).count()
+    berjalan = db.query(Proyek).filter(Proyek.status.in_([ProyekStatus.berjalan, ProyekStatus.in_progress])).count()
+    selesai = db.query(Proyek).filter(Proyek.status.in_([ProyekStatus.selesai, ProyekStatus.completed])).count()
+    tertunda = db.query(Proyek).filter(Proyek.status.in_([ProyekStatus.tertunda, ProyekStatus.ditangguhkan, ProyekStatus.suspended])).count()
+    dalam_peninjauan = db.query(Proyek).filter(Proyek.status == ProyekStatus.dalam_peninjauan_ulang).count()
+    planned = db.query(Proyek).filter(Proyek.status == ProyekStatus.planned).count()
+    scheduled = db.query(Proyek).filter(Proyek.status == ProyekStatus.scheduled).count()
 
     total_anggaran_raw = db.query(func.sum(Proyek.anggaran)).scalar()
     total_anggaran = Decimal(str(total_anggaran_raw)) if total_anggaran_raw else Decimal("0")
@@ -175,9 +187,11 @@ def get_ringkasan_kabupaten(db: Session = Depends(get_db)):
         status_proyek=StatusCount(
             berjalan=berjalan,
             selesai=selesai,
-            ditangguhkan=ditangguhkan,
-            tertunda=ditangguhkan,
-            dalam_peninjauan_ulang=0,
+            ditangguhkan=tertunda,
+            tertunda=tertunda,
+            dalam_peninjauan_ulang=dalam_peninjauan,
+            planned=planned,
+            scheduled=scheduled,
         ),
         total_anggaran=total_anggaran,
         estimasi_penyerapan_anggaran=estimasi_penyerapan,

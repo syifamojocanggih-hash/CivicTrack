@@ -113,6 +113,12 @@ export interface BackendProjectItem {
   jumlah_rating?: number;
   tahap_terkini?: string;
   tahapan_list?: Array<{ nama_tahap: string; progres_persen: number }>;
+  tanggal_kontrak_terbit?: string;
+  tanggal_mulai_rencana?: string;
+  tanggal_input_sistem?: string;
+  radius_dampak_meter?: number;
+  jalur_terdampak?: string[] | any;
+  lead_time_hari?: number;
 }
 
 // Convert backend project schema to frontend ProyekItem
@@ -142,15 +148,25 @@ export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
     dinas_id: p.dinas_id || (p.dinas ? p.dinas.id : 1),
     anggaran: Number(p.anggaran) || 0,
     status: (
-      (Number(p.progres_persen) >= 100 || p.status === 'selesai')
+      (p.status === 'planned' || p.status === 'direncanakan')
+        ? 'planned'
+        : (p.status === 'scheduled' || p.status === 'akan_dimulai')
+        ? 'scheduled'
+        : (Number(p.progres_persen) >= 100 || p.status === 'selesai' || p.status === 'completed')
         ? 'selesai'
-        : (p.status === 'ditangguhkan' || p.status === 'tertunda' || p.status === 'dalam_peninjauan_ulang')
+        : (p.status === 'ditangguhkan' || p.status === 'suspended' || p.status === 'tertunda' || p.status === 'dalam_peninjauan_ulang')
         ? 'ditangguhkan'
         : 'berjalan'
     ) as ProyekStatus,
     progres_persen: p.progres_persen || 0,
     tanggal_mulai: p.tanggal_mulai ? String(p.tanggal_mulai).split('T')[0] : '2024-01-01',
     estimasi_selesai: p.estimasi_selesai ? String(p.estimasi_selesai).split('T')[0] : '2024-12-31',
+    tanggal_kontrak_terbit: p.tanggal_kontrak_terbit ? String(p.tanggal_kontrak_terbit).split('T')[0] : undefined,
+    tanggal_mulai_rencana: p.tanggal_mulai_rencana ? String(p.tanggal_mulai_rencana).split('T')[0] : undefined,
+    tanggal_input_sistem: p.tanggal_input_sistem ? String(p.tanggal_input_sistem) : undefined,
+    radius_dampak_meter: p.radius_dampak_meter !== undefined ? Number(p.radius_dampak_meter) : 1500,
+    jalur_terdampak: p.jalur_terdampak || undefined,
+    lead_time_hari: p.lead_time_hari !== undefined ? Number(p.lead_time_hari) : undefined,
     kode_proyek: resolvedCode,
     kode_akses: resolvedPin,
     nama_wilayah: p.nama_wilayah || p.wilayah?.nama_wilayah || 'Kabupaten Lamongan',

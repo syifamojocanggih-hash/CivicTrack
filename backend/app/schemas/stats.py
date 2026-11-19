@@ -8,6 +8,8 @@ class StatusCount(BaseModel):
     ditangguhkan: int = 0
     tertunda: int = 0
     dalam_peninjauan_ulang: int = 0
+    planned: int = 0
+    scheduled: int = 0
 
 class WilayahStat(BaseModel):
     wilayah_id: int

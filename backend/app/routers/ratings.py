@@ -27,7 +27,7 @@ def submit_project_rating(
     if not proyek:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Proyek tidak ditemukan.")
 
-    if proyek.status != ProyekStatus.selesai:
+    if proyek.status not in (ProyekStatus.selesai, ProyekStatus.completed):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Penilaian kepuasan masyarakat hanya dapat diberikan untuk proyek yang telah berstatus 'Selesai'."

@@ -1,4 +1,14 @@
-export type ProyekStatus = 'berjalan' | 'selesai' | 'ditangguhkan';
+export type ProyekStatus =
+  | 'planned'
+  | 'scheduled'
+  | 'in_progress'
+  | 'completed'
+  | 'suspended'
+  | 'berjalan'
+  | 'selesai'
+  | 'ditangguhkan'
+  | 'direncanakan'
+  | 'akan_dimulai';
 
 export type ProyekKategori = 'jalan' | 'taman' | 'drainase' | 'fasilitas' | 'gedung_publik' | 'jembatan' | 'lainnya';
 
@@ -32,6 +42,14 @@ export interface ProyekItem {
   foto_url?: string;
   nomor_kontrak_lpse?: string;
   sumber_dana?: string;
+
+  // Early-Warning & Lead Time Advantage fields (FASE 1)
+  tanggal_kontrak_terbit?: string;
+  tanggal_mulai_rencana?: string;
+  tanggal_input_sistem?: string;
+  radius_dampak_meter?: number;
+  jalur_terdampak?: string[] | string | any;
+  lead_time_hari?: number;
 }
 
 export interface ProyekUpdatePayload {

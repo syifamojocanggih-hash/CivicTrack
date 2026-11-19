@@ -30,14 +30,27 @@ class ProyekStatus(str, enum.Enum):
     tertunda = "tertunda"
     dalam_peninjauan_ulang = "dalam_peninjauan_ulang"
     ditangguhkan = "ditangguhkan"
+    planned = "planned"
+    scheduled = "scheduled"
+    in_progress = "in_progress"
+    completed = "completed"
+    suspended = "suspended"
 
     @classmethod
     def _missing_(cls, value):
         val_str = str(value).lower().strip()
+        if val_str in ("direncanakan", "rencana", "plan", "planned"):
+            return cls.planned
+        if val_str in ("akan_dimulai", "akan dimulai", "schedule", "scheduled", "terjadwal"):
+            return cls.scheduled
+        if val_str in ("in_progress", "inprogress", "sedang_berjalan", "berjalan"):
+            return cls.berjalan
+        if val_str in ("completed", "selesai", "done", "finish"):
+            return cls.selesai
+        if val_str in ("suspended", "ditangguhkan", "pause", "hold"):
+            return cls.ditangguhkan
         if val_str in ("pending", "review", "peninjauan"):
             return cls.dalam_peninjauan_ulang
-        if val_str in ("ditangguhkan", "pause", "hold"):
-            return cls.tertunda
         return super()._missing_(value)
 
 class MediaType(str, enum.Enum):
@@ -61,11 +74,24 @@ class Proyek(Base):
     progres_persen = Column(SmallInteger, nullable=False, default=0)
     tanggal_mulai = Column(Date, nullable=False)
     estimasi_selesai = Column(Date, nullable=False)
+    tanggal_kontrak_terbit = Column(Date, nullable=True)
+    tanggal_mulai_rencana = Column(Date, nullable=True)
+    tanggal_input_sistem = Column(DateTime, server_default=func.now(), nullable=False)
+    radius_dampak_meter = Column(Integer, nullable=False, default=1500)
+    jalur_terdampak = Column(Text, nullable=True)
     dibuat_oleh = Column(BigInteger, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     kode_proyek = Column(String(50), nullable=True, unique=True, index=True)
     kode_akses = Column(String(100), nullable=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
+
+    @property
+    def lead_time_hari(self):
+        """Lead Time Advantage: tanggal_mulai_rencana - tanggal_input_sistem"""
+        if self.tanggal_mulai_rencana and self.tanggal_input_sistem:
+            t_input = self.tanggal_input_sistem.date() if hasattr(self.tanggal_input_sistem, 'date') else self.tanggal_input_sistem
+            return (self.tanggal_mulai_rencana - t_input).days
+        return None
 
     wilayah = relationship("WilayahAdministratif", foreign_keys=[wilayah_id], back_populates="proyek_list")
     desa = relationship("WilayahAdministratif", foreign_keys=[desa_id])

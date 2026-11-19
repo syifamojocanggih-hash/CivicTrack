@@ -36,6 +36,8 @@ import {
   Lock,
   Key,
   AlertTriangle,
+  Calendar,
+  Bell,
 } from 'lucide-react';
 import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem } from '../types';
 import { apiService } from '../services/api';
@@ -78,6 +80,19 @@ function calculateDistanceKm(lat1: number, lon1: number, lat2: number, lon2: num
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return Number((R * c).toFixed(1));
+}
+
+// Menghitung sisa hari hingga tanggal mulai rencana (Early-Warning Lead Time)
+export function getDaysUntilStart(dateStr?: string): number | null {
+  if (!dateStr) return null;
+  const target = new Date(dateStr);
+  if (isNaN(target.getTime())) return null;
+  const now = new Date();
+  now.setHours(0, 0, 0, 0);
+  const targetMidnight = new Date(target);
+  targetMidnight.setHours(0, 0, 0, 0);
+  const diffMs = targetMidnight.getTime() - now.getTime();
+  return Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 }
 
 // SVG marker helpers for custom Leaflet DivIcons
@@ -194,7 +209,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 }) => {
   // Filter & Search states (Matches Image 1)
   const [selectedCategory, setSelectedCategory] = useState<ProyekKategori | 'all'>('all');
-  const [selectedStatus, setSelectedStatus] = useState<'all' | 'berjalan' | 'selesai'>('all');
+  const [selectedStatus, setSelectedStatus] = useState<'all' | 'berjalan' | 'selesai' | 'scheduled' | 'planned'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProjectId, setSelectedProjectId] = useState<number>(initialProjectId || 1);
   const [isDetailPanelOpen, setIsDetailPanelOpen] = useState(!!initialProjectId);
@@ -598,7 +613,24 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const filteredProjects = useMemo(() => {
     return enrichedProjects.filter((p) => {
       // Status filter
-      if (selectedStatus !== 'all' && p.status !== selectedStatus) return false;
+      if (selectedStatus !== 'all') {
+        const rawStat = (p.status || '').toLowerCase().trim();
+        const days = getDaysUntilStart(p.tanggal_mulai_rencana || p.tanggal_mulai);
+        const isSch = rawStat === 'scheduled' || rawStat === 'akan_dimulai' || ((rawStat === 'planned' || rawStat === 'direncanakan') && days !== null && days <= 14 && days >= 0);
+        const isPlan = (rawStat === 'planned' || rawStat === 'direncanakan') && !isSch;
+
+        if (selectedStatus === 'berjalan') {
+          if (rawStat !== 'berjalan' && rawStat !== 'in_progress') return false;
+        } else if (selectedStatus === 'selesai') {
+          if (rawStat !== 'selesai' && rawStat !== 'completed') return false;
+        } else if (selectedStatus === 'scheduled') {
+          if (!isSch) return false;
+        } else if (selectedStatus === 'planned') {
+          if (!isPlan) return false;
+        } else if (p.status !== selectedStatus) {
+          return false;
+        }
+      }
 
       // Category filter
       if (selectedCategory !== 'all' && p.kategori !== selectedCategory) return false;
@@ -1358,36 +1390,118 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
     filteredProjects.forEach((proj) => {
       const isSelected = proj.id === selectedProjectId && isDetailPanelOpen;
-      const iconSvg = getCategoryIconSvg(proj.kategori);
-      const theme = getCategoryTheme(proj.kategori);
-      const prog = getProgressBadge(proj.progres_persen);
+      const rawStatus = (proj.status || '').toLowerCase().trim();
+      const daysUntil = getDaysUntilStart(proj.tanggal_mulai_rencana || proj.tanggal_mulai);
+
+      const isExplicitScheduled = rawStatus === 'scheduled' || rawStatus === 'akan_dimulai';
+      const isExplicitPlanned = rawStatus === 'planned' || rawStatus === 'direncanakan';
+      const isWithinScheduledWindow = daysUntil !== null && daysUntil <= 14 && daysUntil >= 0;
+
+      const isScheduled = isExplicitScheduled || (isExplicitPlanned && isWithinScheduledWindow);
+      const isPlanned = isExplicitPlanned && !isScheduled;
+
+      let markerBg = '';
+      let markerBorder = '';
+      let iconSvg = '';
+      let cornerBadgeHtml = '';
+      let selectedTopBubbleHtml = '';
+      let tooltipStatusHtml = '';
+      let tooltipCategoryTag = '';
+
+      if (isPlanned) {
+        // Status planned -> marker biru, ikon kalender, style dashed/transparan
+        markerBg = 'rgba(37, 99, 235, 0.88)';
+        markerBorder = 'border-2 border-dashed border-white';
+        iconSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>`;
+        cornerBadgeHtml = `
+          <div class="absolute -top-2.5 -right-3 bg-blue-50 text-blue-700 text-[8.5px] font-black px-1.5 py-0.5 rounded-full shadow-sm border border-blue-300 flex items-center gap-0.5 leading-none">
+            <span class="w-1.5 h-1.5 rounded-full bg-blue-500 shrink-0"></span>
+            <span>Rencana</span>
+          </div>
+        `;
+        selectedTopBubbleHtml = `
+          <span class="w-1.5 h-1.5 rounded-full bg-blue-400"></span>
+          <span>📅 Direncanakan • ${proj.nama_wilayah?.split(',')[0] || 'Proyek'}</span>
+        `;
+        tooltipCategoryTag = `
+          <span class="w-2 h-2 rounded-full bg-blue-600"></span>
+          <span class="text-[9.5px] font-extrabold uppercase text-blue-600">Direncanakan</span>
+        `;
+        tooltipStatusHtml = `
+          <span>Status: <b class="font-extrabold text-blue-600">Kontrak LPSE Terbit</b></span>
+          <span class="text-blue-600 font-bold">Rp ${(proj.anggaran / 1000000000).toFixed(1)} M</span>
+        `;
+      } else if (isScheduled) {
+        // Status scheduled -> marker ungu, ikon lonceng, badge "Dimulai dalam X hari"
+        const daysLeftCount = daysUntil !== null && daysUntil >= 0 ? daysUntil : 0;
+        markerBg = '#7C3AED';
+        markerBorder = 'border-2 border-white shadow-purple-500/40';
+        iconSvg = `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>`;
+        cornerBadgeHtml = `
+          <div class="absolute -top-2.5 -right-4.5 bg-purple-50 text-purple-700 text-[8px] font-black px-1.5 py-0.5 rounded-full shadow-md border border-purple-300 flex items-center gap-0.5 leading-none whitespace-nowrap">
+            <span class="w-1.5 h-1.5 rounded-full bg-purple-500 animate-ping shrink-0"></span>
+            <span>Dimulai ${daysLeftCount} hr</span>
+          </div>
+        `;
+        selectedTopBubbleHtml = `
+          <span class="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping"></span>
+          <span>🔔 Dimulai dalam ${daysLeftCount} hari • ${proj.nama_wilayah?.split(',')[0] || 'Proyek'}</span>
+        `;
+        tooltipCategoryTag = `
+          <span class="w-2 h-2 rounded-full bg-purple-600"></span>
+          <span class="text-[9.5px] font-extrabold uppercase text-purple-700">Akan Dimulai</span>
+        `;
+        tooltipStatusHtml = `
+          <span>Status: <b class="font-extrabold text-purple-700">Dimulai dalam ${daysLeftCount} hari</b></span>
+          <span class="text-blue-600 font-bold">Rp ${(proj.anggaran / 1000000000).toFixed(1)} M</span>
+        `;
+      } else {
+        // Existing statuses (in_progress, completed, suspended)
+        const theme = getCategoryTheme(proj.kategori);
+        const prog = getProgressBadge(proj.progres_persen);
+        markerBg = theme.hex;
+        markerBorder = 'border-2 border-white';
+        iconSvg = getCategoryIconSvg(proj.kategori);
+        cornerBadgeHtml = `
+          <div class="absolute -top-2.5 -right-3 ${prog.badgeBg} ${prog.textColor} text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-sm border ${prog.borderColor} flex items-center gap-0.5 leading-none">
+            <span class="w-1.5 h-1.5 rounded-full ${prog.indicatorDot} shrink-0"></span>
+            <span>${proj.progres_persen}%</span>
+          </div>
+        `;
+        selectedTopBubbleHtml = `
+          <span class="w-1.5 h-1.5 rounded-full ${prog.indicatorDot}"></span>
+          <span>${proj.progres_persen}% • ${proj.nama_wilayah?.split(',')[0] || 'Proyek'}</span>
+        `;
+        tooltipCategoryTag = `
+          <span class="w-2 h-2 rounded-full" style="background-color: ${theme.hex}"></span>
+          <span class="text-[9.5px] font-extrabold uppercase text-slate-500">${theme.label}</span>
+        `;
+        tooltipStatusHtml = `
+          <span>Progres: <b class="font-extrabold ${prog.textColor}">${proj.progres_persen}%</b></span>
+          <span class="text-blue-600 font-bold">Rp ${(proj.anggaran / 1000000000).toFixed(1)} M</span>
+        `;
+      }
 
       const markerHtml = isSelected
         ? `
           <div class="relative flex flex-col items-center justify-center transition-all scale-110 cursor-pointer group">
-            <span class="absolute -inset-2.5 rounded-2xl bg-blue-500/35 animate-ping"></span>
-            <div class="relative w-11 h-11 rounded-2xl shadow-2xl flex items-center justify-center text-white border-2 border-white transition-transform" style="background-color: ${theme.hex}">
+            <span class="absolute -inset-2.5 rounded-2xl ${isPlanned ? 'bg-blue-500/35' : isScheduled ? 'bg-purple-500/40' : 'bg-blue-500/35'} animate-ping"></span>
+            <div class="relative w-11 h-11 rounded-2xl shadow-2xl flex items-center justify-center text-white ${markerBorder} transition-transform" style="background-color: ${markerBg}">
               ${iconSvg}
             </div>
-            <div class="w-2.5 h-2.5 rotate-45 -mt-1 shadow-sm border-r border-b border-white" style="background-color: ${theme.hex}"></div>
+            <div class="w-2.5 h-2.5 rotate-45 -mt-1 shadow-sm border-r border-b border-white" style="background-color: ${markerBg}"></div>
             <div class="absolute -top-7.5 bg-slate-900/95 backdrop-blur-sm text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full shadow-xl whitespace-nowrap pointer-events-none flex items-center gap-1.5 border border-white/20">
-              <span class="w-1.5 h-1.5 rounded-full ${prog.indicatorDot}"></span>
-              <span>${proj.progres_persen}% • ${proj.nama_wilayah?.split(',')[0] || 'Proyek'}</span>
+              ${selectedTopBubbleHtml}
             </div>
           </div>
         `
         : `
           <div class="relative flex flex-col items-center justify-center transition-all hover:scale-115 cursor-pointer group">
-            <div class="w-9 h-9 rounded-xl shadow-lg flex items-center justify-center text-white border-2 border-white transition-all group-hover:brightness-110" style="background-color: ${theme.hex}">
+            <div class="w-9 h-9 rounded-xl shadow-lg flex items-center justify-center text-white ${markerBorder} transition-all group-hover:brightness-110" style="background-color: ${markerBg}">
               ${iconSvg}
             </div>
-            <div class="w-2.5 h-2.5 rotate-45 -mt-1 shadow-xs border-r border-b border-white transition-all group-hover:brightness-110" style="background-color: ${theme.hex}"></div>
-            
-            <!-- Badge Persentase Progres 3 Rentang Warna (Merah <30%, Kuning 30-70%, Hijau >70%) -->
-            <div class="absolute -top-2.5 -right-3 ${prog.badgeBg} ${prog.textColor} text-[9px] font-black px-1.5 py-0.5 rounded-full shadow-sm border ${prog.borderColor} flex items-center gap-0.5 leading-none">
-              <span class="w-1.5 h-1.5 rounded-full ${prog.indicatorDot} shrink-0"></span>
-              <span>${proj.progres_persen}%</span>
-            </div>
+            <div class="w-2.5 h-2.5 rotate-45 -mt-1 shadow-xs border-r border-b border-white transition-all group-hover:brightness-110" style="background-color: ${markerBg}"></div>
+            ${cornerBadgeHtml}
           </div>
         `;
 
@@ -1408,8 +1522,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
         `<div class="p-2.5 font-heading text-xs min-w-[185px] bg-white rounded-xl shadow-md border border-slate-100">
           <div class="flex items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-100">
             <div class="flex items-center gap-1">
-              <span class="w-2 h-2 rounded-full" style="background-color: ${theme.hex}"></span>
-              <span class="text-[9.5px] font-extrabold uppercase text-slate-500">${theme.label}</span>
+              ${tooltipCategoryTag}
             </div>
             <span class="font-mono text-[9px] font-bold text-[#184C78] bg-[#EBF4FB] px-1.5 py-0.2 rounded border border-[#c5def2]">
               ${effCode}
@@ -1417,8 +1530,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           </div>
           <strong class="text-slate-900 font-bold text-xs block leading-snug mb-1">${proj.nama_proyek}</strong>
           <div class="flex justify-between items-center text-[10px] text-slate-600 pt-0.5">
-            <span>Progres: <b class="font-extrabold ${prog.textColor}">${proj.progres_persen}%</b></span>
-            <span class="text-blue-600 font-bold">Rp ${(proj.anggaran / 1000000000).toFixed(1)} M</span>
+            ${tooltipStatusHtml}
           </div>
         </div>`,
         { direction: 'top', offset: [0, -22], opacity: 0.98 }
@@ -1711,13 +1823,21 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   </div>
                 </div>
 
-                {/* Status Progres */}
+                {/* Status Progres & Early-Warning */}
                 <div>
                   <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
-                    Status Progres Pin
+                    Status Siklus Proyek
                   </span>
                   <div className="space-y-1 text-[11px] font-medium text-slate-700">
                     <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-blue-600 border border-white border-dashed shrink-0"></span>
+                      <span>Direncanakan (Kontrak LPSE)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-sm bg-purple-600 shrink-0"></span>
+                      <span>Akan Dimulai (H-14 s/d H-1)</span>
+                    </div>
+                    <div className="flex items-center gap-1.5 pt-0.5">
                       <span className="w-2 h-2 rounded-full bg-rose-500 shrink-0"></span>
                       <span>&lt; 30% (Tahap Awal)</span>
                     </div>
@@ -1800,18 +1920,20 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             </div>
 
             {/* Segmented Status Pills */}
-            <div className="mt-3.5 bg-slate-100/90 p-1 rounded-xl sm:rounded-2xl grid grid-cols-3 gap-1 border border-slate-200/70 w-full shadow-inner">
+            <div className="mt-3.5 bg-slate-100/90 p-1 rounded-xl sm:rounded-2xl grid grid-cols-5 gap-1 border border-slate-200/70 w-full shadow-inner">
               {[
                 { id: 'all', label: 'Semua' },
                 { id: 'berjalan', label: 'Berjalan' },
+                { id: 'scheduled', label: 'H-14' },
+                { id: 'planned', label: 'Rencana' },
                 { id: 'selesai', label: 'Selesai' },
               ].map((tab) => {
                 const isActive = selectedStatus === tab.id;
                 return (
                   <button
                     key={tab.id}
-                    onClick={() => setSelectedStatus(tab.id as 'all' | 'berjalan' | 'selesai')}
-                    className={`w-full py-1.5 sm:py-2 px-2 rounded-lg sm:rounded-xl text-xs font-bold transition-all duration-200 text-center cursor-pointer select-none flex items-center justify-center ${
+                    onClick={() => setSelectedStatus(tab.id as 'all' | 'berjalan' | 'selesai' | 'scheduled' | 'planned')}
+                    className={`w-full py-1.5 sm:py-2 px-1 rounded-lg sm:rounded-xl text-[10.5px] font-bold transition-all duration-200 text-center cursor-pointer select-none flex items-center justify-center ${
                       isActive
                         ? 'bg-[#2563EB] text-white shadow-xs ring-1 ring-blue-500/20'
                         : 'text-slate-600 hover:text-slate-900 hover:bg-white/80 active:scale-98'
@@ -2339,56 +2461,114 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               currentProject.id === 24 ||
               currentProject.id === 35;
 
+            const rawStatus = (currentProject.status || '').toLowerCase().trim();
+            const daysUntilCurrent = getDaysUntilStart(currentProject.tanggal_mulai_rencana || currentProject.tanggal_mulai);
+            const isCurrentExplicitScheduled = rawStatus === 'scheduled' || rawStatus === 'akan_dimulai';
+            const isCurrentExplicitPlanned = rawStatus === 'planned' || rawStatus === 'direncanakan';
+            const isWithinScheduledWindow = daysUntilCurrent !== null && daysUntilCurrent <= 14 && daysUntilCurrent >= 0;
+            const isCurrentScheduled = isCurrentExplicitScheduled || (isCurrentExplicitPlanned && isWithinScheduledWindow);
+            const isCurrentPlanned = isCurrentExplicitPlanned && !isCurrentScheduled;
+            const isEarlyWarningProject = isCurrentPlanned || isCurrentScheduled;
+
             return (
               <div ref={drawerBodyRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 scrollbar-thin animate-fade-in">
-                {/* Photo Showcase with Telemetry Tag & Street View Direct Link */}
-                <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
-                  <img
-                    src={getRealProjectImage(currentProject)}
-                    alt={currentProject.nama_proyek}
-                    className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
-                  />
-                  <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
-                    <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-                    <span>Real-time Field Telemetry</span>
+                {/* Photo Showcase with Telemetry Tag or Early-Warning Blueprint Card */}
+                {isEarlyWarningProject && !currentProject.foto_url ? (
+                  <div className="rounded-2xl overflow-hidden border border-indigo-200/80 shadow-md relative group bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 p-5 text-white h-44 flex flex-col justify-between">
+                    <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:12px_12px]" />
+                    <div className="relative z-10 flex items-center justify-between">
+                      <div className="bg-purple-500/30 backdrop-blur-md border border-purple-400/40 text-purple-200 text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
+                        <Radio className="w-3 h-3 text-purple-400 animate-pulse" />
+                        <span>Early-Warning Radar (Hulu SiRUP/LPSE)</span>
+                      </div>
+                      <div className="bg-white/10 backdrop-blur-md text-cyan-300 text-[10px] font-mono px-2.5 py-0.5 rounded-full border border-white/15">
+                        Radius: ±{currentProject.radius_dampak_meter || 1500}m
+                      </div>
+                    </div>
+
+                    <div className="relative z-10 space-y-1">
+                      <div className="text-[11px] font-mono text-cyan-300 flex items-center gap-1.5">
+                        {isCurrentScheduled ? (
+                          <>
+                            <Bell className="w-3.5 h-3.5 text-purple-400 animate-bounce" />
+                            <span>Dimulai dalam {daysUntilCurrent ?? 0} hari (H-{daysUntilCurrent ?? 0})</span>
+                          </>
+                        ) : (
+                          <>
+                            <Calendar className="w-3.5 h-3.5 text-blue-400" />
+                            <span>Direncanakan &bull; Kontrak LPSE Terbit</span>
+                          </>
+                        )}
+                      </div>
+                      <div className="text-xs text-slate-200 font-medium line-clamp-2">
+                        {currentProject.nama_proyek}
+                      </div>
+                    </div>
+
+                    <div className="relative z-10 flex items-center justify-between pt-2 border-t border-white/10 text-[9px] text-slate-300 font-mono">
+                      <span>📍 {Number(currentProject.latitude).toFixed(4)}°, {Number(currentProject.longitude).toFixed(4)}°</span>
+                      <span className="text-cyan-300 font-sans font-bold">{currentProject.distanceStr} dari lokasi Anda</span>
+                    </div>
                   </div>
-                  <div className="absolute top-10 left-3 bg-black/60 backdrop-blur-md text-white/95 text-[9px] font-medium px-2 py-0.5 rounded-full shadow-xs">
-                    📷 Dokumentasi Representatif Kab. Lamongan
+                ) : (
+                  <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
+                    <img
+                      src={getRealProjectImage(currentProject)}
+                      alt={currentProject.nama_proyek}
+                      className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
+                    />
+                    <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
+                      <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                      <span>Real-time Field Telemetry</span>
+                    </div>
+                    <div className="absolute top-10 left-3 bg-black/60 backdrop-blur-md text-white/95 text-[9px] font-medium px-2 py-0.5 rounded-full shadow-xs">
+                      📷 Dokumentasi Representatif Kab. Lamongan
+                    </div>
+                    <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                      <a
+                        href={getGoogleStreetViewUrl(Number(currentProject.latitude) || -7.1197, Number(currentProject.longitude) || 112.4150)}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md transition-all hover:scale-105"
+                        title="Buka titik koordinat proyek langsung di Google Street View 360°"
+                      >
+                        <Compass className="w-3 h-3 text-cyan-400" />
+                        <span>Street View 360°</span>
+                        <ExternalLink className="w-2.5 h-2.5 opacity-80" />
+                      </a>
+                    </div>
+                    <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md text-[#184C78] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md">
+                      {currentProject.distanceStr} dari lokasi Anda
+                    </div>
+                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-white text-[9px] font-mono px-2 py-0.5 rounded-full">
+                      📍 {Number(currentProject.latitude).toFixed(4)}°, {Number(currentProject.longitude).toFixed(4)}°
+                    </div>
                   </div>
-                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                    <a
-                      href={getGoogleStreetViewUrl(Number(currentProject.latitude) || -7.1197, Number(currentProject.longitude) || 112.4150)}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md transition-all hover:scale-105"
-                      title="Buka titik koordinat proyek langsung di Google Street View 360°"
-                    >
-                      <Compass className="w-3 h-3 text-cyan-400" />
-                      <span>Street View 360°</span>
-                      <ExternalLink className="w-2.5 h-2.5 opacity-80" />
-                    </a>
-                  </div>
-                  <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md text-[#184C78] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md">
-                    {currentProject.distanceStr} dari lokasi Anda
-                  </div>
-                  <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-white text-[9px] font-mono px-2 py-0.5 rounded-full">
-                    📍 {Number(currentProject.latitude).toFixed(4)}°, {Number(currentProject.longitude).toFixed(4)}°
-                  </div>
-                </div>
+                )}
 
                 {/* Title & Status with Official Project Code Badge */}
                 <div>
                   <div className="flex items-center gap-2 mb-1 flex-wrap">
                     <span
                       className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                        currentProject.status === 'selesai'
+                        isCurrentScheduled
+                          ? 'bg-purple-100 text-purple-800 border border-purple-200'
+                          : isCurrentPlanned
+                          ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                          : currentProject.status === 'selesai'
                           ? 'bg-emerald-100 text-emerald-800'
                           : currentProject.status === 'ditangguhkan' || (currentProject.status as any) === 'tertunda'
                           ? 'bg-amber-100 text-amber-800'
                           : 'bg-blue-100 text-[#184C78]'
                       }`}
                     >
-                      {currentProject.status === 'berjalan' ? 'IN PROGRESS' : currentProject.status.toUpperCase()}
+                      {isCurrentScheduled
+                        ? `DIMULAI DALAM ${daysUntilCurrent !== null ? daysUntilCurrent : 14} HARI`
+                        : isCurrentPlanned
+                        ? 'DIRENCANAKAN (KONTRAK LPSE)'
+                        : currentProject.status === 'berjalan'
+                        ? 'IN PROGRESS'
+                        : currentProject.status.toUpperCase()}
                     </span>
                     <span className="font-mono text-[10.5px] font-bold bg-[#EBF4FB] text-[#184C78] px-2 py-0.5 rounded border border-[#c5def2]">
                       {effCode}
@@ -2406,6 +2586,49 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                   <p className="text-xs text-slate-700 mt-1 leading-relaxed">
                     {parsed.ringkasan}
                   </p>
+
+                  {/* Early-Warning & Lead Time Advantage Card */}
+                  {(isEarlyWarningProject || currentProject.lead_time_hari || currentProject.tanggal_mulai_rencana) && (
+                    <div className="mt-2.5 p-3.5 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border border-purple-200/90 rounded-2xl shadow-xs space-y-2">
+                      <div className="flex items-center justify-between mb-1 flex-wrap gap-1">
+                        <span className="text-[11px] font-bold text-purple-900 flex items-center gap-1.5">
+                          <Sparkles className="w-3.5 h-3.5 text-purple-600" />
+                          Lead Time Advantage (Hulu SiRUP / LPSE)
+                        </span>
+                        {currentProject.lead_time_hari !== undefined && currentProject.lead_time_hari !== null && (
+                          <span className="text-[10px] font-extrabold bg-purple-600 text-white px-2.5 py-0.5 rounded-full shadow-xs">
+                            +{currentProject.lead_time_hari} Hari Lebih Awal dr Google Maps
+                          </span>
+                        )}
+                      </div>
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-slate-700 bg-white/80 p-2.5 rounded-xl border border-purple-100/80">
+                        <div>
+                          <span className="text-slate-400 block text-[9.5px] font-medium">Kontrak LPSE Terbit:</span>
+                          <span className="font-semibold text-slate-800 font-mono text-[11px]">
+                            {currentProject.tanggal_kontrak_terbit || '-'}
+                          </span>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 block text-[9.5px] font-medium">Rencana Mobilisasi Fisik:</span>
+                          <span className="font-semibold text-purple-900 font-mono text-[11px]">
+                            {currentProject.tanggal_mulai_rencana || '-'}
+                          </span>
+                        </div>
+                      </div>
+                      {currentProject.radius_dampak_meter && (
+                        <div className="text-[10.5px] text-purple-900 flex items-center justify-between pt-0.5">
+                          <span className="text-slate-600 font-medium">Radius Dampak Lalu Lintas:</span>
+                          <span className="font-bold text-purple-900">±{currentProject.radius_dampak_meter} meter</span>
+                        </div>
+                      )}
+                      {currentProject.jalur_terdampak && Array.isArray(currentProject.jalur_terdampak) && currentProject.jalur_terdampak.length > 0 && (
+                        <div className="text-[10.5px] text-purple-900 pt-1 border-t border-purple-100">
+                          <span className="text-slate-600 font-medium">Ruas Jalan Terdampak: </span>
+                          <span className="font-semibold">{currentProject.jalur_terdampak.join(', ')}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
 
                   {/* Kotak Alasan Penundaan jika status tertunda */}
                   {parsed.alasanTunda && (

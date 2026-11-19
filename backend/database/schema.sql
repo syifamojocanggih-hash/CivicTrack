@@ -90,10 +90,15 @@ CREATE TABLE proyek (
     desa_id BIGINT NULL,
     dinas_id BIGINT NOT NULL,
     anggaran DECIMAL(18, 2) NULL,
-    status ENUM('berjalan', 'selesai', 'tertunda', 'dalam_peninjauan_ulang') NOT NULL DEFAULT 'berjalan',
+    status ENUM('planned', 'scheduled', 'in_progress', 'completed', 'suspended', 'berjalan', 'selesai', 'tertunda', 'dalam_peninjauan_ulang', 'ditangguhkan') NOT NULL DEFAULT 'berjalan',
     progres_persen SMALLINT NOT NULL DEFAULT 0,
     tanggal_mulai DATE NOT NULL,
     estimasi_selesai DATE NOT NULL,
+    tanggal_kontrak_terbit DATE NULL COMMENT 'Tanggal penerbitan kontrak SiRUP / LPSE (Hulu)',
+    tanggal_mulai_rencana DATE NULL COMMENT 'Estimasi mobilisasi alat berat / awal pekerjaan fisik',
+    tanggal_input_sistem TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT 'Waktu pencatatan record proyek ke sistem',
+    radius_dampak_meter INT NOT NULL DEFAULT 1500 COMMENT 'Radius dampak perimeter spasial dalam meter',
+    jalur_terdampak TEXT NULL COMMENT 'Array JSON nama ruas jalan atau koridor yang ditutup/dialihkan',
     dibuat_oleh BIGINT NOT NULL,
     kode_proyek VARCHAR(50) NULL UNIQUE,
     kode_akses VARCHAR(100) NULL,
@@ -305,4 +310,28 @@ CREATE TABLE evaluasi_status_log (
         REFERENCES evaluasi_pembangunan (id) ON DELETE CASCADE,
     CONSTRAINT fk_evallog_user FOREIGN KEY (diubah_oleh) 
         REFERENCES users (id) ON DELETE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------
+-- 15. Tabel notification_logs (Fase 2 Early-Warning)
+-- Riwayat log pengiriman notifikasi berbasis radius & rute
+-- ----------------------------------------------------------
+CREATE TABLE notification_logs (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    proyek_id BIGINT NULL,
+    user_id BIGINT NULL,
+    trigger_type VARCHAR(50) NOT NULL,
+    channel VARCHAR(30) NOT NULL DEFAULT 'all',
+    judul VARCHAR(200) NOT NULL,
+    pesan TEXT NOT NULL,
+    target_type VARCHAR(50) NOT NULL DEFAULT 'radius',
+    radius_meter INT NULL,
+    distance_meters DOUBLE NULL,
+    is_delivered BOOLEAN NOT NULL DEFAULT TRUE,
+    is_read BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_notiflog_proyek FOREIGN KEY (proyek_id) 
+        REFERENCES proyek (id) ON DELETE CASCADE,
+    CONSTRAINT fk_notiflog_user FOREIGN KEY (user_id) 
+        REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
