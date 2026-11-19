@@ -377,6 +377,19 @@ def update_project(
     update_data = req.model_dump(exclude_unset=True)
     catatan_perubahan = update_data.pop("catatan_perubahan", None)
 
+    # Validasi audit: Proyek selesai (FHO) tidak dapat diubah pagu anggaran, nama, kategori, atau tanggal pengerjaannya
+    if proyek.status == ProyekStatus.selesai:
+        disallowed_fields = ["anggaran", "nama_proyek", "kategori", "tanggal_mulai", "estimasi_selesai"]
+        altered = [
+            f for f in disallowed_fields
+            if f in update_data and getattr(proyek, f) is not None and getattr(proyek, f) != update_data[f]
+        ]
+        if altered:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Proyek telah berstatus selesai (FHO). Bidang {', '.join(altered)} telah dikunci demi kepatuhan audit LPSE & BPK RI."
+            )
+
     # Validasi aturan PRD 10.1: Progres tidak boleh menurun tanpa keterangan
     if "progres_persen" in update_data and update_data["progres_persen"] is not None:
         new_progres = update_data["progres_persen"]

@@ -293,6 +293,7 @@ export function broadcastProjectUpdate(updatedProject: ProyekItem): void {
       list = [normalized, ...list];
     }
     localStorage.setItem('civictrack_all_projects', JSON.stringify(list));
+    localStorage.setItem('civictrack_dataset_version', 'v2026_35_projects');
   } catch {}
 
   // Update tahapan linimasa agar selalu berkesinambungan

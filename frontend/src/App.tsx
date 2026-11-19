@@ -85,12 +85,24 @@ export function App() {
         });
     }
 
+    // Validate dataset version & clear legacy cache
+    try {
+      const cacheVer = localStorage.getItem('civictrack_dataset_version');
+      if (cacheVer !== 'v2026_35_projects') {
+        localStorage.removeItem('civictrack_all_projects');
+        localStorage.setItem('civictrack_dataset_version', 'v2026_35_projects');
+      }
+    } catch {}
+
     // 1. Fetch live projects from backend
     apiService.getProjects().then((res) => {
       if (res.isFromBackend && res.projects.length > 0) {
         const existingIds = new Set(res.projects.map((p) => p.id));
         const merged = [...res.projects, ...INITIAL_PROJECTS.filter((p) => !existingIds.has(p.id))];
         setProjects(merged);
+        try {
+          localStorage.setItem('civictrack_all_projects', JSON.stringify(merged));
+        } catch {}
       }
     });
 

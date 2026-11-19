@@ -260,10 +260,26 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [activeLayer, setActiveLayer] = useState<'standard' | 'satellite'>('standard');
   const [liveProjects, setLiveProjects] = useState<ProyekItem[]>(() => {
     try {
+      const cacheVersion = localStorage.getItem('civictrack_dataset_version');
+      const CURRENT_VERSION = 'v2026_35_projects';
+      if (cacheVersion !== CURRENT_VERSION) {
+        localStorage.removeItem('civictrack_all_projects');
+        localStorage.setItem('civictrack_dataset_version', CURRENT_VERSION);
+        return projects;
+      }
       const localSaved = localStorage.getItem('civictrack_all_projects');
       if (localSaved) {
         const parsed: ProyekItem[] = JSON.parse(localSaved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
+        const hasLegacyDummy = parsed.some((p) =>
+          (p.nama_proyek && p.nama_proyek.includes('Centennial')) ||
+          (p.nama_proyek && p.nama_proyek.includes('Jembatan Gantung')) ||
+          (p.id === 9 && p.nama_proyek && p.nama_proyek.includes('Jembatan'))
+        );
+        if (hasLegacyDummy) {
+          localStorage.removeItem('civictrack_all_projects');
+          return projects;
+        }
+        if (Array.isArray(parsed) && parsed.length >= 35) {
           const map = new Map(projects.map((p) => [p.id, p]));
           parsed.forEach((p) => map.set(p.id, { ...(map.get(p.id) || {}), ...p }));
           return Array.from(map.values());
@@ -279,13 +295,17 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   });
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
 
-  // Sync projects from backend on mount or fall back to 27 comprehensive projects
+  // Sync projects from backend on mount or fall back to 35 comprehensive projects
   useEffect(() => {
     apiService.getProjects().then((res) => {
       if (res.isFromBackend && res.projects.length > 0) {
         const existingIds = new Set(res.projects.map((p) => p.id));
         const merged = [...res.projects, ...projects.filter((p) => !existingIds.has(p.id))];
         setLiveProjects(merged);
+        try {
+          localStorage.setItem('civictrack_all_projects', JSON.stringify(merged));
+          localStorage.setItem('civictrack_dataset_version', 'v2026_35_projects');
+        } catch {}
         const now = new Date();
         setLastSyncTime(
           `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`
@@ -361,25 +381,14 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
     try {
       const res = await apiService.getProjects();
       if (res.isFromBackend && res.projects.length > 0) {
-        setLiveProjects((prev) => {
-          const map = new Map(prev.map((p) => [p.id, p]));
-          res.projects.forEach((p) => map.set(p.id, { ...(map.get(p.id) || {}), ...p }));
-          return Array.from(map.values());
-        });
+        setLiveProjects(res.projects);
+        try {
+          localStorage.setItem('civictrack_all_projects', JSON.stringify(res.projects));
+          localStorage.setItem('civictrack_dataset_version', 'v2026_35_projects');
+        } catch {}
+      } else {
+        setLiveProjects(projects);
       }
-      try {
-        const localSaved = localStorage.getItem('civictrack_all_projects');
-        if (localSaved) {
-          const parsed: ProyekItem[] = JSON.parse(localSaved);
-          if (Array.isArray(parsed) && parsed.length > 0) {
-            setLiveProjects((prev) => {
-              const map = new Map(prev.map((p) => [p.id, p]));
-              parsed.forEach((p) => map.set(p.id, { ...(map.get(p.id) || {}), ...p }));
-              return Array.from(map.values());
-            });
-          }
-        }
-      } catch {}
 
       const now = new Date();
       setLastSyncTime(

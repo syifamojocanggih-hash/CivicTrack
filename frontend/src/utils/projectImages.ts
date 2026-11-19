@@ -163,6 +163,15 @@ export function getGoogleMapsEmbedUrl(lat: number, lng: number): string {
 export function getRealProjectImage(project?: Pick<ProyekItem, 'id' | 'kategori' | 'nama_proyek'> | null): string {
   if (!project) return jalanPorosLamonganImg;
 
+  // 0. Cek jika proyek memiliki foto_url / dokumentasi langsung
+  const pAny = project as any;
+  if (pAny.foto_url && typeof pAny.foto_url === 'string' && pAny.foto_url.trim().length > 0) {
+    return pAny.foto_url;
+  }
+  if (pAny.dokumentasi_url && typeof pAny.dokumentasi_url === 'string' && pAny.dokumentasi_url.trim().length > 0) {
+    return pAny.dokumentasi_url;
+  }
+
   // 1. Cek pemetaan ID langsung ke daftar 35 proyek resmi (1-35)
   if (typeof project.id === 'number' && REAL_PROJECT_IMAGES[project.id]) {
     return REAL_PROJECT_IMAGES[project.id];

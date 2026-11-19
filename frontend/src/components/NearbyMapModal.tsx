@@ -1,4 +1,4 @@
-﻿import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import {
   X,
@@ -58,7 +58,7 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
     };
   }, [isOpen, onClose]);
   const [selectedProjectId, setSelectedProjectId] = useState<number | null>(null);
-  const [userLocationName, setUserLocationName] = useState<string>('Pusat Kota (Klojen - Lowokwaru)');
+  const [userLocationName, setUserLocationName] = useState<string>('Alun-Alun Lamongan (Pusat Kota)');
 
   // User simulated location coordinates on SVG map (center: 270, 175)
   const userMapPoint = { x: 270, y: 175 };
@@ -268,7 +268,7 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
               <div className="bg-white/95 backdrop-blur-md border border-[#DCE0E6] shadow-sm rounded-lg px-3 py-1.5 flex items-center gap-2 pointer-events-auto">
                 <Layers className="w-3.5 h-3.5 text-[#184C78]" />
                 <span className="text-xs font-bold text-[#184C78] font-heading">
-                  Peta Sekitar Kota Malang
+                  Peta Sekitar Kabupaten Lamongan
                 </span>
                 <span className="text-[10px] text-[#6C757D]">
                   • {filteredNearby.length} proyek terdeteksi
@@ -281,9 +281,9 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
                 onChange={(e) => setUserLocationName(e.target.value)}
                 className="bg-white/95 backdrop-blur-md border border-[#DCE0E6] shadow-sm rounded-lg px-2.5 py-1 text-[11px] font-medium text-[#184C78] outline-none pointer-events-auto cursor-pointer"
               >
-                <option value="Pusat Kota (Klojen - Lowokwaru)">📍 Pusat Kota (Klojen)</option>
-                <option value="Jl. Soekarno Hatta (Lowokwaru)">📍 Area Suhat / Kampus</option>
-                <option value="Alun-Alun / Pasar Besar">📍 Kawasan Bisnis Kota</option>
+                <option value="Alun-Alun Lamongan (Pusat Kota)">📍 Alun-Alun Lamongan (Pusat Kota)</option>
+                <option value="Koridor Babat - Pantura">📍 Simpang Babat (Sentra Barat)</option>
+                <option value="Kawasan Pesisir Paciran / WBL">📍 Kawasan Wisata Pantura (Paciran)</option>
               </select>
             </div>
 

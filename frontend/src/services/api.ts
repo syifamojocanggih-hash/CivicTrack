@@ -30,6 +30,7 @@ import type {
 import { LAMONGAN_DESA_GEOJSON } from '../data/lamonganDesaGeoJSON';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
 import { MOCK_LAPORAN_WARGA, MOCK_RATING_ULASAN } from '../data/dashboardMockData';
+import { VERIFIED_PROJECT_TECHNICAL_DATA } from '../utils/projectTechnicalData';
 
 const BASE_URL = '/api/v1';
 
@@ -117,13 +118,17 @@ export interface BackendProjectItem {
 // Convert backend project schema to frontend ProyekItem
 export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
   let cat = (p.kategori || 'jalan').toLowerCase();
-  if (cat === 'jembatan') cat = 'jalan';
   if (cat === 'gedung_publik') cat = 'fasilitas';
 
   let tahap = p.tahap_terkini;
   if (!tahap && p.tahapan_list && p.tahapan_list.length > 0) {
     tahap = p.tahapan_list[p.tahapan_list.length - 1].nama_tahap;
   }
+
+  const tech = VERIFIED_PROJECT_TECHNICAL_DATA[p.id] || {};
+  const mockMatch = INITIAL_PROJECTS.find((x) => x.id === p.id);
+  const resolvedCode = (p.kode_proyek && p.kode_proyek.trim() !== '') ? p.kode_proyek : (mockMatch?.kode_proyek || (tech as any).kode_proyek || undefined);
+  const resolvedPin = (p.kode_akses && p.kode_akses.trim() !== '') ? p.kode_akses : (mockMatch?.kode_akses || (tech as any).kode_akses || undefined);
 
   return {
     id: p.id,
@@ -146,14 +151,20 @@ export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
     progres_persen: p.progres_persen || 0,
     tanggal_mulai: p.tanggal_mulai ? String(p.tanggal_mulai).split('T')[0] : '2024-01-01',
     estimasi_selesai: p.estimasi_selesai ? String(p.estimasi_selesai).split('T')[0] : '2024-12-31',
-    kode_proyek: p.kode_proyek,
-    kode_akses: p.kode_akses,
+    kode_proyek: resolvedCode,
+    kode_akses: resolvedPin,
     nama_wilayah: p.nama_wilayah || p.wilayah?.nama_wilayah || 'Kabupaten Lamongan',
     nama_desa: p.nama_desa || p.desa?.nama_wilayah || undefined,
     nama_dinas: p.nama_dinas || p.dinas?.nama_dinas || 'Dinas Pekerjaan Umum Kab. Lamongan',
     rata_rata_rating: p.rata_rata_rating !== null && p.rata_rata_rating !== undefined ? Number(p.rata_rata_rating) : 4.5,
     jumlah_rating: p.jumlah_rating || 0,
     tahap_terkini: tahap || 'Pekerjaan konstruksi lapangan',
+    kontraktor_pelaksana: (p as any).kontraktor_pelaksana || tech.kontraktor_pelaksana,
+    konsultan_pengawas: (p as any).konsultan_pengawas || tech.konsultan_pengawas,
+    kepala_mandor: (p as any).kepala_mandor || tech.kepala_mandor,
+    pejabat_pembuat_komitmen: (p as any).pejabat_pembuat_komitmen || tech.pejabat_pembuat_komitmen,
+    nomor_kontrak_lpse: (p as any).nomor_kontrak_lpse || tech.nomor_kontrak_lpse,
+    sumber_dana: (p as any).sumber_dana || tech.sumber_dana,
   };
 }
 
