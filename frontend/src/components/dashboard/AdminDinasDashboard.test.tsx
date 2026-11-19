@@ -623,7 +623,6 @@ describe('AdminDinasDashboard Dokumentasi Fisik Upload', () => {
     await waitFor(() => {
       expect(screen.getByText(/Lembar Kerja Terverifikasi/i)).toBeInTheDocument();
       expect(screen.getAllByText(/Pengaspalan & Penerangan Jalan Poros Pucuk - Babat/i).length).toBeGreaterThan(0);
-      expect(screen.getByText(/Kunci \/ Ganti Proyek/i)).toBeInTheDocument();
     });
 
     // 1. Total Proyek must be removed for penanggung_jawab handling 1 project

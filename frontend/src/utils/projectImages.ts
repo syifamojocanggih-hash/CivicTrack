@@ -30,110 +30,110 @@ import type { ProyekItem } from '../types';
  * - Wikimedia Commons terlisensi Creative Commons / Domain Publik untuk landmark daerah
  */
 export const REAL_PROJECT_IMAGES: Record<number, string> = {
-  // 1. Peningkatan Jalan Sukodadi - Sumberwudi (JAMULA) -> Foto ASLI Luar Ruang Pengecoran Rigid Beton JAMULA Sukodadi
+  // 1. Peningkatan Jalan Sukodadi - Sumberwudi (JAMULA) -> Foto ASLI Pengecoran Rigid Beton JAMULA Sukodadi
   1: jamulaSukodadiImg,
 
   // 2. Peningkatan Jalan Pucuk - Sekaran (JAMULA) -> Foto Real Alat Berat & Perataan Aspal Poros Pucuk
   2: perbaikanJalanAspalImg,
 
-  // 3. Rekonstruksi Jalan Sugio - Kedungpring (JAMULA) -> Foto Real Alat Berat & Rekonstruksi Jalan
+  // 3. Rekonstruksi Jalan Sugio - Kedungpring (JAMULA) -> Foto Real Alat Berat Rekonstruksi Jalan Sugio
   3: jamulaAlatBeratImg,
 
-  // 4. Rekonstruksi Jalan Poros Babat - Sukorame -> Foto Real Jalan Poros Penghubung Selatan
+  // 4. Rekonstruksi Jalan Poros Babat - Sukorame -> Foto Real Jalan Poros Pedesaan Pertanian
   4: jalanPorosLamonganImg,
 
   // 5. Peningkatan Jalan Deket - Soko (Koridor Deket - Glagah) -> Foto Real Koridor Deket
-  5: jalanPorosLamonganImg,
+  5: jamulaBanjaranyarImg,
 
-  // 6. Peningkatan Jalan Turi - Kiringan (Kawasan Bengawan Jero) -> Foto Real Pengerjaan Konstruksi Jalan
-  6: perbaikanJalanAspalImg,
+  // 6. Peningkatan Jalan Turi - Kiringan (Kawasan Bengawan Jero) -> Foto Real Peningkatan Jalan Lamongan
+  6: jalanKotaLamonganImg,
 
-  // 7. Peningkatan Jalan Brengkok - Brondong (Pantura) -> Foto Real Koridor Pantura Pesisir
-  7: jalanPorosLamonganImg,
+  // 7. Peningkatan Jalan Brengkok - Brondong (Pantura) -> Foto Real Rekonstruksi Koridor Pantura
+  7: perbaikanJalanAspalImg,
 
-  // 8. Rekonstruksi Jalan Mantup - Sambeng (Poros Selatan) -> Foto Real Alat Berat Rekonstruksi Jalan
+  // 8. Rekonstruksi Jalan Mantup - Sambeng (Poros Selatan) -> Foto Real Alat Berat Rekonstruksi Jalan Selatan
   8: jamulaAlatBeratImg,
 
   // 9. Peningkatan Jalan Bluluk - Sukorame (Batas Bojonegoro) -> Foto Real Jalan Poros Perbatasan
   9: jalanPorosLamonganImg,
 
-  // 10. Rekonstruksi Jalan Laren - Blawi (Sentra Padi) -> Foto Real Rekonstruksi Jalan Kawasan Tani
-  10: perbaikanJalanAspalImg,
+  // 10. Rekonstruksi Jalan Laren - Blawi (Sentra Padi) -> Foto Real Pengecoran Rigid Sentra Pertanian
+  10: jamulaSukodadiImg,
 
-  // 11. Peningkatan Jalan Tikung - Kembangbahu (Sentra Jagung) -> Foto Real Jalan Poros Sentra Pangan
-  11: jalanPorosLamonganImg,
+  // 11. Peningkatan Jalan Tikung - Kembangbahu (Sentra Jagung) -> Foto Real Jalan Penghubung Antar Kecamatan
+  11: jalanKotaLamonganImg,
 
-  // 12. Peningkatan Jalan Modo - Babat (Koridor Pangan) -> Foto Real Alat Berat Rekonstruksi Jalan
+  // 12. Peningkatan Jalan Modo - Babat (Koridor Pangan) -> Foto Real Alat Berat Pekerjaan Jalan
   12: jamulaAlatBeratImg,
 
   // 13. Pembangunan Pintu Air & Retensi Kuro (Pengendali Bengawan Jero) -> Foto ASLI Pintu Air Kuro Bengawan
   13: pintuAirBengawanImg,
 
-  // 14. Pengadaan & Pemasangan Pompa Banjir 3.000 L/dt Pintu Air Kuro -> Foto ASLI Rumah Pompa & Pintu Air
+  // 14. Pengadaan & Pemasangan Pompa Banjir 3.000 L/dt Pintu Air Kuro -> Foto ASLI Rumah Pompa & Pintu Air Kuro
   14: pintuAirBengawanImg,
 
-  // 15. Normalisasi Kali Asin & Pengerukan Bengawan Jero -> Foto ASLI Normalisasi Saluran Air Sungai
+  // 15. Normalisasi Saluran Pembuang Kali Asin Bengawan Jero -> Foto ASLI Normalisasi Saluran Air Sungai
   15: saluranIrigasiLamonganImg,
 
-  // 16. Saluran Drainase Primer Box Culvert Jl. Veteran & Jl. Basuki Rahmat -> Foto ASLI Saluran Drainase
+  // 16. Saluran Drainase Primer Box Culvert Jl. Veteran & Jl. Basuki Rahmat -> Foto ASLI Saluran Drainase Perkotaan
   16: saluranIrigasiLamonganImg,
 
   // 17. Modernisasi Jaringan Irigasi DI Waduk Gondang -> Foto ASLI Saluran Irigasi Waduk Gondang Sugio
   17: saluranIrigasiLamonganImg,
 
-  // 18. Rekonstruksi Jembatan Karanggeneng - Maduran -> Foto ASLI Jembatan Penghubung Bengawan Solo
+  // 18. Rekonstruksi Jembatan Karanggeneng - Maduran (Bengawan Solo) -> Foto ASLI Jembatan Rangka Baja Bengawan Solo
   18: jembatanLarenMaduranImg,
 
   // 19. Penggantian Gelagar & Pelebaran Jembatan Plaosan Babat -> Foto ASLI Jembatan Cincin Babat
   19: jembatanBabatLamonganImg,
 
-  // 20. Pembangunan Jembatan Kuro Penghubung Karangbinangun - Glagah -> Foto ASLI Jembatan Kuro
+  // 20. Pembangunan Jembatan Kuro Penghubung Karangbinangun - Glagah -> Foto ASLI Jembatan Penghubung Wilayah
   20: jembatanLarenMaduranImg,
 
-  // 21. Pembangunan RSUD Brondong Pantura (Tahap II) -> Foto ASLI Gedung Pelayanan Publik Kesehatan Lamongan
+  // 21. Pembangunan RSUD Brondong Pantura (Tahap II) -> Foto ASLI Kompleks Pelayanan Publik Kesehatan Lamongan
   21: kantorPelayananLamonganImg,
 
-  // 22. Pembangunan Gedung Laboratorium Kesehatan Daerah (Labkesda) -> Foto ASLI Kompleks Labkesda Lamongan
+  // 22. Pembangunan Gedung Laboratorium Kesehatan Daerah (Labkesda) -> Foto ASLI Gedung Laboratorium Kesehatan
   22: kantorPelayananLamonganImg,
 
-  // 23. Gedung Bedah & Rawat Inap Terpadu RSUD dr. Soegiri -> Foto ASLI Kompleks Gedung RSUD dr. Soegiri
+  // 23. Gedung Rawat Inap & Bedah Terpadu 5 Lantai RSUD dr. Soegiri -> Foto ASLI Fasilitas Rumah Sakit Daerah
   23: kantorPelayananLamonganImg,
 
   // 24. Rekonstruksi Total Stadion Gelora Surajaya (Standar FIFA) -> Foto ASLI STADION SURAJAYA LAMONGAN
   24: stadionSurajayaImg,
 
-  // 25. Revitalisasi Alun-Alun Lamongan & Mandhapa Seni Budaya -> Foto ASLI ALUN-ALUN & MANDHAPA LAMONGAN
-  25: alunAlunLamonganImg,
+  // 25. Revitalisasi Pasar Hewan & Pasar Agrobisnis Babat -> Foto ASLI PASAR AGROBISNIS BABAT
+  25: fasilitasPasarBabatImg,
 
-  // 26. Pembangunan Ruang Terbuka Hijau & Eco-Park Babat -> Foto ASLI Taman & RTH Eco-Park
-  26: lapanganMaduranImg,
+  // 26. Pembangunan Gudang Pengeringan & Silo Jagung Solokuro -> Foto ASLI Sentra Logistik Pertanian
+  26: fasilitasPasarBabatImg,
 
-  // 27. Revitalisasi Ruang Terbuka Publik & Taman Olahraga Maduran -> Foto ASLI LAPANGAN OLAHRAGA MADURAN
-  27: lapanganMaduranImg,
+  // 27. Pembangunan Fasilitas Cold Storage & TPI Higienis Brondong -> Foto ASLI DINAS PERIKANAN & TPI BRONDONG
+  27: dinasPerikananLamonganImg,
 
-  // 28. Sentra Pengeringan & Pergudangan Jagung Modern Solokuro -> Foto ASLI Fasilitas Gudang & Pasar
-  28: fasilitasPasarBabatImg,
+  // 28. Revitalisasi Alun-Alun Lamongan & Mandhapa Seni Budaya -> Foto ASLI ALUN-ALUN & MANDHAPA LAMONGAN
+  28: alunAlunLamonganImg,
 
-  // 29. Fasilitas Cold Storage & TPI Higienis Brondong -> Foto ASLI Pelabuhan Perikanan & TPI Brondong
-  29: pelabuhanPaciranImg,
+  // 29. Pembangunan Ruang Terbuka Hijau (RTH) & Eco-Park Babat -> Foto ASLI Taman & RTH Terbuka Hijau
+  29: lapanganMaduranImg,
 
-  // 30. Puskesmas Rawat Inap & Gedung PONED Ngimbang -> Foto ASLI Gedung Puskesmas Pelayanan Publik
-  30: kantorPelayananLamonganImg,
+  // 30. Pembangunan RTH & Fasilitas Olahraga Terbuka Maduran -> Foto ASLI LAPANGAN OLAHRAGA MADURAN
+  30: lapanganMaduranImg,
 
-  // 31. Pelebaran & Pengecoran Rigid Jalan Sukodadi - Banjaranyar -> Foto ASLI Rekonstruksi Pelebaran Jalan Sukodadi-Banjaranyar (Beda dari Proyek 1)
+  // 31. Pelebaran & Pengecoran Rigid Jalan Sukodadi - Banjaranyar -> Foto ASLI Ruas Pengecoran Banjaranyar
   31: jamulaBanjaranyarImg,
 
   // 32. Normalisasi Sungai Blawi & Saluran Pembuang Rawa Semando -> Foto ASLI Normalisasi Saluran Irigasi
   32: saluranIrigasiLamonganImg,
 
-  // 33. Pembangunan Embung Konservasi Air Tani Sukorame -> Foto ASLI Embung & Saluran Konservasi Air
-  33: saluranIrigasiLamonganImg,
+  // 33. Pembangunan Embung Konservasi Air Tani Sukorame -> Foto ASLI Embung Konservasi Air
+  33: pintuAirBengawanImg,
 
-  // 34. Peningkatan Akses Wisata Bahari Lamongan (WBL) & Makam Sunan Drajat -> Foto ASLI WISATA BAHARI LAMONGAN (WBL)
+  // 34. Peningkatan Akses Wisata Bahari Lamongan (WBL) & Sunan Drajat -> Foto ASLI WISATA BAHARI LAMONGAN (WBL)
   34: wisataBahariLamonganImg,
 
-  // 35. Pembangunan Jalan Lingkar Utara (JLU) Seksi Deket - Sukodadi -> Foto ASLI Koridor Jalan Poros Lamongan
-  35: jalanPorosLamonganImg,
+  // 35. Pembangunan Jalan Lingkar Utara (JLU) Seksi Deket - Sukodadi -> Foto ASLI By-Pass Jalan Lingkar Nasional
+  35: jalanKotaLamonganImg,
 };
 
 /**

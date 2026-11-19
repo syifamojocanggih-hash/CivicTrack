@@ -636,14 +636,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     setTimeout(() => setCopyFeedback(null), 3500);
   };
 
-  const handleLockProject = () => {
-    setUnlockedProject(null);
-    sessionStorage.removeItem('civictrack_pj_unlocked_project');
-    setGateCode('');
-    setGatePassword('');
-    setGateError(null);
-  };
-
   // Edit project state
   const [editingProject, setEditingProject] = useState<ProyekItem | null>(null);
   const [editForm, setEditForm] = useState({
@@ -3694,39 +3686,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
               <span>•</span>
               <span>Progres Fisik: <strong className="text-amber-300">{unlockedProject.progres_persen || 0}%</strong></span>
             </div>
-          </div>
-
-          <div className="flex items-center gap-2 shrink-0">
-            {/* Quick Demo Switcher */}
-            <div className="hidden md:flex items-center gap-1.5 bg-white/10 px-2.5 py-1.5 rounded-xl border border-white/20">
-              <Sparkles className="w-3.5 h-3.5 text-amber-300 shrink-0" />
-              <select
-                onChange={(e) => {
-                  const selId = Number(e.target.value);
-                  const found = projectList.find((p) => p.id === selId);
-                  if (found) handleSelectDemoProject(found);
-                }}
-                value={unlockedProject.id}
-                aria-label="Beralih Proyek Demo"
-                className="text-xs bg-transparent text-white font-semibold py-0.5 outline-none cursor-pointer max-w-[200px] truncate"
-                title="Beralih cepat ke proyek lain (Mode Demo)"
-              >
-                {projectList.map((p) => (
-                  <option key={p.id} value={p.id} className="text-[#212529]">
-                    #{p.id} {p.nama_proyek}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <button
-              onClick={handleLockProject}
-              className="px-4 py-2.5 bg-white/15 hover:bg-white/25 border border-white/25 rounded-xl text-xs font-bold text-white transition-all flex items-center gap-1.5 cursor-pointer shadow-xs"
-              title="Kunci kembali lembar kerja untuk beralih ke proyek lain"
-            >
-              <Lock className="w-3.5 h-3.5 text-amber-300" />
-              <span>Kunci / Ganti Proyek</span>
-            </button>
           </div>
         </div>
       )}

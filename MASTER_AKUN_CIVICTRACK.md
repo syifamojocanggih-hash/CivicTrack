@@ -63,8 +63,19 @@
 
 ---
 
+## 5. Akun Pengujian Klasik (`@civictrack.id`)
+
+| ID Akun | Nama Lengkap | Email | Role | Instansi / Keterangan |
+| :---: | :--- | :--- | :--- | :--- |
+| U-30 | Warga CivicTrack | `warga@civictrack.id` | `warga` | Akun Warga Default Pengujian |
+| U-31 | Admin CivicTrack | `admin@civictrack.id` | `admin_dinas` | Dinas PU Bina Marga (Akun Admin Default) |
+| U-32 | Pimpinan CivicTrack | `pimpinan@civictrack.id` | `pimpinan_instansi` | Bappeda / Sekda (Akun Pimpinan Default) |
+| U-33 | Admin Dinas PU Lamongan | `admindinaspu@civictrack.id` | `admin_dinas` | Dinas PU Bina Marga |
+
+---
+
 ## Ringkasan Integritas Akun
-- **Total Akun**: 29 akun (5 `admin_dinas`, 2 `pimpinan_instansi`, 2 `media_peneliti`, 20 `warga`)
+- **Total Akun**: 33 akun (7 `admin_dinas`, 3 `pimpinan_instansi`, 2 `media_peneliti`, 21 `warga`)
 - **Duplikasi Nama**: 0
 - **Duplikasi Email**: 0
 - **Cakupan OPD**: 5/5 OPD memiliki 1 admin pencatat unik

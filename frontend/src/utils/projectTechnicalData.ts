@@ -474,3 +474,148 @@ export function getProjectTechnicalDetails(project?: Pick<ProyekItem, 'id' | 'ka
   const fallbackIndex = Math.abs(Number(project.id) || 1) % 35 + 1;
   return VERIFIED_PROJECT_TECHNICAL_DATA[fallbackIndex] || VERIFIED_PROJECT_TECHNICAL_DATA[1];
 }
+
+/**
+ * 35 Kode Proyek & PIN Mandor Lapangan Resmi Terverifikasi Kabupaten Lamongan
+ */
+export const PRESET_PROJECT_CODES: Record<number, { kode: string; pin: string }> = {
+  1: { kode: 'SKD-SKD-001', pin: 'PJ-48291' },
+  2: { kode: 'PCK-PCK-002', pin: 'PJ-73054' },
+  3: { kode: 'SGO-GDL-003', pin: 'PJ-29518' },
+  4: { kode: 'BBT-BBT-004', pin: 'PJ-61842' },
+  5: { kode: 'DKT-DKT-005', pin: 'PJ-85471' },
+  6: { kode: 'TRI-TRI-006', pin: 'PJ-39125' },
+  7: { kode: 'BRD-BRG-007', pin: 'PJ-50683' },
+  8: { kode: 'MTP-MTP-008', pin: 'PJ-94716' },
+  9: { kode: 'BLK-BLK-009', pin: 'PJ-62384' },
+  10: { kode: 'LRN-PLW-010', pin: 'PJ-31957' },
+  11: { kode: 'TKG-TKG-011', pin: 'PJ-87240' },
+  12: { kode: 'MOD-MOD-012', pin: 'PJ-15893' },
+  13: { kode: 'KBN-KRO-013', pin: 'PJ-74026' },
+  14: { kode: 'GLG-GLG-014', pin: 'PJ-92841' },
+  15: { kode: 'KTG-PCG-015', pin: 'PJ-53179' },
+  16: { kode: 'LMG-SDR-016', pin: 'PJ-38602' },
+  17: { kode: 'SGO-GDG-017', pin: 'PJ-64915' },
+  18: { kode: 'KRG-KRG-018', pin: 'PJ-27358' },
+  19: { kode: 'BBT-PLS-019', pin: 'PJ-80419' },
+  20: { kode: 'GLG-PRV-020', pin: 'PJ-46283' },
+  21: { kode: 'BRD-BRD-021', pin: 'PJ-91537' },
+  22: { kode: 'TKG-BKB-022', pin: 'PJ-68241' },
+  23: { kode: 'LMG-SDR-023', pin: 'PJ-35790' },
+  24: { kode: 'DKT-DMO-024', pin: 'PJ-82614' },
+  25: { kode: 'BBT-BBL-025', pin: 'PJ-59032' },
+  26: { kode: 'SLK-SLK-026', pin: 'PJ-71485' },
+  27: { kode: 'BRD-LBH-027', pin: 'PJ-40296' },
+  28: { kode: 'LMG-TMB-028', pin: 'PJ-93851' },
+  29: { kode: 'BBT-KBS-029', pin: 'PJ-57924' },
+  30: { kode: 'NGB-NGB-030', pin: 'PJ-16378' },
+  31: { kode: 'SKD-BNJ-031', pin: 'PJ-43069' },
+  32: { kode: 'KBN-BLW-032', pin: 'PJ-24188' },
+  33: { kode: 'SKR-SKR-033', pin: 'PJ-81390' },
+  34: { kode: 'PCR-PCR-034', pin: 'PJ-77426' },
+  35: { kode: 'LMG-PLW-035', pin: 'PJ-19853' },
+};
+
+/**
+ * Mendapatkan kode resmi proyek (format: KEC-DES-NNN) secara konsisten
+ */
+export function getProjectEffectiveCode(proj?: Pick<ProyekItem, 'id'> & { kode_proyek?: string } | null): string {
+  if (!proj) return 'LMG-001';
+  if (proj.kode_proyek && proj.kode_proyek.trim() !== '') return proj.kode_proyek;
+  if (PRESET_PROJECT_CODES[proj.id]) return PRESET_PROJECT_CODES[proj.id].kode;
+  return `LMG-${String(proj.id).padStart(3, '0')}`;
+}
+
+/**
+ * Mendapatkan PIN Mandor Lapangan (Kunci Akses PJ-xxxxx) resmi proyek
+ */
+export function getProjectEffectivePin(proj?: Pick<ProyekItem, 'id'> & { kode_akses?: string } | null): string {
+  if (!proj) return 'PJ-10001';
+  if (proj.kode_akses && proj.kode_akses.trim() !== '') return proj.kode_akses;
+  if (PRESET_PROJECT_CODES[proj.id]) return PRESET_PROJECT_CODES[proj.id].pin;
+  return `PJ-${10000 + (proj.id * 1111) % 90000}`;
+}
+
+export interface ParsedProjectDescription {
+  ringkasan: string;
+  spesifikasi: string;
+  alasanTunda?: string;
+}
+
+/**
+ * Memisahkan teks deskripsi panjang menjadi:
+ * 1. ringkasan: narasi publik 1-2 kalimat yang ramah warga
+ * 2. spesifikasi: rincian teknis dimensi, panjang, volume beton untuk dropdown teknis
+ * 3. alasanTunda: keterangan penundaan jika ada
+ */
+export function parseProjectDescription(rawDesc?: string): ParsedProjectDescription {
+  if (!rawDesc || typeof rawDesc !== 'string') {
+    return {
+      ringkasan: 'Pembangunan infrastruktur strategis untuk peningkatan pelayanan dan mobilitas warga Kabupaten Lamongan.',
+      spesifikasi: '',
+    };
+  }
+
+  const text = rawDesc.trim();
+  let alasanTunda: string | undefined = undefined;
+
+  // 1. Ekstrak Alasan Penundaan
+  const tundaMatch = text.match(/(?:Alasan Penundaan|Alasan Tunda)\s*:\s*([^.\n\r]+(?:\.[^.\n\r]+)?)/i);
+  if (tundaMatch) {
+    alasanTunda = tundaMatch[1].trim();
+  }
+
+  // 2. Potong bagian metadata pihak pelaksana yang sudah ada di kartu LPSE
+  const metaIndex = text.search(/\s*(?:Sumber Pembiayaan|Kontraktor Pelaksana|Konsultan Pengawas|PPK\s*:|Kontrak\s*:|Alasan Penundaan)\s*:/i);
+  const cleanContent = metaIndex !== -1 ? text.substring(0, metaIndex).trim() : text;
+
+  // 3. Pisahkan antara kalimat pembuka (ringkasan warga) dan detail dimensi teknis
+  const splitKeywords = [
+    'Panjang penanganan',
+    'Luas penanganan',
+    'Luas bangunan',
+    'Luas area',
+    'Volume pelat beton',
+    'Volume pengerukan',
+    'Galian tanah',
+    'Kapasitas tampung',
+    'Pelebaran jalan',
+    'Konstruksi jembatan',
+    'Pembangunan gedung',
+  ];
+
+  let ringkasan = cleanContent;
+  let spesifikasi = '';
+
+  for (const kw of splitKeywords) {
+    const kwIdx = cleanContent.indexOf(kw);
+    if (kwIdx > 15) {
+      ringkasan = cleanContent.substring(0, kwIdx).trim();
+      spesifikasi = cleanContent.substring(kwIdx).trim();
+      break;
+    }
+  }
+
+  // Bersihkan tanda titik dan spasi di ujung ringkasan
+  if (ringkasan.endsWith(';')) {
+    ringkasan = ringkasan.slice(0, -1);
+  }
+  if (!ringkasan.endsWith('.')) {
+    ringkasan += '.';
+  }
+
+  // Jika spesifikasi kosong tapi teks masih panjang, potong kalimat pertama
+  if (!spesifikasi && cleanContent.length > 150) {
+    const firstPeriod = cleanContent.indexOf('. ');
+    if (firstPeriod > 20) {
+      ringkasan = cleanContent.substring(0, firstPeriod + 1).trim();
+      spesifikasi = cleanContent.substring(firstPeriod + 1).trim();
+    }
+  }
+
+  return {
+    ringkasan,
+    spesifikasi,
+    alasanTunda,
+  };
+}

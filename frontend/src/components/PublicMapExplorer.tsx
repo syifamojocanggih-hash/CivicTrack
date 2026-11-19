@@ -33,6 +33,10 @@ import {
   ChevronLeft,
   MapPin,
   ExternalLink,
+  Copy,
+  Lock,
+  Key,
+  AlertTriangle,
 } from 'lucide-react';
 import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem } from '../types';
 import { apiService } from '../services/api';
@@ -40,7 +44,12 @@ import { CivicTrackLogo } from './CivicTrackLogo';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON, LAMONGAN_DESA_GEOJSON } from '../data/geoWilayahData';
 import { getRealProjectImage, getGoogleStreetViewUrl } from '../utils/projectImages';
 import { generateProjectMilestones } from '../utils/projectConsistency';
-import { getProjectTechnicalDetails } from '../utils/projectTechnicalData';
+import {
+  getProjectTechnicalDetails,
+  getProjectEffectiveCode,
+  getProjectEffectivePin,
+  parseProjectDescription,
+} from '../utils/projectTechnicalData';
 
 // Bounding box resmi gabungan seluruh 27 Kecamatan di Kab. Lamongan (dihitung dari poligon GeoJSON BPS/BIG)
 const ALL_LAMONGAN_BOUNDS: L.LatLngBoundsExpression = [
@@ -202,6 +211,17 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [reportDesc, setReportDesc] = useState('');
   const [reportCategory, setReportCategory] = useState('keterlambatan');
   const [reportSent, setReportSent] = useState(false);
+  const [showTechSpecs, setShowTechSpecs] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+  const drawerBodyRef = useRef<HTMLDivElement>(null);
+
+  const handleCopyText = (text: string, label: string) => {
+    try {
+      navigator.clipboard.writeText(text);
+      setCopyFeedback(`${label} berhasil disalin!`);
+      setTimeout(() => setCopyFeedback(null), 2500);
+    } catch {}
+  };
 
   // Hierarchical Wilayah & Budget filter state
   const MIN_BUDGET_LIMIT = 0.1; // Rp 100 Jt
@@ -1384,11 +1404,17 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       });
 
       // Sleek interactive tooltip for project details
+      const effCode = getProjectEffectiveCode(proj);
       marker.bindTooltip(
-        `<div class="p-2 font-heading text-xs min-w-[170px] bg-white rounded-xl shadow-md border border-slate-100">
-          <div class="flex items-center gap-1 pb-1 mb-1 border-b border-slate-100">
-            <span class="w-2 h-2 rounded-full" style="background-color: ${theme.hex}"></span>
-            <span class="text-[10px] font-extrabold uppercase text-slate-500">${theme.label}</span>
+        `<div class="p-2.5 font-heading text-xs min-w-[185px] bg-white rounded-xl shadow-md border border-slate-100">
+          <div class="flex items-center justify-between gap-1 pb-1 mb-1 border-b border-slate-100">
+            <div class="flex items-center gap-1">
+              <span class="w-2 h-2 rounded-full" style="background-color: ${theme.hex}"></span>
+              <span class="text-[9.5px] font-extrabold uppercase text-slate-500">${theme.label}</span>
+            </div>
+            <span class="font-mono text-[9px] font-bold text-[#184C78] bg-[#EBF4FB] px-1.5 py-0.2 rounded border border-[#c5def2]">
+              ${effCode}
+            </span>
           </div>
           <strong class="text-slate-900 font-bold text-xs block leading-snug mb-1">${proj.nama_proyek}</strong>
           <div class="flex justify-between items-center text-[10px] text-slate-600 pt-0.5">
@@ -2115,6 +2141,10 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                               className="w-2 h-2 rounded-full inline-block"
                               style={{ backgroundColor: catConfig.hex }}
                             />
+                            <span className="font-mono text-[9.5px] font-bold text-[#184C78] bg-[#EBF4FB] px-1.5 py-0.2 rounded border border-[#c5def2]">
+                              {getProjectEffectiveCode(p)}
+                            </span>
+                            <span>•</span>
                             <span>{catConfig.label}</span>
                             <span>•</span>
                             <span className="text-[#2563EB]">{p.distanceStr}</span>
@@ -2242,130 +2272,305 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             </button>
           </div>
 
-          {/* Navigation Tabs directly in this Right Sidebar */}
-          <div className="flex items-center border-b border-slate-200 bg-slate-50/80 px-4 pt-2 gap-1 overflow-x-auto scrollbar-none shrink-0">
-            {[
-              { id: 'ringkasan', label: 'Ringkasan' },
-              { id: 'transparansi', label: 'Transparansi APBD' },
-              { id: 'aduan', label: 'Aduan Warga' },
-              { id: 'sekitar', label: 'Proyek Sekitar' },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setDetailTab(tab.id as any)}
-                className={`px-3 py-2 text-xs font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
-                  detailTab === tab.id
-                    ? 'border-[#2563EB] text-[#2563EB] bg-white rounded-t-lg shadow-2xs'
-                    : 'border-transparent text-slate-500 hover:text-slate-800'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Tab 1: Ringkasan Proyek */}
-          {detailTab === 'ringkasan' && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 scrollbar-thin animate-fade-in">
-              {/* Photo Showcase with Telemetry Tag & Street View Direct Link */}
-              <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
-                <img
-                  src={getRealProjectImage(currentProject)}
-                  alt={currentProject.nama_proyek}
-                  className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
-                />
-                <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
-                  <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-                  <span>Real-time Field Telemetry</span>
-                </div>
-                <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                  <a
-                    href={getGoogleStreetViewUrl(Number(currentProject.latitude) || -7.1197, Number(currentProject.longitude) || 112.4150)}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md transition-all hover:scale-105"
-                    title="Buka titik koordinat proyek langsung di Google Street View 360°"
-                  >
-                    <Compass className="w-3 h-3 text-cyan-400" />
-                    <span>Street View 360°</span>
-                    <ExternalLink className="w-2.5 h-2.5 opacity-80" />
-                  </a>
-                </div>
-                <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md text-[#184C78] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md">
-                  {currentProject.distanceStr} dari lokasi Anda
-                </div>
-                <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-white text-[9px] font-mono px-2 py-0.5 rounded-full">
-                  📍 {Number(currentProject.latitude).toFixed(4)}°, {Number(currentProject.longitude).toFixed(4)}°
-                </div>
+          {/* Toast Salin Kredensial */}
+          {copyFeedback && (
+            <div className="mx-4 mt-2.5 p-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md flex items-center justify-between animate-fade-in shrink-0">
+              <div className="flex items-center gap-1.5">
+                <Check className="w-4 h-4" />
+                <span>{copyFeedback}</span>
               </div>
+              <button onClick={() => setCopyFeedback(null)} className="text-white/80 hover:text-white cursor-pointer">
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
-              {/* Title & Status */}
-              <div>
-                <div className="flex items-center gap-2 mb-1">
-                  <span
-                    className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
-                      currentProject.status === 'selesai'
-                        ? 'bg-emerald-100 text-emerald-800'
-                        : 'bg-blue-100 text-[#184C78]'
+          {/* Navigation Tabs directly in this Right Sidebar (Dinamis APBN / APBD) */}
+          {(() => {
+            const isAPBN = (currentProject.sumber_dana || '').includes('APBN') ||
+              (currentProject.deskripsi || '').includes('APBN') ||
+              currentProject.id === 4 ||
+              currentProject.id === 15 ||
+              currentProject.id === 24 ||
+              currentProject.id === 35;
+
+            return (
+              <div className="flex items-center border-b border-slate-200 bg-slate-50/80 px-4 pt-2 gap-1 overflow-x-auto scrollbar-none shrink-0">
+                {[
+                  { id: 'ringkasan', label: 'Ringkasan' },
+                  { id: 'transparansi', label: isAPBN ? 'Transparansi APBN & APBD' : 'Transparansi APBD' },
+                  { id: 'aduan', label: 'Aduan Warga' },
+                  { id: 'sekitar', label: 'Proyek Sekitar' },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => {
+                      setDetailTab(tab.id as any);
+                      if (drawerBodyRef.current) {
+                        drawerBodyRef.current.scrollTop = 0;
+                      }
+                    }}
+                    className={`px-3 py-2 text-xs font-bold border-b-2 transition-all whitespace-nowrap cursor-pointer ${
+                      detailTab === tab.id
+                        ? 'border-[#2563EB] text-[#2563EB] bg-white rounded-t-lg shadow-2xs'
+                        : 'border-transparent text-slate-500 hover:text-slate-800'
                     }`}
                   >
-                    {currentProject.status === 'berjalan' ? 'IN PROGRESS' : currentProject.status.toUpperCase()}
-                  </span>
-                  <span className="text-xs text-slate-400 font-medium">
-                    Est. {currentProject.estimasi_selesai || 'Okt 2024'}
-                  </span>
-                </div>
-
-                <h3 className="font-heading text-xl font-bold text-slate-900 leading-snug">
-                  {currentProject.nama_proyek}
-                </h3>
-                <p className="text-xs text-slate-600 mt-1 leading-relaxed">
-                  {currentProject.deskripsi}
-                </p>
+                    {tab.label}
+                  </button>
+                ))}
               </div>
+            );
+          })()}
 
-              {/* Metric Boxes */}
-              <div className="grid grid-cols-2 gap-3">
-                <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
-                    Total Anggaran
-                  </span>
-                  <div className="font-heading text-lg font-extrabold text-[#184C78]">
-                    Rp {(currentProject.anggaran / 1000000000).toFixed(1)} M
-                  </div>
-                  <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1">
-                    APBD Kab. Lamongan
-                  </span>
-                </div>
+          {/* Tab 1: Ringkasan Proyek */}
+          {detailTab === 'ringkasan' && (() => {
+            const parsed = parseProjectDescription(currentProject.deskripsi);
+            const tech = getProjectTechnicalDetails(currentProject);
+            const effCode = getProjectEffectiveCode(currentProject);
+            const effPin = getProjectEffectivePin(currentProject);
+            const isAparatur = currentUser && (
+              currentUser.role === 'aparatur_pemerintah' ||
+              currentUser.role === 'pimpinan_instansi' ||
+              currentUser.role === 'admin_dinas'
+            );
+            const isAPBN = (currentProject.sumber_dana || '').includes('APBN') ||
+              (currentProject.deskripsi || '').includes('APBN') ||
+              currentProject.id === 4 ||
+              currentProject.id === 15 ||
+              currentProject.id === 24 ||
+              currentProject.id === 35;
 
-                <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
-                    Progres Lapangan
-                  </span>
-                  <div className="font-heading text-lg font-extrabold text-emerald-600">
-                    {currentProject.progres_persen}%
-                  </div>
-                  <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full inline-block mt-1">
-                    Sesuai Jadwal
-                  </span>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div>
-                <div className="flex items-center justify-between text-xs font-semibold mb-1">
-                  <span className="text-slate-600">Realisasi Fisik Proyek</span>
-                  <span className="text-[#184C78] font-bold">{currentProject.progres_persen}%</span>
-                </div>
-                <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
-                  <div
-                    className="h-full bg-gradient-to-r from-[#2563EB] to-[#184C78] rounded-full transition-all duration-500"
-                    style={{ width: `${currentProject.progres_persen}%` }}
+            return (
+              <div ref={drawerBodyRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 scrollbar-thin animate-fade-in">
+                {/* Photo Showcase with Telemetry Tag & Street View Direct Link */}
+                <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
+                  <img
+                    src={getRealProjectImage(currentProject)}
+                    alt={currentProject.nama_proyek}
+                    className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
                   />
+                  <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
+                    <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                    <span>Real-time Field Telemetry</span>
+                  </div>
+                  <div className="absolute top-10 left-3 bg-black/60 backdrop-blur-md text-white/95 text-[9px] font-medium px-2 py-0.5 rounded-full shadow-xs">
+                    📷 Dokumentasi Representatif Kab. Lamongan
+                  </div>
+                  <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                    <a
+                      href={getGoogleStreetViewUrl(Number(currentProject.latitude) || -7.1197, Number(currentProject.longitude) || 112.4150)}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md transition-all hover:scale-105"
+                      title="Buka titik koordinat proyek langsung di Google Street View 360°"
+                    >
+                      <Compass className="w-3 h-3 text-cyan-400" />
+                      <span>Street View 360°</span>
+                      <ExternalLink className="w-2.5 h-2.5 opacity-80" />
+                    </a>
+                  </div>
+                  <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md text-[#184C78] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md">
+                    {currentProject.distanceStr} dari lokasi Anda
+                  </div>
+                  <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-white text-[9px] font-mono px-2 py-0.5 rounded-full">
+                    📍 {Number(currentProject.latitude).toFixed(4)}°, {Number(currentProject.longitude).toFixed(4)}°
+                  </div>
                 </div>
-              </div>
 
-              {/* Contractor Contact Button & Heart Bookmark */}
+                {/* Title & Status with Official Project Code Badge */}
+                <div>
+                  <div className="flex items-center gap-2 mb-1 flex-wrap">
+                    <span
+                      className={`text-[10px] font-extrabold px-2.5 py-0.5 rounded-full uppercase tracking-wider ${
+                        currentProject.status === 'selesai'
+                          ? 'bg-emerald-100 text-emerald-800'
+                          : currentProject.status === 'ditangguhkan' || (currentProject.status as any) === 'tertunda'
+                          ? 'bg-amber-100 text-amber-800'
+                          : 'bg-blue-100 text-[#184C78]'
+                      }`}
+                    >
+                      {currentProject.status === 'berjalan' ? 'IN PROGRESS' : currentProject.status.toUpperCase()}
+                    </span>
+                    <span className="font-mono text-[10.5px] font-bold bg-[#EBF4FB] text-[#184C78] px-2 py-0.5 rounded border border-[#c5def2]">
+                      {effCode}
+                    </span>
+                    <span className="text-xs text-slate-400 font-medium">
+                      Est. {currentProject.estimasi_selesai || 'Okt 2024'}
+                    </span>
+                  </div>
+
+                  <h3 className="font-heading text-xl font-bold text-slate-900 leading-snug">
+                    {currentProject.nama_proyek}
+                  </h3>
+
+                  {/* Clean Narrative Description (Ramah Warga) */}
+                  <p className="text-xs text-slate-700 mt-1 leading-relaxed">
+                    {parsed.ringkasan}
+                  </p>
+
+                  {/* Kotak Alasan Penundaan jika status tertunda */}
+                  {parsed.alasanTunda && (
+                    <div className="mt-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-xs text-amber-900">
+                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                      <div>
+                        <strong className="block font-semibold">Alasan Penundaan:</strong>
+                        <span className="leading-snug">{parsed.alasanTunda}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Collapsible Rincian Spesifikasi & Dimensi Teknis */}
+                  {parsed.spesifikasi && (
+                    <div className="mt-2.5 border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
+                      <button
+                        type="button"
+                        onClick={() => setShowTechSpecs(!showTechSpecs)}
+                        className="w-full px-3.5 py-2 text-left text-xs font-semibold text-[#184C78] flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer"
+                      >
+                        <span className="flex items-center gap-1.5">
+                          <Info className="w-3.5 h-3.5 text-[#2980B9]" />
+                          <span>Rincian Spesifikasi &amp; Dimensi Teknis</span>
+                        </span>
+                        <span className="text-[10px] font-bold text-slate-500">
+                          {showTechSpecs ? '▲ Sembunyikan' : '▼ Lihat Rincian'}
+                        </span>
+                      </button>
+                      {showTechSpecs && (
+                        <div className="p-3 border-t border-slate-200 text-[11px] text-slate-600 leading-relaxed bg-white">
+                          {parsed.spesifikasi}
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+
+                {/* Kartu Ringkas Pihak & Tim Penanggung Jawab Proyek (Poin 4) */}
+                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
+                      <Building2 className="w-3.5 h-3.5 text-[#184C78]" />
+                      <span>Pihak Penanggung Jawab Proyek</span>
+                    </div>
+                    <span className="text-[9.5px] bg-white text-emerald-800 font-bold px-2 py-0.5 rounded border border-emerald-200">
+                      Terverifikasi LPSE
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Instansi Pengampu:</span>
+                      <span className="font-bold text-slate-800">{tech.instansi_penanggung_jawab}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Pejabat Pembuat Komitmen (PPK):</span>
+                      <span className="font-bold text-slate-800">{tech.pejabat_pembuat_komitmen}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Kontraktor Pelaksana:</span>
+                      <span className="font-bold text-[#184C78]">{tech.kontraktor_pelaksana}</span>
+                    </div>
+                    <div>
+                      <span className="text-slate-400 block text-[10px]">Nomor Kontrak LPSE:</span>
+                      <span className="font-mono text-slate-700 text-[10px]">{tech.nomor_kontrak_lpse}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Kredensial Khusus Akses Penanggung Jawab (Khusus Aparatur & Pimpinan - Poin 3) */}
+                {isAparatur && (
+                  <div className="p-3.5 bg-gradient-to-r from-[#184C78]/5 via-[#184C78]/10 to-amber-500/10 border border-[#184C78]/25 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-bold text-[#184C78] text-xs">
+                        <Key className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Kredensial Akses Lapangan (Otorisasi Resmi)</span>
+                      </div>
+                      <span className="text-[9.5px] bg-[#EBF4FB] text-[#184C78] px-2 py-0.5 rounded-full font-bold border border-[#c5def2]">
+                        Khusus Aparatur &amp; Pimpinan
+                      </span>
+                    </div>
+                    <p className="text-[10.5px] text-slate-600">
+                      Gunakan kode proyek dan password PIN mandor ini untuk koordinasi resmi pelaporan progres lapangan.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                      <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                        <div>
+                          <div className="text-[9.5px] text-slate-400 font-bold uppercase">Kode Proyek</div>
+                          <div className="font-mono font-bold text-xs text-[#184C78] mt-0.5">{effCode}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(effCode, `Kode Proyek ${effCode}`)}
+                          className="px-2 py-1 text-[10px] font-semibold text-[#184C78] bg-[#EBF4FB] hover:bg-[#d8eaf7] rounded-md border border-[#c5def2] flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Salin Kode Proyek"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>Salin</span>
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-amber-200 shadow-2xs">
+                        <div>
+                          <div className="text-[9.5px] text-amber-700 font-bold uppercase flex items-center gap-1">
+                            <Lock className="w-2.5 h-2.5" />
+                            <span>Password / PIN Mandor</span>
+                          </div>
+                          <div className="font-mono font-bold text-xs text-amber-900 mt-0.5">{effPin}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(effPin, `Password PJ ${effPin}`)}
+                          className="px-2 py-1 text-[10px] font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-300 flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Salin Password Akses Lapangan"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>Salin</span>
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Metric Boxes */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                      Total Anggaran
+                    </span>
+                    <div className="font-heading text-lg font-extrabold text-[#184C78]">
+                      Rp {(currentProject.anggaran / 1000000000).toFixed(1)} M
+                    </div>
+                    <span className="text-[10px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-full inline-block mt-1">
+                      {isAPBN ? 'APBN & APBD Lamongan' : 'APBD Kab. Lamongan'}
+                    </span>
+                  </div>
+
+                  <div className="bg-slate-50 border border-slate-200/90 rounded-2xl p-3">
+                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-0.5">
+                      Progres Lapangan
+                    </span>
+                    <div className="font-heading text-lg font-extrabold text-emerald-600">
+                      {currentProject.progres_persen}%
+                    </div>
+                    <span className="text-[10px] text-blue-700 font-bold bg-blue-50 px-2 py-0.5 rounded-full inline-block mt-1">
+                      Sesuai Jadwal
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress Bar */}
+                <div>
+                  <div className="flex items-center justify-between text-xs font-semibold mb-1">
+                    <span className="text-slate-600">Realisasi Fisik Proyek</span>
+                    <span className="text-[#184C78] font-bold">{currentProject.progres_persen}%</span>
+                  </div>
+                  <div className="h-2 bg-slate-100 rounded-full overflow-hidden border border-slate-200/60">
+                    <div
+                      className="h-full bg-gradient-to-r from-[#2563EB] to-[#184C78] rounded-full transition-all duration-500"
+                      style={{ width: `${currentProject.progres_persen}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Contractor Contact Button & Heart Bookmark */}
               <div className="flex items-center gap-2">
                 <button
                   onClick={() => alert(`Hotline Pengawas Proyek: +62 (322) 321-450 (Dinas Bina Marga & Cipta Karya Lamongan)`)}
@@ -2437,11 +2642,16 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               {/* Action Buttons: Tab Switcher & AI Alternative Route */}
               <div className="space-y-2 pt-2 border-t border-slate-200">
                 <button
-                  onClick={() => setDetailTab('transparansi')}
+                  onClick={() => {
+                    setDetailTab('transparansi');
+                    if (drawerBodyRef.current) {
+                      drawerBodyRef.current.scrollTop = 0;
+                    }
+                  }}
                   className="w-full py-2.5 bg-[#184C78] hover:bg-[#0f3252] text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-sm flex items-center justify-center gap-2 transition-all cursor-pointer"
                 >
                   <FileText className="w-3.5 h-3.5" />
-                  <span>Buka Transparansi APBD & Kontrak</span>
+                  <span>{isAPBN ? 'Buka Transparansi APBN / APBD & Kontrak' : 'Buka Transparansi APBD & Kontrak'}</span>
                   <ArrowRight className="w-3.5 h-3.5" />
                 </button>
 
@@ -2454,18 +2664,27 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                 </button>
               </div>
             </div>
-          )}
+            );
+          })()}
 
-          {/* Tab 2: Transparansi APBD & Kontrak */}
-          {detailTab === 'transparansi' && (
-            <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 scrollbar-thin animate-fade-in text-xs">
-              <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4">
-                <h4 className="font-heading text-sm font-bold text-[#184C78] mb-1">
-                  Rincian Anggaran & Efisiensi LPSE
-                </h4>
-                <p className="text-slate-600 text-[11px] mb-3">
-                  Transparansi penggunaan anggaran APBD Kabupaten Lamongan Tahun Anggaran 2024.
-                </p>
+          {/* Tab 2: Transparansi APBD & Kontrak (Dinamis APBN / APBD) */}
+          {detailTab === 'transparansi' && (() => {
+            const isAPBN = (currentProject.sumber_dana || '').includes('APBN') ||
+              (currentProject.deskripsi || '').includes('APBN') ||
+              currentProject.id === 4 ||
+              currentProject.id === 15 ||
+              currentProject.id === 24 ||
+              currentProject.id === 35;
+
+            return (
+              <div ref={drawerBodyRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 scrollbar-thin animate-fade-in text-xs">
+                <div className="bg-blue-50/70 border border-blue-200/80 rounded-2xl p-4">
+                  <h4 className="font-heading text-sm font-bold text-[#184C78] mb-1">
+                    Rincian Anggaran &amp; Efisiensi LPSE ({isAPBN ? 'APBN & APBD' : 'APBD'})
+                  </h4>
+                  <p className="text-slate-600 text-[11px] mb-3">
+                    Transparansi penggunaan anggaran {isAPBN ? 'APBN Kementerian PUPR & APBD Kab. Lamongan' : 'APBD Kabupaten Lamongan Tahun Anggaran 2024–2026'}.
+                  </p>
 
                 <div className="space-y-2">
                   <div className="flex items-center justify-between py-1 border-b border-blue-100">
@@ -2566,13 +2785,19 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
               </div>
 
               <button
-                onClick={() => setDetailTab('ringkasan')}
+                onClick={() => {
+                  setDetailTab('ringkasan');
+                  if (drawerBodyRef.current) {
+                    drawerBodyRef.current.scrollTop = 0;
+                  }
+                }}
                 className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold rounded-xl text-xs transition-colors cursor-pointer"
               >
                 Kembali ke Ringkasan Proyek
               </button>
             </div>
-          )}
+          );
+        })()}
 
           {/* Tab 3: Form Aduan Warga (Lapor Langsung dari Sidebar) */}
           {detailTab === 'aduan' && (

@@ -551,7 +551,11 @@ INSERT INTO users (id, nama, email, password_hash, role, dinas_id, is_active) VA
 (26, 'Khoirul Anam', 'khoirul.anam@civictrack.demo', '$2b$12$2eaI0O1klqoVCwjS8CphZOxPqedK2H/puHUrFgZE497md6rj2qKNa', 'warga', NULL, TRUE),
 (27, 'Tri Wahyuni', 'tri.wahyuni@civictrack.demo', '$2b$12$2eaI0O1klqoVCwjS8CphZOxPqedK2H/puHUrFgZE497md6rj2qKNa', 'warga', NULL, TRUE),
 (28, 'Arif Rahman', 'arif.rahman@civictrack.demo', '$2b$12$2eaI0O1klqoVCwjS8CphZOxPqedK2H/puHUrFgZE497md6rj2qKNa', 'warga', NULL, TRUE),
-(29, 'Sulastri', 'sulastri@civictrack.demo', '$2b$12$2eaI0O1klqoVCwjS8CphZOxPqedK2H/puHUrFgZE497md6rj2qKNa', 'warga', NULL, TRUE);
+(29, 'Sulastri', 'sulastri@civictrack.demo', '$2b$12$2eaI0O1klqoVCwjS8CphZOxPqedK2H/puHUrFgZE497md6rj2qKNa', 'warga', NULL, TRUE),
+(30, 'Warga CivicTrack', 'warga@civictrack.id', '$2b$12$2eaI0O1klqoVCwjS8CphZOxPqedK2H/puHUrFgZE497md6rj2qKNa', 'warga', NULL, TRUE),
+(31, 'Admin CivicTrack', 'admin@civictrack.id', '$2b$12$2eaI0O1klqoVCwjS8CphZOxPqedK2H/puHUrFgZE497md6rj2qKNa', 'admin_dinas', 1, TRUE),
+(32, 'Pimpinan CivicTrack', 'pimpinan@civictrack.id', '$2b$12$2eaI0O1klqoVCwjS8CphZOxPqedK2H/puHUrFgZE497md6rj2qKNa', 'pimpinan_instansi', NULL, TRUE),
+(33, 'Admin Dinas PU Lamongan', 'admindinaspu@civictrack.id', '$2b$12$2eaI0O1klqoVCwjS8CphZOxPqedK2H/puHUrFgZE497md6rj2qKNa', 'admin_dinas', 1, TRUE);
 
 -- 4. Data 35 Proyek Infrastruktur Fiktif Tervalidasi Kabupaten Lamongan
 INSERT INTO proyek (id, nama_proyek, kategori, deskripsi, latitude, longitude, wilayah_id, desa_id, dinas_id, anggaran, status, progres_persen, tanggal_mulai, estimasi_selesai, dibuat_oleh, kode_proyek, kode_akses) VALUES

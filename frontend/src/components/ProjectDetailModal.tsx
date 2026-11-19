@@ -1,10 +1,33 @@
 import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { X, MapPin, Building, DollarSign, Star, CheckCircle, Bell, Sparkles, Send, Check, AlertCircle, Compass } from 'lucide-react';
+import {
+  X,
+  MapPin,
+  Building,
+  DollarSign,
+  Star,
+  CheckCircle,
+  Bell,
+  Sparkles,
+  Send,
+  Check,
+  AlertCircle,
+  Compass,
+  Copy,
+  Lock,
+  Key,
+  Info,
+  AlertTriangle,
+} from 'lucide-react';
 import type { ProyekItem, UserProfile } from '../types';
 import { apiService } from '../services/api';
 import { getProjectPhotoGallery } from '../utils/projectImages';
-import { getProjectTechnicalDetails } from '../utils/projectTechnicalData';
+import {
+  getProjectTechnicalDetails,
+  getProjectEffectiveCode,
+  getProjectEffectivePin,
+  parseProjectDescription,
+} from '../utils/projectTechnicalData';
 import { ProjectLocationMiniMap } from './ProjectLocationMiniMap';
 
 interface ProjectDetailModalProps {
@@ -32,6 +55,16 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [existingReport, setExistingReport] = useState<any>(null);
+  const [showTechSpecs, setShowTechSpecs] = useState(false);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+  const handleCopyText = (text: string, label: string) => {
+    try {
+      navigator.clipboard.writeText(text);
+      setCopyFeedback(`${label} berhasil disalin!`);
+      setTimeout(() => setCopyFeedback(null), 2500);
+    } catch {}
+  };
 
   // Lock body scroll and handle Escape key when modal is open
   useEffect(() => {
@@ -251,7 +284,9 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                   ? 'Ditangguhkan'
                   : 'Sedang Berjalan'}
               </span>
-              <span className="text-xs text-white/70">ID #{project.id.toString().padStart(4, '0')}</span>
+              <span className="font-mono text-xs font-bold bg-white/20 px-2 py-0.5 rounded border border-white/30 text-white">
+                {getProjectEffectiveCode(project)}
+              </span>
             </div>
 
             <h2 id="modal-project-detail-title" className="font-heading text-lg sm:text-2xl font-bold tracking-tight mb-2 pr-8 sm:pr-0">
@@ -273,6 +308,19 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
             </div>
           </div>
         </div>
+
+        {/* Toast Salin Kredensial */}
+        {copyFeedback && (
+          <div className="mx-4 sm:mx-6 mt-3 p-2.5 bg-emerald-600 text-white text-xs font-bold rounded-xl shadow-md flex items-center justify-between animate-fade-in shrink-0">
+            <div className="flex items-center gap-1.5">
+              <Check className="w-4 h-4" />
+              <span>{copyFeedback}</span>
+            </div>
+            <button onClick={() => setCopyFeedback(null)} className="text-white/80 hover:text-white cursor-pointer">
+              <X className="w-3.5 h-3.5" />
+            </button>
+          </div>
+        )}
 
         {/* Action quick bar */}
         <div className="bg-[#F5F7FA] border-b border-[#DCE0E6] px-4 sm:px-6 py-2.5 sm:py-3 flex items-center justify-between flex-wrap gap-2.5 shrink-0">
@@ -373,9 +421,53 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           {/* TAB 1: LINIMASA TIMELINE */}
           {activeTab === 'timeline' && (
             <div className="space-y-4">
-              <p className="text-xs text-[#6C757D] bg-[#F5F7FA] p-3 rounded-lg border border-[#DCE0E6]">
-                {project.deskripsi}
-              </p>
+              {/* Ringkasan Narasi Ramah Warga & Spesifikasi Teknis */}
+              {(() => {
+                const parsed = parseProjectDescription(project.deskripsi);
+                return (
+                  <div className="space-y-2.5">
+                    {/* Ringkasan Narasi */}
+                    <p className="text-xs text-slate-700 bg-[#F8FAFC] p-3.5 rounded-xl border border-[#CBD5E1] leading-relaxed">
+                      {parsed.ringkasan}
+                    </p>
+
+                    {/* Alert Alasan Penundaan jika ada */}
+                    {parsed.alasanTunda && (
+                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-xs text-amber-900">
+                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                        <div>
+                          <strong className="block font-semibold">Alasan Penundaan:</strong>
+                          <span className="leading-snug">{parsed.alasanTunda}</span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Collapsible Rincian Spesifikasi & Dimensi Teknis */}
+                    {parsed.spesifikasi && (
+                      <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
+                        <button
+                          type="button"
+                          onClick={() => setShowTechSpecs(!showTechSpecs)}
+                          className="w-full px-3.5 py-2 text-left text-xs font-semibold text-[#184C78] flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer"
+                        >
+                          <span className="flex items-center gap-1.5">
+                            <Info className="w-3.5 h-3.5 text-[#2980B9]" />
+                            <span>Rincian Spesifikasi &amp; Dimensi Teknis</span>
+                          </span>
+                          <span className="text-[10px] font-bold text-slate-500">
+                            {showTechSpecs ? '▲ Sembunyikan' : '▼ Lihat Rincian'}
+                          </span>
+                        </button>
+                        {showTechSpecs && (
+                          <div className="p-3 border-t border-slate-200 text-[11px] text-slate-600 leading-relaxed bg-white font-mono whitespace-pre-line">
+                            {parsed.spesifikasi}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
 
               {/* Data Pengadaan & Tim Pelaksana Teknis Terverifikasi LPSE */}
               {(() => {
@@ -420,6 +512,70 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                         <span className="font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded text-[11px] inline-block mt-0.5">
                           {tech.sumber_dana}
                         </span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })()}
+
+              {/* Kredensial Khusus Akses Penanggung Jawab (Khusus Aparatur & Pimpinan - Poin 3) */}
+              {(() => {
+                const isAparatur = currentUser && (
+                  currentUser.role === 'aparatur_pemerintah' ||
+                  currentUser.role === 'pimpinan_instansi' ||
+                  currentUser.role === 'admin_dinas'
+                );
+                if (!isAparatur) return null;
+                const effCode = getProjectEffectiveCode(project);
+                const effPin = getProjectEffectivePin(project);
+
+                return (
+                  <div className="p-3.5 bg-gradient-to-r from-[#184C78]/5 via-[#184C78]/10 to-amber-500/10 border border-[#184C78]/25 rounded-xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 font-bold text-[#184C78] text-xs">
+                        <Key className="w-3.5 h-3.5 text-amber-600" />
+                        <span>Kredensial Akses Lapangan (Otorisasi Resmi)</span>
+                      </div>
+                      <span className="text-[9.5px] bg-[#EBF4FB] text-[#184C78] px-2 py-0.5 rounded-full font-bold border border-[#c5def2]">
+                        Khusus Aparatur &amp; Pimpinan
+                      </span>
+                    </div>
+                    <p className="text-[10.5px] text-slate-600">
+                      Gunakan kode proyek dan password PIN mandor ini untuk otorisasi dan koordinasi resmi pelaporan progres lapangan.
+                    </p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 pt-0.5">
+                      <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-slate-200 shadow-2xs">
+                        <div>
+                          <div className="text-[9.5px] text-slate-400 font-bold uppercase">Kode Proyek</div>
+                          <div className="font-mono font-bold text-xs text-[#184C78] mt-0.5">{effCode}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(effCode, `Kode Proyek ${effCode}`)}
+                          className="px-2 py-1 text-[10px] font-semibold text-[#184C78] bg-[#EBF4FB] hover:bg-[#d8eaf7] rounded-md border border-[#c5def2] flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Salin Kode Proyek"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>Salin</span>
+                        </button>
+                      </div>
+                      <div className="flex items-center justify-between p-2 bg-white rounded-xl border border-amber-200 shadow-2xs">
+                        <div>
+                          <div className="text-[9.5px] text-amber-700 font-bold uppercase flex items-center gap-1">
+                            <Lock className="w-2.5 h-2.5" />
+                            <span>Password / PIN Mandor</span>
+                          </div>
+                          <div className="font-mono font-bold text-xs text-amber-900 mt-0.5">{effPin}</div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleCopyText(effPin, `Password PJ ${effPin}`)}
+                          className="px-2 py-1 text-[10px] font-semibold text-amber-900 bg-amber-50 hover:bg-amber-100 rounded-md border border-amber-300 flex items-center gap-1 transition-colors cursor-pointer"
+                          title="Salin Password Akses Lapangan"
+                        >
+                          <Copy className="w-3 h-3" />
+                          <span>Salin</span>
+                        </button>
                       </div>
                     </div>
                   </div>
