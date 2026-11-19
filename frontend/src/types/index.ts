@@ -29,6 +29,7 @@ export interface ProyekItem {
   konsultan_pengawas?: string;
   kepala_mandor?: string;
   pejabat_pembuat_komitmen?: string;
+  foto_url?: string;
   nomor_kontrak_lpse?: string;
   sumber_dana?: string;
 }

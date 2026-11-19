@@ -13,6 +13,7 @@ export const STATS_DATA: StatSummary = {
 export const INITIAL_PROJECTS: ProyekItem[] = [
   {
     id: 1,
+    foto_url: '/assets/projects/proj-01.jpg',
     nama_proyek: "Peningkatan Jalan Sukodadi - Sumberwudi (JAMULA)",
     kategori: 'jalan',
     deskripsi: "Rekonstruksi perkerasan kaku (rigid pavement CBC) mutu beton Fc' 30 MPa (K-350). Panjang penanganan 3,10 km (3.100 m), lebar badan jalan 6,0 m, tebal pelat beton 20 cm (0,20 m), peninggian badan jalan 25 cm. Volume pelat beton utama 3.100 x 6,0 x 0,20 = 3.720 m3; lapis pondasi bawah agregat kelas A tebal 15 cm (3.100 x 6,0 x 0,15) = 2.790 m3; bahu jalan agregat kelas B lebar 0,75 m kanan-kiri; tulangan dowel D25 mm dan tie bar D13 mm (±Rp 2,55 M/km). Sumber Pembiayaan: APBD Kab. Lamongan (Prioritas JAMULA). Kontraktor Pelaksana: PT Mega Jaya Abadi Konsorsium | Konsultan Pengawas: CV Cipta Rekayasa Mandiri | PPK: Suyitno, S.T. | Kepala Mandor: Ahmad Fauzi (Site Coordinator) & Kasirun (Mandor Pengecoran Rigid). Kontrak: 602/SPK-JLN/LAM-JLN-2026-001 (SiRUP-5384912).",
@@ -43,6 +44,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 2,
+    foto_url: '/assets/projects/proj-02.jpg',
     nama_proyek: "Peningkatan Jalan Pucuk - Sekaran (JAMULA)",
     kategori: 'jalan',
     deskripsi: "Peningkatan jalan kabupaten dengan perkerasan beton rigid pavement K-350. Panjang penanganan 2,85 km (2.850 m, segmen Pucuk-Miru-Kudikan), lebar badan jalan 5,5 m, tebal pelat beton 20 cm (0,20 m). Volume pelat beton utama 2.850 x 5,5 x 0,20 = 3.135 m3; lapis lean concrete K-125 tebal 5 cm (2.850 x 5,5 x 0,05) = 783,75 m3; joint sealant elastis per 5 m; bahu jalan sirtu terpadatkan 0,75 m kanan-kiri; marka termoplastik 2,85 km (±Rp 2,40 M/km). Sumber Pembiayaan: DAK Fisik Tematik & APBD Kab. Lamongan. Kontraktor Pelaksana: CV Putra Lamongan Konstruksi | Konsultan Pengawas: CV Mitra Konsultan | PPK: Suyitno, S.T. | Kepala Mandor: Sunarto (Site Manager) & Slamet Riyadi (Mandor Beton & Marka). Kontrak: 602/SPK-JLN/LAM-JLN-2025-002 (SiRUP-6192047). Tanggal Selesai Aktual (PHO): 2026-02-20.",
@@ -73,6 +75,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 3,
+    foto_url: '/assets/projects/proj-03.jpg',
     nama_proyek: "Rekonstruksi Jalan Sugio - Kedungpring (JAMULA)",
     kategori: 'jalan',
     deskripsi: "Rekonstruksi perkerasan kaku beton bertulang (rigid pavement) beserta saluran tepi pracetak. Panjang penanganan 2,40 km (2.400 m, segmen Desa Gondanglor s/d Desa Bakalrejo), lebar badan jalan 5,5 m, tebal pelat beton 20 cm (0,20 m). Volume pelat beton rigid 2.400 x 5,5 x 0,20 = 2.640 m3; saluran samping precast U-ditch 50x50 cm berpenutup sepanjang 650 m (650 unit) di titik genangan permukiman; pasangan batu mortar penahan bahu 180 m3 (±Rp 2,69 M/km termasuk U-ditch). Sumber Pembiayaan: APBD Kab. Lamongan (Alokasi Khusus JAMULA). Kontraktor Pelaksana: PT Surya Bhakti Persada | Konsultan Pengawas: CV Sinar Karya Konsultan | PPK: Suyitno, S.T. | Kepala Mandor: H. Suwandi (Site Manager) & Suprapto (Mandor Rigid & Saluran U-Ditch). Kontrak: 602/SPK-JLN/LAM-JLN-2026-003 (SiRUP-4728195).",
@@ -103,6 +106,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 4,
+    foto_url: '/assets/projects/proj-04.jpg',
     nama_proyek: "Rekonstruksi Jalan Poros Babat - Sukorame",
     kategori: 'jalan',
     deskripsi: "Rekonstruksi rigid pavement tugas berat disertai dinding penahan tanah (retaining wall) beton bertulang. Panjang penanganan 3,10 km (3.100 m), lebar badan jalan 6,0 m, tebal pelat beton K-350 22 cm (0,22 m). Volume pelat beton jalan 3.100 x 6,0 x 0,22 = 4.092 m3; DPT kantilever K-300 segmen bantaran rawan longsor 180 m x luas penampang 2,00 m2 = 360 m3; bore pile penguat (addendum) 36 titik D40 cm (r=0,20 m) kedalaman 8,0 m (36 x pi x 0,20^2 x 8,0) = 36,19 m3 (~36 m3); total beton struktur = 4.488 m3 (±Rp 2,18 jt/m3 all-in). Sumber Pembiayaan: Bantuan Keuangan (BK) Pemprov Jatim & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Duta Bangun Sejahtera | Konsultan Pengawas: CV Grafika Desain Engineering | PPK: Suyitno, S.T. | Kepala Mandor: Ir. H. Supriyanto (Site Manager) & Darmo Sugiarto (Mandor Beton & DPT). Kontrak: 602/SPK-JLN/LAM-JLN-2025-004 (SiRUP-8041563). Alasan Penundaan: Revisi desain dinding penahan tanah akibat longsoran bantaran saat curah hujan tinggi.",
@@ -133,6 +137,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 5,
+    foto_url: '/assets/projects/proj-05.jpg',
     nama_proyek: "Peningkatan Jalan Deket - Soko (Koridor Deket - Glagah)",
     kategori: 'jalan',
     deskripsi: "Peningkatan jalan koridor tambak dengan stabilisasi sub-grade tanah lunak dan perkerasan rigid pavement K-350. Panjang penanganan 1,90 km (1.900 m, segmen Desa Sidorejo s/d Desa Soko), lebar badan jalan 5,5 m, tebal pelat beton 20 cm (0,20 m). Volume pelat beton rigid 1.900 x 5,5 x 0,20 = 2.090 m3; pemasangan geotekstil woven 200 gr/m2 lebar 6,0 m (1.900 x 6,0) = 11.400 m2; timbunan pilihan berbutir tebal 25 cm (1.900 x 6,0 x 0,25) = 2.850 m3; talud pasangan batu kali 420 m x 0,60 m2 = 252 m3 (±Rp 2,61 M/km). Sumber Pembiayaan: APBD Kab. Lamongan (DAU Infrastruktur). Kontraktor Pelaksana: CV Berkah Mandiri Abadi | Konsultan Pengawas: CV Cipta Pratama | PPK: Hendra Wijaya, S.T. | Kepala Mandor: Didik Mulyono (Site Supervisor) & Sutrisno (Mandor Sub-grade Tambak & Cor Beton). Kontrak: 602/SPK-JLN/LAM-JLN-2026-005 (SiRUP-2957381).",
@@ -163,6 +168,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 6,
+    foto_url: '/assets/projects/proj-06.jpg',
     nama_proyek: "Peningkatan Jalan Turi - Kiringan (Kawasan Bengawan Jero)",
     kategori: 'jalan',
     deskripsi: "Peninggian badan jalan anti-genangan Bengawan Jero dan rekonstruksi rigid pavement K-350. Panjang penanganan 1,75 km (1.750 m, segmen Desa Turi s/d Desa Kemlagilor), lebar badan jalan 5,0 m, tebal pelat beton 20 cm (0,20 m). Volume pelat beton utama 1.750 x 5,0 x 0,20 = 1.750 m3; timbunan peninggian badan jalan tebal 30 cm lebar rata-rata 5,5 m (1.750 x 5,5 x 0,30) = 2.887,5 m3; bahu agregat kelas B lebar 0,75 m kanan-kiri tebal 20 cm (1.750 x 1,5 x 0,20 = 525 m3); gorong-gorong penyeimbang muka air tambak D60 cm 4 titik (±Rp 2,49 M/km). Sumber Pembiayaan: APBD Kab. Lamongan (Tanggap Banjir Bengawan Jero). Kontraktor Pelaksana: CV Sinar Bengawan Nusantara | Konsultan Pengawas: CV Cipta Reka Estetika | PPK: Hendra Wijaya, S.T. | Kepala Mandor: H. Solikin (Site Supervisor) & Karyono (Mandor Peninggian Elevasi & Cor Beton). Kontrak: 602/SPK-JLN/LAM-JLN-2026-006 (SiRUP-7419268).",
@@ -193,6 +199,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 7,
+    foto_url: '/assets/projects/proj-07.jpg',
     nama_proyek: "Peningkatan Jalan Brengkok - Brondong (Pantura)",
     kategori: 'jalan',
     deskripsi: "Pelapisan ulang (overlay) aspal hotmix 2 lapis (AC-BC dan AC-WC) koridor pesisir Pantura. Panjang penanganan 3,60 km (3.600 m, segmen Desa Brengkok s/d Kelurahan Brondong), lebar perkerasan 6,5 m (luas total 3.600 x 6,5 = 23.400 m2). Lapis AC-BC tebal 6 cm + AC-WC tebal 4 cm (total tebal 10 cm = 0,10 m; volume 23.400 x 0,10 = 2.340 m3; BJ 2,30 ton/m3 -> tonase hotmix = 5.382 ton); perbaikan pondasi agregat kelas A setempat 30% area rusak (7.020 m2 x 0,15 m = 1.053 m3); marka termoplastik 3,60 km dan 180 patok reflektor (±Rp 1,72 M/km). Sumber Pembiayaan: DAK Penugasan Jalan KemenPUPR & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Tri Tunggal Konstruksiindo | Konsultan Pengawas: CV Wahana Multi Tehnik | PPK: Hendra Wijaya, S.T. | Kepala Mandor: Ir. Dadang Hermawan (Site Engineer) & Slamet Riyadi (Mandor Hotmix AC-WC). Kontrak: 602/SPK-JLN/LAM-JLN-2025-007 (SiRUP-3862914).",
@@ -223,6 +230,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 8,
+    foto_url: '/assets/projects/proj-08.jpg',
     nama_proyek: "Rekonstruksi Jalan Mantup - Sambeng (Poros Selatan)",
     kategori: 'jalan',
     deskripsi: "Pelebaran dan rekonstruksi perkerasan kaku (rigid pavement CBC) K-350 poros selatan. Panjang penanganan 3,20 km (3.200 m, segmen Desa Ardirejo s/d batas Mantup), pelebaran badan jalan dari 4,5 m menjadi 6,0 m (tambahan 1,5 m), tebal pelat beton 20 cm (0,20 m). Volume pelat beton utama 3.200 x 6,0 x 0,20 = 3.840 m3; pondasi agregat kelas A zona pelebaran tebal 25 cm (3.200 x 1,5 x 0,25) = 1.200 m3; saluran pasangan batu mortar samping jalan 800 m x 0,50 m2 = 400 m3 (±Rp 2,53 M/km). Sumber Pembiayaan: APBD Kab. Lamongan (Prioritas Poros Selatan). Kontraktor Pelaksana: PT Pandu Bangun Kencana | Konsultan Pengawas: CV Paramita Graha Engineering | PPK: Suyitno, S.T. | Kepala Mandor: Ahmad Zaenuri (Mandor Pelebaran & Rigid Pavement K-350). Kontrak: 602/SPK-JLN/LAM-JLN-2026-008 (SiRUP-9135720).",
@@ -253,6 +261,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 9,
+    foto_url: '/assets/projects/proj-09.jpg',
     nama_proyek: "Peningkatan Jalan Bluluk - Sukorame (Batas Bojonegoro)",
     kategori: 'jalan',
     deskripsi: "Peningkatan jalan perbatasan kabupaten dengan beton rigid pavement K-350 dan drainase U-ditch pracetak. Panjang penanganan 2,05 km (2.050 m, segmen Desa Sukorame s/d Desa Sembung arah Bluluk), lebar badan jalan 5,5 m, tebal pelat beton 20 cm (0,20 m). Volume pelat beton rigid 2.050 x 5,5 x 0,20 = 2.255 m3; lapis pondasi agregat kelas A tebal 15 cm (2.050 x 5,5 x 0,15) = 1.691,25 m3; saluran samping precast U-ditch 40x40 cm sepanjang 600 m (600 unit) di segmen padat permukiman (±Rp 2,51 M/km). Sumber Pembiayaan: APBD Kab. Lamongan. Kontraktor Pelaksana: CV Wijaya Surya Sentosa | Konsultan Pengawas: CV Prisma Konsultan | PPK: Suyitno, S.T. | Kepala Mandor: Supriyadi (Mandor U-Ditch & Pengecoran Rigid). Kontrak: 602/SPK-JLN/LAM-JLN-2025-009 (SiRUP-1584029). Alasan Penundaan: Keterlambatan pasokan precast U-ditch dan relokasi tiang jaringan listrik PLN di 6 titik.",
@@ -283,6 +292,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 10,
+    foto_url: '/assets/projects/proj-10.jpg',
     nama_proyek: "Rekonstruksi Jalan Laren - Blawi (Sentra Padi)",
     kategori: 'jalan',
     deskripsi: "Rekonstruksi rigid pavement K-350 dengan stabilisasi cerucuk bambu dan talud penahan tepi sawah. Panjang penanganan 2,15 km (2.150 m, segmen Desa Pelangwot s/d arah Blawi), lebar badan jalan 5,5 m, tebal pelat beton 20 cm (0,20 m). Volume pelat beton rigid 2.150 x 5,5 x 0,20 = 2.365 m3; fondasi cerucuk bambu D10 cm panjang 3,0 m (jarak 0,5 m, 4 baris) pada segmen tanah labil 500 m = 2.000 batang; talud pasangan batu kali 520 m x 0,55 m2 = 286 m3 (±Rp 2,51 M/km). Sumber Pembiayaan: APBD Kab. Lamongan. Kontraktor Pelaksana: CV Bangun Cipta Samudera | Konsultan Pengawas: CV Adi Mulya Teknik | PPK: Hendra Wijaya, S.T. | Kepala Mandor: M. Sholeh (Site Supervisor) & Warno (Mandor Cerucuk Bambu & Talud Batu Kali). Kontrak: 602/SPK-JLN/LAM-JLN-2026-010 (SiRUP-6420815).",
@@ -313,6 +323,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 11,
+    foto_url: '/assets/projects/proj-11.jpg',
     nama_proyek: "Peningkatan Jalan Tikung - Kembangbahu (Sentra Jagung)",
     kategori: 'jalan',
     deskripsi: "Rekonstruksi perkerasan kaku rigid pavement K-350 dilengkapi bahu jalan cor beton dan gorong-gorong box. Panjang penanganan 1,85 km (1.850 m, segmen Desa Wonokromo s/d batas Kembangbahu), lebar badan jalan 5,5 m, tebal pelat 20 cm (0,20 m). Volume pelat beton utama 1.850 x 5,5 x 0,20 = 2.035 m3; bahu jalan rabat beton K-175 lebar 0,50 m kanan-kiri tebal 15 cm (1.850 x 1,0 x 0,15 = 277,5 m3); 2 unit gorong-gorong box culvert 100x100 cm panjang 7 m (±Rp 2,49 M/km). Sumber Pembiayaan: APBD Kab. Lamongan. Kontraktor Pelaksana: CV Graha Indah Semesta | Konsultan Pengawas: CV Mahameru Konsultan | PPK: Hendra Wijaya, S.T. | Kepala Mandor: Sujono (Mandor Rigid Pavement & Gorong-Gorong Crossing). Kontrak: 602/SPK-JLN/LAM-JLN-2025-011 (SiRUP-4291638).",
@@ -343,6 +354,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 12,
+    foto_url: '/assets/projects/proj-12.jpg',
     nama_proyek: "Peningkatan Jalan Modo - Babat (Koridor Pangan)",
     kategori: 'jalan',
     deskripsi: "Peningkatan jalan rigid pavement K-350 disertai perbaikan geometrik tikungan tajam (realignment). Panjang penanganan 2,20 km (2.200 m, segmen Desa Mojorejo s/d Desa Sumberagung), lebar badan jalan 6,0 m, tebal pelat beton 20 cm (0,20 m). Volume pelat beton utama 2.200 x 6,0 x 0,20 = 2.640 m3; pelebaran superelevasi 2 tikungan radius sempit seluas 480 m2 x 0,20 m = 96 m3 (total beton 2.736 m3); lapis pondasi LPA tebal 15 cm (2.200 x 6,0 x 0,15 = 1.980 m3); patok pengarah tikungan 40 unit (±Rp 2,66 M/km). Sumber Pembiayaan: APBD Kab. Lamongan. Kontraktor Pelaksana: PT Cipta Usaha Sejahtera | Konsultan Pengawas: CV Pilar Cipta Pratama | PPK: Suyitno, S.T. | Kepala Mandor: Teguh Santoso (Site Manager) & Kusnan (Mandor Cor Beton & Realignment Tikungan). Kontrak: 602/SPK-JLN/LAM-JLN-2025-012 (SiRUP-8753194).",
@@ -373,6 +385,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 13,
+    foto_url: '/assets/projects/proj-13.jpg',
     nama_proyek: "Pembangunan Pintu Air & Retensi Kuro (Pengendali Bengawan Jero)",
     kategori: 'drainase',
     deskripsi: "Konstruksi bangunan pengendali banjir pintu air elektrik ulir hidrolik dan dinding penahan kolam olak. 3 unit pintu air baja tahan karat (SUS 304) masing-masing lebar 3,5 m x tinggi 4,2 m, lebar total bentang bangunan air 14,5 m, panjang dinding penahan kolam olak 120 m. Konstruksi beton bertulang K-300 kedap air untuk pilar, lantai apron, dan dinding penahan volume 1.450 m3; pondasi tiang pancang spun pile D40 cm kedalaman 14 m sebanyak 48 titik; sistem penggerak motor hidrolik 3 x 15 kW + panel kontrol SCADA level muka air. Sumber Pembiayaan: Bantuan Keuangan (BK) Prov. Jatim & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Brantas Abipraya - Sumber Jaya KSO | Konsultan Pengawas: PT Yodya Karya (Persero) | PPK: Agus Setiawan, S.T. | Kepala Mandor: Hartono (Kepala Mandor Pintu Air Hidrolik) & Ir. Setyo Utomo (Site Manager). Kontrak: 611/SPK-DRA/LAM-DRA-2024-001 (SiRUP-2471950). Tanggal Selesai Aktual (PHO): 2026-04-18.",
@@ -403,6 +416,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 14,
+    foto_url: '/assets/projects/proj-14.jpg',
     nama_proyek: "Pengadaan & Pemasangan Pompa Banjir 3.000 L/dt Pintu Air Kuro",
     kategori: 'drainase',
     deskripsi: "Pengadaan dan instalasi stasiun pompa banjir kapasitas total 3.000 liter/detik lengkap rumah genset dan panel ATS. 2 unit pompa axial submersible kapasitas masing-masing 1.500 L/detik (total 3.000 L/detik), head 4,5 m, pipa tekan baja D1.000 mm panjang 36 m, bangunan rumah pompa & genset 14 m x 10 m (140 m2). Konstruksi sumur hisap (sump pit) beton bertulang K-300 volume 320 m3; 1 unit genset silent kapasitas 500 kVA + tangki solar harian 3.000 liter; panel AMF/ATS otomatis, trash rack baja pembersih gulma, dan uji beban 24 jam nonstop. Sumber Pembiayaan: Bantuan Keuangan Khusus (BKK) Pemprov Jatim. Kontraktor Pelaksana: PT Mega Surya Teknik Megah | Konsultan Pengawas: CV Bina Karya Pratama | PPK: Agus Setiawan, S.T. | Kepala Mandor: Slamet Wahyudi (Mandor Mekanikal Elektrikal, Pompa Axial & Genset 500 kVA). Kontrak: 611/SPK-DRA/LAM-DRA-2025-002 (SiRUP-7834016). Tanggal Selesai Aktual (PHO): 2026-05-25.",
@@ -433,6 +447,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 15,
+    foto_url: '/assets/projects/proj-15.jpg',
     nama_proyek: "Normalisasi Kali Asin & Pengerukan Bengawan Jero",
     kategori: 'drainase',
     deskripsi: "Normalisasi alur sungai, pengerukan sedimen dasar, dan pembersihan gulma air kawasan Bengawan Jero. Panjang penanganan 10,5 km (10.500 m, alur Desa Pucangro s/d Desa Tiwet), lebar rata-rata dasar saluran 8,0 m, kedalaman pengerukan rata-rata 1,6 m. Volume pengerukan lumpur sedimentasi 10.500 x 8,0 x 1,6 = 134.400 m3 menggunakan 3 unit amphibi excavator long-arm; pembersihan eceng gondok padat seluas 42.000 m2; penataan tanggul hasil kerukan selebar 3,0 m di bantaran tidak produktif (±Rp 33.480/m3 keruk termasuk mobilisasi). Sumber Pembiayaan: APBD Kab. Lamongan (Penanganan Banjir Terpadu). Kontraktor Pelaksana: PT Tirta Dharma Kencana | Konsultan Pengawas: CV Mitra Tata Lingkungan | PPK: Agus Setiawan, S.T. | Kepala Mandor: H. Masrukin (Kepala Mandor Operasi Amphibi Excavator & Pengerukan Alur). Kontrak: 611/SPK-DRA/LAM-DRA-2026-003 (SiRUP-1938542).",
@@ -463,6 +478,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 16,
+    foto_url: '/assets/projects/proj-16.jpg',
     nama_proyek: "Saluran Drainase Primer Box Culvert Jl. Veteran & Jl. Basuki Rahmat",
     kategori: 'drainase',
     deskripsi: "Pembangunan saluran drainase primer perkotaan tertutup menggunakan precast reinforced concrete box culvert. Panjang penanganan 1,15 km (1.150 m, koridor Jl. Veteran & Jl. Basuki Rahmat, Kel. Sukorejo), dimensi dalam box culvert 150 x 150 cm (beban gandar 20 ton). Pemasangan 1.150 unit precast box culvert 150x150x100 cm mutu K-350; lapis lantai kerja beton K-125 tebal 10 cm selebar 1,9 m (1.150 x 1,9 x 0,10 = 218,5 m3); 76 unit bak kontrol inlet tangkapan air hujan per 15 m; pengembalian perkerasan trotoar paving seluas 2.300 m2 (±Rp 5,04 M/km). Sumber Pembiayaan: APBD Kab. Lamongan (Drainase Perkotaan). Kontraktor Pelaksana: CV Jaya Abadi Konstruksi | Konsultan Pengawas: CV Multi Rekayasa Graha | PPK: Dwi Prasetyo, S.T. | Kepala Mandor: Budi Hermawan (Site Supervisor) & Suharno (Mandor Pemasangan Box Culvert 150x150). Kontrak: 640/SPK-DRA/LAM-DRA-2026-004 (SiRUP-6502849).",
@@ -493,6 +509,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 17,
+    foto_url: '/assets/projects/proj-17.jpg',
     nama_proyek: "Modernisasi Jaringan Irigasi DI Waduk Gondang",
     kategori: 'drainase',
     deskripsi: "Modernisasi jaringan irigasi primer dan sekunder Daerah Irigasi (DI) Waduk Gondang. Panjang penanganan 5,40 km (5.400 m: 3.000 m lining pasangan batu kali + 2.400 m precast U-flume beton K-300 ukuran 100x100 cm), melayani areal baku sawah 1.250 hektar. Pasangan batu kali 1:3 dinding dan lantai saluran 3.000 m x penampang 0,85 m2 = 2.550 m3; pemasangan 2.400 unit precast U-flume beton 100x100x100 cm; rehabilitasi 12 unit bangunan pintu bagi sadap ulir baja + 4 alat ukur debit Romijn. Sumber Pembiayaan: DAK Fisik Irigasi KemenPUPR & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Swakarya Perkasa Mandiri | Konsultan Pengawas: CV Rekaprima Engineering | PPK: Rina Kusuma, S.T. | Kepala Mandor: Kasirun (Mandor Pasangan Batu Kali 1:3 & Precast U-Flume Saluran Gondang). Kontrak: 611/SPK-DRA/LAM-DRA-2025-005 (SiRUP-4016793).",
@@ -523,6 +540,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 18,
+    foto_url: '/assets/projects/proj-18.jpg',
     nama_proyek: "Rekonstruksi Jembatan Karanggeneng - Maduran",
     kategori: 'jembatan',
     deskripsi: "Rekonstruksi jembatan bentang menengah struktur atas gelagar baja komposit (steel composite girder). Bentang jembatan 36,0 m (1 bentang penuh), lebar lantai kendaraan 7,0 m + trotoar 1,0 m kanan-kiri (total lebar 9,0 m), panjang oprit 60 m kanan-kiri. 6 batang gelagar baja profil IWF 900x300 berat total 58,4 ton; pelat lantai beton bertulang K-350 tebal 22 cm (36 x 9,0 x 0,22 = 71,3 m3); 2 abutmen beton K-300 (280 m3) di atas 24 titik bore pile D60 cm kedalaman 18 m. Sumber Pembiayaan: DAK Fisik Konektivitas Daerah & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Wira Mandiri Sejati | Konsultan Pengawas: CV Dian Karya Konsultan | PPK: M. Rofiq, S.T. | Kepala Mandor: H. Subagyo (Mandor Abutmen Bore Pile & Gelagar Baja) & Agus Triyono, S.T.. Kontrak: 602/SPK-JBT/LAM-JBT-2025-001 (SiRUP-3169482). Alasan Penundaan: Kenaikan debit Bengawan Solo menghambat pemancangan abutmen dan fabrikasi gelagar baja komposit.",
@@ -553,6 +571,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 19,
+    foto_url: '/assets/projects/proj-19.jpg',
     nama_proyek: "Penggantian Gelagar & Pelebaran Jembatan Plaosan Babat",
     kategori: 'jembatan',
     deskripsi: "Penggantian gelagar beton pracetak prategang (PCI I-Girder) dan pelebaran lantai jembatan. Bentang jembatan 22,0 m, pelebaran lantai kendaraan dari 5,5 m menjadi 8,0 m + trotoar 0,75 m kanan-kiri (total lebar 9,5 m). 6 batang balok PCI I-Girder H-125 panjang 22 m mutu K-500; pelat lantai beton K-350 tebal 22 cm (22 x 9,5 x 0,22 = 46,0 m3); perkuatan 2 kepala abutmen beton K-300 (115 m3); 12 bantalan karet elastomer dan expansion joint baja. Sumber Pembiayaan: APBD Kab. Lamongan. Kontraktor Pelaksana: CV Sumber Berkah Teknik | Konsultan Pengawas: CV Sarana Teknik Konsultan | PPK: M. Rofiq, S.T. | Kepala Mandor: Wahyu Sujatmiko (Mandor Erection I-Girder Pracetak & Pelebaran Lantai). Kontrak: 602/SPK-JBT/LAM-JBT-2026-002 (SiRUP-9472615).",
@@ -583,6 +602,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 20,
+    foto_url: '/assets/projects/proj-20.jpg',
     nama_proyek: "Pembangunan Jembatan Kuro Penghubung Karangbinangun - Glagah",
     kategori: 'jembatan',
     deskripsi: "Pembangunan jembatan pelat beton prategang (voided slab) tahan lingkungan air payau. Bentang jembatan 30,0 m (2 bentang @15,0 m dengan 1 pilar tengah), lebar lantai 6,0 m + trotoar 0,75 m kanan-kiri (total lebar 7,5 m). 14 unit balok voided slab prategang panjang 15 m mutu K-500; pondasi 28 tiang pancang spun pile D50 cm kedalaman 16 m dengan lapisan epoxy anti-korosi air payau; beton struktur pilar, abutmen, dan oprit volume 295 m3; lapis aus aspal AC-WC 225 m2 tebal 5 cm. Sumber Pembiayaan: APBD Kab. Lamongan & BK Khusus Provinsi. Kontraktor Pelaksana: PT Tri Pilar Nusantara | Konsultan Pengawas: CV Pilar Utama Desain | PPK: M. Rofiq, S.T. | Kepala Mandor: Suparno (Mandor Pemancangan Spun Pile & Pelat Beton Prategang). Kontrak: 602/SPK-JBT/LAM-JBT-2025-003 (SiRUP-6815037).",
@@ -613,6 +633,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 21,
+    foto_url: '/assets/projects/proj-21.jpg',
     nama_proyek: "Pembangunan RSUD Brondong Pantura (Tahap II)",
     kategori: 'gedung_publik',
     deskripsi: "Pembangunan gedung rumah sakit 3 lantai struktur beton bertulang K-350 dilengkapi IGD, ruang operasi, rawat inap, dan IPAL medis. Bangunan 3 lantai luas total lantai 3.600 m2 (1.200 m2 per lantai), kapasitas 75 tempat tidur rawat inap, 2 ruang operasi, dan ruang IGD 12 bed. Struktur beton bertulang K-350 (pondasi mini pile 25x25 cm 160 titik, kolom, balok, pelat) volume 1.380 m3; baja tulangan 195 ton; sistem HVAC ruang operasi + instalasi gas medis sentral 85 outlet; instalasi IPAL medis biofilter kapasitas 45 m3/hari (±Rp 6,89 jt/m2 standar RS tipe C/D). Sumber Pembiayaan: DAK Fisik Kesehatan Kemenkes & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Total Bangun Sarana | Konsultan Pengawas: PT Ciriajasa Engineering Consultants | PPK: dr. Chaidir Annas | Kepala Mandor: Ir. Rudi Hartanto (Project Manager) & Sugeng Widodo (Mandor Struktur 3 Lantai & IPAL). Kontrak: 440/SPK-GED/LAM-GED-2025-001 (SiRUP-2089461).",
@@ -643,6 +664,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 22,
+    foto_url: '/assets/projects/proj-22.jpg',
     nama_proyek: "Pembangunan Gedung Laboratorium Kesehatan Daerah (Labkesda)",
     kategori: 'gedung_publik',
     deskripsi: "Pembangunan gedung laboratorium kesehatan masyarakat 2 lantai standar Bio Safety Level 2 (BSL-2). Bangunan 2 lantai luas total 1.050 m2 (525 m2 per lantai), terdiri atas ruang PCR mikrobiologi, lab uji kimia air & pangan, ruang pengambilan sampel, dan gudang reagen. Struktur beton bertulang K-300 volume 410 m3; sistem tata udara AHU tekanan negatif dilengkapi filter HEPA H14 (efisiensi 99,995%); lantai vinyl anti-bakteri seamless seluas 620 m2; IPAL limbah cair laboratorium kapasitas 10 m3/hari (±Rp 6,52 jt/m2 standar BSL-2). Sumber Pembiayaan: DAK Penguatan Sistem Kesehatan & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Cipta Bangun Graha | Konsultan Pengawas: CV Prisma Estetika Desain | PPK: dr. Chaidir Annas | Kepala Mandor: Andi Kurniawan, S.T. (Site Engineer) & Sumardi (Mandor Ruang BSL-2 & MEP HEPA). Kontrak: 440/SPK-GED/LAM-GED-2025-002 (SiRUP-7351904). Tanggal Selesai Aktual (PHO): 2026-07-19.",
@@ -673,6 +695,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 23,
+    foto_url: '/assets/projects/proj-23.jpg',
     nama_proyek: "Gedung Bedah & Rawat Inap Terpadu RSUD dr. Soegiri",
     kategori: 'gedung_publik',
     deskripsi: "Pembangunan gedung bedah sentral dan perawatan intensif terpadu 4 lantai dilengkapi Modular Operating Theatre (MOT). Bangunan 4 lantai luas total 2.400 m2 (600 m2 per lantai), terdiri atas 4 kamar operasi MOT, ruang intensif ICU/ICCU/NICU kapasitas 24 bed, dan ruang pemulihan. Struktur beton bertulang K-350 tahan gempa volume 960 m3; 4 paket dinding panel baja anti-bakteri & laminar airflow MOT; sistem sprinkler kebakaran otomatis 180 titik; pengadaan genset cadangan khusus bedah 500 kVA (±Rp 7,71 jt/m2 standar ruang bedah MOT). Sumber Pembiayaan: Silpa BLUD RSUD dr. Soegiri & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Galatama Cipta Graha | Konsultan Pengawas: PT Virama Karya (Persero) | PPK: dr. Nurul Hidayati, M.Kes. | Kepala Mandor: Ir. Eko Prasetyo (Construction Manager) & Bambang Irawan (Mandor Struktur 5 Lantai & MOT). Kontrak: 440/SPK-GED/LAM-GED-2025-003 (SiRUP-4618295).",
@@ -703,6 +726,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 24,
+    foto_url: '/assets/projects/proj-24.jpg',
     nama_proyek: "Rekonstruksi Total Stadion Gelora Surajaya (Standar FIFA)",
     kategori: 'gedung_publik',
     deskripsi: "Rekonstruksi total stadion sepak bola berkapasitas 12.097 single seat berstandar FIFA. Luas bangunan stadion & tribun 21.800 m2, lapangan bermain 105 m x 68 m (7.140 m2), kapasitas 12.097 penonton duduk (single seat), 4 menara lampu LED 1.800 lux. Beton bertulang & precast tribun K-350 volume 14.200 m3; struktur rangka atap baja tribun barat & timur berat 680 ton dengan penutup membran PTFE seluas 6.400 m2; sistem drainase sub-air lapangan + rumput Zoysia Matrella 7.140 m2; ruang ganti pemain, media center, dan scoring board LED. Sumber Pembiayaan: APBN Kementerian PUPR & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Wijaya Karya Bangunan Gedung Tbk | Konsultan Pengawas: PT Ciriajasa Engineering Consultants | PPK: Ir. Bagus Pratama, M.T. | Kepala Mandor: Ir. Nugroho Adi Wibowo (Project Manager) & H. Suryadi (Mandor Tribun, Atap PTFE & Rumput FIFA). Kontrak: 602/SPK-GED/LAM-GED-2025-004 (SiRUP-8924150). Catatan OPD: Pembangunan fisik dieksekusi Dinas PU Bina Marga sebagai pelaksana konstruksi strategis untuk Dinas Pemuda dan Olahraga.",
@@ -733,6 +757,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 25,
+    foto_url: '/assets/projects/proj-25.jpg',
     nama_proyek: "Revitalisasi Alun-Alun Lamongan & Mandhapa Seni Budaya",
     kategori: 'taman',
     deskripsi: "Revitalisasi taman kota terpadu, lintasan lari karet EPDM, zona bermain ramah anak, dan Mandhapa seni budaya. Luas penataan kawasan Alun-Alun 2,8 hektar (28.000 m2), lintasan jogging track rubber EPDM keliling 400 m lebar 3,0 m (1.200 m2), bangunan Mandhapa 18 m x 18 m (324 m2). Lantai rubber EPDM tuang tebal 15 mm seluas 1.200 m2; area playground ramah anak berpagar 450 m2 dengan 14 wahana sertifikat SNI; kolam air mancur menari 16 nosel LED; paving blok andesit & jalur pemandu difabel 4.600 m2; 54 tiang lampu taman LED. Sumber Pembiayaan: APBD Kab. Lamongan (Prioritas RTH Ramah Anak). Kontraktor Pelaksana: PT Bumi Surya Kencana | Konsultan Pengawas: CV Ganeshatama Konsultan | PPK: Dwi Prasetyo, S.T. | Kepala Mandor: Budi Hermawan (Site Supervisor) & Kardianto (Mandor Lansekap, EPDM & Mandhapa). Kontrak: 640/SPK-TMN/LAM-TMN-2025-001 (SiRUP-7124869).",
@@ -763,6 +788,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 26,
+    foto_url: '/assets/projects/proj-26.jpg',
     nama_proyek: "Pembangunan Ruang Terbuka Hijau & Eco-Park Babat",
     kategori: 'taman',
     deskripsi: "Transformasi lahan eks rawa menjadi ruang terbuka hijau (RTH) edukasi ekologis dan plaza UMKM. Luas kawasan RTH 1,5 hektar (15.000 m2), kolam retensi ekologis 2.200 m2, lintasan pedestrian keliling 620 m lebar 2,5 m (1.550 m2), plaza 16 kios UMKM seluas 480 m2. Pekerjaan timbunan tanah pilihan & pemadatan lahan rawa 6.800 m3; perkuatan pondasi strauss pile 48 titik untuk plaza UMKM (addendum uji sondir); penanaman 450 pohon peneduh (tabebuya, trembesi, pule); 32 tiang lampu taman solar cell. Sumber Pembiayaan: APBD Kab. Lamongan (Alokasi DBHCHT). Kontraktor Pelaksana: CV Alam Hijau Lestari | Konsultan Pengawas: CV Mitra Kreasi Alam | PPK: Dwi Prasetyo, S.T. | Kepala Mandor: Suyanto (Mandor Cut-and-Fill Lahan Rawa, Plaza UMKM & PJU Solar Cell). Kontrak: 640/SPK-TMN/LAM-TMN-2025-002 (SiRUP-2695031). Alasan Penundaan: Pemadatan ulang tanah bekas rawa dan penyesuaian pondasi plaza UMKM pasca uji sondir tambahan.",
@@ -793,6 +819,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 27,
+    foto_url: '/assets/projects/proj-27.jpg',
     nama_proyek: "Revitalisasi Ruang Terbuka Publik & Taman Olahraga Maduran",
     kategori: 'taman',
     deskripsi: "Revitalisasi ruang terbuka publik, lapangan olahraga desa, outdoor fitness, dan mini amphitheater pemuda. Luas lahan 9.600 m2, lapangan sepak bola 90 m x 55 m (4.950 m2), jogging track paving 340 m lebar 2,5 m (850 m2), mini amphitheater kapasitas 250 penonton. Perataan & drainase keliling lapangan + penanaman rumput 4.950 m2; pemasangan paving blok & guiding block difabel 1.450 m2; 10 unit alat outdoor fitness baja galvanis; 4 tower lampu sorot LED lapangan masing-masing 4 x 400 watt. Sumber Pembiayaan: APBD Kab. Lamongan. Kontraktor Pelaksana: CV Sumber Artha Mandiri | Konsultan Pengawas: CV Karya Mandiri Desain | PPK: Dwi Prasetyo, S.T. | Kepala Mandor: Eko Wahyudi, S.T. (Site Engineer) & Supardi (Mandor Lapangan, Amphitheater & Paving Difabel). Kontrak: 640/SPK-TMN/LAM-TMN-2026-003 (SiRUP-8540917).",
@@ -823,6 +850,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 28,
+    foto_url: '/assets/projects/proj-28.jpg',
     nama_proyek: "Sentra Pengeringan & Pergudangan Jagung Modern Solokuro",
     kategori: 'gedung_publik',
     deskripsi: "Pembangunan sentra pengeringan (vertical dryer) dan gudang penyimpanan jagung modern kapasitas 1.000 ton. Bangunan gudang baja WF 36 m x 20 m (720 m2) tinggi kolom 8,0 m, kantor operasional Gapoktan 80 m2, lantai jemur beton 600 m2. Lantai gudang beton bertulang K-300 heavy duty tebal 20 cm (720 x 0,20 = 144 m3) + lantai jemur tebal 15 cm (600 x 0,15 = 90 m3); rangka portal baja WF 300 berat 34,5 ton; 1 unit mesin vertical dryer kapasitas 25 ton/hari; 1 unit jembatan timbang truk digital kapasitas 50 ton. Sumber Pembiayaan: DAK Fisik Bidang Pertanian & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Agronusa Bangun Persada | Konsultan Pengawas: CV Duta Agritech Konsultan | PPK: Ir. Bagus Pratama, M.T. | Kepala Mandor: Suparno (Mandor Konstruksi Lumbung 1.000 Ton, Silo & Mesin Vertical Dryer). Kontrak: 602/SPK-GED/LAM-GED-2026-005 (SiRUP-1367589). Catatan OPD: Pembangunan fisik dieksekusi Dinas PU Bina Marga untuk Dinas Ketahanan Pangan dan Pertanian.",
@@ -853,6 +881,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 29,
+    foto_url: '/assets/projects/proj-29.jpg',
     nama_proyek: "Fasilitas Cold Storage & TPI Higienis Brondong",
     kategori: 'gedung_publik',
     deskripsi: "Pembangunan dermaga bongkar muat ikan higienis, ruang pendingin (cold storage) 100 ton, dan instalasi pabrik es curah. Bangunan TPI higienis & ruang proses 1.600 m2, ruang cold storage (-20 C) 320 m2 kapasitas simpan 100 ton, ruang pabrik es 180 m2 kapasitas 30 ton/hari, dermaga bongkar 40 m x 8 m (320 m2). Beton struktur K-350 tahan sulfat air laut (dermaga, lantai epoxy food-grade, dan ruang mesin) volume 1.180 m3; panel insulasi poliuretan (PU) tebal 15 cm seluas 980 m2; 2 set kompresor refrigerasi ramah lingkungan R-404a + mesin flake ice 30 ton/hari. Sumber Pembiayaan: DAK Fisik Kelautan dan Perikanan & APBD Kab. Lamongan. Kontraktor Pelaksana: PT Samudera Maritim Konstruksi | Konsultan Pengawas: CV Samudera Konsultan Teknik | PPK: Ir. Bagus Pratama, M.T. | Kepala Mandor: Mulyadi (Mandor Dermaga Higienis, Cold Storage 100 Ton & Pabrik Es). Kontrak: 602/SPK-GED/LAM-GED-2026-006 (SiRUP-5903418). Catatan OPD: Pembangunan fisik dieksekusi Dinas PU Bina Marga untuk Dinas Perikanan.",
@@ -883,6 +912,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 30,
+    foto_url: '/assets/projects/proj-30.jpg',
     nama_proyek: "Puskesmas Rawat Inap & Gedung PONED Ngimbang",
     kategori: 'gedung_publik',
     deskripsi: "Pembangunan gedung puskesmas rawat inap 2 lantai dilengkapi ruang bersalin PONED, radiologi, dan IPAL medis. Bangunan 2 lantai luas total 820 m2 (410 m2 per lantai), kapasitas 20 tempat tidur rawat inap, 1 ruang tindakan persalinan darurat PONED, dan 1 ruang radiologi berlapis timbal. Struktur beton bertulang K-300 volume 335 m3; pelapisan dinding Pb (timbal) 2 mm seluas 68 m2 untuk ruang X-ray digital; instalasi IPAL medis kapasitas 12 m3/hari; genset cadangan 60 kVA (±Rp 5,79 jt/m2 standar faskes PONED). Sumber Pembiayaan: DAK Fisik Kesehatan & APBD Kab. Lamongan. Kontraktor Pelaksana: CV Sejahtera Bangun Utama | Konsultan Pengawas: CV Medika Graha Teknik | PPK: dr. Nurul Hidayati, M.Kes. | Kepala Mandor: Ir. Hendra Prasetyo (Site Manager) & Sutikno (Mandor Struktur Gedung PONED & IPAL). Kontrak: 440/SPK-GED/LAM-GED-2025-007 (SiRUP-3578240).",
@@ -913,6 +943,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 31,
+    foto_url: '/assets/projects/proj-31.jpg',
     nama_proyek: "Pelebaran & Pengecoran Rigid Jalan Sukodadi - Banjaranyar",
     kategori: 'jalan',
     deskripsi: "Pelebaran badan jalan dan perkerasan kaku rigid pavement K-350 penghubung desa. Panjang penanganan 1,55 km (1.550 m, segmen Desa Banjarejo menuju Sukodadi), pelebaran jalan dari 4,0 m menjadi 5,5 m (tambahan 1,5 m), tebal pelat beton 20 cm (0,20 m). Volume pelat beton rigid 1.550 x 5,5 x 0,20 = 1.705 m3; agregat pondasi kelas A zona pelebaran (1.550 x 1,5 x 0,25 = 581,25 m3); bahu jalan sirtu terpadatkan 0,60 m kanan-kiri tebal 20 cm (1.550 x 1,2 x 0,20 = 372 m3) (±Rp 2,45 M/km). Sumber Pembiayaan: APBD Kab. Lamongan. Kontraktor Pelaksana: CV Bangun Prima Perkasa | Konsultan Pengawas: CV Sentosa Reka Desain | PPK: Suyitno, S.T. | Kepala Mandor: Joko Susanto (Mandor Pelebaran Badan Jalan & Pengecoran Beton K-350). Kontrak: 602/SPK-JLN/LAM-JLN-2026-013 (SiRUP-5194827).",
@@ -943,6 +974,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 32,
+    foto_url: '/assets/projects/proj-32.jpg',
     nama_proyek: "Normalisasi Sungai Blawi & Saluran Pembuang Rawa Semando",
     kategori: 'drainase',
     deskripsi: "Normalisasi alur sungai pembuang, perkuatan tebing bronjong kawat gabion, dan pemasangan pintu klep otomatis. Panjang pengerukan sedimen 6,20 km (6.200 m, alur Desa Blawi s/d Rawa Semando), lebar dasar rata-rata 6,0 m, kedalaman keruk rata-rata 1,2 m, perkuatan bronjong pada 8 titik longsor (total panjang 320 m). Volume pengerukan sedimen lumpur 6.200 x 6,0 x 1,2 = 44.640 m3; pasangan bronjong kawat galvanis PVC ukuran 2x1x0,5 m sebanyak 960 unit (volume batu pengisi 960 m3) di 8 titik tebing kritis; 2 unit pintu klep otomatis FRP anti-balik air pasang. Sumber Pembiayaan: APBD Kab. Lamongan. Kontraktor Pelaksana: CV Tirta Alam Subur | Konsultan Pengawas: CV Graha Cipta Mandiri | PPK: Rina Kusuma, S.T. | Kepala Mandor: Kardi (Mandor Pengerukan Sedimen, Bronjong Gabion 8 Titik & Pintu Klep). Kontrak: 611/SPK-DRA/LAM-DRA-2026-006 (SiRUP-8391275).",
@@ -973,6 +1005,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 33,
+    foto_url: '/assets/projects/proj-33.jpg',
     nama_proyek: "Pembangunan Embung Konservasi Air Tani Sukorame",
     kategori: 'drainase',
     deskripsi: "Pembangunan embung konservasi air tadah hujan berlapis geomembrane HDPE lengkap pelimpah beton dan pompa tenaga surya. Luas tampungan embung 1,50 hektar (150 m x 100 m), kedalaman efektif tampungan 3,0 m, kapasitas tampung bersih 45.000 m3 (mengairi 120 ha sawah tadah hujan), saluran pelimpah (spillway) lebar 6,0 m. Galian tanah tampungan & pembentukan tanggul keliling 45.000 m3; pemasangan lapisan kedap geomembrane HDPE tebal 1,5 mm seluas 17.800 m2 (termasuk lereng dan jangkar); pelimpah spillway beton bertulang K-300 volume 165 m3; 1 paket pompa distribusi submersible 20 L/dt bertenaga surya 12 kWp. Sumber Pembiayaan: DAK Fisik Pertanian & APBD Kab. Lamongan. Kontraktor Pelaksana: CV Bintang Tani Mandiri | Konsultan Pengawas: CV Mitra Konsultan Pratama | PPK: Rina Kusuma, S.T. | Kepala Mandor: Mat Yasin (Mandor Pemasangan Geomembrane HDPE 1,5 mm, Spillway & Pompa Surya). Kontrak: 611/SPK-DRA/LAM-DRA-2025-007 (SiRUP-5748203). Tanggal Selesai Aktual (PHO): 2026-08-08.",
@@ -1003,6 +1036,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 34,
+    foto_url: '/assets/projects/proj-34.jpg',
     nama_proyek: "Peningkatan Akses Wisata Bahari Lamongan (WBL) & Sunan Drajat",
     kategori: 'jalan',
     deskripsi: "Pelebaran jalan wisata menjadi 4 lajur 2 arah bermedian tengah, lapis aspal hotmix AC-BC & AC-WC, trotoar, dan PJU tematik pesisir. Panjang penanganan 2,40 km (2.400 m, koridor Desa Paciran s/d Simpang Desa Drajat), lebar perkerasan total 14,0 m (2 x 7,0 m), median tengah lebar 1,2 m, trotoar 2,0 m kanan-kiri. Luas perkerasan aspal 2.400 x 14,0 = 33.600 m2; lapis AC-BC 6 cm + AC-WC 4 cm (total 10 cm -> volume 3.360 m3; BJ 2,30 ton/m3 -> tonase 7.728 ton); drainase tertutup trotoar U-ditch 60x60 cm 2.400 m; 68 tiang PJU LED ornamen etnik pesisir (±Rp 7,00 M/km jalan 4 lajur + trotoar + PJU). Sumber Pembiayaan: APBD Kab. Lamongan & BK Pariwisata Prov. Jatim. Kontraktor Pelaksana: PT Pesisir Jaya Konstruksi | Konsultan Pengawas: CV Artha Buana Desain | PPK: Hendra Wijaya, S.T. | Kepala Mandor: Hasan Bisri (Mandor Pengaspalan 4 Lajur AC-BC/AC-WC) & Ir. Ridwan Hakim (Site Manager). Kontrak: 602/SPK-JLN/LAM-JLN-2025-014 (SiRUP-3047519). Tanggal Selesai Aktual (PHO): 2026-06-22.",
@@ -1033,6 +1067,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
   },
   {
     id: 35,
+    foto_url: '/assets/projects/proj-35.jpg',
     nama_proyek: "Pembangunan Jalan Lingkar Utara (JLU) Seksi Deket - Sukodadi",
     kategori: 'jalan',
     deskripsi: "Pembangunan jalan baru by-pass nasional (Jalan Lingkar Utara) 4 lajur 2 arah perkerasan kaku tugas berat dan box traffic crossing. Panjang penanganan 5,10 km (5.100 m, Seksi Deket-Plosowahyu-Sukodadi), lebar perkerasan total 14,0 m (2 x 7,0 m), tebal pelat beton K-400 28 cm (0,28 m), 2 unit jembatan box traffic crossing bentang 12 m. Volume pelat beton utama K-400 5.100 x 14,0 x 0,28 = 19.992 m3; lapis lean concrete K-125 tebal 10 cm (5.100 x 14,0 x 0,10 = 7.140 m3); timbunan pilihan badan jalan rata-rata tinggi 1,2 m x lebar 18 m (110.160 m3); 2 unit box crossing beton K-350 (840 m3) (±Rp 15,39 M/km jalan baru 4 lajur nasional). Sumber Pembiayaan: SBSN APBN KemenPUPR & APBD Kab. Lamongan (Pembebasan Lahan). Kontraktor Pelaksana: PT Wijaya Karya (Persero) Tbk | Konsultan Pengawas: PT Disi Putera Mandiri | PPK: Yudi Dwi Prasetyo, S.T., M.T. | Kepala Mandor: Ir. Bambang Sugiarto (Project Manager) & Slamet Wahyudi (Mandor Rigid Beton 30 cm & Box Crossing). Kontrak: 602/SPK-JLN/LAM-JLN-2025-015 (SiRUP-9628401).",

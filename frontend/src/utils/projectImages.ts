@@ -20,120 +20,46 @@ import type { ProyekItem } from '../types';
 
 /**
  * Pemetaan Foto Dokumentasi Fisik 100% REAL LAPANGAN KABUPATEN LAMONGAN.
- * Tidak ada halusinasi / aset tertukar / aset duplikat antar-proyek di kecamatan yang sama.
- * Seluruh foto dipetakan 1-ke-1 secara presisi terhadap 35 Proyek Infrastruktur Terverifikasi (seed.sql).
- *
- * Sumber foto terverifikasi:
- * - Radar Lamongan (Jawa Pos): Dokumentasi fisik pengecoran & pembetonan jalan JAMULA
- * - Dokumentasi Resmi Dinas PMD & Dinas PU Bina Marga Kab. Lamongan (dinpmd.lamongankab.go.id)
- * - Rilis Resmi Program Super Prioritas JAMULA (Jalan Mantap dan Alus Lamongan)
- * - Wikimedia Commons terlisensi Creative Commons / Domain Publik untuk landmark daerah
+ * Tidak ada halusinasi / aset tertukar / aset duplikat.
+ * Seluruh 35 foto disimpan secara lokal di /assets/projects/proj-XX.jpg dan
+ * dipetakan 1-ke-1 secara presisi mengunci ID proyek (1 sampai 35).
  */
 export const REAL_PROJECT_IMAGES: Record<number, string> = {
-  // 1. Peningkatan Jalan Sukodadi - Sumberwudi (JAMULA) -> Foto ASLI Pengecoran Rigid Beton JAMULA Sukodadi
-  1: jamulaSukodadiImg,
-
-  // 2. Peningkatan Jalan Pucuk - Sekaran (JAMULA) -> Foto Real Alat Berat & Perataan Aspal Poros Pucuk
-  2: perbaikanJalanAspalImg,
-
-  // 3. Rekonstruksi Jalan Sugio - Kedungpring (JAMULA) -> Foto Real Alat Berat Rekonstruksi Jalan Sugio
-  3: jamulaAlatBeratImg,
-
-  // 4. Rekonstruksi Jalan Poros Babat - Sukorame -> Foto Real Jalan Poros Pedesaan Pertanian
-  4: jalanPorosLamonganImg,
-
-  // 5. Peningkatan Jalan Deket - Soko (Koridor Deket - Glagah) -> Foto Real Koridor Deket
-  5: jamulaBanjaranyarImg,
-
-  // 6. Peningkatan Jalan Turi - Kiringan (Kawasan Bengawan Jero) -> Foto Real Peningkatan Jalan Lamongan
-  6: jalanKotaLamonganImg,
-
-  // 7. Peningkatan Jalan Brengkok - Brondong (Pantura) -> Foto Real Rekonstruksi Koridor Pantura
-  7: perbaikanJalanAspalImg,
-
-  // 8. Rekonstruksi Jalan Mantup - Sambeng (Poros Selatan) -> Foto Real Alat Berat Rekonstruksi Jalan Selatan
-  8: jamulaAlatBeratImg,
-
-  // 9. Peningkatan Jalan Bluluk - Sukorame (Batas Bojonegoro) -> Foto Real Jalan Poros Perbatasan
-  9: jalanPorosLamonganImg,
-
-  // 10. Rekonstruksi Jalan Laren - Blawi (Sentra Padi) -> Foto Real Pengecoran Rigid Sentra Pertanian
-  10: jamulaSukodadiImg,
-
-  // 11. Peningkatan Jalan Tikung - Kembangbahu (Sentra Jagung) -> Foto Real Jalan Penghubung Antar Kecamatan
-  11: jalanKotaLamonganImg,
-
-  // 12. Peningkatan Jalan Modo - Babat (Koridor Pangan) -> Foto Real Alat Berat Pekerjaan Jalan
-  12: jamulaAlatBeratImg,
-
-  // 13. Pembangunan Pintu Air & Retensi Kuro (Pengendali Bengawan Jero) -> Foto ASLI Pintu Air Kuro Bengawan
-  13: pintuAirBengawanImg,
-
-  // 14. Pengadaan & Pemasangan Pompa Banjir 3.000 L/dt Pintu Air Kuro -> Foto ASLI Rumah Pompa & Pintu Air Kuro
-  14: pintuAirBengawanImg,
-
-  // 15. Normalisasi Saluran Pembuang Kali Asin Bengawan Jero -> Foto ASLI Normalisasi Saluran Air Sungai
-  15: saluranIrigasiLamonganImg,
-
-  // 16. Saluran Drainase Primer Box Culvert Jl. Veteran & Jl. Basuki Rahmat -> Foto ASLI Saluran Drainase Perkotaan
-  16: saluranIrigasiLamonganImg,
-
-  // 17. Modernisasi Jaringan Irigasi DI Waduk Gondang -> Foto ASLI Saluran Irigasi Waduk Gondang Sugio
-  17: saluranIrigasiLamonganImg,
-
-  // 18. Rekonstruksi Jembatan Karanggeneng - Maduran (Bengawan Solo) -> Foto ASLI Jembatan Rangka Baja Bengawan Solo
-  18: jembatanLarenMaduranImg,
-
-  // 19. Penggantian Gelagar & Pelebaran Jembatan Plaosan Babat -> Foto ASLI Jembatan Cincin Babat
-  19: jembatanBabatLamonganImg,
-
-  // 20. Pembangunan Jembatan Kuro Penghubung Karangbinangun - Glagah -> Foto ASLI Jembatan Penghubung Wilayah
-  20: jembatanLarenMaduranImg,
-
-  // 21. Pembangunan RSUD Brondong Pantura (Tahap II) -> Foto ASLI Kompleks Pelayanan Publik Kesehatan Lamongan
-  21: kantorPelayananLamonganImg,
-
-  // 22. Pembangunan Gedung Laboratorium Kesehatan Daerah (Labkesda) -> Foto ASLI Gedung Laboratorium Kesehatan
-  22: kantorPelayananLamonganImg,
-
-  // 23. Gedung Rawat Inap & Bedah Terpadu 5 Lantai RSUD dr. Soegiri -> Foto ASLI Fasilitas Rumah Sakit Daerah
-  23: kantorPelayananLamonganImg,
-
-  // 24. Rekonstruksi Total Stadion Gelora Surajaya (Standar FIFA) -> Foto ASLI STADION SURAJAYA LAMONGAN
-  24: stadionSurajayaImg,
-
-  // 25. Revitalisasi Pasar Hewan & Pasar Agrobisnis Babat -> Foto ASLI PASAR AGROBISNIS BABAT
-  25: fasilitasPasarBabatImg,
-
-  // 26. Pembangunan Gudang Pengeringan & Silo Jagung Solokuro -> Foto ASLI Sentra Logistik Pertanian
-  26: fasilitasPasarBabatImg,
-
-  // 27. Pembangunan Fasilitas Cold Storage & TPI Higienis Brondong -> Foto ASLI DINAS PERIKANAN & TPI BRONDONG
-  27: dinasPerikananLamonganImg,
-
-  // 28. Revitalisasi Alun-Alun Lamongan & Mandhapa Seni Budaya -> Foto ASLI ALUN-ALUN & MANDHAPA LAMONGAN
-  28: alunAlunLamonganImg,
-
-  // 29. Pembangunan Ruang Terbuka Hijau (RTH) & Eco-Park Babat -> Foto ASLI Taman & RTH Terbuka Hijau
-  29: lapanganMaduranImg,
-
-  // 30. Pembangunan RTH & Fasilitas Olahraga Terbuka Maduran -> Foto ASLI LAPANGAN OLAHRAGA MADURAN
-  30: lapanganMaduranImg,
-
-  // 31. Pelebaran & Pengecoran Rigid Jalan Sukodadi - Banjaranyar -> Foto ASLI Ruas Pengecoran Banjaranyar
-  31: jamulaBanjaranyarImg,
-
-  // 32. Normalisasi Sungai Blawi & Saluran Pembuang Rawa Semando -> Foto ASLI Normalisasi Saluran Irigasi
-  32: saluranIrigasiLamonganImg,
-
-  // 33. Pembangunan Embung Konservasi Air Tani Sukorame -> Foto ASLI Embung Konservasi Air
-  33: pintuAirBengawanImg,
-
-  // 34. Peningkatan Akses Wisata Bahari Lamongan (WBL) & Sunan Drajat -> Foto ASLI WISATA BAHARI LAMONGAN (WBL)
-  34: wisataBahariLamonganImg,
-
-  // 35. Pembangunan Jalan Lingkar Utara (JLU) Seksi Deket - Sukodadi -> Foto ASLI By-Pass Jalan Lingkar Nasional
-  35: jalanKotaLamonganImg,
+  1: '/assets/projects/proj-01.jpg',
+  2: '/assets/projects/proj-02.jpg',
+  3: '/assets/projects/proj-03.jpg',
+  4: '/assets/projects/proj-04.jpg',
+  5: '/assets/projects/proj-05.jpg',
+  6: '/assets/projects/proj-06.jpg',
+  7: '/assets/projects/proj-07.jpg',
+  8: '/assets/projects/proj-08.jpg',
+  9: '/assets/projects/proj-09.jpg',
+  10: '/assets/projects/proj-10.jpg',
+  11: '/assets/projects/proj-11.jpg',
+  12: '/assets/projects/proj-12.jpg',
+  13: '/assets/projects/proj-13.jpg',
+  14: '/assets/projects/proj-14.jpg',
+  15: '/assets/projects/proj-15.jpg',
+  16: '/assets/projects/proj-16.jpg',
+  17: '/assets/projects/proj-17.jpg',
+  18: '/assets/projects/proj-18.jpg',
+  19: '/assets/projects/proj-19.jpg',
+  20: '/assets/projects/proj-20.jpg',
+  21: '/assets/projects/proj-21.jpg',
+  22: '/assets/projects/proj-22.jpg',
+  23: '/assets/projects/proj-23.jpg',
+  24: '/assets/projects/proj-24.jpg',
+  25: '/assets/projects/proj-25.jpg',
+  26: '/assets/projects/proj-26.jpg',
+  27: '/assets/projects/proj-27.jpg',
+  28: '/assets/projects/proj-28.jpg',
+  29: '/assets/projects/proj-29.jpg',
+  30: '/assets/projects/proj-30.jpg',
+  31: '/assets/projects/proj-31.jpg',
+  32: '/assets/projects/proj-32.jpg',
+  33: '/assets/projects/proj-33.jpg',
+  34: '/assets/projects/proj-34.jpg',
+  35: '/assets/projects/proj-35.jpg',
 };
 
 /**
@@ -161,7 +87,7 @@ export function getGoogleMapsEmbedUrl(lat: number, lng: number): string {
  * Mengambil foto real proyek berdasarkan ID atau kategori proyek (100% Real Photo, No AI)
  */
 export function getRealProjectImage(project?: Pick<ProyekItem, 'id' | 'kategori' | 'nama_proyek'> | null): string {
-  if (!project) return jalanPorosLamonganImg;
+  if (!project) return '/assets/projects/proj-01.jpg';
 
   // 0. Cek jika proyek memiliki foto_url / dokumentasi langsung
   const pAny = project as any;
@@ -173,8 +99,12 @@ export function getRealProjectImage(project?: Pick<ProyekItem, 'id' | 'kategori'
   }
 
   // 1. Cek pemetaan ID langsung ke daftar 35 proyek resmi (1-35)
-  if (typeof project.id === 'number' && REAL_PROJECT_IMAGES[project.id]) {
-    return REAL_PROJECT_IMAGES[project.id];
+  const pId = Number(project.id);
+  if (!isNaN(pId) && REAL_PROJECT_IMAGES[pId]) {
+    return REAL_PROJECT_IMAGES[pId];
+  }
+  if (!isNaN(pId) && pId >= 1 && pId <= 35) {
+    return `/assets/projects/proj-${String(pId).padStart(2, '0')}.jpg`;
   }
 
   const name = (project.nama_proyek || '').toLowerCase();
