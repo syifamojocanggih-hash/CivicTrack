@@ -19,6 +19,7 @@ import {
   FolderKanban,
   ListTodo,
   Camera,
+  Clock,
 } from 'lucide-react';
 import type { UserProfile, UserRole } from '../../types';
 import { CivicTrackLogo } from '../CivicTrackLogo';
@@ -60,6 +61,7 @@ export const DashboardSidebar: React.FC<DashboardSidebarProps> = ({
       case 'pimpinan_instansi':
         return [
           { id: 'kinerja_dinas', label: 'Matriks Kinerja OPD', icon: BarChart3, desc: 'Evaluasi kinerja 5 dinas teknis' },
+          { id: 'lead_time', label: 'Lead Time Advantage', icon: Clock, desc: 'Peringatan dini & jangkauan warga' },
           { id: 'sebaran_wilayah', label: 'Sebaran Wilayah & Agregat', icon: MapPin, desc: 'Bagan rekapitulasi per kecamatan' },
           { id: 'proyek', label: 'Kelola & Input Proyek', icon: FolderKanban, desc: 'Input proyek baru & status pengerjaan' },
           { id: 'aduan', label: 'Tanggapan Aduan Warga', icon: MessageSquarePlus, desc: 'Respon tiket & aspirasi publik' },

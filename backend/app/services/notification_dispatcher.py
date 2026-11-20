@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.models.project import Proyek, ProyekStatus, TahapanProgres
 from app.models.user import User, WilayahAdministratif
-from app.models.notification import Notifikasi, SubscriptionNotifikasi, NotificationLog, PushSubscription
+from app.models.notification import Notifikasi, SubscriptionNotifikasi, NotificationLog, PushSubscription, NotificationPriority
 from app.models.ai_route import SavedRoute
 from app.core.spatial import haversine_distance_meters, parse_coords_list, min_distance_points_to_polyline_meters
 
@@ -299,6 +299,7 @@ class NotificationDispatcher:
                 judul=judul,
                 pesan=pesan,
                 target_type="radius",
+                priority=NotificationPriority.normal,
                 radius_meter=proyek.radius_dampak_meter or 1500,
                 distance_meters=None,
                 is_delivered=True,
@@ -319,9 +320,11 @@ class NotificationDispatcher:
                     dist_str = f" ({round(dist, 0)}m dari lintasan)" if dist is not None else ""
                     judul_to_send = f"🚨 PRIORITAS TINGGI: Rute Harian Terdampak — {proyek.nama_proyek}"
                     pesan_to_send = f"PRIORITAS TINGGI: Rute harian Anda ('{nama_r}') terdampak oleh proyek {proyek.nama_proyek}{dist_str}. Buka peta untuk mengecek rekomendasi jalur alternatif AI."
+                    prio = NotificationPriority.tinggi
                 else:
                     judul_to_send = judul
                     pesan_to_send = pesan
+                    prio = NotificationPriority.normal
 
                 # Simpan ke notifikasi in-app jika create_in_app bernilai True
                 if create_in_app:
@@ -360,6 +363,7 @@ class NotificationDispatcher:
                     judul=judul_to_send,
                     pesan=pesan_to_send,
                     target_type=t_type,
+                    priority=prio,
                     radius_meter=proyek.radius_dampak_meter or 1500,
                     distance_meters=dist,
                     is_delivered=True,

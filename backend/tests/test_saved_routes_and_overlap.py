@@ -224,3 +224,91 @@ def test_distant_route_does_not_overlap(db_session, base_test_data):
 
     overlap_users = NotificationDispatcher.get_users_with_overlapping_route(proyek_kota, db_session, threshold_meters=100.0)
     assert len(overlap_users) == 0
+
+def test_saved_route_authorization_security(client, db_session, base_test_data):
+    """Memastikan user tidak dapat menghapus rute tersimpan milik user lain (Authorization Check)."""
+    user_commuter = base_test_data["user_commuter"]
+    user_admin = base_test_data["user_admin"]
+
+    # Simpan rute milik user commuter
+    route = SavedRoute(
+        user_id=user_commuter.id,
+        nama_rute="Rute Rahasia Komuter",
+        polyline_data=[[-7.1200, 112.4100], [-7.1210, 112.4110]],
+    )
+    db_session.add(route)
+    db_session.commit()
+
+    # User admin mencoba menghapus rute milik user commuter
+    admin_token = create_access_token({"sub": str(user_admin.id), "type": "access"})
+    del_res = client.delete(f"/api/v1/rute-tersimpan/{route.id}", headers={"Authorization": f"Bearer {admin_token}"})
+    assert del_res.status_code == 404
+
+    # Pastikan rute masih ada di database
+    still_exists = db_session.query(SavedRoute).filter(SavedRoute.id == route.id).first()
+    assert still_exists is not None
+
+def test_overlap_threshold_edge_cases(db_session, base_test_data):
+    """
+    Uji edge case jarak batas threshold:
+    - Jarak ~80m (< 100m) harus terdeteksi overlap
+    - Jarak ~150m (> 100m) TIDAK boleh terdeteksi overlap
+    """
+    user = base_test_data["user_commuter"]
+    admin = base_test_data["user_admin"]
+    wilayah = base_test_data["wilayah"]
+    dinas = base_test_data["dinas"]
+
+    # Rute user di titik referensi
+    sr = SavedRoute(
+        user_id=user.id,
+        nama_rute="Rute Ambang Batas",
+        polyline_data=[[-7.119700, 112.415000], [-7.120000, 112.416000]]
+    )
+    db_session.add(sr)
+    db_session.commit()
+
+    # Proyek A: Berjarak ~75 meter dari rute (0.0007 derajat lintang di equator ~77 meter)
+    proyek_dekat = Proyek(
+        nama_proyek="Proyek Jarak 75 Meter",
+        kategori=ProyekKategori.jalan,
+        status=ProyekStatus.scheduled,
+        latitude=-7.120400,
+        longitude=112.415000,
+        wilayah_id=wilayah.id,
+        dinas_id=dinas.id,
+        dibuat_oleh=admin.id,
+        tanggal_mulai=date.today() + timedelta(days=5),
+        estimasi_selesai=date.today() + timedelta(days=60),
+        tanggal_mulai_rencana=date.today() + timedelta(days=5),
+        jalur_terdampak=json.dumps([[-7.120400, 112.415000]]),
+        is_published=True
+    )
+    db_session.add(proyek_dekat)
+    db_session.commit()
+
+    res_dekat = NotificationDispatcher.get_users_with_overlapping_route(proyek_dekat, db_session, threshold_meters=100.0)
+    assert len(res_dekat) == 1
+    assert res_dekat[0]["user_id"] == user.id
+
+    # Proyek B: Berjarak ~160 meter dari rute (0.0015 derajat lintang ~166 meter)
+    proyek_jauh = Proyek(
+        nama_proyek="Proyek Jarak 160 Meter",
+        kategori=ProyekKategori.jalan,
+        status=ProyekStatus.scheduled,
+        latitude=-7.121500,
+        longitude=112.415000,
+        wilayah_id=wilayah.id,
+        dinas_id=dinas.id,
+        dibuat_oleh=admin.id,
+        tanggal_mulai=date.today() + timedelta(days=5),
+        estimasi_selesai=date.today() + timedelta(days=60),
+        tanggal_mulai_rencana=date.today() + timedelta(days=5),
+        jalur_terdampak=json.dumps([[-7.121500, 112.415000]]),
+        is_published=True
+    )
+    db_session.add(proyek_jauh)
+    db_session.commit()
+
+    res_jauh = NotificationDispatcher.get_users_with_overlapping_route(proyek_jauh, db_session, threshold_meters=100.0)
+    assert len(res_jauh) == 0

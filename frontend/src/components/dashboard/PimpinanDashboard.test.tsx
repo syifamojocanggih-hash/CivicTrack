@@ -8,6 +8,7 @@ vi.mock('../../services/api', () => ({
   apiService: {
     getRingkasanStats: vi.fn(),
     getWilayahStats: vi.fn(),
+    getLeadTimeAdvantage: vi.fn(),
   },
 }));
 
@@ -86,5 +87,58 @@ describe('PimpinanDashboard', () => {
     // Verify max score scale suffix
     const maxScoreBadges = screen.getAllByText('/ 100');
     expect(maxScoreBadges.length).toBe(5);
+  });
+
+  it('renders "Lead Time Advantage" early-warning metrics panel correctly', async () => {
+    vi.mocked(apiService.getRingkasanStats).mockResolvedValue({
+      total_proyek: 10,
+      total_anggaran: 1000000000,
+      rasio_penyerapan_persen: 50,
+      total_warga_terdaftar: 50,
+      total_dinas_terlibat: 5,
+      total_aduan: 2,
+    } as any);
+
+    vi.mocked(apiService.getLeadTimeAdvantage).mockResolvedValue({
+      avg_lead_time_hari: 18.5,
+      label_hari_peringatan_dini: '18.5 Hari Peringatan Dini',
+      total_unique_warga_terjangkau: 125,
+      tingkat_akurasi_jadwal_hari: 2.1,
+      akurasi_status: 'Optimal (+2.1 Hari)',
+      total_notifikasi_terkirim: 340,
+      breakdown_target_type: {
+        radius: 120,
+        subscription: 80,
+        route_overlap: 140,
+      },
+      breakdown_priority: {
+        normal: 200,
+        tinggi: 140,
+      },
+      tren_lead_time_per_bulan: [
+        { bulan: 'Jan 2026', avg_lead_time_hari: 15.0, jumlah_proyek: 4 },
+        { bulan: 'Feb 2026', avg_lead_time_hari: 21.0, jumlah_proyek: 6 },
+      ],
+      warga_terjangkau_per_proyek: [
+        {
+          proyek_id: 1,
+          nama_proyek: 'Pelebaran Jalan Babat',
+          unique_warga: 85,
+        },
+      ],
+    });
+
+    render(
+      <PimpinanDashboard
+        currentUser={{ id: 1, role: 'pimpinan_instansi', nama: 'Bupati', email: 'test@lamongan.go.id' }}
+        projects={[]}
+        activeSection="lead_time"
+      />
+    );
+
+    expect(await screen.findByText('Executive Dashboard: Lead Time Advantage')).toBeInTheDocument();
+    expect(screen.getByText('18.5 Hari Peringatan Dini')).toBeInTheDocument();
+    expect(screen.getByText('Optimal (+2.1 Hari)')).toBeInTheDocument();
+    expect(screen.getAllByText('140').length).toBeGreaterThan(0);
   });
 });

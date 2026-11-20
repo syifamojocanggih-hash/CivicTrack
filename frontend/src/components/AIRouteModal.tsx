@@ -243,6 +243,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   const [isSavingRoute, setIsSavingRoute] = useState(false);
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
   const [showSavedRoutesDrawer, setShowSavedRoutesDrawer] = useState(false);
+  const [hasDismissedRoutinePrompt, setHasDismissedRoutinePrompt] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -2223,6 +2224,43 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                 <div className="p-2.5 bg-indigo-50 border border-indigo-200 rounded-xl flex items-center gap-2 text-xs text-indigo-900 font-semibold animate-pulse">
                   <div className="w-3.5 h-3.5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin shrink-0" />
                   <span>Sedang memproses rute AI dan geometri jalan OpenStreetMap...</span>
+                </div>
+              )}
+
+              {/* Prompt Simpan Sebagai Rute Rutin saat pertama kali menggunakan */}
+              {savedRoutes.length === 0 && !hasDismissedRoutinePrompt && routes.length > 0 && !isAnalyzing && (
+                <div className="p-3.5 bg-gradient-to-r from-amber-50 to-orange-50 border border-amber-300 rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs animate-fade-in">
+                  <div className="flex items-start gap-2.5">
+                    <div className="p-1.5 bg-amber-500 text-white rounded-lg shrink-0 mt-0.5 shadow-2xs">
+                      <Bookmark className="w-4 h-4 fill-current" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-amber-950">
+                        Sering Melintasi Rute Ini? Simpan Sebagai Rute Rutin?
+                      </h4>
+                      <p className="text-[11px] text-amber-800 leading-snug">
+                        Simpan sebagai rute rutin Anda (maksimal 3 rute) agar CivicTrack otomatis mendeteksi dan memberi peringatan dini jika ada proyek jalan yang beririsan (&le; 100m).
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                    <button
+                      type="button"
+                      onClick={() => setHasDismissedRoutinePrompt(true)}
+                      className="px-2.5 py-1 text-[11px] font-semibold text-amber-800 hover:text-amber-950 cursor-pointer"
+                    >
+                      Nanti Saja
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleSaveCurrentRoute()}
+                      disabled={isSavingRoute}
+                      className="px-3 py-1 bg-amber-600 hover:bg-amber-700 text-white text-[11px] font-bold rounded-xl shadow-xs transition-all flex items-center gap-1 cursor-pointer"
+                    >
+                      <Bookmark className="w-3 h-3 fill-current" />
+                      <span>Simpan Rute Ini</span>
+                    </button>
+                  </div>
                 </div>
               )}
 

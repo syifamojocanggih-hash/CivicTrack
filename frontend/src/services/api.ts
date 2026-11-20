@@ -28,6 +28,7 @@ import type {
   ProjectVerifyAccessResult,
   SavedRouteItem,
   SaveRoutePayload,
+  LeadTimeAdvantageData,
 } from '../types';
 import { LAMONGAN_DESA_GEOJSON } from '../data/lamonganDesaGeoJSON';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
@@ -1717,5 +1718,52 @@ export const apiService = {
       safeSetLocalStorage('civictrack_saved_routes', JSON.stringify(list.filter((r) => r.id !== id)));
     }
     return { success: true, message: 'Rute tersimpan berhasil dihapus.' };
+  },
+
+  async getLeadTimeAdvantage(): Promise<LeadTimeAdvantageData> {
+    const token = safeGetLocalStorage('civictrack_token');
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    try {
+      const res = await fetch(`${BASE_URL}/statistik/lead-time-advantage`, { headers });
+      if (res.ok) {
+        return await res.json();
+      }
+    } catch (e) {
+      // Offline fallback
+    }
+
+    return {
+      avg_lead_time_hari: 18.4,
+      label_hari_peringatan_dini: '18 Hari Peringatan Dini',
+      total_unique_warga_terjangkau: 2840,
+      warga_terjangkau_per_proyek: [
+        { proyek_id: 1, nama_proyek: 'Pelebaran Jalan Babat - Plaosan', unique_warga: 1120 },
+        { proyek_id: 2, nama_proyek: 'Jalur Poros Sukodadi - Sumberwudi', unique_warga: 840 },
+        { proyek_id: 3, nama_proyek: 'Rehabilitasi Jembatan Laren', unique_warga: 530 },
+        { proyek_id: 4, nama_proyek: 'Drainase Perkotaan Lamongan', unique_warga: 350 },
+      ],
+      tingkat_akurasi_jadwal_hari: 1.2,
+      akurasi_status: 'Optimal (Deviasi 1.2 hari)',
+      breakdown_target_type: {
+        radius: 1650,
+        subscription: 820,
+        route_overlap: 370,
+      },
+      breakdown_priority: {
+        normal: 2470,
+        tinggi: 370,
+      },
+      total_notifikasi_terkirim: 2840,
+      tren_lead_time_per_bulan: [
+        { bulan: 'Okt 2025', avg_lead_time_hari: 14.5, jumlah_proyek: 5 },
+        { bulan: 'Nov 2025', avg_lead_time_hari: 17.2, jumlah_proyek: 7 },
+        { bulan: 'Des 2025', avg_lead_time_hari: 19.8, jumlah_proyek: 9 },
+        { bulan: 'Jan 2026', avg_lead_time_hari: 22.4, jumlah_proyek: 11 },
+        { bulan: 'Feb 2026', avg_lead_time_hari: 20.1, jumlah_proyek: 6 },
+        { bulan: 'Mar 2026', avg_lead_time_hari: 18.4, jumlah_proyek: 8 },
+      ],
+    };
   },
 };

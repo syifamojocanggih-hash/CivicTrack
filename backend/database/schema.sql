@@ -325,6 +325,7 @@ CREATE TABLE notification_logs (
     judul VARCHAR(200) NOT NULL,
     pesan TEXT NOT NULL,
     target_type VARCHAR(50) NOT NULL DEFAULT 'radius',
+    priority ENUM('normal', 'tinggi') NOT NULL DEFAULT 'normal',
     radius_meter INT NULL,
     distance_meters DOUBLE NULL,
     is_delivered BOOLEAN NOT NULL DEFAULT TRUE,

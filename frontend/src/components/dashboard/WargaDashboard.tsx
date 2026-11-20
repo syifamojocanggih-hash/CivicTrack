@@ -29,6 +29,8 @@ import {
   Bike,
   RotateCcw,
   ArrowLeft,
+  Navigation,
+  Trash2,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -150,6 +152,17 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
       isCancelled = true;
     };
   }, []);
+
+  const handleDeleteSavedRoute = async (id: number) => {
+    try {
+      if (typeof apiService?.deleteSavedRoute === 'function') {
+        await apiService.deleteSavedRoute(id);
+      }
+      setSavedRoutes((prev) => prev.filter((r) => r.id !== id));
+    } catch (err) {
+      console.error('Gagal menghapus rute rutin:', err);
+    }
+  };
 
   // Evaluasi cerdas status deteksi overlap rute harian warga dengan proyek konstruksi
   const routeOverlapAlert = useMemo(() => {
@@ -2763,6 +2776,100 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <span>OSM Lamongan Grounded</span>
               </span>
             </div>
+          </div>
+
+          {/* ── SECTION: RUTE RUTIN SAYA (EARLY WARNING MONITORING) ── */}
+          <div className="bg-slate-50/80 border border-slate-200 rounded-2xl p-4 sm:p-5 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-200/80 pb-3">
+              <div className="flex items-center gap-2">
+                <div className="w-7 h-7 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
+                  <Bookmark className="w-4 h-4 fill-amber-500 text-amber-600" />
+                </div>
+                <div>
+                  <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                    <span>Rute Rutin Saya</span>
+                    <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                      {savedRoutes.length}/3 Rute Terdaftar
+                    </span>
+                  </h3>
+                  <p className="text-[11px] text-slate-500">
+                    CivicTrack otomatis memantau koridor jalan rutin Anda dan mengirim peringatan dini jika ada proyek baru bersinggungan (&le; 100m).
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => onOpenAIRoute('Pelebaran Jalan Utama')}
+                className="text-xs font-bold text-amber-900 bg-amber-100/90 hover:bg-amber-200 border border-amber-300 px-3 py-1.5 rounded-xl transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Buka Navigator Peta</span>
+              </button>
+            </div>
+
+            {savedRoutes.length === 0 ? (
+              <div className="text-center py-6 px-4 bg-white border border-dashed border-slate-200 rounded-xl space-y-2">
+                <Bookmark className="w-7 h-7 text-slate-300 mx-auto" />
+                <p className="text-xs font-semibold text-slate-700">Belum ada rute rutin yang disimpan</p>
+                <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                  Gunakan simulator peta AI di atas untuk merencanakan perjalanan harian Anda (maksimal 3 rute) dan aktifkan proteksi early warning otomatis.
+                </p>
+              </div>
+            ) : (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                {savedRoutes.map((sr) => (
+                  <div
+                    key={sr.id}
+                    className="p-3.5 bg-white border border-amber-200 rounded-xl flex flex-col justify-between space-y-3 shadow-2xs hover:shadow-xs transition-shadow relative"
+                  >
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between gap-1">
+                        <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-50 text-amber-800 border border-amber-200 flex items-center gap-1">
+                          {sr.moda_transportasi === 'motor' ? (
+                            <Bike className="w-3 h-3 text-amber-600" />
+                          ) : (
+                            <Car className="w-3 h-3 text-amber-600" />
+                          )}
+                          <span>{sr.moda_transportasi || 'mobil'}</span>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteSavedRoute(sr.id)}
+                          className="p-1 text-slate-400 hover:text-rose-600 rounded-lg hover:bg-rose-50 transition-colors cursor-pointer"
+                          title="Hapus rute rutin ini"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+
+                      <h4 className="font-bold text-xs text-slate-800 line-clamp-2 leading-snug">
+                        {sr.nama_rute}
+                      </h4>
+
+                      <div className="text-[10px] text-slate-500 space-y-0.5">
+                        <div className="truncate">
+                          <span className="font-semibold text-slate-600">Asal: </span>
+                          {sr.koordinat_asal?.lat != null ? `${sr.koordinat_asal.lat.toFixed(4)}, ${sr.koordinat_asal.lng.toFixed(4)}` : 'Lamongan'}
+                        </div>
+                        <div className="truncate">
+                          <span className="font-semibold text-slate-600">Tujuan: </span>
+                          {sr.koordinat_tujuan?.lat != null ? `${sr.koordinat_tujuan.lat.toFixed(4)}, ${sr.koordinat_tujuan.lng.toFixed(4)}` : 'Lamongan'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => onOpenAIRoute(sr.nama_rute, null, sr)}
+                      className="w-full text-center py-1.5 text-[11px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
+                    >
+                      <Navigation className="w-3 h-3 text-amber-700" />
+                      <span>Simulasikan di Peta</span>
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Interactive Route Consultation Input Form */}

@@ -113,6 +113,38 @@ export interface SaveRoutePayload {
   catatan?: string | null;
 }
 
+export interface ProjectWargaReach {
+  proyek_id: number;
+  nama_proyek: string;
+  unique_warga: number;
+}
+
+export interface LeadTimeTrendMonth {
+  bulan: string;
+  avg_lead_time_hari: number;
+  jumlah_proyek: number;
+}
+
+export interface LeadTimeAdvantageData {
+  avg_lead_time_hari: number;
+  label_hari_peringatan_dini: string;
+  total_unique_warga_terjangkau: number;
+  warga_terjangkau_per_proyek: ProjectWargaReach[];
+  tingkat_akurasi_jadwal_hari: number;
+  akurasi_status: string;
+  breakdown_target_type: {
+    radius: number;
+    subscription: number;
+    route_overlap: number;
+  };
+  breakdown_priority: {
+    normal: number;
+    tinggi: number;
+  };
+  total_notifikasi_terkirim: number;
+  tren_lead_time_per_bulan: LeadTimeTrendMonth[];
+}
+
 export interface ProjectVerifyAccessResult {
   success: boolean;
   message: string;

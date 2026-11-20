@@ -77,6 +77,16 @@ app.include_router(ai_routes.router, prefix=api_prefix)
 app.include_router(evaluations.router, prefix=api_prefix)
 app.include_router(saved_routes.router, prefix=api_prefix)
 
+from app.routers.stats import _compute_lead_time_advantage
+from app.schemas.stats import LeadTimeAdvantageResponse
+from app.core.database import get_db
+from sqlalchemy.orm import Session
+from fastapi import Depends
+
+@app.get(f"{api_prefix}/statistik/lead-time-advantage", response_model=LeadTimeAdvantageResponse, tags=["Statistik & Agregat"])
+def get_lead_time_advantage_direct(db: Session = Depends(get_db)):
+    return _compute_lead_time_advantage(db)
+
 @app.get("/", tags=["Sistem"])
 def root_endpoint():
     return {

@@ -1,7 +1,12 @@
-from sqlalchemy import Column, BigInteger, String, Boolean, DateTime, ForeignKey, UniqueConstraint, Integer, Float, Text
+import enum
+from sqlalchemy import Column, BigInteger, String, Boolean, DateTime, ForeignKey, UniqueConstraint, Integer, Float, Text, Enum as SQLEnum
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base, PK_BIGINT
+
+class NotificationPriority(str, enum.Enum):
+    normal = "normal"
+    tinggi = "tinggi"
 
 class SubscriptionNotifikasi(Base):
     __tablename__ = "subscription_notifikasi"
@@ -40,6 +45,7 @@ class NotificationLog(Base):
     judul = Column(String(200), nullable=False)
     pesan = Column(Text, nullable=False)
     target_type = Column(String(50), nullable=False, default="radius")  # 'radius', 'subscription', 'route_overlap'
+    priority = Column(SQLEnum(NotificationPriority, native_enum=False), default=NotificationPriority.normal, nullable=False, index=True)
     radius_meter = Column(Integer, nullable=True)
     distance_meters = Column(Float, nullable=True)
     is_delivered = Column(Boolean, default=True, nullable=False)

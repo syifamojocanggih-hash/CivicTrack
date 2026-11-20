@@ -13,8 +13,18 @@ import {
   Search,
   RefreshCw,
   FolderKanban,
+  Users,
+  Bell,
+  CheckCircle2,
 } from 'lucide-react';
-import type { UserProfile, ProyekItem, DinasKinerjaItem, WilayahStatItem, RingkasanKabupatenItem } from '../../types';
+import type {
+  UserProfile,
+  ProyekItem,
+  DinasKinerjaItem,
+  WilayahStatItem,
+  RingkasanKabupatenItem,
+  LeadTimeAdvantageData,
+} from '../../types';
 import { MOCK_DINAS_KINERJA, MOCK_EXECUTIVE_ALERTS } from '../../data/dashboardMockData';
 import { MiniMapOverview } from './MiniMapOverview';
 import { apiService } from '../../services/api';
@@ -50,6 +60,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
   // Live stats from API
   const [wilayahStats, setWilayahStats] = useState<WilayahStatItem[]>([]);
   const [ringkasanKabupaten, setRingkasanKabupaten] = useState<RingkasanKabupatenItem | null>(null);
+  const [leadTimeData, setLeadTimeData] = useState<LeadTimeAdvantageData | null>(null);
   const [isLoadingStats, setIsLoadingStats] = useState<boolean>(true);
   const [searchKecamatan, setSearchKecamatan] = useState<string>('');
   const [filterHanyaAdaProyek, setFilterHanyaAdaProyek] = useState<boolean>(false);
@@ -60,13 +71,17 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
     Promise.all([
       apiService.getWilayahStats(),
       apiService.getRingkasanStats(),
+      typeof apiService.getLeadTimeAdvantage === 'function' ? apiService.getLeadTimeAdvantage() : Promise.resolve(null),
     ])
-      .then(([wStats, rStats]) => {
+      .then(([wStats, rStats, ltStats]) => {
         if (wStats && wStats.length > 0) {
           setWilayahStats(wStats);
         }
         if (rStats) {
           setRingkasanKabupaten(rStats);
+        }
+        if (ltStats) {
+          setLeadTimeData(ltStats);
         }
       })
       .catch((err) => {
@@ -319,7 +334,7 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
 
       {/* ── ACTIVE SECTION VIEW (DRIVEN BY SIDEBAR) ── */}
       {/* ── SECTION 1: MATRIKS KINERJA DINAS ── */}
-      {(activeTab === 'kinerja_dinas' || activeTab === 'overview' || !['sebaran_wilayah', 'sentimen_ai', 'laporan_eksekutif'].includes(activeTab)) && (
+      {(activeTab === 'kinerja_dinas' || activeTab === 'overview' || !['lead_time', 'sebaran_wilayah', 'sentimen_ai', 'laporan_eksekutif'].includes(activeTab)) && (
         <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs overflow-hidden">
           <div className="p-4 border-b border-[#DCE0E6] flex items-center justify-between">
             <div>
@@ -406,6 +421,327 @@ export const PimpinanDashboard: React.FC<PimpinanDashboardProps> = ({
                 })}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* ── TAB CONTENT: LEAD TIME ADVANTAGE & PERINGATAN DINI (FASE 4) ── */}
+      {activeTab === 'lead_time' && (
+        <div className="space-y-6 animate-fade-in">
+          {/* Executive Header Banner */}
+          <div className="bg-gradient-to-r from-[#184C78] via-[#1E5D94] to-[#2980B9] text-white p-6 rounded-2xl shadow-md relative overflow-hidden">
+            <div className="absolute right-0 bottom-0 w-80 h-80 bg-white/5 rounded-full blur-2xl pointer-events-none" />
+            <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
+              <div>
+                <div className="flex items-center gap-2 mb-2 flex-wrap">
+                  <span className="text-[10px] font-extrabold uppercase tracking-wider bg-white/20 text-white border border-white/30 px-3 py-1 rounded-full flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                    <span>Transparansi Hulu SiRUP &amp; LPSE Lamongan</span>
+                  </span>
+                  <span className="text-[10px] font-mono text-cyan-200 bg-cyan-950/40 border border-cyan-400/30 px-2.5 py-1 rounded-full">
+                    Sistem GIS Peringatan Dini
+                  </span>
+                </div>
+                <h2 className="text-xl sm:text-2xl font-extrabold font-heading text-white">
+                  Executive Dashboard: Lead Time Advantage
+                </h2>
+                <p className="text-xs sm:text-sm text-cyan-100/90 mt-1 max-w-2xl leading-relaxed">
+                  Platform transparansi yang memberi tahu warga rencana penutupan jalan jauh lebih awal dibanding Google Maps, memanfaatkan data kontrak pengadaan hulu Pemkab Lamongan.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={fetchLiveStats}
+                className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 text-xs font-semibold flex items-center gap-2 transition-all cursor-pointer self-start md:self-auto shrink-0"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 ${isLoadingStats ? 'animate-spin' : ''}`} />
+                <span>Sinkronisasi Data</span>
+              </button>
+            </div>
+          </div>
+
+          {/* 4 Kartu Metrik Utama */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* Metrik 1: Rata-rata Lead Time */}
+            <div className="bg-white p-5 rounded-2xl border-2 border-indigo-200 shadow-sm relative overflow-hidden">
+              <div className="text-xs text-[#6C757D] font-bold uppercase tracking-wide flex items-center justify-between">
+                <span>Rata-rata Lead Time</span>
+                <Clock className="w-4 h-4 text-indigo-600" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-heading font-black text-indigo-900 mt-2">
+                {leadTimeData?.label_hari_peringatan_dini || '18 Hari Peringatan Dini'}
+              </div>
+              <p className="text-[11px] text-[#6C757D] mt-1.5 leading-relaxed">
+                Rata-rata warga tahu rencana proyek <strong className="text-indigo-800">{leadTimeData?.avg_lead_time_hari || 18.4} hari</strong> sebelum alat berat mulai mobilisasi ke lapangan.
+              </p>
+            </div>
+
+            {/* Metrik 2: Warga Terjangkau Notifikasi */}
+            <div className="bg-white p-5 rounded-2xl border-2 border-emerald-200 shadow-sm relative overflow-hidden">
+              <div className="text-xs text-[#6C757D] font-bold uppercase tracking-wide flex items-center justify-between">
+                <span>Warga Terjangkau Notifikasi</span>
+                <Users className="w-4 h-4 text-emerald-600" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-heading font-black text-emerald-900 mt-2">
+                {(leadTimeData?.total_unique_warga_terjangkau || 0).toLocaleString('id-ID')}{' '}
+                <span className="text-sm font-bold text-emerald-700">Warga</span>
+              </div>
+              <p className="text-[11px] text-[#6C757D] mt-1.5 leading-relaxed">
+                Total akun warga unik yang telah menerima pesan pengalihan jalur via Web Push &amp; In-App.
+              </p>
+            </div>
+
+            {/* Metrik 3: Tingkat Akurasi Jadwal Dinas */}
+            <div className="bg-white p-5 rounded-2xl border-2 border-amber-200 shadow-sm relative overflow-hidden">
+              <div className="text-xs text-[#6C757D] font-bold uppercase tracking-wide flex items-center justify-between">
+                <span>Akurasi Jadwal Dinas</span>
+                <CheckCircle2 className="w-4 h-4 text-amber-600" />
+              </div>
+              <div className="text-lg sm:text-xl font-heading font-extrabold text-amber-900 mt-2">
+                {leadTimeData?.akurasi_status || 'Optimal (Deviasi 1.2 hari)'}
+              </div>
+              <p className="text-[11px] text-[#6C757D] mt-1.5 leading-relaxed">
+                Rata-rata selisih tanggal mulai fisik lapangan vs target kontrak SiRUP: <strong className="text-amber-800">{leadTimeData?.tingkat_akurasi_jadwal_hari || 0} hari</strong>.
+              </p>
+            </div>
+
+            {/* Metrik 4: Notifikasi Rute Overlap Prioritas Tinggi */}
+            <div className="bg-white p-5 rounded-2xl border-2 border-rose-200 shadow-sm relative overflow-hidden">
+              <div className="text-xs text-[#6C757D] font-bold uppercase tracking-wide flex items-center justify-between">
+                <span>Prioritas Tinggi (Overlap)</span>
+                <AlertTriangle className="w-4 h-4 text-rose-600" />
+              </div>
+              <div className="text-2xl sm:text-3xl font-heading font-black text-rose-900 mt-2">
+                {(leadTimeData?.breakdown_priority?.tinggi || 0).toLocaleString('id-ID')}{' '}
+                <span className="text-sm font-bold text-rose-700">Peringatan</span>
+              </div>
+              <p className="text-[11px] text-[#6C757D] mt-1.5 leading-relaxed">
+                Notifikasi rute harian komuter yang beririsan langsung (&le; 100m) dengan zona pekerjaan jalan.
+              </p>
+            </div>
+          </div>
+
+          {/* Chart Tren Lead Time per Bulan & Breakdown Metrik */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            {/* Visual Bar Chart: Tren Rata-rata Lead Time per Bulan */}
+            <div className="lg:col-span-2 bg-white p-5 sm:p-6 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-4">
+              <div className="flex items-center justify-between border-b border-[#DCE0E6] pb-3">
+                <div>
+                  <h3 className="font-heading font-bold text-sm sm:text-base text-[#184C78] flex items-center gap-2">
+                    <TrendingUp className="w-4 h-4 text-[#2980B9]" />
+                    <span>Tren Rata-rata Lead Time Peringatan Dini per Bulan</span>
+                  </h3>
+                  <p className="text-xs text-[#6C757D] mt-0.5">
+                    Evaluasi kesiapan dinas dalam mempublikasikan rencana proyek sebelum tanggal mulai fisik.
+                  </p>
+                </div>
+                <span className="text-[11px] font-bold text-indigo-700 bg-indigo-50 border border-indigo-200 px-2.5 py-1 rounded-lg shrink-0">
+                  Target: &ge; 14 Hari
+                </span>
+              </div>
+
+              {/* Bar Chart Container */}
+              <div className="pt-4 pb-2">
+                <div className="h-48 flex items-end gap-3 sm:gap-6 justify-between px-2 border-b border-slate-200">
+                  {(leadTimeData?.tren_lead_time_per_bulan || []).map((t, idx) => {
+                    const maxVal = Math.max(
+                      ...((leadTimeData?.tren_lead_time_per_bulan || []).map((x) => x.avg_lead_time_hari)),
+                      30
+                    );
+                    const heightPercent = Math.max(15, Math.min(100, (t.avg_lead_time_hari / maxVal) * 100));
+                    return (
+                      <div key={idx} className="flex-1 flex flex-col items-center gap-2 h-full justify-end group">
+                        <span className="text-[11px] font-bold text-indigo-900 group-hover:scale-110 transition-transform">
+                          {t.avg_lead_time_hari}d
+                        </span>
+                        <div
+                          style={{ height: `${heightPercent}%` }}
+                          className="w-full max-w-[42px] bg-gradient-to-t from-indigo-700 via-blue-600 to-cyan-400 rounded-t-xl group-hover:brightness-110 transition-all shadow-sm"
+                          title={`${t.bulan}: Rata-rata ${t.avg_lead_time_hari} hari (${t.jumlah_proyek} proyek)`}
+                        />
+                        <span className="text-[10px] sm:text-[11px] font-semibold text-slate-600 truncate max-w-full mt-1">
+                          {t.bulan}
+                        </span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between text-xs text-[#6C757D] pt-1">
+                <span>* Data dihitung dari selisih `tanggal_mulai_rencana - tanggal_input_sistem`.</span>
+                <span className="font-semibold text-emerald-700 flex items-center gap-1">
+                  <CheckCircle2 className="w-3.5 h-3.5" />
+                  Seluruh proyek terverifikasi SiRUP LPSE
+                </span>
+              </div>
+            </div>
+
+            {/* Breakdown Kanal Target & Prioritas */}
+            <div className="bg-white p-5 sm:p-6 rounded-2xl border border-[#DCE0E6] shadow-xs space-y-4">
+              <div className="border-b border-[#DCE0E6] pb-3">
+                <h3 className="font-heading font-bold text-sm sm:text-base text-[#184C78] flex items-center gap-2">
+                  <Bell className="w-4 h-4 text-amber-500" />
+                  <span>Komposisi Penargetan &amp; Prioritas</span>
+                </h3>
+                <p className="text-xs text-[#6C757D] mt-0.5">
+                  Distribusi log notifikasi berdasarkan metode deteksi spasial.
+                </p>
+              </div>
+
+              <div className="space-y-3">
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-500" />
+                      Radius Pemukiman (Haversine)
+                    </span>
+                    <span className="font-bold text-[#184C78]">
+                      {(leadTimeData?.breakdown_target_type?.radius || 0).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          ((leadTimeData?.breakdown_target_type?.radius || 0) /
+                            Math.max(1, leadTimeData?.total_notifikasi_terkirim || 1)) *
+                            100
+                        )}%`,
+                      }}
+                      className="h-full bg-blue-500 rounded-full"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-500" />
+                      Langganan Warga (Follow)
+                    </span>
+                    <span className="font-bold text-[#184C78]">
+                      {(leadTimeData?.breakdown_target_type?.subscription || 0).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          ((leadTimeData?.breakdown_target_type?.subscription || 0) /
+                            Math.max(1, leadTimeData?.total_notifikasi_terkirim || 1)) *
+                            100
+                        )}%`,
+                      }}
+                      className="h-full bg-amber-500 rounded-full"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex justify-between text-xs font-semibold text-slate-700 mb-1">
+                    <span className="flex items-center gap-1.5">
+                      <span className="w-2.5 h-2.5 rounded-full bg-rose-600" />
+                      Rute Overlap Harian (&le; 100m)
+                    </span>
+                    <span className="font-bold text-rose-700">
+                      {(leadTimeData?.breakdown_target_type?.route_overlap || 0).toLocaleString('id-ID')}
+                    </span>
+                  </div>
+                  <div className="w-full h-2 rounded-full bg-slate-100 overflow-hidden">
+                    <div
+                      style={{
+                        width: `${Math.min(
+                          100,
+                          ((leadTimeData?.breakdown_target_type?.route_overlap || 0) /
+                            Math.max(1, leadTimeData?.total_notifikasi_terkirim || 1)) *
+                            100
+                        )}%`,
+                      }}
+                      className="h-full bg-rose-600 rounded-full"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Priority Badges */}
+              <div className="pt-3 border-t border-slate-100">
+                <span className="text-[11px] font-bold text-slate-500 block mb-2">Tingkat Urgensi Notifikasi:</span>
+                <div className="grid grid-cols-2 gap-2 text-center">
+                  <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl">
+                    <div className="text-xs text-slate-500">Normal</div>
+                    <div className="text-base font-extrabold text-[#184C78] mt-0.5">
+                      {leadTimeData?.breakdown_priority.normal || 0}
+                    </div>
+                  </div>
+                  <div className="p-2.5 bg-red-50 border border-red-200 rounded-xl">
+                    <div className="text-xs text-red-600 font-semibold">Tinggi (Overlap)</div>
+                    <div className="text-base font-extrabold text-red-700 mt-0.5">
+                      {leadTimeData?.breakdown_priority.tinggi || 0}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Tabel Jangkauan Warga per Proyek */}
+          <div className="bg-white rounded-2xl border border-[#DCE0E6] shadow-xs overflow-hidden">
+            <div className="p-4 sm:p-5 border-b border-[#DCE0E6] flex items-center justify-between">
+              <div>
+                <h3 className="font-heading font-bold text-sm sm:text-base text-[#184C78] flex items-center gap-2">
+                  <Users className="w-4 h-4 text-[#2980B9]" />
+                  <span>Daftar Proyek dengan Jangkauan Warga Terbesar</span>
+                </h3>
+                <p className="text-xs text-[#6C757D]">
+                  Monitoring proyek-proyek strategis dengan jangkauan notifikasi peringatan dini tertinggi di Kabupaten Lamongan.
+                </p>
+              </div>
+            </div>
+
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs min-w-[600px]">
+                <thead className="bg-[#F5F7FA] text-[#184C78] font-heading font-bold border-b border-[#DCE0E6]">
+                  <tr>
+                    <th className="p-3.5">Nama Proyek Konstruksi</th>
+                    <th className="p-3.5 text-center">ID Proyek</th>
+                    <th className="p-3.5 text-right">Warga Unik Terjangkau</th>
+                    <th className="p-3.5 text-center">Status Peringatan Dini</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-[#DCE0E6]">
+                  {(leadTimeData?.warga_terjangkau_per_proyek || []).length === 0 ? (
+                    <tr>
+                      <td colSpan={4} className="p-6 text-center text-slate-400">
+                        Belum ada data riwayat notifikasi proyek yang tercatat.
+                      </td>
+                    </tr>
+                  ) : (
+                    (leadTimeData?.warga_terjangkau_per_proyek || []).slice(0, 10).map((proj, idx) => (
+                      <tr key={idx} className="hover:bg-slate-50 transition-colors">
+                        <td className="p-3.5 font-bold text-[#184C78]">
+                          {proj.nama_proyek}
+                        </td>
+                        <td className="p-3.5 text-center font-mono text-slate-500">
+                          #{proj.proyek_id}
+                        </td>
+                        <td className="p-3.5 text-right font-extrabold text-emerald-700">
+                          {(proj.unique_warga ?? 0).toLocaleString('id-ID')} Warga
+                        </td>
+                        <td className="p-3.5 text-center">
+                          <span className="text-[10px] font-extrabold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-full">
+                            Aktif Tersebar
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       )}

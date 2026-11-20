@@ -169,6 +169,7 @@ def get_notification_logs(
             "judul": l.judul,
             "pesan": l.pesan,
             "target_type": l.target_type,
+            "priority": getattr(l.priority, 'value', str(l.priority)) if l.priority else "normal",
             "radius_meter": l.radius_meter,
             "distance_meters": l.distance_meters,
             "is_delivered": l.is_delivered,
