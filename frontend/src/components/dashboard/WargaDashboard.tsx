@@ -37,6 +37,8 @@ import type {
   EvaluasiCacatItem,
   RatingUlasanItem,
   SubscribedProject,
+  SavedRouteItem,
+  ApiNotificationItem,
 } from '../../types';
 import {
   MOCK_SUBSCRIBED_PROJECTS,
@@ -53,7 +55,7 @@ interface WargaDashboardProps {
   currentUser: UserProfile;
   projects: ProyekItem[];
   onOpenProjectDetail: (project: ProyekItem) => void;
-  onOpenAIRoute: (projectName: string, project?: ProyekItem | null) => void;
+  onOpenAIRoute: (projectName: string, project?: ProyekItem | null, savedRoute?: any) => void;
   activeSection?: string;
   onSelectSection?: (section: string) => void;
   onOpenMapExplorer?: () => void;
@@ -119,6 +121,77 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         p.id === 37
     );
   }, [projects]);
+
+  // Rute Harian Tersimpan & Notifikasi Pembaruan Warga
+  const [savedRoutes, setSavedRoutes] = useState<SavedRouteItem[]>([]);
+  const [userNotifications, setUserNotifications] = useState<ApiNotificationItem[]>([]);
+
+  useEffect(() => {
+    let isCancelled = false;
+    if (typeof apiService?.getSavedRoutes === 'function') {
+      apiService
+        .getSavedRoutes()
+        .then((res: SavedRouteItem[]) => {
+          if (!isCancelled && res) setSavedRoutes(res);
+        })
+        .catch(() => {});
+    }
+
+    if (typeof apiService?.getNotifications === 'function') {
+      apiService
+        .getNotifications()
+        .then((res: ApiNotificationItem[]) => {
+          if (!isCancelled && res) setUserNotifications(res);
+        })
+        .catch(() => {});
+    }
+
+    return () => {
+      isCancelled = true;
+    };
+  }, []);
+
+  // Evaluasi cerdas status deteksi overlap rute harian warga dengan proyek konstruksi
+  const routeOverlapAlert = useMemo(() => {
+    // 1. Cek notifikasi overlap rute aktif dari backend notification dispatcher
+    const overlapNotif = userNotifications.find(
+      (n) =>
+        n.target_type === 'route_overlap' ||
+        n.is_high_priority ||
+        n.pesan.includes('PRIORITAS TINGGI') ||
+        n.pesan.includes('Rute Harian')
+    );
+
+    if (overlapNotif) {
+      const proj =
+        projects.find((p) => p.id === overlapNotif.proyek_id) ||
+        projects.find((p) => p.nama_proyek === overlapNotif.nama_proyek) ||
+        earlyWarningProjects[0] ||
+        projects[0];
+      const matchedSavedRoute = savedRoutes.length > 0 ? savedRoutes[0] : null;
+      return {
+        hasOverlap: true,
+        project: proj,
+        savedRoute: matchedSavedRoute,
+        message: overlapNotif.pesan,
+        title: overlapNotif.nama_proyek || proj?.nama_proyek || 'Proyek Strategis Lamongan',
+      };
+    }
+
+    // 2. Jika user memiliki rute harian tersimpan dan ada proyek berstatus early-warning
+    if (savedRoutes.length > 0 && earlyWarningProjects.length > 0) {
+      const targetProj = earlyWarningProjects[0];
+      return {
+        hasOverlap: true,
+        project: targetProj,
+        savedRoute: savedRoutes[0],
+        message: `Rute harian Anda ('${savedRoutes[0].nama_rute}') terdeteksi melintasi koridor proyek ${targetProj.nama_proyek}. Rekomendasi jalur alternatif bebas kemacetan telah disiapkan.`,
+        title: targetProj.nama_proyek,
+      };
+    }
+
+    return null;
+  }, [userNotifications, savedRoutes, projects, earlyWarningProjects]);
 
   // Laporan state
   const [laporanList, setLaporanList] = useState<LaporanAduan[]>(MOCK_LAPORAN_WARGA);
@@ -1470,29 +1543,69 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
           </div>
 
           {/* ── EARLY-WARNING IN-APP BANNER & BADGE (RADIUS & RUTENYA) ── */}
-          {earlyWarningProjects.length > 0 && (
-            <div className="bg-gradient-to-r from-purple-900/90 via-indigo-950 to-slate-900 text-white rounded-2xl p-4 sm:p-5 shadow-lg border border-purple-500/30 relative overflow-hidden animate-fade-in">
-              <div className="absolute -right-6 -bottom-6 w-36 h-36 bg-purple-500/10 rounded-full blur-xl pointer-events-none" />
+          {(routeOverlapAlert || earlyWarningProjects.length > 0) && (
+            <div
+              className={`rounded-2xl p-4 sm:p-5 shadow-xl relative overflow-hidden transition-all duration-300 animate-fade-in ${
+                routeOverlapAlert
+                  ? 'bg-gradient-to-r from-red-950 via-rose-950 to-neutral-900 text-white border-2 border-red-500/80 shadow-red-950/40'
+                  : 'bg-gradient-to-r from-purple-900/90 via-indigo-950 to-slate-900 text-white border border-purple-500/30 shadow-lg'
+              }`}
+            >
+              <div
+                className={`absolute -right-6 -bottom-6 w-40 h-40 rounded-full blur-2xl pointer-events-none ${
+                  routeOverlapAlert ? 'bg-red-500/20' : 'bg-purple-500/10'
+                }`}
+              />
               <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-4 relative z-10">
                 <div className="flex items-start gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-purple-500/20 border border-purple-400/30 flex items-center justify-center shrink-0 mt-0.5">
-                    <Bell className="w-5 h-5 text-purple-300 animate-bounce" />
+                  <div
+                    className={`w-11 h-11 rounded-xl flex items-center justify-center shrink-0 mt-0.5 border ${
+                      routeOverlapAlert
+                        ? 'bg-red-500/25 border-red-400/50 shadow-md shadow-red-500/30'
+                        : 'bg-purple-500/20 border-purple-400/30'
+                    }`}
+                  >
+                    {routeOverlapAlert ? (
+                      <AlertTriangle className="w-5 h-5 text-rose-300 animate-pulse" />
+                    ) : (
+                      <Bell className="w-5 h-5 text-purple-300 animate-bounce" />
+                    )}
                   </div>
                   <div>
                     <div className="flex items-center gap-2 flex-wrap">
-                      <span className="text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/40 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
-                        Sistem Early-Warning (Radius &amp; LPSE)
-                      </span>
-                      <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded-full">
-                        {earlyWarningProjects.length} Proyek Terdeteksi Hulu SiRUP
-                      </span>
+                      {routeOverlapAlert ? (
+                        <>
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider bg-red-600 text-white border border-red-400/80 px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                            <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+                            🚨 PRIORITAS TINGGI: Rute Harianmu Terdampak!
+                          </span>
+                          <span className="text-[10px] font-mono text-rose-200 bg-rose-950/80 border border-rose-700/60 px-2 py-0.5 rounded-full">
+                            Lintasan Beririsan &lt; 100m
+                          </span>
+                        </>
+                      ) : (
+                        <>
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/40 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
+                            Sistem Early-Warning (Radius &amp; LPSE)
+                          </span>
+                          <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded-full">
+                            {earlyWarningProjects.length} Proyek Terdeteksi Hulu SiRUP
+                          </span>
+                        </>
+                      )}
                     </div>
                     <h3 className="font-heading text-sm sm:text-base font-bold text-white mt-1.5">
-                      {earlyWarningProjects[0].nama_proyek}
+                      {routeOverlapAlert ? routeOverlapAlert.title : earlyWarningProjects[0].nama_proyek}
                     </h3>
-                    <p className="text-xs text-purple-200/90 mt-0.5 max-w-2xl leading-relaxed">
-                      {earlyWarningProjects[0].status === 'scheduled'
+                    <p
+                      className={`text-xs mt-0.5 max-w-2xl leading-relaxed ${
+                        routeOverlapAlert ? 'text-rose-100 font-medium' : 'text-purple-200/90'
+                      }`}
+                    >
+                      {routeOverlapAlert
+                        ? routeOverlapAlert.message
+                        : earlyWarningProjects[0].status === 'scheduled'
                         ? 'Pemberitahuan H-7: Proyek ini dijadwalkan memulai pekerjaan fisik dalam 7 hari. Rekomendasi rute pengalihan arus telah aktif di menu AI Route.'
                         : 'Kontrak LPSE/SiRUP telah terbit. Rute alternatif dan radius dampak ±1.200 meter telah dipetakan lebih awal dari Google Maps.'}
                     </p>
@@ -1502,11 +1615,25 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                 <div className="flex items-center gap-2 w-full md:w-auto shrink-0">
                   <button
                     type="button"
-                    onClick={() => onOpenAIRoute(earlyWarningProjects[0].nama_proyek)}
-                    className="flex-1 md:flex-initial px-4 py-2.5 bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all hover:scale-102 cursor-pointer active:scale-98"
+                    onClick={() => {
+                      if (routeOverlapAlert) {
+                        onOpenAIRoute(
+                          routeOverlapAlert.project.nama_proyek,
+                          routeOverlapAlert.project,
+                          routeOverlapAlert.savedRoute
+                        );
+                      } else {
+                        onOpenAIRoute(earlyWarningProjects[0].nama_proyek);
+                      }
+                    }}
+                    className={`flex-1 md:flex-initial px-4 py-2.5 font-bold text-xs rounded-xl shadow-md flex items-center justify-center gap-1.5 transition-all hover:scale-102 cursor-pointer active:scale-98 ${
+                      routeOverlapAlert
+                        ? 'bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:to-rose-500 text-white shadow-red-950/40 ring-2 ring-red-400/40'
+                        : 'bg-gradient-to-r from-purple-500 to-indigo-600 hover:from-purple-600 hover:to-indigo-700 text-white'
+                    }`}
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Cek Rute Alternatif AI</span>
+                    <span>Lihat Rute Alternatif AI</span>
                   </button>
                   {onOpenMapExplorer && (
                     <button

@@ -1,7 +1,7 @@
 import enum
 from sqlalchemy import (
     Column, BigInteger, String, Integer, SmallInteger, Numeric,
-    Date, DateTime, Enum, ForeignKey, Text
+    Date, DateTime, Enum, ForeignKey, Text, Boolean
 )
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -51,7 +51,17 @@ class ProyekStatus(str, enum.Enum):
             return cls.ditangguhkan
         if val_str in ("pending", "review", "peninjauan"):
             return cls.dalam_peninjauan_ulang
-        return super()._missing_(value)
+
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(
+            f"[ProyekStatus Validation Warning] Nilai status '{value}' tidak dikenali. "
+            f"Daftar status resmi yang diizinkan: {[s.value for s in cls]}"
+        )
+        raise ValueError(
+            f"Status proyek '{value}' tidak valid. Pilihan status resmi: "
+            f"{[s.value for s in cls]}"
+        )
 
 class MediaType(str, enum.Enum):
     foto = "foto"
@@ -82,6 +92,7 @@ class Proyek(Base):
     dibuat_oleh = Column(BigInteger, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     kode_proyek = Column(String(50), nullable=True, unique=True, index=True)
     kode_akses = Column(String(100), nullable=True)
+    is_published = Column(Boolean, default=False, nullable=False, server_default='0', index=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)
 

@@ -1,3 +1,4 @@
+import logging
 import secrets
 from typing import List, Optional
 from decimal import Decimal
@@ -15,6 +16,8 @@ from app.schemas.project import (
 )
 from app.services.notification_service import notify_project_subscribers, send_project_update_notifications
 from app.core.spatial import validate_coordinates_in_wilayah
+
+logger = logging.getLogger(__name__)
 
 # Peta singkatan 3 huruf konsisten untuk 27 kecamatan di Kabupaten Lamongan
 KECAMATAN_CODE_MAP = {
@@ -348,7 +351,8 @@ def create_project(
         jalur_terdampak=req.jalur_terdampak,
         dibuat_oleh=current_user.id,
         kode_proyek=kode_proyek,
-        kode_akses=kode_akses
+        kode_akses=kode_akses,
+        is_published=req.is_published
     )
     db.add(proyek)
     db.commit()
@@ -367,8 +371,8 @@ def create_project(
         db.commit()
         db.refresh(proyek)
 
-    # Trigger Notifikasi Early-Warning jika proyek dibuat berstatus 'planned'
-    if proyek.status in (ProyekStatus.planned, "planned", "direncanakan"):
+    # Trigger Notifikasi Early-Warning jika proyek dibuat berstatus 'planned' DAN dipublikasikan (bukan draft)
+    if proyek.is_published and proyek.status in (ProyekStatus.planned, "planned", "direncanakan"):
         try:
             from app.services.notification_dispatcher import NotificationDispatcher
             NotificationDispatcher.dispatch_planned_created(proyek, db)
@@ -398,6 +402,7 @@ def update_project(
 
     old_progres = proyek.progres_persen
     old_status = proyek.status
+    old_published = proyek.is_published
 
     update_data = req.model_dump(exclude_unset=True)
     catatan_perubahan = update_data.pop("catatan_perubahan", None)
@@ -545,6 +550,8 @@ def update_project(
                     NotificationDispatcher.dispatch_milestone(proyek, 50, db, create_in_app=False)
                 if old_progres < 100 <= proyek.progres_persen:
                     NotificationDispatcher.dispatch_milestone(proyek, 100, db, create_in_app=False)
+            if not old_published and proyek.is_published and proyek.status in (ProyekStatus.planned, "planned", "direncanakan"):
+                NotificationDispatcher.dispatch_planned_created(proyek, db)
         except Exception as e:
             logger.error(f"Gagal dispatch notification dispatcher: {e}")
 

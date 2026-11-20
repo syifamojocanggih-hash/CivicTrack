@@ -1,7 +1,7 @@
-from typing import Literal, Optional
+from typing import Literal, Optional, List, Any, Dict
 from datetime import datetime
 from decimal import Decimal
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 from app.models.ai_route import PrioritasRute
 
 class RekomendasiRuteResponse(BaseModel):
@@ -30,3 +30,30 @@ class GenerateRuteRequest(BaseModel):
     dest_lng: Optional[float] = None
     origin_name: Optional[str] = None
     dest_name: Optional[str] = None
+
+class SavedRouteCreate(BaseModel):
+    nama_rute: str = Field(..., min_length=3, max_length=200, description="Nama rute harian pengguna")
+    koordinat_asal: Optional[Dict[str, Any]] = None
+    koordinat_tujuan: Optional[Dict[str, Any]] = None
+    polyline_data: List[Any] = Field(..., description="Array koordinat rute [lat, lng]")
+    moda_transportasi: Optional[str] = "mobil"
+    jarak_km: Optional[float] = None
+    estimasi_menit: Optional[int] = None
+    catatan: Optional[str] = Field(None, max_length=255)
+
+class SavedRouteResponse(BaseModel):
+    id: int
+    user_id: int
+    nama_rute: str
+    koordinat_asal: Optional[Dict[str, Any]] = None
+    koordinat_tujuan: Optional[Dict[str, Any]] = None
+    polyline_data: List[Any]
+    moda_transportasi: Optional[str] = "mobil"
+    jarak_km: Optional[float] = None
+    estimasi_menit: Optional[int] = None
+    catatan: Optional[str] = None
+    created_at: datetime
+    updated_at: Optional[datetime] = None
+
+    model_config = ConfigDict(from_attributes=True)
+

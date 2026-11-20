@@ -14,7 +14,7 @@ interface DashboardMainProps {
   onLogout: () => void;
   onSwitchRole?: (role: UserRole) => void;
   onOpenProjectDetail: (project: ProyekItem) => void;
-  onOpenAIRoute: (projectName: string, project?: ProyekItem | null) => void;
+  onOpenAIRoute: (projectName: string, project?: ProyekItem | null, savedRoute?: any) => void;
   onOpenOpenDataModal: () => void;
   onProjectCreated?: (project: ProyekItem) => void;
   onProjectUpdated?: (project: ProyekItem) => void;
@@ -134,6 +134,7 @@ export const DashboardMain: React.FC<DashboardMainProps> = ({
             const found = projects.find((p) => p.id === pId);
             if (found) onOpenProjectDetail(found);
           }}
+          onOpenAIRoute={onOpenAIRoute}
           unreadCount={2}
           onOpenMapExplorer={onOpenMapExplorer}
         />

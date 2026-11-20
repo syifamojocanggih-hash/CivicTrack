@@ -335,3 +335,24 @@ CREATE TABLE notification_logs (
     CONSTRAINT fk_notiflog_user FOREIGN KEY (user_id) 
         REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------
+-- 16. Tabel saved_routes (Fase 3 Early-Warning)
+-- Rute harian tersimpan pengguna untuk deteksi overlap rute
+-- ----------------------------------------------------------
+CREATE TABLE saved_routes (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    nama_rute VARCHAR(200) NOT NULL,
+    koordinat_asal JSON NULL,
+    koordinat_tujuan JSON NULL,
+    polyline_data JSON NOT NULL,
+    moda_transportasi ENUM('mobil', 'motor', 'pejalan_kaki') NOT NULL DEFAULT 'mobil',
+    jarak_km DECIMAL(6, 2) NULL,
+    estimasi_menit INT NULL,
+    catatan VARCHAR(255) NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    CONSTRAINT fk_savedroute_user FOREIGN KEY (user_id)
+        REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

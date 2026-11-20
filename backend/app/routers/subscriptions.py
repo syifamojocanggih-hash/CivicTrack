@@ -1,11 +1,21 @@
-from typing import List, Optional
+from typing import List, Optional, Dict, Any
 from fastapi import APIRouter, Depends, HTTPException, status, Query
+from pydantic import BaseModel, Field
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.core.database import get_db
 from app.core.dependencies import get_current_user
 from app.models.user import User
 from app.models.project import Proyek
-from app.models.notification import SubscriptionNotifikasi, Notifikasi, NotificationLog
+from app.models.notification import SubscriptionNotifikasi, Notifikasi, NotificationLog, PushSubscription
+
+class PushKeys(BaseModel):
+    p256dh: str
+    auth: str
+
+class PushSubscriptionRequest(BaseModel):
+    endpoint: str
+    keys: PushKeys
 from app.schemas.notification import NotifikasiResponse, SubscriptionStatusResponse
 
 router = APIRouter(tags=["Notifikasi & Ikuti Proyek"])
@@ -83,6 +93,12 @@ def get_user_notifications(
     for n in notifications:
         item = NotifikasiResponse.model_validate(n)
         item.nama_proyek = n.proyek.nama_proyek if n.proyek else ""
+        if "PRIORITAS TINGGI" in n.pesan or "Rute Harian" in n.pesan:
+            item.target_type = "route_overlap"
+            item.is_high_priority = True
+        else:
+            item.target_type = "radius"
+            item.is_high_priority = False
         result.append(item)
     return result
 
@@ -105,6 +121,12 @@ def mark_notification_read(
     db.refresh(notif)
     item = NotifikasiResponse.model_validate(notif)
     item.nama_proyek = notif.proyek.nama_proyek if notif.proyek else ""
+    if "PRIORITAS TINGGI" in notif.pesan or "Rute Harian" in notif.pesan:
+        item.target_type = "route_overlap"
+        item.is_high_priority = True
+    else:
+        item.target_type = "radius"
+        item.is_high_priority = False
     return item
 
 @router.patch("/notifikasi/read-all")
@@ -172,4 +194,52 @@ def subscribe_wilayah(
         db.add(sub)
         db.commit()
     return {"wilayah_id": wilayah_id, "is_subscribed": True}
+
+@router.get("/notifikasi/vapid-public-key")
+def get_vapid_public_key():
+    """Mengembalikan VAPID public key untuk subscription Web Push browser."""
+    return {"public_key": settings.VAPID_PUBLIC_KEY}
+
+@router.post("/notifikasi/push-subscription")
+def register_push_subscription(
+    req: PushSubscriptionRequest,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Menyimpan PushSubscription browser pengguna untuk Web Push notification."""
+    existing = db.query(PushSubscription).filter(PushSubscription.endpoint == req.endpoint).first()
+    if existing:
+        existing.user_id = current_user.id
+        existing.p256dh = req.keys.p256dh
+        existing.auth = req.keys.auth
+        db.commit()
+        return {"status": "updated", "id": existing.id}
+    else:
+        new_sub = PushSubscription(
+            user_id=current_user.id,
+            endpoint=req.endpoint,
+            p256dh=req.keys.p256dh,
+            auth=req.keys.auth
+        )
+        db.add(new_sub)
+        db.commit()
+        db.refresh(new_sub)
+        return {"status": "created", "id": new_sub.id}
+
+@router.delete("/notifikasi/push-subscription")
+def unregister_push_subscription(
+    endpoint: str = Query(...),
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    """Menghapus PushSubscription pengguna saat notifikasi dinonaktifkan."""
+    sub = db.query(PushSubscription).filter(
+        PushSubscription.endpoint == endpoint,
+        PushSubscription.user_id == current_user.id
+    ).first()
+    if sub:
+        db.delete(sub)
+        db.commit()
+    return {"status": "unregistered"}
+
 

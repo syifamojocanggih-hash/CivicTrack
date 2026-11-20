@@ -120,10 +120,12 @@ export function App() {
     isOpen: boolean;
     projectName: string;
     project?: ProyekItem | null;
+    initialSavedRoute?: any;
   }>({
     isOpen: false,
     projectName: '',
     project: null,
+    initialSavedRoute: null,
   });
   const [isOpenDataModalOpen, setIsOpenDataModalOpen] = useState<boolean>(false);
 
@@ -133,12 +135,13 @@ export function App() {
     navigateToView('map-explorer');
   };
 
-  const handleOpenAIRoute = (name: string, proj?: ProyekItem | null) => {
+  const handleOpenAIRoute = (name: string, proj?: ProyekItem | null, savedRoute?: any) => {
     const matchedProject = proj || projects.find((p) => p.nama_proyek === name) || null;
     setAIRouteModal({
       isOpen: true,
       projectName: name,
       project: matchedProject,
+      initialSavedRoute: savedRoute || null,
     });
   };
 
@@ -389,8 +392,8 @@ export function App() {
             onLogout={handleLogout}
             onSwitchRole={handleSwitchRole}
             onOpenProjectDetail={(proj) => setSelectedProject(proj)}
-            onOpenAIRoute={(name, proj) => {
-              handleOpenAIRoute(name, proj);
+            onOpenAIRoute={(name, proj, savedRoute) => {
+              handleOpenAIRoute(name, proj, savedRoute);
             }}
             onOpenOpenDataModal={() => setIsOpenDataModalOpen(true)}
             onProjectCreated={handleProjectCreated}
@@ -412,6 +415,7 @@ export function App() {
               const proj = projects.find((p) => p.id === proyekId);
               if (proj) setSelectedProject(proj);
             }}
+            onOpenAIRoute={(name, proj) => handleOpenAIRoute(name, proj)}
           />
 
           {/* ── HERO ── */}
@@ -498,7 +502,8 @@ export function App() {
         projectName={aiRouteModal.projectName}
         project={aiRouteModal.project}
         allProjects={projects}
-        onClose={() => setAIRouteModal({ isOpen: false, projectName: '', project: null })}
+        initialSavedRoute={aiRouteModal.initialSavedRoute}
+        onClose={() => setAIRouteModal({ isOpen: false, projectName: '', project: null, initialSavedRoute: null })}
       />
 
       <OpenDataModal

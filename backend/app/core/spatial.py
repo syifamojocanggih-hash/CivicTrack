@@ -25,6 +25,68 @@ def haversine_distance_meters(lat1: float, lon1: float, lat2: float, lon2: float
     c = 2.0 * math.atan2(math.sqrt(a), math.sqrt(1.0 - a))
     return R * c
 
+def parse_coords_list(data: Any) -> List[Tuple[float, float]]:
+    """Parse various formats of polyline/coordinate data into a list of (lat, lng) tuples."""
+    if not data:
+        return []
+    if isinstance(data, str):
+        try:
+            parsed = json.loads(data)
+            return parse_coords_list(parsed)
+        except Exception:
+            return []
+    if isinstance(data, list):
+        coords = []
+        for item in data:
+            if isinstance(item, (list, tuple)) and len(item) >= 2:
+                try:
+                    coords.append((float(item[0]), float(item[1])))
+                except (ValueError, TypeError):
+                    continue
+            elif isinstance(item, dict):
+                lat = item.get("lat") or item.get("latitude")
+                lng = item.get("lng") or item.get("lon") or item.get("longitude")
+                if lat is not None and lng is not None:
+                    try:
+                        coords.append((float(lat), float(lng)))
+                    except (ValueError, TypeError):
+                        continue
+        return coords
+    return []
+
+def min_distance_points_to_polyline_meters(
+    target_points: List[Tuple[float, float]],
+    polyline_coords: List[Tuple[float, float]]
+) -> float:
+    """
+    Menghitung jarak minimum dalam meter antara kumpulan titik target (misal jalur proyek)
+    dengan titik-titik garis rute (polyline).
+    """
+    if not target_points or not polyline_coords:
+        return float('inf')
+
+    # Bounding box filter cepat dengan buffer ~500m (~0.005 derajat)
+    lats_a = [p[0] for p in target_points]
+    lons_a = [p[1] for p in target_points]
+    lats_b = [p[0] for p in polyline_coords]
+    lons_b = [p[1] for p in polyline_coords]
+
+    margin = 0.005
+    if (max(lats_a) + margin < min(lats_b) or min(lats_a) - margin > max(lats_b) or
+        max(lons_a) + margin < min(lons_b) or min(lons_a) - margin > max(lons_b)):
+        return float('inf')
+
+    min_dist = float('inf')
+    for lat_a, lon_a in target_points:
+        for lat_b, lon_b in polyline_coords:
+            d = haversine_distance_meters(lat_a, lon_a, lat_b, lon_b)
+            if d < min_dist:
+                min_dist = d
+                if min_dist <= 5.0:
+                    return min_dist
+    return min_dist
+
+
 def calculate_distance_to_boundary_meters(geom_shape, latitude: float, longitude: float) -> float:
     """
     Menghitung jarak terpendek dari titik koordinat (latitude, longitude)

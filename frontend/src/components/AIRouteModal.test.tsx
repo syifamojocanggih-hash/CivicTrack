@@ -540,6 +540,31 @@ describe('AIRouteModal', () => {
     );
     expect(hasRoadClosedBadge).toBe(true);
   });
+
+  it('renders saved routes button and allows toggling the daily route drawer', async () => {
+    const user = userEvent.setup();
+    render(
+      <AIRouteModal
+        isOpen={true}
+        onClose={vi.fn()}
+        projectName="Rekonstruksi Jalan Lamongan"
+        project={{
+          id: 1,
+          nama_proyek: 'Rekonstruksi Jalan Lamongan',
+          status: 'berjalan',
+          progres_persen: 50,
+          latitude: -7.12,
+          longitude: 112.41,
+        } as any}
+      />
+    );
+
+    const savedRoutesBtn = screen.getByRole('button', { name: /Rute Harian/i });
+    expect(savedRoutesBtn).toBeInTheDocument();
+
+    await user.click(savedRoutesBtn);
+    expect(screen.getByText(/Early Warning Aktif/i)).toBeInTheDocument();
+  });
 });
 
 

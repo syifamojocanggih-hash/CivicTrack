@@ -12,6 +12,12 @@ vi.mock('../../services/api', () => ({
     submitRating: vi.fn(),
     getAllReviews: vi.fn(),
     getProjectDetail: vi.fn(),
+    getSavedRoutes: vi.fn().mockResolvedValue([]),
+    saveRoute: vi.fn().mockResolvedValue({ id: 1 }),
+    deleteSavedRoute: vi.fn().mockResolvedValue({ success: true }),
+    getNotifications: vi.fn().mockResolvedValue([]),
+    markNotificationRead: vi.fn().mockResolvedValue({}),
+    markAllNotificationsRead: vi.fn().mockResolvedValue({}),
   },
 }));
 

@@ -6,14 +6,32 @@ from app.core.config import settings
 from app.routers import (
     auth, wilayah, dinas, projects, documentation,
     reports, subscriptions, stats, open_data, ratings,
-    ai_routes, evaluations
+    ai_routes, evaluations, saved_routes
 )
+from contextlib import asynccontextmanager
 from slowapi.errors import RateLimitExceeded
 from app.core.limiter import limiter, rate_limit_exceeded_handler
+from app.core.scheduler import start_scheduler, stop_scheduler
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    # Startup: Start APScheduler
+    try:
+        start_scheduler()
+    except Exception as e:
+        import logging
+        logging.getLogger(__name__).warning(f"Gagal inisialisasi scheduler: {e}")
+    yield
+    # Shutdown
+    try:
+        stop_scheduler()
+    except Exception:
+        pass
 
 # Inisialisasi Aplikasi FastAPI
 app = FastAPI(
     title=settings.APP_NAME,
+    lifespan=lifespan,
     description="""
 # CivicTrack Backend REST API
 Platform Transparansi dan Akuntabilitas Proyek Pembangunan Daerah.
@@ -57,6 +75,7 @@ app.include_router(open_data.router, prefix=api_prefix)
 app.include_router(ratings.router, prefix=api_prefix)
 app.include_router(ai_routes.router, prefix=api_prefix)
 app.include_router(evaluations.router, prefix=api_prefix)
+app.include_router(saved_routes.router, prefix=api_prefix)
 
 @app.get("/", tags=["Sistem"])
 def root_endpoint():

@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Optional
 from pydantic import BaseModel, ConfigDict
 
 class NotifikasiResponse(BaseModel):
@@ -9,6 +10,8 @@ class NotifikasiResponse(BaseModel):
     is_read: bool
     created_at: datetime
     nama_proyek: str = ""
+    target_type: str = "radius"
+    is_high_priority: bool = False
 
     model_config = ConfigDict(from_attributes=True)
 

@@ -27,8 +27,11 @@ import {
   MapPin,
   ArrowUpDown,
   ChevronDown,
+  Bookmark,
+  Trash2,
 } from 'lucide-react';
-import type { ProyekItem } from '../types';
+import type { ProyekItem, SavedRouteItem } from '../types';
+import { apiService } from '../services/api';
 
 export type TravelMode = 'car' | 'motorcycle' | 'walking';
 
@@ -38,6 +41,7 @@ interface AIRouteModalProps {
   projectName: string;
   project?: ProyekItem | null;
   allProjects?: ProyekItem[];
+  initialSavedRoute?: SavedRouteItem | null;
 }
 
 interface RouteItem {
@@ -166,6 +170,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   projectName,
   project,
   allProjects = [],
+  initialSavedRoute = null,
 }) => {
   // State Proyek Aktif yang sedang ditinjau rute pengalihannya
   const [activeProject, setActiveProject] = useState<ProyekItem | null>(project || null);
@@ -232,6 +237,12 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
   const [isSimulating, setIsSimulating] = useState(false);
   const [mobileTab, setMobileTab] = useState<'map' | 'list'>('map');
+
+  // State Rute Harian Tersimpan (Early Warning Overlap)
+  const [savedRoutes, setSavedRoutes] = useState<SavedRouteItem[]>([]);
+  const [isSavingRoute, setIsSavingRoute] = useState(false);
+  const [saveFeedback, setSaveFeedback] = useState<string | null>(null);
+  const [showSavedRoutesDrawer, setShowSavedRoutesDrawer] = useState(false);
 
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
@@ -640,6 +651,125 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     }, 4500);
     return () => clearTimeout(t);
   }, [pickingNotice]);
+
+  // Muat daftar rute harian tersimpan
+  const loadSavedRoutes = useCallback(async () => {
+    try {
+      if (typeof apiService?.getSavedRoutes === 'function') {
+        const data = await apiService.getSavedRoutes();
+        setSavedRoutes(data || []);
+      }
+    } catch (e) {
+      console.warn('Gagal memuat rute tersimpan:', e);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      loadSavedRoutes();
+    }
+  }, [isOpen, loadSavedRoutes]);
+
+  useEffect(() => {
+    if (isOpen && initialSavedRoute) {
+      const customRoute: RouteItem = {
+        id: initialSavedRoute.id,
+        nama_rute: initialSavedRoute.nama_rute,
+        prioritas: 'utama',
+        estimasi_jarak_km: initialSavedRoute.jarak_km || 3.0,
+        estimasi_waktu_menit: initialSavedRoute.estimasi_menit || 10,
+        alasan_rekomendasi: initialSavedRoute.catatan || 'Rute harian tersimpan Anda',
+        coordinates: initialSavedRoute.polyline_data,
+        geografis_terverifikasi: true,
+      };
+      setRoutes([customRoute]);
+      setSelectedRouteIndex(0);
+      if (initialSavedRoute.koordinat_asal?.label) setOrigin(initialSavedRoute.koordinat_asal.label);
+      if (initialSavedRoute.koordinat_tujuan?.label) setDestination(initialSavedRoute.koordinat_tujuan.label);
+    }
+  }, [isOpen, initialSavedRoute]);
+
+  const handleSaveCurrentRoute = async () => {
+    const curRoute = routes[selectedRouteIndex];
+    if (!curRoute || !curRoute.coordinates || curRoute.coordinates.length < 2) {
+      setSaveFeedback('Garis rute belum tersedia untuk disimpan.');
+      setTimeout(() => setSaveFeedback(null), 3000);
+      return;
+    }
+
+    if (savedRoutes.length >= 3) {
+      setSaveFeedback('Batas maksimal 3 rute harian telah tercapai. Hapus salah satu rute terlebih dahulu.');
+      setTimeout(() => setSaveFeedback(null), 3500);
+      return;
+    }
+
+    setIsSavingRoute(true);
+    try {
+      const payload = {
+        nama_rute: curRoute.nama_rute.slice(0, 190),
+        koordinat_asal: originCoords ? { lat: originCoords[0], lng: originCoords[1], label: origin } : null,
+        koordinat_tujuan: destCoords ? { lat: destCoords[0], lng: destCoords[1], label: destination } : null,
+        polyline_data: curRoute.coordinates,
+        jarak_km: curRoute.estimasi_jarak_km,
+        estimasi_menit: curRoute.estimasi_waktu_menit,
+        catatan: `Rute harian via ${currentName} (${travelMode === 'car' ? 'Mobil' : travelMode === 'motorcycle' ? 'Motor' : 'Jalan Kaki'})`,
+      };
+
+      const saved = await apiService.saveRoute(payload);
+      setSavedRoutes((prev) => [saved, ...prev.filter((r) => r.id !== saved.id)]);
+      setSaveFeedback(`✓ Rute harian berhasil disimpan (${Math.min(3, savedRoutes.length + 1)}/3)`);
+      setTimeout(() => setSaveFeedback(null), 3500);
+    } catch (err: any) {
+      setSaveFeedback(err?.message || 'Gagal menyimpan rute.');
+      setTimeout(() => setSaveFeedback(null), 4000);
+    } finally {
+      setIsSavingRoute(false);
+    }
+  };
+
+  const handleDeleteSavedRoute = async (id: number) => {
+    try {
+      await apiService.deleteSavedRoute(id);
+      setSavedRoutes((prev) => prev.filter((r) => r.id !== id));
+      setSaveFeedback('Rute harian berhasil dihapus.');
+      setTimeout(() => setSaveFeedback(null), 3000);
+    } catch (err: any) {
+      setSaveFeedback(err?.message || 'Gagal menghapus rute.');
+      setTimeout(() => setSaveFeedback(null), 3500);
+    }
+  };
+
+  const handleSelectSavedRoute = (sr: SavedRouteItem) => {
+    const customRoute: RouteItem = {
+      id: sr.id,
+      nama_rute: sr.nama_rute,
+      prioritas: 'utama',
+      estimasi_jarak_km: sr.jarak_km || 3.0,
+      estimasi_waktu_menit: sr.estimasi_menit || 10,
+      alasan_rekomendasi: sr.catatan || 'Rute harian tersimpan Anda',
+      coordinates: sr.polyline_data,
+      geografis_terverifikasi: true,
+    };
+    setRoutes([customRoute]);
+    setSelectedRouteIndex(0);
+    if (sr.koordinat_asal) {
+      setOrigin(sr.koordinat_asal.label || `${sr.koordinat_asal.lat.toFixed(4)}, ${sr.koordinat_asal.lng.toFixed(4)}`);
+      setCustomOriginCoords([sr.koordinat_asal.lat, sr.koordinat_asal.lng]);
+    }
+    if (sr.koordinat_tujuan) {
+      setDestination(sr.koordinat_tujuan.label || `${sr.koordinat_tujuan.lat.toFixed(4)}, ${sr.koordinat_tujuan.lng.toFixed(4)}`);
+      setCustomDestCoords([sr.koordinat_tujuan.lat, sr.koordinat_tujuan.lng]);
+    }
+    setShowSavedRoutesDrawer(false);
+    setSaveFeedback(`Menampilkan rute harian: ${sr.nama_rute}`);
+    setTimeout(() => setSaveFeedback(null), 3000);
+  };
+
+  const isCurrentRouteSaved = useMemo(() => {
+    const cur = routes[selectedRouteIndex];
+    if (!cur) return false;
+    return savedRoutes.some((sr) => sr.nama_rute === cur.nama_rute || (cur.id && sr.id === cur.id));
+  }, [routes, selectedRouteIndex, savedRoutes]);
 
   const handleCopyDirections = (r: RouteItem, idx: number) => {
     const stepsText = (r.petunjuk_langkah || [])
@@ -1459,8 +1589,94 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
               }`}>
                 {isProjectCompleted ? '✓ Jalan Dibuka Normal (Selesai 100%)' : `🚧 ${ongoingProjects.length} Proyek Konstruksi Aktif`}
               </span>
+              <button
+                type="button"
+                onClick={() => setShowSavedRoutesDrawer(!showSavedRoutesDrawer)}
+                className={`text-[11px] px-2.5 py-1 rounded-xl font-bold flex items-center gap-1.5 transition-all cursor-pointer border ${
+                  showSavedRoutesDrawer
+                    ? 'bg-amber-400 text-slate-900 border-amber-300 shadow-sm'
+                    : 'bg-white/15 hover:bg-white/25 text-white border-white/30 backdrop-blur-md'
+                }`}
+                title="Lihat & kelola rute harian Anda (maksimal 3 rute)"
+              >
+                <Bookmark className="w-3.5 h-3.5 fill-current" />
+                <span>Rute Harian ({savedRoutes.length}/3)</span>
+              </button>
             </div>
           </div>
+
+        {/* Toast Notifikasi Feedback Simpan Rute */}
+        {saveFeedback && (
+          <div className="bg-slate-900 text-white px-4 py-2 flex items-center justify-between text-xs font-semibold animate-fade-in shrink-0 border-b border-slate-700">
+            <div className="flex items-center gap-2">
+              <CheckCircle2 className="w-4 h-4 text-emerald-400 shrink-0" />
+              <span>{saveFeedback}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSaveFeedback(null)}
+              className="text-slate-400 hover:text-white font-bold text-xs cursor-pointer ml-3"
+            >
+              ✕
+            </button>
+          </div>
+        )}
+
+        {/* ── PANEL RUTE HARIAN TERSIMPAN (EARLY WARNING) ── */}
+        {showSavedRoutesDrawer && (
+          <div className="p-3.5 bg-amber-50 border-b border-amber-200 text-xs shrink-0 animate-fade-in space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2 font-bold text-amber-950">
+                <Bookmark className="w-4 h-4 text-amber-600 fill-amber-500" />
+                <span>Rute Harian Tersimpan ({savedRoutes.length}/3)</span>
+                <span className="text-[10px] px-2 py-0.5 bg-amber-200 text-amber-900 rounded-full font-semibold">
+                  Early Warning Aktif
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowSavedRoutesDrawer(false)}
+                className="text-amber-700 hover:text-amber-900 text-xs font-bold cursor-pointer"
+              >
+                ✕ Tutup
+              </button>
+            </div>
+
+            {savedRoutes.length === 0 ? (
+              <p className="text-[11px] text-amber-800 leading-snug">
+                Belum ada rute harian yang disimpan. Klik tombol <strong>"Simpan Rute"</strong> pada salah satu kartu rekomendasi rute di bawah untuk mendaftarkan rute harian Anda (maksimal 3). Sistem CivicTrack akan otomatis mendeteksi jika lintasan rute Anda bersinggungan dengan proyek konstruksi baru (overlap &le; 100 meter).
+              </p>
+            ) : (
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {savedRoutes.map((sr) => (
+                  <div key={sr.id} className="p-3 bg-white border border-amber-300/80 rounded-xl space-y-2 shadow-2xs">
+                    <div className="font-bold text-slate-800 text-xs truncate" title={sr.nama_rute}>
+                      {sr.nama_rute}
+                    </div>
+                    <div className="text-[10.5px] text-slate-500 flex items-center justify-between">
+                      <span>{sr.jarak_km ? `${sr.jarak_km} km` : '-'} • {sr.estimasi_menit ? `${sr.estimasi_menit} mnt` : '-'}</span>
+                      <button
+                        type="button"
+                        onClick={() => handleDeleteSavedRoute(sr.id)}
+                        className="text-rose-600 hover:text-rose-800 cursor-pointer p-0.5 rounded hover:bg-rose-50"
+                        title="Hapus rute tersimpan ini"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => handleSelectSavedRoute(sr)}
+                      className="w-full py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-bold text-[11px] rounded-lg transition-colors cursor-pointer text-center"
+                    >
+                      Tampilkan di Peta
+                    </button>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
 
         {/* ── MOBILE TAB SWITCHER ── */}
         <div className="lg:hidden flex border-b border-slate-200 bg-slate-50 px-4 py-2 gap-2 shrink-0">
@@ -2133,6 +2349,23 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                                   <span>Salin</span>
                                 </>
                               )}
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSaveCurrentRoute();
+                              }}
+                              disabled={isSavingRoute}
+                              className={`px-2.5 py-1 text-[10px] font-bold rounded-lg flex items-center gap-1 shadow-2xs transition-all cursor-pointer border ${
+                                isCurrentRouteSaved
+                                  ? 'bg-amber-100 text-amber-900 border-amber-300'
+                                  : 'bg-white hover:bg-slate-100 text-slate-700 border-slate-200'
+                              }`}
+                              title="Simpan rute ini ke Rute Harian Saya (maksimal 3 rute)"
+                            >
+                              <Bookmark className={`w-3 h-3 ${isCurrentRouteSaved ? 'fill-amber-600 text-amber-700' : 'text-slate-600'}`} />
+                              <span>{isCurrentRouteSaved ? 'Tersimpan' : 'Simpan Rute'}</span>
                             </button>
                             <a
                               href={getGoogleMapsDirUrl(

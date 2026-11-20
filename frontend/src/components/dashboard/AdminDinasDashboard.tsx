@@ -304,6 +304,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     longitude: 112.4150,
     nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum dan Penataan Ruang',
     tahap_terkini: 'Pembersihan & Pengukuran Lahan',
+    is_published: true,
   });
 
   // State Gerbang Verifikasi Penanggung Jawab Proyek
@@ -647,6 +648,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     progres_persen: 0,
     status: 'berjalan' as ProyekStatus,
     catatan_perubahan: '',
+    is_published: true,
   });
   const [editError, setEditError] = useState<string | null>(null);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
@@ -1108,6 +1110,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         estimasi_selesai: newProjectForm.estimasi_selesai,
         kode_proyek: newProjectForm.kode_proyek.trim() || undefined,
         kode_akses: newProjectForm.kode_akses.trim() || undefined,
+        is_published: newProjectForm.is_published,
       };
 
       const created = await apiService.createProject(payload);
@@ -1144,6 +1147,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         longitude: 112.4150,
         nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum dan Penataan Ruang',
         tahap_terkini: 'Pembersihan & Pengukuran Lahan',
+        is_published: true,
       });
     } catch (error: any) {
       console.log('Submit proyek gagal:', error);
@@ -1178,6 +1182,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       progres_persen: p.progres_persen,
       status: initialStatus,
       catatan_perubahan: '',
+      is_published: p.is_published ?? true,
     });
     setEditError(null);
   };
@@ -1243,6 +1248,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         progres_persen: newProgres,
         status: editForm.status,
         catatan_perubahan: editForm.catatan_perubahan.trim() || undefined,
+        is_published: editForm.is_published,
       });
 
       setProjectList((prev) =>
@@ -2302,6 +2308,35 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
               </div>
 
+              {/* Toggle Publikasikan ke Publik */}
+              <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl flex items-center justify-between gap-3">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <Globe className="w-4 h-4 text-[#184C78]" />
+                    <span className="font-semibold text-slate-800 text-xs">Publikasikan ke Publik</span>
+                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                      newProjectForm.is_published ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                    }`}>
+                      {newProjectForm.is_published ? 'Publik' : 'Draft Internal'}
+                    </span>
+                  </div>
+                  <p className="text-[10.5px] text-slate-500 leading-snug">
+                    {newProjectForm.is_published
+                      ? 'Proyek akan tampil di peta publik warga dan memicu sistem notifikasi early-warning.'
+                      : 'Proyek tersimpan sebagai draft rahasia internal dinas, tidak memicu notifikasi massal ke warga.'}
+                  </p>
+                </div>
+                <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={newProjectForm.is_published}
+                    onChange={(e) => setNewProjectForm({ ...newProjectForm, is_published: e.target.checked })}
+                    className="sr-only peer"
+                  />
+                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#184C78]"></div>
+                </label>
+              </div>
+
               {createProjError && (
                 <div className="p-3 bg-rose-50 border border-rose-300 rounded-xl text-rose-800 text-xs">
                   <p className="font-semibold">{createProjError}</p>
@@ -2701,6 +2736,35 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                         </div>
                       </div>
                     )}
+
+                    {/* Toggle Publikasikan ke Publik */}
+                    <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl flex items-center justify-between gap-3">
+                      <div className="space-y-0.5">
+                        <div className="flex items-center gap-2">
+                          <Globe className="w-4 h-4 text-[#184C78]" />
+                          <span className="font-semibold text-slate-800 text-xs">Publikasikan ke Publik</span>
+                          <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${
+                            editForm.is_published ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'
+                          }`}>
+                            {editForm.is_published ? 'Publik' : 'Draft Internal'}
+                          </span>
+                        </div>
+                        <p className="text-[10.5px] text-slate-500 leading-snug">
+                          {editForm.is_published
+                            ? 'Proyek tampil di peta publik warga dan Early Warning aktif.'
+                            : 'Proyek disembunyikan sebagai draft internal dinas.'}
+                        </p>
+                      </div>
+                      <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                        <input
+                          type="checkbox"
+                          checked={editForm.is_published}
+                          onChange={(e) => setEditForm({ ...editForm, is_published: e.target.checked })}
+                          className="sr-only peer"
+                        />
+                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#184C78]"></div>
+                      </label>
+                    </div>
                   </div>
 
                   {/* Sticky Responsive Footer */}

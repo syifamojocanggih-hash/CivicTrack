@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LogOut, Menu, X, Shield, Bell, Check } from 'lucide-react';
+import { LogOut, Menu, X, Shield, Bell, Check, AlertTriangle, Sparkles, ChevronRight } from 'lucide-react';
 import type { UserProfile, ApiNotificationItem, CurrentView } from '../types';
 import { apiService } from '../services/api';
 import { CivicTrackLogo } from './CivicTrackLogo';
@@ -14,6 +14,7 @@ interface NavbarProps {
   currentView?: CurrentView;
   onNavigateView?: (view: CurrentView) => void;
   onSelectProjectNotification?: (proyekId: number) => void;
+  onOpenAIRoute?: (projectName: string, project?: any) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -25,6 +26,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentView = 'landing',
   onNavigateView,
   onSelectProjectNotification,
+  onOpenAIRoute,
 }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [notifications, setNotifications] = useState<ApiNotificationItem[]>([]);
@@ -228,28 +230,73 @@ export const Navbar: React.FC<NavbarProps> = ({
                           <p className="text-[10px] text-slate-400 mt-0.5">Ikuti proyek untuk menerima notifikasi tahapan & progres.</p>
                         </div>
                       ) : (
-                        notifications.map((item) => (
-                          <div
-                            key={item.id}
-                            onClick={() => handleNotificationClick(item)}
-                            className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
-                              !item.is_read
-                                ? 'bg-[#EBF4FB]/70 border-[#2980B9]/30 hover:bg-[#EBF4FB]'
-                                : 'bg-[#F5F7FA] border-transparent hover:bg-slate-100 opacity-85'
-                            }`}
-                          >
-                            <div className="flex items-start justify-between gap-1 mb-1">
-                              <div className="font-bold text-[#184C78] text-[12px] flex items-center gap-1.5">
-                                {!item.is_read && <span className="w-2 h-2 rounded-full bg-[#2980B9] shrink-0" />}
-                                <span className="truncate max-w-[190px]">{item.nama_proyek ? `📍 ${item.nama_proyek}` : 'CivicTrack Info'}</span>
+                        notifications.map((item) => {
+                          const isOverlap =
+                            item.is_high_priority ||
+                            item.target_type === 'route_overlap' ||
+                            item.pesan.includes('PRIORITAS TINGGI') ||
+                            item.pesan.includes('Rute Harian');
+                          return (
+                            <div
+                              key={item.id}
+                              onClick={() => handleNotificationClick(item)}
+                              className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                                isOverlap
+                                  ? !item.is_read
+                                    ? 'bg-red-50/90 border-red-300 hover:bg-red-100 shadow-xs'
+                                    : 'bg-red-50/40 border-red-200/60 hover:bg-red-50/80 opacity-90'
+                                  : !item.is_read
+                                  ? 'bg-[#EBF4FB]/70 border-[#2980B9]/30 hover:bg-[#EBF4FB]'
+                                  : 'bg-[#F5F7FA] border-transparent hover:bg-slate-100 opacity-85'
+                              }`}
+                            >
+                              <div className="flex items-start justify-between gap-1 mb-1">
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  {!item.is_read && (
+                                    <span className={`w-2 h-2 rounded-full shrink-0 ${isOverlap ? 'bg-red-600 animate-ping' : 'bg-[#2980B9]'}`} />
+                                  )}
+                                  {isOverlap ? (
+                                    <span className="text-[10px] font-extrabold uppercase tracking-wide bg-red-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                      <AlertTriangle className="w-2.5 h-2.5" />
+                                      <span>Rute Harianmu Terdampak!</span>
+                                    </span>
+                                  ) : (
+                                    <span className="font-bold text-[#184C78] text-[12px] truncate max-w-[190px]">
+                                      {item.nama_proyek ? `📍 ${item.nama_proyek}` : 'CivicTrack Info'}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[10px] text-[#6C757D] shrink-0 font-mono">
+                                  {formatRelativeTime(item.created_at)}
+                                </span>
                               </div>
-                              <span className="text-[10px] text-[#6C757D] shrink-0 font-mono">
-                                {formatRelativeTime(item.created_at)}
-                              </span>
+                              {isOverlap && item.nama_proyek && (
+                                <div className="text-[11px] font-bold text-red-900 mb-1">
+                                  📍 {item.nama_proyek}
+                                </div>
+                              )}
+                              <p className={`text-[11px] leading-relaxed ${isOverlap ? 'text-red-950/90 font-medium' : 'text-[#495057]'}`}>
+                                {item.pesan}
+                              </p>
+
+                              {isOverlap && onOpenAIRoute && (
+                                <button
+                                  type="button"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    onOpenAIRoute(item.nama_proyek || '', null);
+                                    setShowNotifMenu(false);
+                                  }}
+                                  className="mt-2.5 w-full py-1.5 px-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-98"
+                                >
+                                  <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                                  <span>Lihat Rute Alternatif AI</span>
+                                  <ChevronRight className="w-3.5 h-3.5" />
+                                </button>
+                              )}
                             </div>
-                            <p className="text-[11px] text-[#495057] leading-relaxed">{item.pesan}</p>
-                          </div>
-                        ))
+                          );
+                        })
                       )}
                     </div>
                   </div>

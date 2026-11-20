@@ -50,6 +50,7 @@ export interface ProyekItem {
   radius_dampak_meter?: number;
   jalur_terdampak?: string[] | string | any;
   lead_time_hari?: number;
+  is_published?: boolean;
 }
 
 export interface ProyekUpdatePayload {
@@ -64,6 +65,7 @@ export interface ProyekUpdatePayload {
   kode_proyek?: string;
   kode_akses?: string;
   catatan_perubahan?: string;
+  is_published?: boolean;
 }
 
 export interface ProyekCreatePayload {
@@ -82,6 +84,33 @@ export interface ProyekCreatePayload {
   estimasi_selesai: string;
   kode_proyek?: string;
   kode_akses?: string;
+  is_published?: boolean;
+}
+
+export interface SavedRouteItem {
+  id: number;
+  user_id: number;
+  nama_rute: string;
+  koordinat_asal?: { lat: number; lng: number; label?: string } | null;
+  koordinat_tujuan?: { lat: number; lng: number; label?: string } | null;
+  polyline_data: [number, number][];
+  moda_transportasi: 'mobil' | 'motor' | 'pejalan_kaki';
+  jarak_km?: number | null;
+  estimasi_menit?: number | null;
+  catatan?: string | null;
+  created_at?: string;
+  updated_at?: string;
+}
+
+export interface SaveRoutePayload {
+  nama_rute: string;
+  koordinat_asal?: { lat: number; lng: number; label?: string } | null;
+  koordinat_tujuan?: { lat: number; lng: number; label?: string } | null;
+  polyline_data: [number, number][];
+  moda_transportasi?: 'mobil' | 'motor' | 'pejalan_kaki';
+  jarak_km?: number | null;
+  estimasi_menit?: number | null;
+  catatan?: string | null;
 }
 
 export interface ProjectVerifyAccessResult {
@@ -272,6 +301,8 @@ export interface NotificationItem {
   waktu: string;
   dibaca: boolean;
   link_url?: string;
+  target_type?: 'radius' | 'subscription' | 'route_overlap' | string;
+  is_high_priority?: boolean;
 }
 
 export interface ApiNotificationItem {
@@ -282,6 +313,8 @@ export interface ApiNotificationItem {
   is_read: boolean;
   created_at: string;
   nama_proyek?: string;
+  target_type?: 'radius' | 'subscription' | 'route_overlap' | string;
+  is_high_priority?: boolean;
 }
 
 export interface SubscriptionStatus {

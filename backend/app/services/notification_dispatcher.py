@@ -1,35 +1,167 @@
 import logging
+import json
 from datetime import date, datetime
 from typing import List, Dict, Any, Optional
 from sqlalchemy.orm import Session
+from app.core.config import settings
 from app.models.project import Proyek, ProyekStatus, TahapanProgres
 from app.models.user import User, WilayahAdministratif
-from app.models.notification import Notifikasi, SubscriptionNotifikasi, NotificationLog
-from app.core.spatial import haversine_distance_meters
+from app.models.notification import Notifikasi, SubscriptionNotifikasi, NotificationLog, PushSubscription
+from app.models.ai_route import SavedRoute
+from app.core.spatial import haversine_distance_meters, parse_coords_list, min_distance_points_to_polyline_meters
+
+try:
+    from pywebpush import webpush, WebPushException
+    HAS_PYWEBPUSH = True
+except ImportError:
+    HAS_PYWEBPUSH = False
 
 logger = logging.getLogger(__name__)
+
+def send_real_web_push(subscription: PushSubscription, payload: dict) -> bool:
+    """Mengirim push notification nyata via pywebpush dengan VAPID."""
+    if not HAS_PYWEBPUSH:
+        return False
+    sub_data = {
+        "endpoint": subscription.endpoint,
+        "keys": {
+            "p256dh": subscription.p256dh,
+            "auth": subscription.auth
+        }
+    }
+    try:
+        webpush(
+            subscription_info=sub_data,
+            data=json.dumps(payload),
+            vapid_private_key=settings.VAPID_PRIVATE_KEY,
+            vapid_claims={"sub": settings.VAPID_CLAIM_EMAIL}
+        )
+        return True
+    except Exception as ex:
+        logger.warning(f"Gagal kirim web push ke {subscription.endpoint[:35]}...: {ex}")
+        return False
+
+def sample_polyline_points(points: List[tuple], sample_interval_meters: float = 40.0) -> List[tuple]:
+    """
+    Mengambil sampel titik di sepanjang polyline dengan jarak minimal sample_interval_meters.
+    Mencegah perulangan berlebih O(n*m) pada polyline OSM yang sangat rapat.
+    """
+    if not points or len(points) <= 2:
+        return points
+
+    sampled = [points[0]]
+    last_pt = points[0]
+    for pt in points[1:-1]:
+        d = haversine_distance_meters(last_pt[0], last_pt[1], pt[0], pt[1])
+        if d >= sample_interval_meters:
+            sampled.append(pt)
+            last_pt = pt
+
+    if points[-1] not in sampled:
+        sampled.append(points[-1])
+    return sampled
+
+def getUsersWithOverlappingRoute(
+    jalur_terdampak: Any,
+    db: Session,
+    threshold_meters: float = 100.0
+) -> List[Dict[str, Any]]:
+    """
+    Memeriksa overlap rute harian warga dengan koridor jalur terdampak proyek (jarak < threshold_meters).
+    Menggunakan sampling titik cerdas & bounding box filter untuk efisiensi tinggi (menghindari O(n*m) penuh).
+    """
+    impact_points = parse_coords_list(jalur_terdampak)
+    if not impact_points:
+        return []
+
+    # Sampling titik jalur proyek agar komputasi sangat ringan
+    sampled_impact = sample_polyline_points(impact_points, sample_interval_meters=40.0)
+
+    saved_routes = db.query(SavedRoute).join(User, SavedRoute.user_id == User.id).filter(
+        User.is_active == True
+    ).all()
+
+    overlapping_results: List[Dict[str, Any]] = []
+    best_dist_by_user: Dict[int, float] = {}
+    best_route_by_user: Dict[int, SavedRoute] = {}
+
+    for sr in saved_routes:
+        poly_points = parse_coords_list(sr.polyline_data)
+        if not poly_points:
+            continue
+
+        sampled_user_poly = sample_polyline_points(poly_points, sample_interval_meters=40.0)
+        dist_m = min_distance_points_to_polyline_meters(sampled_impact, sampled_user_poly)
+
+        if dist_m <= threshold_meters:
+            u_id = sr.user_id
+            if u_id not in best_dist_by_user or dist_m < best_dist_by_user[u_id]:
+                best_dist_by_user[u_id] = dist_m
+                best_route_by_user[u_id] = sr
+
+    for u_id, dist_m in best_dist_by_user.items():
+        sr = best_route_by_user[u_id]
+        moda_str = sr.moda_transportasi.value if hasattr(sr.moda_transportasi, 'value') else str(sr.moda_transportasi or 'mobil')
+        overlapping_results.append({
+            "user_id": u_id,
+            "user": sr.user,
+            "target_type": "route_overlap",
+            "distance_meters": round(dist_m, 1),
+            "route_id": sr.id,
+            "nama_rute": sr.nama_rute,
+            "moda_transportasi": moda_str,
+            "channel": "all" if (sr.user and sr.user.push_token) else "in_app"
+        })
+
+    return overlapping_results
 
 class NotificationDispatcher:
     """
     Service terpusat untuk mendispatch notifikasi berbasis radius (Haversine),
-    langganan wilayah/desa/proyek, dan mencatat log lengkap ke notification_logs.
+    langganan wilayah/desa/proyek, deteksi overlap rute harian warga,
+    dan mencatat log lengkap ke notification_logs.
     """
 
-    @staticmethod
-    def get_notification_targets(proyek: Proyek, db: Session) -> List[Dict[str, Any]]:
+    @classmethod
+    def get_users_with_overlapping_route(
+        cls,
+        proyek: Proyek,
+        db: Session,
+        threshold_meters: float = 100.0
+    ) -> List[Dict[str, Any]]:
+        impact_coords = parse_coords_list(proyek.jalur_terdampak)
+        if not impact_coords and proyek.latitude is not None and proyek.longitude is not None:
+            impact_coords = [(float(proyek.latitude), float(proyek.longitude))]
+        return getUsersWithOverlappingRoute(impact_coords, db, threshold_meters=threshold_meters)
+
+    @classmethod
+    def get_notification_targets(cls, proyek: Proyek, db: Session) -> List[Dict[str, Any]]:
         """
-        Mengumpulkan target user penerima notifikasi:
-        1. User yang berada dalam radius 'radius_dampak_meter' dari lokasi proyek (Haversine)
-        2. User yang berlangganan notifikasi wilayah/desa atau proyek terkait
-        3. Fallback: warga terdaftar yang relevan di sekitar wilayah
-        Deduplikasi berdasarkan user_id.
+        Mengumpulkan target user penerima notifikasi secara komprehensif:
+        1. target_type='route_overlap' (Overlap rute harian <= 100m - PRIORITAS TINGGI)
+        2. target_type='radius' (Berada dalam radius_dampak_meter Haversine)
+        3. target_type='subscription' (Langganan proyek langsung / wilayah / desa)
+        Deduplikasi berdasarkan user_id, namun menyimpan seluruh alasan target_types per user.
         """
         targets_by_user_id: Dict[int, Dict[str, Any]] = {}
         proyek_lat = float(proyek.latitude) if proyek.latitude is not None else -7.1197
         proyek_lon = float(proyek.longitude) if proyek.longitude is not None else 112.4150
         radius_m = float(proyek.radius_dampak_meter) if proyek.radius_dampak_meter else 1500.0
 
-        # 1. Target berbasis Radius Haversine (User dengan koordinat)
+        # 1. Target berbasis Rute Harian Tersimpan (Overlap <= 100m) - Prioritas Tertinggi
+        impact_coords = parse_coords_list(proyek.jalur_terdampak)
+        if not impact_coords and proyek.latitude is not None and proyek.longitude is not None:
+            impact_coords = [(float(proyek.latitude), float(proyek.longitude))]
+
+        route_overlaps = getUsersWithOverlappingRoute(impact_coords, db, threshold_meters=100.0)
+        for ro in route_overlaps:
+            u_id = ro["user_id"]
+            targets_by_user_id[u_id] = {
+                **ro,
+                "target_types": ["route_overlap"],
+            }
+
+        # 2. Target berbasis Radius Haversine (User dengan koordinat)
         users_with_coords = db.query(User).filter(
             User.latitude.isnot(None),
             User.longitude.isnot(None),
@@ -42,33 +174,43 @@ class NotificationDispatcher:
                 u_lon = float(u.longitude)
                 dist_m = haversine_distance_meters(proyek_lat, proyek_lon, u_lat, u_lon)
                 if dist_m <= radius_m:
-                    targets_by_user_id[u.id] = {
-                        "user_id": u.id,
-                        "user": u,
-                        "target_type": "radius",
-                        "distance_meters": round(dist_m, 1),
-                        "channel": "all" if u.push_token else "in_app"
-                    }
+                    if u.id in targets_by_user_id:
+                        if "radius" not in targets_by_user_id[u.id].get("target_types", []):
+                            targets_by_user_id[u.id]["target_types"].append("radius")
+                    else:
+                        targets_by_user_id[u.id] = {
+                            "user_id": u.id,
+                            "user": u,
+                            "target_type": "radius",
+                            "target_types": ["radius"],
+                            "distance_meters": round(dist_m, 1),
+                            "channel": "all" if u.push_token else "in_app"
+                        }
             except Exception as e:
                 logger.warning(f"Gagal hitung jarak haversine user #{u.id}: {e}")
 
-        # 2. Target berbasis Langganan Proyek langsung (SubscriptionNotifikasi proyek_id)
+        # 3. Target berbasis Langganan Proyek langsung (SubscriptionNotifikasi proyek_id)
         project_subs = db.query(SubscriptionNotifikasi).filter(
             SubscriptionNotifikasi.proyek_id == proyek.id
         ).all()
         for sub in project_subs:
-            if sub.user_id not in targets_by_user_id:
-                u = sub.user or db.query(User).filter(User.id == sub.user_id).first()
+            u_id = sub.user_id
+            if u_id in targets_by_user_id:
+                if "subscription" not in targets_by_user_id[u_id].get("target_types", []):
+                    targets_by_user_id[u_id]["target_types"].append("subscription")
+            else:
+                u = sub.user or db.query(User).filter(User.id == u_id).first()
                 if u and u.is_active:
-                    targets_by_user_id[sub.user_id] = {
-                        "user_id": sub.user_id,
+                    targets_by_user_id[u_id] = {
+                        "user_id": u_id,
                         "user": u,
                         "target_type": "subscription",
+                        "target_types": ["subscription"],
                         "distance_meters": None,
                         "channel": "all" if u.push_token else "in_app"
                     }
 
-        # 3. Target berbasis Langganan Wilayah/Desa (SubscriptionNotifikasi wilayah_id / desa_id)
+        # 4. Target berbasis Langganan Wilayah/Desa (SubscriptionNotifikasi wilayah_id / desa_id)
         if proyek.wilayah_id or proyek.desa_id:
             wilayah_filters = []
             if proyek.wilayah_id:
@@ -79,18 +221,23 @@ class NotificationDispatcher:
             from sqlalchemy import or_
             area_subs = db.query(SubscriptionNotifikasi).filter(or_(*wilayah_filters)).all()
             for sub in area_subs:
-                if sub.user_id not in targets_by_user_id:
-                    u = sub.user or db.query(User).filter(User.id == sub.user_id).first()
+                u_id = sub.user_id
+                if u_id in targets_by_user_id:
+                    if "subscription" not in targets_by_user_id[u_id].get("target_types", []):
+                        targets_by_user_id[u_id]["target_types"].append("subscription")
+                else:
+                    u = sub.user or db.query(User).filter(User.id == u_id).first()
                     if u and u.is_active:
-                        targets_by_user_id[sub.user_id] = {
-                            "user_id": sub.user_id,
+                        targets_by_user_id[u_id] = {
+                            "user_id": u_id,
                             "user": u,
                             "target_type": "subscription",
+                            "target_types": ["subscription"],
                             "distance_meters": None,
                             "channel": "all" if u.push_token else "in_app"
                         }
 
-        # 4. Fallback Warga Wilayah: jika belum ada target khusus, sertakan warga di kecamatan/desa yang sama
+        # 5. Fallback Warga Wilayah: jika belum ada target khusus, sertakan warga di kecamatan/desa yang sama
         if not targets_by_user_id and (proyek.wilayah_id or proyek.desa_id):
             area_users = db.query(User).filter(
                 User.is_active == True,
@@ -101,12 +248,12 @@ class NotificationDispatcher:
                     "user_id": u.id,
                     "user": u,
                     "target_type": "radius",
+                    "target_types": ["radius"],
                     "distance_meters": None,
                     "channel": "in_app"
                 }
 
-        # 5. Jaminan Fallback Minimal: jika list masih kosong sama sekali (misal DB awal),
-        # targetkan minimal 1 akun warga aktif agar notifikasi tetap tersalurkan dan tercatat di log
+        # 6. Jaminan Fallback Minimal
         if not targets_by_user_id:
             fallback_warga = db.query(User).filter(User.role == "warga", User.is_active == True).first()
             if fallback_warga:
@@ -114,9 +261,12 @@ class NotificationDispatcher:
                     "user_id": fallback_warga.id,
                     "user": fallback_warga,
                     "target_type": "radius",
+                    "target_types": ["radius"],
                     "distance_meters": 500.0,
                     "channel": "in_app"
                 }
+
+        return list(targets_by_user_id.values())
 
         return list(targets_by_user_id.values())
 
@@ -163,24 +313,52 @@ class NotificationDispatcher:
                 t_type = t.get("target_type", "radius")
                 ch = t.get("channel", channel)
 
+                # Format pesan khusus prioritas tinggi jika user rute overlap
+                if t_type == "route_overlap":
+                    nama_r = t.get("nama_rute") or "Rute Harian Anda"
+                    dist_str = f" ({round(dist, 0)}m dari lintasan)" if dist is not None else ""
+                    judul_to_send = f"🚨 PRIORITAS TINGGI: Rute Harian Terdampak — {proyek.nama_proyek}"
+                    pesan_to_send = f"PRIORITAS TINGGI: Rute harian Anda ('{nama_r}') terdampak oleh proyek {proyek.nama_proyek}{dist_str}. Buka peta untuk mengecek rekomendasi jalur alternatif AI."
+                else:
+                    judul_to_send = judul
+                    pesan_to_send = pesan
+
                 # Simpan ke notifikasi in-app jika create_in_app bernilai True
                 if create_in_app:
                     in_app_notif = Notifikasi(
                         user_id=u_id,
                         proyek_id=proyek.id,
-                        pesan=pesan,
+                        pesan=pesan_to_send,
                         is_read=False
                     )
                     db.add(in_app_notif)
+
+                # Kirim Web Push nyata jika user memiliki subscription
+                pushed_any = False
+                try:
+                    user_push_subs = db.query(PushSubscription).filter(PushSubscription.user_id == u_id).all()
+                    for ps in user_push_subs:
+                        p_ok = send_real_web_push(ps, {
+                            "title": judul_to_send,
+                            "body": pesan_to_send,
+                            "proyek_id": proyek.id,
+                            "trigger_type": trigger_type
+                        })
+                        if p_ok:
+                            pushed_any = True
+                except Exception as e:
+                    logger.debug(f"Pengecekan push subscription user #{u_id}: {e}")
+
+                final_channel = "web_push" if pushed_any else ch
 
                 # Simpan ke notification_logs selalu
                 log_entry = NotificationLog(
                     proyek_id=proyek.id,
                     user_id=u_id,
                     trigger_type=trigger_type,
-                    channel=ch,
-                    judul=judul,
-                    pesan=pesan,
+                    channel=final_channel,
+                    judul=judul_to_send,
+                    pesan=pesan_to_send,
                     target_type=t_type,
                     radius_meter=proyek.radius_dampak_meter or 1500,
                     distance_meters=dist,

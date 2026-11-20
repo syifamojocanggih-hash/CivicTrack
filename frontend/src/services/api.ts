@@ -26,6 +26,8 @@ import type {
   LaporanAduan,
   RatingUlasanItem,
   ProjectVerifyAccessResult,
+  SavedRouteItem,
+  SaveRoutePayload,
 } from '../types';
 import { LAMONGAN_DESA_GEOJSON } from '../data/lamonganDesaGeoJSON';
 import { INITIAL_PROJECTS, STATS_DATA } from '../data/mockData';
@@ -33,6 +35,27 @@ import { MOCK_LAPORAN_WARGA, MOCK_RATING_ULASAN } from '../data/dashboardMockDat
 import { VERIFIED_PROJECT_TECHNICAL_DATA } from '../utils/projectTechnicalData';
 
 const BASE_URL = '/api/v1';
+
+export function safeGetLocalStorage(key: string): string | null {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage && typeof window.localStorage.getItem === 'function') {
+      return window.localStorage.getItem(key);
+    }
+  } catch {
+    // ignore
+  }
+  return null;
+}
+
+export function safeSetLocalStorage(key: string, value: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage && typeof window.localStorage.setItem === 'function') {
+      window.localStorage.setItem(key, value);
+    }
+  } catch {
+    // ignore
+  }
+}
 
 export function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('civictrack_token');
@@ -119,6 +142,7 @@ export interface BackendProjectItem {
   radius_dampak_meter?: number;
   jalur_terdampak?: string[] | any;
   lead_time_hari?: number;
+  is_published?: boolean;
 }
 
 // Convert backend project schema to frontend ProyekItem
@@ -151,12 +175,12 @@ export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
       (p.status === 'planned' || p.status === 'direncanakan')
         ? 'planned'
         : (p.status === 'scheduled' || p.status === 'akan_dimulai')
-        ? 'scheduled'
-        : (Number(p.progres_persen) >= 100 || p.status === 'selesai' || p.status === 'completed')
-        ? 'selesai'
-        : (p.status === 'ditangguhkan' || p.status === 'suspended' || p.status === 'tertunda' || p.status === 'dalam_peninjauan_ulang')
-        ? 'ditangguhkan'
-        : 'berjalan'
+          ? 'scheduled'
+          : (Number(p.progres_persen) >= 100 || p.status === 'selesai' || p.status === 'completed')
+            ? 'selesai'
+            : (p.status === 'ditangguhkan' || p.status === 'suspended' || p.status === 'tertunda' || p.status === 'dalam_peninjauan_ulang')
+              ? 'ditangguhkan'
+              : 'berjalan'
     ) as ProyekStatus,
     progres_persen: p.progres_persen || 0,
     tanggal_mulai: p.tanggal_mulai ? String(p.tanggal_mulai).split('T')[0] : '2024-01-01',
@@ -167,6 +191,7 @@ export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
     radius_dampak_meter: p.radius_dampak_meter !== undefined ? Number(p.radius_dampak_meter) : 1500,
     jalur_terdampak: p.jalur_terdampak || undefined,
     lead_time_hari: p.lead_time_hari !== undefined ? Number(p.lead_time_hari) : undefined,
+    is_published: p.is_published !== false,
     kode_proyek: resolvedCode,
     kode_akses: resolvedPin,
     nama_wilayah: p.nama_wilayah || p.wilayah?.nama_wilayah || 'Kabupaten Lamongan',
@@ -580,7 +605,7 @@ export const apiService = {
         localStorage.setItem('civictrack_all_projects', JSON.stringify(filtered));
       }
       localStorage.removeItem(`civictrack_project_stages_${id}`);
-    } catch {}
+    } catch { }
 
     if (typeof window !== 'undefined') {
       window.dispatchEvent(
@@ -949,10 +974,10 @@ export const apiService = {
       data.status_tindak_lanjut === 'ditanggapi'
         ? 'selesai'
         : data.status_tindak_lanjut === 'diproses'
-        ? 'diproses'
-        : data.status_tindak_lanjut === 'ditolak'
-        ? 'ditolak'
-        : 'selesai';
+          ? 'diproses'
+          : data.status_tindak_lanjut === 'ditolak'
+            ? 'ditolak'
+            : 'selesai';
 
     // 1. Save to dedicated civictrack_aduan_replies persistent map
     try {
@@ -978,12 +1003,12 @@ export const apiService = {
         const updated = list.map((item) =>
           item.id === reportId
             ? {
-                ...item,
-                status: replyStatus,
-                tanggapan_dinas: data.tanggapan_dinas,
-                tanggal_tanggapan: nowFormatted,
-                petugas_penjawab: data.petugas_penjawab || item.petugas_penjawab || 'Aparatur Pemerintah Kab. Lamongan',
-              }
+              ...item,
+              status: replyStatus,
+              tanggapan_dinas: data.tanggapan_dinas,
+              tanggal_tanggapan: nowFormatted,
+              petugas_penjawab: data.petugas_penjawab || item.petugas_penjawab || 'Aparatur Pemerintah Kab. Lamongan',
+            }
             : item
         );
         localStorage.setItem('civictrack_submitted_reports', JSON.stringify(updated));
@@ -1051,11 +1076,11 @@ export const apiService = {
         const updated = list.map((item) =>
           item.id === reportId
             ? {
-                ...item,
-                judul: parsedJudul,
-                isi_laporan: parsedIsi,
-                kategori_aduan: extraMeta?.kategori_aduan || item.kategori_aduan,
-              }
+              ...item,
+              judul: parsedJudul,
+              isi_laporan: parsedIsi,
+              kategori_aduan: extraMeta?.kategori_aduan || item.kategori_aduan,
+            }
             : item
         );
         localStorage.setItem('civictrack_submitted_reports', JSON.stringify(updated));
@@ -1133,7 +1158,7 @@ export const apiService = {
         const found = list.find((item) => item.id === reportId);
         if (found) return found;
       }
-    } catch {}
+    } catch { }
 
     return null;
   },
@@ -1592,5 +1617,105 @@ export const apiService = {
       console.warn('Backend uploadDokumentasi failed or unavailable, fallback to local media URL:', err);
       return null;
     }
+  },
+
+  async getSavedRoutes(): Promise<SavedRouteItem[]> {
+    const token = safeGetLocalStorage('civictrack_token');
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    try {
+      const res = await fetch(`${BASE_URL}/rute-tersimpan`, { headers });
+      if (res.ok) {
+        const data = await res.json();
+        safeSetLocalStorage('civictrack_saved_routes', JSON.stringify(data));
+        return data;
+      }
+    } catch (e) {
+      // Offline fallback
+    }
+    const local = safeGetLocalStorage('civictrack_saved_routes');
+    return local ? JSON.parse(local) : [];
+  },
+
+  async saveRoute(payload: SaveRoutePayload): Promise<SavedRouteItem> {
+    const token = safeGetLocalStorage('civictrack_token');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    try {
+      const res = await fetch(`${BASE_URL}/rute-tersimpan`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const local = safeGetLocalStorage('civictrack_saved_routes');
+        const list: SavedRouteItem[] = local ? JSON.parse(local) : [];
+        safeSetLocalStorage('civictrack_saved_routes', JSON.stringify([data, ...list]));
+        return data;
+      }
+      if (res.status === 400 || res.status === 422) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.detail || 'Batas maksimal 3 rute harian telah tercapai.');
+      }
+    } catch (e: any) {
+      if (e?.message && (e.message.includes('maksimal') || e.message.includes('Batas'))) {
+        throw e;
+      }
+    }
+
+    const local = safeGetLocalStorage('civictrack_saved_routes');
+    const list: SavedRouteItem[] = local ? JSON.parse(local) : [];
+    if (list.length >= 3) {
+      throw new Error('Batas maksimal 3 rute harian telah tercapai. Hapus salah satu rute terlebih dahulu.');
+    }
+    const newRoute: SavedRouteItem = {
+      id: Date.now(),
+      user_id: 1,
+      nama_rute: payload.nama_rute,
+      koordinat_asal: payload.koordinat_asal,
+      koordinat_tujuan: payload.koordinat_tujuan,
+      polyline_data: payload.polyline_data,
+      moda_transportasi: payload.moda_transportasi || 'mobil',
+      jarak_km: payload.jarak_km || null,
+      estimasi_menit: payload.estimasi_menit || null,
+      catatan: payload.catatan || null,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+    };
+    safeSetLocalStorage('civictrack_saved_routes', JSON.stringify([newRoute, ...list]));
+    return newRoute;
+  },
+
+  async deleteSavedRoute(id: number): Promise<{ success: boolean; message: string }> {
+    const token = safeGetLocalStorage('civictrack_token');
+    const headers: Record<string, string> = {};
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+
+    try {
+      const res = await fetch(`${BASE_URL}/rute-tersimpan/${id}`, {
+        method: 'DELETE',
+        headers,
+      });
+      if (res.ok) {
+        const local = safeGetLocalStorage('civictrack_saved_routes');
+        if (local) {
+          const list: SavedRouteItem[] = JSON.parse(local);
+          safeSetLocalStorage('civictrack_saved_routes', JSON.stringify(list.filter((r) => r.id !== id)));
+        }
+        return await res.json();
+      }
+    } catch (e) {
+      // Offline fallback
+    }
+
+    const local = safeGetLocalStorage('civictrack_saved_routes');
+    if (local) {
+      const list: SavedRouteItem[] = JSON.parse(local);
+      safeSetLocalStorage('civictrack_saved_routes', JSON.stringify(list.filter((r) => r.id !== id)));
+    }
+    return { success: true, message: 'Rute tersimpan berhasil dihapus.' };
   },
 };

@@ -54,6 +54,7 @@ class ProyekBase(BaseModel):
     jalur_terdampak: Optional[str] = None
     kode_proyek: Optional[str] = None
     kode_akses: Optional[str] = None
+    is_published: bool = True
 
     @field_validator("nama_proyek")
     @classmethod
@@ -126,6 +127,7 @@ class ProyekUpdate(BaseModel):
     jalur_terdampak: Optional[str] = None
     kode_proyek: Optional[str] = None
     kode_akses: Optional[str] = None
+    is_published: Optional[bool] = None
     catatan_perubahan: Optional[str] = None
 
     @field_validator("nama_proyek")
@@ -218,6 +220,7 @@ class ProyekListItem(BaseModel):
     updated_at: datetime
     kode_proyek: Optional[str] = None
     kode_akses: Optional[str] = None
+    is_published: bool = True
     nama_wilayah: Optional[str] = None
     nama_desa: Optional[str] = None
     nama_dinas: Optional[str] = None

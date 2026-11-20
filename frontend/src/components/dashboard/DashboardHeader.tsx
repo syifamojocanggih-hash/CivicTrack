@@ -5,6 +5,9 @@ import {
   LogOut,
   Check,
   ArrowLeft,
+  Sparkles,
+  ChevronRight,
+  AlertTriangle,
 } from 'lucide-react';
 import type { UserProfile, NotificationItem } from '../../types';
 import { MOCK_DYNAMIC_NOTIFICATIONS } from '../../data/dashboardMockData';
@@ -15,6 +18,7 @@ interface DashboardHeaderProps {
   currentUser: UserProfile;
   onLogout: () => void;
   onSelectProjectNotification?: (projectId: number) => void;
+  onOpenAIRoute?: (projectName: string, project?: any) => void;
   onToggleMobileSidebar: () => void;
   activeNavTitle?: string;
   unreadCount?: number;
@@ -25,6 +29,7 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
   currentUser,
   onLogout,
   onSelectProjectNotification,
+  onOpenAIRoute,
   onToggleMobileSidebar,
   activeNavTitle = 'Dashboard Utama',
   onOpenMapExplorer,
@@ -79,15 +84,23 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
               waktu = n.created_at;
             }
 
+            const isOverlap =
+              n.target_type === 'route_overlap' ||
+              n.is_high_priority ||
+              n.pesan.includes('PRIORITAS TINGGI') ||
+              n.pesan.includes('Rute Harian');
+
             return {
               id: n.id,
               proyek_id: n.proyek_id,
               nama_proyek: n.nama_proyek || '',
-              judul: n.nama_proyek ? 'Pembaruan Proyek' : 'CivicTrack Info',
+              judul: isOverlap ? '🚨 Rute Harian Terdampak!' : n.nama_proyek ? 'Pembaruan Proyek' : 'CivicTrack Info',
               pesan: n.pesan,
               kategori: 'progres',
               waktu,
               dibaca: n.is_read,
+              target_type: isOverlap ? 'route_overlap' : n.target_type || 'radius',
+              is_high_priority: isOverlap,
             };
           });
           setNotifications(mapped);
@@ -207,31 +220,65 @@ export const DashboardHeader: React.FC<DashboardHeaderProps> = ({
                   </div>
 
                   <div className="space-y-2 mt-2.5 max-h-72 overflow-y-auto text-xs pr-1">
-                    {notifications.map((item) => (
-                      <div
-                        key={item.id}
-                        onClick={() => handleNotificationClick(item)}
-                        className={`p-2.5 rounded-xl border transition-all cursor-pointer ${
-                          !item.dibaca
-                            ? 'bg-[#EBF4FB]/60 border-[#2980B9]/40 hover:bg-[#EBF4FB]'
-                            : 'bg-[#F5F7FA] border-transparent hover:bg-slate-100 opacity-80'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-1 mb-1">
-                          <div className="font-bold text-[#184C78] text-[12px] flex items-center gap-1.5">
-                            {!item.dibaca && <span className="w-2 h-2 rounded-full bg-[#2980B9]" />}
-                            <span>{item.judul}</span>
+                    {notifications.map((item) => {
+                      const isOverlap = item.is_high_priority || item.target_type === 'route_overlap';
+                      return (
+                        <div
+                          key={item.id}
+                          onClick={() => handleNotificationClick(item)}
+                          className={`p-3 rounded-xl border transition-all cursor-pointer ${
+                            isOverlap
+                              ? !item.dibaca
+                                ? 'bg-red-50/90 border-red-300 hover:bg-red-100 shadow-xs'
+                                : 'bg-red-50/40 border-red-200/60 hover:bg-red-50/80 opacity-90'
+                              : !item.dibaca
+                              ? 'bg-[#EBF4FB]/60 border-[#2980B9]/40 hover:bg-[#EBF4FB]'
+                              : 'bg-[#F5F7FA] border-transparent hover:bg-slate-100 opacity-80'
+                          }`}
+                        >
+                          <div className="flex items-start justify-between gap-1 mb-1">
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              {!item.dibaca && (
+                                <span className={`w-2 h-2 rounded-full shrink-0 ${isOverlap ? 'bg-red-600 animate-ping' : 'bg-[#2980B9]'}`} />
+                              )}
+                              {isOverlap ? (
+                                <span className="text-[10px] font-extrabold uppercase tracking-wide bg-red-600 text-white px-2 py-0.5 rounded-full flex items-center gap-1">
+                                  <AlertTriangle className="w-2.5 h-2.5" />
+                                  <span>Rute Harianmu Terdampak!</span>
+                                </span>
+                              ) : (
+                                <span className="font-bold text-[#184C78] text-[12px]">{item.judul}</span>
+                              )}
+                            </div>
+                            <span className="text-[10px] text-[#6C757D] font-mono shrink-0">{item.waktu}</span>
                           </div>
-                          <span className="text-[10px] text-[#6C757D] font-mono shrink-0">{item.waktu}</span>
+                          {item.nama_proyek && (
+                            <div className={`text-[11px] font-bold mb-1 ${isOverlap ? 'text-red-900' : 'text-[#2980B9]'}`}>
+                              📍 {item.nama_proyek}
+                            </div>
+                          )}
+                          <p className={`text-[11px] leading-relaxed ${isOverlap ? 'text-red-950/90 font-medium' : 'text-[#495057]'}`}>
+                            {item.pesan}
+                          </p>
+
+                          {isOverlap && onOpenAIRoute && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onOpenAIRoute(item.nama_proyek || '', null);
+                                setShowNotifMenu(false);
+                              }}
+                              className="mt-2.5 w-full py-1.5 px-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 text-white rounded-lg text-[11px] font-bold flex items-center justify-center gap-1.5 shadow-sm transition-all cursor-pointer active:scale-98"
+                            >
+                              <Sparkles className="w-3.5 h-3.5 text-amber-300" />
+                              <span>Lihat Rute Alternatif AI</span>
+                              <ChevronRight className="w-3.5 h-3.5" />
+                            </button>
+                          )}
                         </div>
-                        {item.nama_proyek && (
-                          <div className="text-[11px] font-semibold text-[#2980B9] mb-1">
-                            📍 {item.nama_proyek}
-                          </div>
-                        )}
-                        <p className="text-[11px] text-[#495057] leading-relaxed">{item.pesan}</p>
-                      </div>
-                    ))}
+                      );
+                    })}
                   </div>
 
                   <div className="pt-2 border-t border-[#DCE0E6] mt-2 text-center">

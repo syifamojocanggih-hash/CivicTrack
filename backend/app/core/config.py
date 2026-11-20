@@ -27,6 +27,11 @@ class Settings(BaseSettings):
     MAX_VIDEO_SIZE_MB: int = 30
     ALLOWED_EXTENSIONS: str = "jpg,jpeg,png,webp,mp4,mov,avi,webm"
 
+    # Web Push VAPID Keys
+    VAPID_PUBLIC_KEY: str = "BHnS8R8umRcj_mwhxhiPuEM7taKcv4PiEElmCQ9qfz5F8iZtzFXsTJV37ni5vncSN-WptksI-AAYxb3qbbLVvzU"
+    VAPID_PRIVATE_KEY: str = "-----BEGIN PRIVATE KEY-----\nMIGHAgEAMBMGByqGSM49AgEGCCqGSM49AwEHBG0wawIBAQQg4qFyZc1kuY/zOpOF\nqM9BtkQZ8udOI5hA/VUfFzS5aTqhRANCAAR50vEfLpkXI/5sIcYYj7hDO7WinL+D\n4hBJZgkPan8+RfImbcxV7EyVd+54ub53EjflqbZLCPgAGMW96m2y1b81\n-----END PRIVATE KEY-----\n"
+    VAPID_CLAIM_EMAIL: str = "mailto:admin.civictrack@lamongankab.go.id"
+
     @property
     def allowed_extensions_list(self) -> List[str]:
         return [ext.strip().lower() for ext in self.ALLOWED_EXTENSIONS.split(",")]

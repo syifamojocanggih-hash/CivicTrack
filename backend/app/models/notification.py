@@ -49,3 +49,16 @@ class NotificationLog(Base):
     user = relationship("User", foreign_keys=[user_id])
     proyek = relationship("Proyek", foreign_keys=[proyek_id])
 
+class PushSubscription(Base):
+    __tablename__ = "push_subscriptions"
+
+    id = Column(PK_BIGINT, primary_key=True, autoincrement=True, index=True)
+    user_id = Column(BigInteger, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
+    endpoint = Column(Text, nullable=False)
+    p256dh = Column(String(255), nullable=False)
+    auth = Column(String(255), nullable=False)
+    created_at = Column(DateTime, server_default=func.now(), nullable=False)
+
+    user = relationship("User", foreign_keys=[user_id])
+
+
