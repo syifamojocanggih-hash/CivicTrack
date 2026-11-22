@@ -398,6 +398,8 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
                       ? '#10B981'
                       : pin.status === 'ditangguhkan'
                       ? '#94A3B8'
+                      : pin.status === 'rencana' || pin.status === 'direncanakan' || pin.status === 'planned'
+                      ? '#3B82F6'
                       : '#E67E22';
 
                   return (
@@ -559,6 +561,8 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
                               ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
                               : proj.status === 'ditangguhkan'
                               ? 'bg-slate-100 text-slate-600 border border-slate-200'
+                              : proj.status === 'rencana' || proj.status === 'direncanakan' || proj.status === 'planned'
+                              ? 'bg-blue-50 text-blue-700 border border-blue-200'
                               : 'bg-amber-50 text-amber-700 border border-amber-200'
                           }`}
                         >
@@ -566,6 +570,8 @@ export const NearbyMapModal: React.FC<NearbyMapModalProps> = ({
                             ? 'Selesai'
                             : proj.status === 'ditangguhkan'
                             ? 'Ditangguhkan'
+                            : proj.status === 'rencana' || proj.status === 'direncanakan' || proj.status === 'planned'
+                            ? 'Rencana'
                             : 'Sedang Berjalan'}
                         </span>
                       </div>

@@ -315,6 +315,10 @@ export function App() {
   const handleLogout = () => {
     localStorage.removeItem('civictrack_token');
     localStorage.removeItem('civictrack_user');
+    localStorage.removeItem('civictrack_saved_routes');
+    if (currentUser?.id) {
+      localStorage.removeItem(`civictrack_saved_routes_user_${currentUser.id}`);
+    }
     sessionStorage.removeItem('civictrack_pj_unlocked_project');
     sessionStorage.removeItem('civictrack_active_nav_section');
     setCurrentUser(null);
@@ -503,6 +507,8 @@ export function App() {
         project={aiRouteModal.project}
         allProjects={projects}
         initialSavedRoute={aiRouteModal.initialSavedRoute}
+        currentUser={currentUser}
+        onOpenAuth={(mode = 'login') => handleOpenAuth(mode)}
         onClose={() => setAIRouteModal({ isOpen: false, projectName: '', project: null, initialSavedRoute: null })}
       />
 

@@ -237,7 +237,7 @@ describe('AIRouteModal', () => {
     expect(destInput.value).toBe('Simpang Sumberwudi');
   });
 
-  it('renders simulation controls and starts vehicle simulation without crashing', async () => {
+  it('renders route controls and links to Google Maps without crashing', async () => {
     const user = userEvent.setup();
     render(
       <AIRouteModal
@@ -251,15 +251,8 @@ describe('AIRouteModal', () => {
     await user.click(presetBtn);
 
     await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Simulasi Kendaraan/i })).toBeInTheDocument();
-    });
-
-    const simBtn = screen.getByRole('button', { name: /Simulasi Kendaraan/i });
-    await user.click(simBtn);
-
-    // Simulation toggle to "Hentikan"
-    await waitFor(() => {
-      expect(screen.getByRole('button', { name: /Hentikan/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /Rute Penuh/i })).toBeInTheDocument();
+      expect(screen.getAllByRole('link', { name: /Google Maps/i }).length).toBeGreaterThanOrEqual(1);
     });
   });
 
@@ -564,6 +557,43 @@ describe('AIRouteModal', () => {
 
     await user.click(savedRoutesBtn);
     expect(screen.getByText(/Early Warning Aktif/i)).toBeInTheDocument();
+  });
+
+  it('connects to map directly with initialSavedRoute and does not require re-input', async () => {
+    const mockSavedRoute = {
+      id: 99,
+      nama_rute: 'Rute Kantor - Rumah Lamongan',
+      jarak_km: 4.2,
+      estimasi_menit: 12,
+      catatan: 'Rute harian utama via Veteran',
+      moda_transportasi: 'mobil' as const,
+      koordinat_asal: { lat: -7.1197, lng: 112.415, label: 'Alun-Alun Lamongan' },
+      koordinat_tujuan: { lat: -7.123, lng: 112.418, label: 'Jalan Veteran' },
+      polyline_data: [[-7.1197, 112.415], [-7.121, 112.4165], [-7.123, 112.418]] as [number, number][],
+    };
+
+    render(
+      <AIRouteModal
+        isOpen={true}
+        onClose={vi.fn()}
+        projectName="Peningkatan Jalan Veteran"
+        initialSavedRoute={mockSavedRoute as any}
+      />
+    );
+
+    // Verify inputs are pre-filled directly without requiring manual re-input
+    const originInput = screen.getByPlaceholderText(/Pilih lokasi di peta atau ketik titik awal.../i) as HTMLInputElement;
+    const destInput = screen.getByPlaceholderText(/Pilih lokasi di peta atau ketik tujuan.../i) as HTMLInputElement;
+
+    expect(originInput.value).toBe('Alun-Alun Lamongan');
+    expect(destInput.value).toBe('Jalan Veteran');
+
+    // Verify custom route is rendered in the cards
+    expect(screen.getByText('Rute Kantor - Rumah Lamongan')).toBeInTheDocument();
+
+    // Verify route controls and Google Maps links are available
+    expect(screen.getByRole('button', { name: /Rute Penuh/i })).toBeInTheDocument();
+    expect(screen.getAllByRole('link', { name: /Google Maps/i }).length).toBeGreaterThanOrEqual(1);
   });
 });
 

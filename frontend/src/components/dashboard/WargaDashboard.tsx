@@ -29,7 +29,6 @@ import {
   Bike,
   RotateCcw,
   ArrowLeft,
-  Navigation,
   Trash2,
 } from 'lucide-react';
 import type {
@@ -132,11 +131,13 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     let isCancelled = false;
     if (typeof apiService?.getSavedRoutes === 'function') {
       apiService
-        .getSavedRoutes()
+        .getSavedRoutes(currentUser?.id)
         .then((res: SavedRouteItem[]) => {
-          if (!isCancelled && res) setSavedRoutes(res);
+          if (!isCancelled) setSavedRoutes(res || []);
         })
-        .catch(() => {});
+        .catch(() => {
+          if (!isCancelled) setSavedRoutes([]);
+        });
     }
 
     if (typeof apiService?.getNotifications === 'function') {
@@ -151,12 +152,12 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     return () => {
       isCancelled = true;
     };
-  }, []);
+  }, [currentUser?.id]);
 
   const handleDeleteSavedRoute = async (id: number) => {
     try {
       if (typeof apiService?.deleteSavedRoute === 'function') {
-        await apiService.deleteSavedRoute(id);
+        await apiService.deleteSavedRoute(id, currentUser?.id);
       }
       setSavedRoutes((prev) => prev.filter((r) => r.id !== id));
     } catch (err) {
@@ -166,6 +167,11 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
 
   // Evaluasi cerdas status deteksi overlap rute harian warga dengan proyek konstruksi
   const routeOverlapAlert = useMemo(() => {
+    // SYARAT MUTLAK: Hanya muncul jika pengguna INI benar-benar memiliki rute harian tersimpan
+    if (!savedRoutes || savedRoutes.length === 0) {
+      return null;
+    }
+
     // 1. Cek notifikasi overlap rute aktif dari backend notification dispatcher
     const overlapNotif = userNotifications.find(
       (n) =>
@@ -181,7 +187,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
         projects.find((p) => p.nama_proyek === overlapNotif.nama_proyek) ||
         earlyWarningProjects[0] ||
         projects[0];
-      const matchedSavedRoute = savedRoutes.length > 0 ? savedRoutes[0] : null;
+      const matchedSavedRoute = savedRoutes[0];
       return {
         hasOverlap: true,
         project: proj,
@@ -192,7 +198,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     }
 
     // 2. Jika user memiliki rute harian tersimpan dan ada proyek berstatus early-warning
-    if (savedRoutes.length > 0 && earlyWarningProjects.length > 0) {
+    if (earlyWarningProjects.length > 0) {
       const targetProj = earlyWarningProjects[0];
       return {
         hasOverlap: true,
@@ -351,10 +357,18 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
   const [routeAnalysisResult, setRouteAnalysisResult] = useState<RouteConsultationResult | null>(null);
   const [routeFormError, setRouteFormError] = useState<string | null>(null);
 
-  const handleConsultRoute = (e?: React.FormEvent, customQuery?: string) => {
+  const handleConsultRoute = (
+    e?: React.FormEvent,
+    customQuery?: string,
+    overrideProjId?: number | 'all',
+    overrideVehicleType?: 'semua' | 'mobil' | 'motor'
+  ) => {
     if (e) e.preventDefault();
     const q = customQuery !== undefined ? customQuery : routeQueryText;
-    if (!q.trim() && selectedRouteProject === 'all') {
+    const projId = overrideProjId !== undefined ? overrideProjId : selectedRouteProject;
+    const vehType = overrideVehicleType !== undefined ? overrideVehicleType : routeVehicleType;
+
+    if (!q.trim() && projId === 'all') {
       setRouteFormError('Silakan ketik pertanyaan rute perjalanan Anda atau pilih proyek yang ingin dihindari.');
       return;
     }
@@ -364,12 +378,18 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
     if (customQuery !== undefined) {
       setRouteQueryText(customQuery);
     }
+    if (overrideProjId !== undefined) {
+      setSelectedRouteProject(overrideProjId);
+    }
+    if (overrideVehicleType !== undefined) {
+      setRouteVehicleType(overrideVehicleType);
+    }
 
     setTimeout(() => {
       const res = generateLamonganRouteConsultation(
         q,
-        selectedRouteProject,
-        routeVehicleType,
+        projId,
+        vehType,
         projects
       );
       setRouteAnalysisResult(res);
@@ -1597,15 +1617,10 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                           </span>
                         </>
                       ) : (
-                        <>
-                          <span className="text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/40 px-2.5 py-0.5 rounded-full flex items-center gap-1">
-                            <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
-                            Sistem Early-Warning (Radius &amp; LPSE)
-                          </span>
-                          <span className="text-[10px] font-mono text-cyan-300 bg-cyan-950/60 border border-cyan-800/60 px-2 py-0.5 rounded-full">
-                            {earlyWarningProjects.length} Proyek Terdeteksi Hulu SiRUP
-                          </span>
-                        </>
+                        <span className="text-[10px] font-extrabold uppercase tracking-wider bg-purple-500/30 text-purple-200 border border-purple-400/40 px-2.5 py-0.5 rounded-full flex items-center gap-1">
+                          <span className="w-1.5 h-1.5 rounded-full bg-purple-400 animate-ping" />
+                          Sistem Early-Warning (Radius &amp; LPSE)
+                        </span>
                       )}
                     </div>
                     <h3 className="font-heading text-sm sm:text-base font-bold text-white mt-1.5">
@@ -2858,14 +2873,23 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={() => onOpenAIRoute(sr.nama_rute, null, sr)}
-                      className="w-full text-center py-1.5 text-[11px] font-bold text-amber-900 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors flex items-center justify-center gap-1 cursor-pointer"
-                    >
-                      <Navigation className="w-3 h-3 text-amber-700" />
-                      <span>Simulasikan di Peta</span>
-                    </button>
+                    <div className="pt-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          const targetProj = (routeOverlapAlert?.savedRoute?.id === sr.id ? routeOverlapAlert.project : null)
+                            || projects.find((p) => p.status !== 'selesai' && p.progres_persen < 100)
+                            || projects[0]
+                            || null;
+                          onOpenAIRoute(targetProj ? targetProj.nama_proyek : sr.nama_rute, targetProj, sr);
+                        }}
+                        className="w-full text-center py-2 px-3 text-xs font-bold text-amber-950 bg-amber-50 hover:bg-amber-100 border border-amber-200 rounded-xl transition-colors flex items-center justify-center gap-1.5 cursor-pointer shadow-2xs"
+                        title="Dapatkan rute pengalihan cerdas dari AI"
+                      >
+                        <Sparkles className="w-3.5 h-3.5 text-amber-700" />
+                        <span>Dapatkan Rute dari AI</span>
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>
@@ -2873,7 +2897,7 @@ export const WargaDashboard: React.FC<WargaDashboardProps> = ({
           </div>
 
           {/* Interactive Route Consultation Input Form */}
-          <form onSubmit={(e) => handleConsultRoute(e)} className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-2xl p-4 sm:p-5 space-y-4">
+          <form id="ai-route-consultation-section" onSubmit={(e) => handleConsultRoute(e)} className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-2xl p-4 sm:p-5 space-y-4">
             <div>
               <label className="block text-xs font-bold text-[#184C78] mb-1.5 flex items-center justify-between">
                 <span>Tuliskan Titik Awal, Tujuan, atau Pertanyaan Rute Anda:</span>

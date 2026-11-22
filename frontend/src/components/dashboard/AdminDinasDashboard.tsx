@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import {
   Building2,
@@ -32,9 +32,11 @@ import {
   Calendar,
   User,
   Film,
+  Camera,
   Image as ImageIcon,
   Trash2,
   Globe,
+  FileText,
 } from 'lucide-react';
 import type {
   UserProfile,
@@ -50,7 +52,6 @@ import type {
 import {
   MOCK_LAPORAN_WARGA,
   MOCK_EVALUASI_CACAT,
-  MOCK_LINIMASA_TAHAP,
   MOCK_DOKUMENTASI_PROYEK,
 } from '../../data/dashboardMockData';
 import { apiService } from '../../services/api';
@@ -146,6 +147,14 @@ export const TEMPLATE_TANGGAPAN = [
     label: '✅ Penyelesaian Tuntas',
     text: 'Tindak lanjut atas keluhan ini telah diselesaikan oleh tim teknis lapangan. Hasil perbaikan telah diverifikasi oleh pengawas dinas dan saat ini akses jalan kembali normal serta aman dilalui warga.',
   },
+];
+
+export const DAFTAR_DINAS_LAMONGAN = [
+  { id: 1, nama: 'Dinas Pekerjaan Umum Bina Marga Kabupaten Lamongan', singkatan: 'Dinas PU Bina Marga' },
+  { id: 2, nama: 'Dinas Perumahan Rakyat, Kawasan Permukiman dan Cipta Karya Kabupaten Lamongan', singkatan: 'Dinas PRKPCK' },
+  { id: 3, nama: 'Dinas Lingkungan Hidup Kabupaten Lamongan', singkatan: 'Dinas Lingkungan Hidup' },
+  { id: 4, nama: 'Dinas Sumber Daya Air Kabupaten Lamongan', singkatan: 'Dinas Sumber Daya Air' },
+  { id: 5, nama: 'Dinas Kesehatan Kabupaten Lamongan', singkatan: 'Dinas Kesehatan' },
 ];
 
 export function abbreviateDesa(desaName: string): string {
@@ -302,9 +311,16 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     kode_akses: 'PJ-' + Math.floor(10000 + Math.random() * 90000),
     latitude: -7.1197,
     longitude: 112.4150,
-    nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum dan Penataan Ruang',
+    nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum Bina Marga Kabupaten Lamongan',
+    dinas_id: currentUser.dinas_id || 1,
     tahap_terkini: 'Pembersihan & Pengukuran Lahan',
     is_published: true,
+    pejabat_pembuat_komitmen: '',
+    kontraktor_pelaksana: '',
+    konsultan_pengawas: '',
+    kepala_mandor: '',
+    nomor_kontrak_lpse: '',
+    sumber_dana: 'APBD Kab. Lamongan',
   });
 
   // State Gerbang Verifikasi Penanggung Jawab Proyek
@@ -639,6 +655,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
   // Edit project state
   const [editingProject, setEditingProject] = useState<ProyekItem | null>(null);
+  const editPhotoInputRef = useRef<HTMLInputElement>(null);
   const [editForm, setEditForm] = useState({
     nama_proyek: '',
     kategori: 'jalan' as ProyekKategori,
@@ -649,11 +666,51 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     status: 'berjalan' as ProyekStatus,
     catatan_perubahan: '',
     is_published: true,
+    dinas_id: 1,
+    nama_dinas: '',
+    pejabat_pembuat_komitmen: '',
+    kontraktor_pelaksana: '',
+    konsultan_pengawas: '',
+    kepala_mandor: '',
+    nomor_kontrak_lpse: '',
+    sumber_dana: '',
+    foto_url: '',
   });
   const [editError, setEditError] = useState<string | null>(null);
   const [isSubmittingEdit, setIsSubmittingEdit] = useState(false);
   const [isDeleteConfirmOpen, setIsDeleteConfirmOpen] = useState(false);
   const [isDeletingProject, setIsDeletingProject] = useState(false);
+
+  // File picker handler untuk upload foto utama proyek pada modal edit
+  const handleEditPhotoSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setEditError('Berkas yang dipilih harus berupa file gambar (JPG, PNG, WebP).');
+      return;
+    }
+
+    if (file.size > 8 * 1024 * 1024) {
+      setEditError('Ukuran file foto maksimal 8 MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (loadEvent) => {
+      const dataUrl = loadEvent.target?.result as string;
+      setEditForm((prev) => ({ ...prev, foto_url: dataUrl }));
+      setEditError(null);
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleRemoveEditPhoto = () => {
+    setEditForm((prev) => ({ ...prev, foto_url: '' }));
+    if (editPhotoInputRef.current) {
+      editPhotoInputRef.current.value = '';
+    }
+  };
 
   // Linimasa state
   const [selectedProjectForTimeline, setSelectedProjectForTimeline] = useState<number>(() => {
@@ -667,7 +724,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       (currentUser.role === 'penanggung_jawab' && unlockedProject) ||
       projectList.find((p) => p.id === 2) ||
       projectList[0];
-    return targetProj ? getProjectTimelineStages(targetProj) : MOCK_LINIMASA_TAHAP;
+    return targetProj ? getProjectTimelineStages(targetProj) : [];
   });
 
   // Sinkronisasi otomatis tahapan linimasa dengan proyek terpilih & status progres
@@ -751,10 +808,40 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   const [newStageForm, setNewStageForm] = useState({
     nama_tahap: '',
     deskripsi: '',
-    target_mulai: '2024-04-01',
-    target_selesai: '2024-06-30',
-    persentase_bobot: 15,
+    target_mulai: new Date().toISOString().split('T')[0],
+    target_selesai: new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
+    persentase_bobot: 20,
+    status: 'sedang_berjalan' as 'belum_mulai' | 'sedang_berjalan' | 'selesai',
   });
+
+  // Edit stage state
+  const [editingStage, setEditingStage] = useState<LinimasaTahap | null>(null);
+  const [editStageForm, setEditStageForm] = useState({
+    nama_tahap: '',
+    deskripsi: '',
+    target_mulai: '',
+    target_selesai: '',
+    realisasi_mulai: '',
+    realisasi_selesai: '',
+    persentase_bobot: 20,
+    status: 'belum_mulai' as 'belum_mulai' | 'sedang_berjalan' | 'selesai' | 'tertunda',
+    catatan_lapangan: '',
+  });
+
+  const handleOpenEditStageModal = (stage: LinimasaTahap) => {
+    setEditingStage(stage);
+    setEditStageForm({
+      nama_tahap: stage.nama_tahap || '',
+      deskripsi: stage.deskripsi || '',
+      target_mulai: stage.target_mulai || '',
+      target_selesai: stage.target_selesai || '',
+      realisasi_mulai: stage.realisasi_mulai || '',
+      realisasi_selesai: stage.realisasi_selesai || '',
+      persentase_bobot: stage.persentase_bobot || 0,
+      status: stage.status || 'belum_mulai',
+      catatan_lapangan: stage.catatan_lapangan || '',
+    });
+  };
 
   // Dokumentasi state
   const [dokumentasiList, setDokumentasiList] = useState<DokumentasiProyek[]>(() => {
@@ -1081,7 +1168,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
     try {
       const wilayahId = KECAMATAN_ID_MAP[newProjectForm.nama_wilayah] || 23;
-      const dinasId = currentUser.dinas_id || 1;
+      const dinasId = newProjectForm.dinas_id || currentUser.dinas_id || 1;
 
       const parseCoordinate = (val: any, fallback: number): number => {
         if (typeof val === 'number') return isNaN(val) ? fallback : val;
@@ -1110,14 +1197,40 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         estimasi_selesai: newProjectForm.estimasi_selesai,
         kode_proyek: newProjectForm.kode_proyek.trim() || undefined,
         kode_akses: newProjectForm.kode_akses.trim() || undefined,
+        pejabat_pembuat_komitmen: newProjectForm.pejabat_pembuat_komitmen.trim() || undefined,
+        kontraktor_pelaksana: newProjectForm.kontraktor_pelaksana.trim() || undefined,
+        konsultan_pengawas: newProjectForm.konsultan_pengawas.trim() || undefined,
+        kepala_mandor: newProjectForm.kepala_mandor.trim() || undefined,
+        nomor_kontrak_lpse: newProjectForm.nomor_kontrak_lpse.trim() || undefined,
+        sumber_dana: newProjectForm.sumber_dana.trim() || undefined,
         is_published: newProjectForm.is_published,
       };
 
       const created = await apiService.createProject(payload);
 
-      setProjectList((prev) => [created, ...prev]);
+      // Inisialisasi tahapan linimasa kosong untuk proyek baru
+      saveProjectTimelineStages(created.id, []);
+
+      const finalCreated: ProyekItem = {
+        ...created,
+        dinas_id: dinasId,
+        nama_dinas: created.nama_dinas || newProjectForm.nama_dinas || 'Dinas Pekerjaan Umum Bina Marga Kabupaten Lamongan',
+        nama_wilayah: created.nama_wilayah || newProjectForm.nama_wilayah,
+        nama_desa: created.nama_desa || (newProjectForm.skala_proyek === 'skala_desa' ? newProjectForm.nama_desa : undefined),
+        pejabat_pembuat_komitmen: newProjectForm.pejabat_pembuat_komitmen.trim() || created.pejabat_pembuat_komitmen,
+        kontraktor_pelaksana: newProjectForm.kontraktor_pelaksana.trim() || created.kontraktor_pelaksana,
+        konsultan_pengawas: newProjectForm.konsultan_pengawas.trim() || created.konsultan_pengawas,
+        kepala_mandor: newProjectForm.kepala_mandor.trim() || created.kepala_mandor,
+        nomor_kontrak_lpse: newProjectForm.nomor_kontrak_lpse.trim() || created.nomor_kontrak_lpse,
+        sumber_dana: newProjectForm.sumber_dana.trim() || created.sumber_dana,
+        kode_proyek: newProjectForm.kode_proyek.trim() || created.kode_proyek,
+        kode_akses: newProjectForm.kode_akses.trim() || created.kode_akses,
+      };
+
+      setProjectList((prev) => [finalCreated, ...prev]);
+      broadcastProjectUpdate(finalCreated);
       if (onProjectCreated) {
-        onProjectCreated(created);
+        onProjectCreated(finalCreated);
       }
 
       setIsNewProjectModalOpen(false);
@@ -1126,7 +1239,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         'Kecamatan Lamongan (Kota)',
         'Kelurahan Jetis',
         'skala_desa',
-        [created, ...projectList]
+        [finalCreated, ...projectList]
       );
       setNewProjectForm({
         nama_proyek: '',
@@ -1141,13 +1254,20 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         nama_wilayah: 'Kecamatan Lamongan (Kota)',
         nama_desa: 'Kelurahan Jetis',
         desa_id: 400,
+        dinas_id: currentUser.dinas_id || 1,
+        nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum Bina Marga Kabupaten Lamongan',
         kode_proyek: nextCode,
         kode_akses: nextPin,
         latitude: -7.1197,
         longitude: 112.4150,
-        nama_dinas: currentUser.nama_dinas || 'Dinas Pekerjaan Umum dan Penataan Ruang',
         tahap_terkini: 'Pembersihan & Pengukuran Lahan',
         is_published: true,
+        pejabat_pembuat_komitmen: '',
+        kontraktor_pelaksana: '',
+        konsultan_pengawas: '',
+        kepala_mandor: '',
+        nomor_kontrak_lpse: '',
+        sumber_dana: 'APBD Kab. Lamongan',
       });
     } catch (error: any) {
       console.log('Submit proyek gagal:', error);
@@ -1170,9 +1290,18 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       (p.status as any) === 'dalam_peninjauan_ulang'
     ) {
       initialStatus = 'ditangguhkan';
+    } else if (
+      p.status === 'rencana' ||
+      p.status === 'direncanakan' ||
+      p.status === 'planned' ||
+      p.status === 'scheduled' ||
+      p.status === 'akan_dimulai'
+    ) {
+      initialStatus = 'rencana';
     } else {
       initialStatus = 'berjalan';
     }
+    const tech = getProjectTechnicalDetails(p);
     setEditForm({
       nama_proyek: p.nama_proyek,
       kategori: p.kategori,
@@ -1183,6 +1312,15 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       status: initialStatus,
       catatan_perubahan: '',
       is_published: p.is_published ?? true,
+      dinas_id: p.dinas_id || 1,
+      nama_dinas: p.nama_dinas || tech.instansi_penanggung_jawab || 'Dinas Pekerjaan Umum Bina Marga Kabupaten Lamongan',
+      pejabat_pembuat_komitmen: p.pejabat_pembuat_komitmen || tech.pejabat_pembuat_komitmen || '',
+      kontraktor_pelaksana: p.kontraktor_pelaksana || tech.kontraktor_pelaksana || '',
+      konsultan_pengawas: p.konsultan_pengawas || tech.konsultan_pengawas || '',
+      kepala_mandor: p.kepala_mandor || tech.kepala_mandor || '',
+      nomor_kontrak_lpse: p.nomor_kontrak_lpse || tech.nomor_kontrak_lpse || '',
+      sumber_dana: p.sumber_dana || tech.sumber_dana || 'APBD Kab. Lamongan',
+      foto_url: p.foto_url || '',
     });
     setEditError(null);
   };
@@ -1247,25 +1385,46 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         estimasi_selesai: editForm.estimasi_selesai,
         progres_persen: newProgres,
         status: editForm.status,
+        dinas_id: editForm.dinas_id,
         catatan_perubahan: editForm.catatan_perubahan.trim() || undefined,
         is_published: editForm.is_published,
+        pejabat_pembuat_komitmen: editForm.pejabat_pembuat_komitmen.trim() || undefined,
+        kontraktor_pelaksana: editForm.kontraktor_pelaksana.trim() || undefined,
+        konsultan_pengawas: editForm.konsultan_pengawas.trim() || undefined,
+        kepala_mandor: editForm.kepala_mandor.trim() || undefined,
+        nomor_kontrak_lpse: editForm.nomor_kontrak_lpse.trim() || undefined,
+        sumber_dana: editForm.sumber_dana.trim() || undefined,
+        foto_url: editForm.foto_url ? editForm.foto_url.trim() : undefined,
       });
 
+      const mergedUpdated: ProyekItem = {
+        ...editingProject,
+        ...updated,
+        dinas_id: editForm.dinas_id,
+        nama_dinas: editForm.nama_dinas || editingProject.nama_dinas,
+        pejabat_pembuat_komitmen: editForm.pejabat_pembuat_komitmen.trim() || editingProject.pejabat_pembuat_komitmen,
+        kontraktor_pelaksana: editForm.kontraktor_pelaksana.trim() || editingProject.kontraktor_pelaksana,
+        konsultan_pengawas: editForm.konsultan_pengawas.trim() || editingProject.konsultan_pengawas,
+        kepala_mandor: editForm.kepala_mandor.trim() || editingProject.kepala_mandor,
+        nomor_kontrak_lpse: editForm.nomor_kontrak_lpse.trim() || editingProject.nomor_kontrak_lpse,
+        sumber_dana: editForm.sumber_dana.trim() || editingProject.sumber_dana,
+        foto_url: editForm.foto_url ? editForm.foto_url.trim() : (updated.foto_url || ''),
+      };
+
       setProjectList((prev) =>
-        prev.map((item) => (item.id === editingProject.id ? { ...item, ...updated } : item))
+        prev.map((item) => (item.id === editingProject.id ? mergedUpdated : item))
       );
       if (
         currentUser.role === 'penanggung_jawab' &&
         unlockedProject &&
         unlockedProject.id === editingProject.id
       ) {
-        const mergedPJ = { ...unlockedProject, ...updated };
-        setUnlockedProject(mergedPJ);
-        sessionStorage.setItem('civictrack_pj_unlocked_project', JSON.stringify(mergedPJ));
+        setUnlockedProject(mergedUpdated);
+        sessionStorage.setItem('civictrack_pj_unlocked_project', JSON.stringify(mergedUpdated));
       }
-      broadcastProjectUpdate(updated);
+      broadcastProjectUpdate(mergedUpdated);
       if (onProjectUpdated) {
-        onProjectUpdated(updated);
+        onProjectUpdated(mergedUpdated);
       }
       setEditingProject(null);
     } catch (err: any) {
@@ -1285,12 +1444,25 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     if (!activeTargetId) return;
 
     try {
-      const stageRes = await apiService.createTimelineStage(activeTargetId, {
-        nama_tahap: newStageForm.nama_tahap.trim(),
-        progres_persen: Number(newStageForm.persentase_bobot),
-        catatan: newStageForm.deskripsi.trim() || undefined,
-      });
+      let stageRes: any;
+      try {
+        stageRes = await apiService.createTimelineStage(activeTargetId, {
+          nama_tahap: newStageForm.nama_tahap.trim(),
+          progres_persen: Number(newStageForm.persentase_bobot),
+          catatan: newStageForm.deskripsi.trim() || undefined,
+        });
+      } catch (backendErr: any) {
+        console.warn('Backend createTimelineStage error, continuing with client persistence:', backendErr);
+        stageRes = {
+          id: Date.now(),
+          proyek_id: activeTargetId,
+          nama_tahap: newStageForm.nama_tahap.trim(),
+          progres_persen: Number(newStageForm.persentase_bobot),
+          catatan: newStageForm.deskripsi.trim() || undefined,
+        };
+      }
 
+      const initialStatus = newStageForm.status || (stageRes.progres_persen >= 100 ? 'selesai' : 'sedang_berjalan');
       const newStage: LinimasaTahap = {
         id: stageRes.id,
         proyek_id: activeTargetId,
@@ -1300,8 +1472,10 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         target_mulai: newStageForm.target_mulai,
         target_selesai: newStageForm.target_selesai,
         persentase_bobot: stageRes.progres_persen,
-        status: (stageRes.progres_persen >= 100 ? 'selesai' : 'sedang_berjalan') as any,
-        catatan_lapangan: stageRes.catatan || 'Tahap baru ditambahkan oleh pengawas teknis.',
+        status: initialStatus,
+        realisasi_selesai: initialStatus === 'selesai' ? new Date().toISOString().split('T')[0] : undefined,
+        catatan_lapangan: stageRes.catatan || 'Tahap baru ditambahkan secara manual oleh aparatur pemerintah.',
+        is_manual: true,
       };
       const updatedStages = [...timelineStages, newStage];
       setTimelineStages(updatedStages);
@@ -1309,10 +1483,11 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
 
       const projToUpdate = projectList.find((p) => p.id === activeTargetId);
       if (projToUpdate) {
+        const nextProgress = Math.max(projToUpdate.progres_persen, stageRes.progres_persen);
         const updatedProj: ProyekItem = {
           ...projToUpdate,
-          progres_persen: stageRes.progres_persen,
-          status: stageRes.progres_persen >= 100 ? 'selesai' : projToUpdate.status,
+          progres_persen: nextProgress,
+          status: nextProgress >= 100 ? 'selesai' : (projToUpdate.status === 'rencana' ? 'berjalan' : projToUpdate.status),
           tahap_terkini: stageRes.nama_tahap,
         };
         setProjectList((prev) => prev.map((p) => (p.id === updatedProj.id ? updatedProj : p)));
@@ -1334,13 +1509,120 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       setNewStageForm({
         nama_tahap: '',
         deskripsi: '',
-        target_mulai: '2024-04-01',
-        target_selesai: '2024-06-30',
-        persentase_bobot: 15,
+        target_mulai: new Date().toISOString().split('T')[0],
+        target_selesai: new Date(Date.now() + 60 * 86400000).toISOString().split('T')[0],
+        persentase_bobot: 20,
+        status: 'sedang_berjalan',
       });
+      setCopyFeedback(`Tahap "${newStage.nama_tahap}" berhasil ditambahkan ke linimasa!`);
+      setTimeout(() => setCopyFeedback(null), 3500);
     } catch (err: any) {
       alert(err.message || 'Gagal menambahkan tahapan linimasa.');
     }
+  };
+
+  // Handle delete timeline stage
+  const handleDeleteTimelineStage = (stageId: number) => {
+    const activeTargetId =
+      currentUser.role === 'penanggung_jawab' && unlockedProject
+        ? unlockedProject.id
+        : selectedProjectForTimeline;
+    if (!activeTargetId) return;
+
+    const updatedStages = timelineStages
+      .filter((s) => s.id !== stageId)
+      .map((s, idx) => ({ ...s, nomor_tahap: idx + 1, is_manual: true }));
+
+    setTimelineStages(updatedStages);
+    saveProjectTimelineStages(activeTargetId, updatedStages);
+    setCopyFeedback('Tahapan linimasa berhasil dihapus.');
+    setTimeout(() => setCopyFeedback(null), 3000);
+  };
+
+  // Handle edit / update timeline stage
+  const handleUpdateTimelineStage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingStage) return;
+
+    const activeTargetId =
+      currentUser.role === 'penanggung_jawab' && unlockedProject
+        ? unlockedProject.id
+        : selectedProjectForTimeline;
+    if (!activeTargetId) return;
+
+    const cleanStatus = editStageForm.status;
+    const nowStr = new Date().toISOString().split('T')[0];
+
+    const updatedStage: LinimasaTahap = {
+      ...editingStage,
+      nama_tahap: editStageForm.nama_tahap.trim(),
+      deskripsi: editStageForm.deskripsi.trim(),
+      target_mulai: editStageForm.target_mulai,
+      target_selesai: editStageForm.target_selesai,
+      realisasi_mulai:
+        cleanStatus !== 'belum_mulai'
+          ? editStageForm.realisasi_mulai || editingStage.realisasi_mulai || editStageForm.target_mulai || nowStr
+          : undefined,
+      realisasi_selesai:
+        cleanStatus === 'selesai'
+          ? editStageForm.realisasi_selesai || editingStage.realisasi_selesai || nowStr
+          : undefined,
+      persentase_bobot: Number(editStageForm.persentase_bobot) || 0,
+      status: cleanStatus,
+      catatan_lapangan: editStageForm.catatan_lapangan.trim() || undefined,
+      is_manual: true,
+    };
+
+    const updatedStages = timelineStages.map((st) =>
+      st.id === editingStage.id ? updatedStage : st
+    );
+
+    setTimelineStages(updatedStages);
+    saveProjectTimelineStages(activeTargetId, updatedStages);
+
+    // Hitung bobot akumulasi tahap selesai
+    const completedWeight = updatedStages
+      .filter((s) => s.status === 'selesai')
+      .reduce((sum, s) => sum + (Number(s.persentase_bobot) || 0), 0);
+
+    const activeStage = updatedStages.find((s) => s.status === 'sedang_berjalan') || updatedStage;
+
+    const projToUpdate = projectList.find((p) => p.id === activeTargetId);
+    if (projToUpdate) {
+      const calculatedProgress = Math.min(100, Math.max(projToUpdate.progres_persen, completedWeight));
+      const nextStatus =
+        calculatedProgress >= 100
+          ? 'selesai'
+          : projToUpdate.status === 'rencana' && cleanStatus !== 'belum_mulai'
+          ? 'berjalan'
+          : projToUpdate.status;
+
+      const updatedProj: ProyekItem = {
+        ...projToUpdate,
+        progres_persen: calculatedProgress,
+        status: nextStatus,
+        tahap_terkini: activeStage.nama_tahap,
+      };
+
+      setProjectList((prev) => prev.map((p) => (p.id === updatedProj.id ? updatedProj : p)));
+      broadcastProjectUpdate(updatedProj);
+
+      if (
+        currentUser.role === 'penanggung_jawab' &&
+        unlockedProject &&
+        unlockedProject.id === activeTargetId
+      ) {
+        setUnlockedProject(updatedProj);
+        sessionStorage.setItem('civictrack_pj_unlocked_project', JSON.stringify(updatedProj));
+      }
+      if (onProjectUpdated) {
+        onProjectUpdated(updatedProj);
+      }
+    }
+
+    setEditingStage(null);
+    setCopyFeedback(`Tahap "${updatedStage.nama_tahap}" berhasil diperbarui.`);
+    setTimeout(() => setCopyFeedback(null), 3000);
   };
 
   // Handle submit documentation
@@ -1421,6 +1703,9 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     setDokumentasiList(updatedList);
     try {
       localStorage.setItem('civictrack_dokumentasi_proyek', JSON.stringify(updatedList));
+      if (typeof window !== 'undefined') {
+        window.dispatchEvent(new CustomEvent('civictrack_documentation_updated', { detail: newDoc }));
+      }
     } catch {}
 
     setIsSubmittingDoc(false);
@@ -1477,10 +1762,11 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     }
   };
 
-  // Helper normalisasi status proyek: hanya berjalan, selesai, ditangguhkan (tanpa dalam_peninjauan_ulang)
-  const getDisplayStatus = (st?: string, progres?: number): 'selesai' | 'berjalan' | 'ditangguhkan' => {
+  // Helper normalisasi status proyek: hanya berjalan, selesai, ditangguhkan, rencana
+  const getDisplayStatus = (st?: string, progres?: number): 'selesai' | 'berjalan' | 'ditangguhkan' | 'rencana' => {
+    if (st === 'rencana' || st === 'direncanakan' || st === 'planned') return 'rencana';
     if (st === 'selesai' || (progres !== undefined && progres >= 100)) return 'selesai';
-    if (st === 'berjalan') return 'berjalan';
+    if (st === 'berjalan' || st === 'in_progress') return 'berjalan';
     return 'ditangguhkan';
   };
 
@@ -1527,7 +1813,10 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
   const aduanMenungguCount = aduanList.filter((a) => a.status === 'menunggu').length;
 
   const filteredProjects = projectList.filter((p) => {
-    if (filterStatus !== 'semua' && p.status !== filterStatus) return false;
+    if (filterStatus !== 'semua') {
+      const normalized = getDisplayStatus(p.status, p.progres_persen);
+      if (p.status !== filterStatus && normalized !== filterStatus) return false;
+    }
     if (searchProj.trim()) {
       const q = searchProj.toLowerCase();
       const code = getProjectEffectiveCode(p).toLowerCase();
@@ -1548,6 +1837,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
     isNewProjectModalOpen ||
     !!editingProject ||
     isNewStageModalOpen ||
+    !!editingStage ||
     isNewDocModalOpen ||
     !!selectedEvalToVerify ||
     !!selectedAduanToReply;
@@ -1567,6 +1857,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         }
         if (editingProject) setEditingProject(null);
         if (isNewStageModalOpen) setIsNewStageModalOpen(false);
+        if (editingStage) setEditingStage(null);
         if (isNewDocModalOpen) {
           setIsNewDocModalOpen(false);
           handleClearDocFile();
@@ -1584,7 +1875,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
       document.body.style.overflow = '';
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [isAnyFormOpen, isNewProjectModalOpen, editingProject, isNewStageModalOpen, isNewDocModalOpen, selectedEvalToVerify, selectedAduanToReply]);
+  }, [isAnyFormOpen, isNewProjectModalOpen, editingProject, isNewStageModalOpen, editingStage, isNewDocModalOpen, selectedEvalToVerify, selectedAduanToReply]);
 
   // ── GERBANG AKSES VERIFIKASI PENANGGUNG JAWAB PROYEK ──
   if (currentUser.role === 'penanggung_jawab' && !unlockedProject) {
@@ -1908,6 +2199,155 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     onChange={(e) => setNewProjectForm({ ...newProjectForm, estimasi_selesai: e.target.value })}
                     className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
                   />
+                </div>
+              </div>
+
+              {/* Section Pihak & Tim Penanggung Jawab Proyek (LPSE & Pelaksana Lapangan) */}
+              <div className="p-4 bg-gradient-to-r from-blue-50/70 via-indigo-50/40 to-blue-50/70 border border-[#184C78]/25 rounded-2xl space-y-3.5 shadow-2xs">
+                <div className="flex items-center justify-between flex-wrap gap-2">
+                  <div className="flex items-center gap-2 font-bold text-[#184C78] text-xs sm:text-sm">
+                    <Building2 className="w-4 h-4 text-[#184C78]" />
+                    <span>Pihak &amp; Tim Penanggung Jawab Proyek (Sesuai LPSE di Peta)</span>
+                  </div>
+                  <span className="text-[10.5px] bg-[#184C78] text-white px-2.5 py-0.5 rounded-full font-semibold shadow-2xs flex items-center gap-1">
+                    <ShieldCheck className="w-3 h-3 text-cyan-300" />
+                    Transparansi Publik
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-600 leading-snug">
+                  Data penanggung jawab ini akan langsung tercantum pada kartu detail proyek di peta publik warga dan transparansi LPSE.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+                  {/* Instansi Pengampu / Dinas Penanggung Jawab */}
+                  <div className="sm:col-span-2">
+                    <label className="text-xs font-semibold text-[#184C78] mb-1 flex items-center gap-1">
+                      <Building2 className="w-3.5 h-3.5 text-[#184C78]" />
+                      <span>Instansi Pengampu (Dinas Penanggung Jawab)</span>
+                      <span className="text-red-600">*</span>
+                    </label>
+                    <select
+                      value={newProjectForm.dinas_id}
+                      onChange={(e) => {
+                        const selId = Number(e.target.value);
+                        const selDinas = DAFTAR_DINAS_LAMONGAN.find((d) => d.id === selId);
+                        setNewProjectForm({
+                          ...newProjectForm,
+                          dinas_id: selId,
+                          nama_dinas: selDinas ? selDinas.nama : newProjectForm.nama_dinas,
+                        });
+                      }}
+                      className="w-full p-2.5 text-xs border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9] font-medium"
+                    >
+                      {DAFTAR_DINAS_LAMONGAN.map((d) => (
+                        <option key={d.id} value={d.id}>
+                          {d.nama}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Pejabat Pembuat Komitmen (PPK) */}
+                  <div>
+                    <label className="text-xs font-semibold text-[#184C78] mb-1 flex items-center gap-1">
+                      <User className="w-3.5 h-3.5 text-[#184C78]" />
+                      <span>Pejabat Pembuat Komitmen (PPK)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjectForm.pejabat_pembuat_komitmen}
+                      onChange={(e) =>
+                        setNewProjectForm({ ...newProjectForm, pejabat_pembuat_komitmen: e.target.value })
+                      }
+                      placeholder="Contoh: Suyitno, S.T. / Dwi Prasetyo, S.T."
+                      className="w-full p-2.5 text-xs border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                    />
+                  </div>
+
+                  {/* Kontraktor Pelaksana */}
+                  <div>
+                    <label className="text-xs font-semibold text-[#184C78] mb-1 flex items-center gap-1">
+                      <Building2 className="w-3.5 h-3.5 text-[#184C78]" />
+                      <span>Kontraktor Pelaksana (Rekanan Lapangan)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjectForm.kontraktor_pelaksana}
+                      onChange={(e) =>
+                        setNewProjectForm({ ...newProjectForm, kontraktor_pelaksana: e.target.value })
+                      }
+                      placeholder="Contoh: PT Surya Bhakti Persada / CV Jaya Abadi"
+                      className="w-full p-2.5 text-xs border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                    />
+                  </div>
+
+                  {/* Konsultan Pengawas */}
+                  <div>
+                    <label className="text-xs font-semibold text-[#184C78] mb-1 flex items-center gap-1">
+                      <ShieldCheck className="w-3.5 h-3.5 text-[#184C78]" />
+                      <span>Konsultan Pengawas / Supervisi</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjectForm.konsultan_pengawas}
+                      onChange={(e) =>
+                        setNewProjectForm({ ...newProjectForm, konsultan_pengawas: e.target.value })
+                      }
+                      placeholder="Contoh: CV Sinar Karya Konsultan"
+                      className="w-full p-2.5 text-xs border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                    />
+                  </div>
+
+                  {/* Kepala Mandor / Site Manager */}
+                  <div>
+                    <label className="text-xs font-semibold text-[#184C78] mb-1 flex items-center gap-1">
+                      <Wrench className="w-3.5 h-3.5 text-[#184C78]" />
+                      <span>Kepala Mandor / Site Manager</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjectForm.kepala_mandor}
+                      onChange={(e) =>
+                        setNewProjectForm({ ...newProjectForm, kepala_mandor: e.target.value })
+                      }
+                      placeholder="Contoh: H. Suwandi (Site Manager) & Suprapto (Mandor)"
+                      className="w-full p-2.5 text-xs border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                    />
+                  </div>
+
+                  {/* Nomor Kontrak LPSE */}
+                  <div>
+                    <label className="text-xs font-semibold text-[#184C78] mb-1 flex items-center gap-1">
+                      <FileText className="w-3.5 h-3.5 text-[#184C78]" />
+                      <span>Nomor Kontrak LPSE</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjectForm.nomor_kontrak_lpse}
+                      onChange={(e) =>
+                        setNewProjectForm({ ...newProjectForm, nomor_kontrak_lpse: e.target.value })
+                      }
+                      placeholder="Contoh: 602/SPK-JLN/LAM-JLN-2026-003 (SiRUP-4728195)"
+                      className="w-full p-2.5 font-mono text-xs border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                    />
+                  </div>
+
+                  {/* Sumber Pembiayaan */}
+                  <div>
+                    <label className="text-xs font-semibold text-[#184C78] mb-1 flex items-center gap-1">
+                      <DollarSign className="w-3.5 h-3.5 text-[#184C78]" />
+                      <span>Sumber Pembiayaan</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={newProjectForm.sumber_dana}
+                      onChange={(e) =>
+                        setNewProjectForm({ ...newProjectForm, sumber_dana: e.target.value })
+                      }
+                      placeholder="Contoh: APBD Kab. Lamongan (Alokasi Khusus JAMULA)"
+                      className="w-full p-2.5 text-xs border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                    />
+                  </div>
                 </div>
               </div>
 
@@ -2286,9 +2726,17 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                   <label className="block font-semibold text-[#184C78] mb-1">Status Pekerjaan</label>
                   <select
                     value={newProjectForm.status}
-                    onChange={(e) => setNewProjectForm({ ...newProjectForm, status: e.target.value as any })}
+                    onChange={(e) => {
+                      const newStatus = e.target.value as any;
+                      setNewProjectForm({
+                        ...newProjectForm,
+                        status: newStatus,
+                        progres_persen: newStatus === 'rencana' ? 0 : newProjectForm.progres_persen,
+                      });
+                    }}
                     className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
                   >
+                    <option value="rencana">Rencana (Proyek yang Akan Datang)</option>
                     <option value="berjalan">Sedang Berjalan</option>
                     <option value="selesai">Selesai</option>
                     <option value="ditangguhkan">Ditangguhkan</option>
@@ -2378,7 +2826,6 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
         const isProjectCompleted = editingProject.status === 'selesai' || editingProject.progres_persen >= 100;
         const editCode = getProjectEffectiveCode(editingProject);
         const editPin = getProjectEffectivePin(editingProject);
-        const editTech = getProjectTechnicalDetails(editingProject);
 
         return renderPortal(
           <div
@@ -2506,7 +2953,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                       </div>
                     </div>
 
-                    {/* Bagian Pihak & Tim Penanggung Jawab Proyek Sesuai Peta (Request 4) */}
+                    {/* Bagian Pihak & Tim Penanggung Jawab Proyek Sesuai Peta */}
                     <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
@@ -2514,49 +2961,140 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                           <span>Pihak &amp; Tim Penanggung Jawab Proyek (Sesuai LPSE di Peta)</span>
                         </div>
                         <span className="text-[10px] bg-white text-slate-700 px-2 py-0.5 rounded border border-slate-300 font-mono font-bold">
-                          {editTech.nomor_kontrak_lpse ? 'Transparansi LPSE' : 'Data Resmi'}
+                          Transparansi LPSE
                         </span>
                       </div>
                       
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                        <div className="p-2.5 bg-white rounded-lg border border-slate-200 space-y-0.5">
-                          <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-[11px]">
+                        <div className="sm:col-span-2">
+                          <label className="text-[10px] text-slate-600 font-semibold mb-1 flex items-center gap-1">
+                            <Building2 className="w-3 h-3 text-[#184C78]" />
+                            <span>Instansi Pengampu (Dinas Penanggung Jawab)</span>
+                          </label>
+                          <select
+                            disabled={isProjectCompleted}
+                            value={editForm.dinas_id}
+                            onChange={(e) => {
+                              const selId = Number(e.target.value);
+                              const selDinas = DAFTAR_DINAS_LAMONGAN.find((d) => d.id === selId);
+                              setEditForm({
+                                ...editForm,
+                                dinas_id: selId,
+                                nama_dinas: selDinas ? selDinas.nama : editForm.nama_dinas,
+                              });
+                            }}
+                            className={`w-full p-2 text-xs border rounded-lg outline-none font-medium ${
+                              isProjectCompleted ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white border-[#DCE0E6] focus:border-[#2980B9]'
+                            }`}
+                          >
+                            {DAFTAR_DINAS_LAMONGAN.map((d) => (
+                              <option key={d.id} value={d.id}>
+                                {d.nama}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div>
+                          <label className="text-[10px] text-slate-600 font-semibold mb-1 flex items-center gap-1">
                             <User className="w-3 h-3 text-[#184C78]" />
                             <span>Pejabat Pembuat Komitmen (PPK)</span>
-                          </div>
-                          <div className="font-bold text-slate-900">{editTech.pejabat_pembuat_komitmen || 'Suyitno, S.T. (Dinas Terkait)'}</div>
+                          </label>
+                          <input
+                            type="text"
+                            disabled={isProjectCompleted}
+                            value={editForm.pejabat_pembuat_komitmen}
+                            onChange={(e) => setEditForm({ ...editForm, pejabat_pembuat_komitmen: e.target.value })}
+                            placeholder="Contoh: Dwi Prasetyo, S.T. (Dinas PRKPCK)"
+                            className={`w-full p-2 text-xs border rounded-lg outline-none ${
+                              isProjectCompleted ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white border-[#DCE0E6] focus:border-[#2980B9]'
+                            }`}
+                          />
                         </div>
-                        <div className="p-2.5 bg-white rounded-lg border border-slate-200 space-y-0.5">
-                          <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
+
+                        <div>
+                          <label className="text-[10px] text-slate-600 font-semibold mb-1 flex items-center gap-1">
                             <Building2 className="w-3 h-3 text-[#184C78]" />
                             <span>Kontraktor Pelaksana</span>
-                          </div>
-                          <div className="font-bold text-slate-900">{editTech.kontraktor_pelaksana || 'Penyedia Jasa Konstruksi Terakreditasi'}</div>
+                          </label>
+                          <input
+                            type="text"
+                            disabled={isProjectCompleted}
+                            value={editForm.kontraktor_pelaksana}
+                            onChange={(e) => setEditForm({ ...editForm, kontraktor_pelaksana: e.target.value })}
+                            placeholder="Contoh: CV Jaya Abadi Konstruksi"
+                            className={`w-full p-2 text-xs border rounded-lg outline-none ${
+                              isProjectCompleted ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white border-[#DCE0E6] focus:border-[#2980B9]'
+                            }`}
+                          />
                         </div>
-                        <div className="p-2.5 bg-white rounded-lg border border-slate-200 space-y-0.5">
-                          <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
+
+                        <div>
+                          <label className="text-[10px] text-slate-600 font-semibold mb-1 flex items-center gap-1">
                             <ShieldCheck className="w-3 h-3 text-[#184C78]" />
                             <span>Konsultan Pengawas</span>
-                          </div>
-                          <div className="font-bold text-slate-900">{editTech.konsultan_pengawas || 'CV Konsultan Pengawas Teknis'}</div>
+                          </label>
+                          <input
+                            type="text"
+                            disabled={isProjectCompleted}
+                            value={editForm.konsultan_pengawas}
+                            onChange={(e) => setEditForm({ ...editForm, konsultan_pengawas: e.target.value })}
+                            placeholder="Contoh: CV Multi Rekayasa Graha"
+                            className={`w-full p-2 text-xs border rounded-lg outline-none ${
+                              isProjectCompleted ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white border-[#DCE0E6] focus:border-[#2980B9]'
+                            }`}
+                          />
                         </div>
-                        <div className="p-2.5 bg-white rounded-lg border border-slate-200 space-y-0.5">
-                          <div className="text-[10px] text-slate-500 font-semibold flex items-center gap-1">
+
+                        <div>
+                          <label className="text-[10px] text-slate-600 font-semibold mb-1 flex items-center gap-1">
                             <Wrench className="w-3 h-3 text-[#184C78]" />
                             <span>Kepala Mandor / Site Manager</span>
-                          </div>
-                          <div className="font-bold text-slate-900">{editTech.kepala_mandor || 'Mandor &amp; Pelaksana Lapangan'}</div>
+                          </label>
+                          <input
+                            type="text"
+                            disabled={isProjectCompleted}
+                            value={editForm.kepala_mandor}
+                            onChange={(e) => setEditForm({ ...editForm, kepala_mandor: e.target.value })}
+                            placeholder="Contoh: Budi Hermawan & Suharno"
+                            className={`w-full p-2 text-xs border rounded-lg outline-none ${
+                              isProjectCompleted ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white border-[#DCE0E6] focus:border-[#2980B9]'
+                            }`}
+                          />
                         </div>
-                      </div>
 
-                      <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[10.5px] text-slate-600 border-t border-slate-200">
                         <div>
-                          <span className="text-slate-500">Nomor Kontrak LPSE: </span>
-                          <span className="font-mono font-semibold text-slate-800">{editTech.nomor_kontrak_lpse}</span>
+                          <label className="text-[10px] text-slate-600 font-semibold mb-1 flex items-center gap-1">
+                            <FileText className="w-3 h-3 text-[#184C78]" />
+                            <span>Nomor Kontrak LPSE</span>
+                          </label>
+                          <input
+                            type="text"
+                            disabled={isProjectCompleted}
+                            value={editForm.nomor_kontrak_lpse}
+                            onChange={(e) => setEditForm({ ...editForm, nomor_kontrak_lpse: e.target.value })}
+                            placeholder="Contoh: 640/SPK-DRA/LAM-DRA-2026-004 (SiRUP-6502849)"
+                            className={`w-full p-2 font-mono text-xs border rounded-lg outline-none ${
+                              isProjectCompleted ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white border-[#DCE0E6] focus:border-[#2980B9]'
+                            }`}
+                          />
                         </div>
+
                         <div>
-                          <span className="text-slate-500">Sumber Pembiayaan: </span>
-                          <span className="font-semibold text-slate-800">{editTech.sumber_dana}</span>
+                          <label className="text-[10px] text-slate-600 font-semibold mb-1 flex items-center gap-1">
+                            <DollarSign className="w-3 h-3 text-[#184C78]" />
+                            <span>Sumber Pembiayaan</span>
+                          </label>
+                          <input
+                            type="text"
+                            disabled={isProjectCompleted}
+                            value={editForm.sumber_dana}
+                            onChange={(e) => setEditForm({ ...editForm, sumber_dana: e.target.value })}
+                            placeholder="Contoh: APBD Kab. Lamongan (Drainase Perkotaan)"
+                            className={`w-full p-2 text-xs border rounded-lg outline-none ${
+                              isProjectCompleted ? 'bg-slate-100 text-slate-500 cursor-not-allowed' : 'bg-white border-[#DCE0E6] focus:border-[#2980B9]'
+                            }`}
+                          />
                         </div>
                       </div>
                     </div>
@@ -2696,13 +3234,21 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                           id="edit_status"
                           disabled={isProjectCompleted}
                           value={editForm.status}
-                          onChange={(e) => setEditForm({ ...editForm, status: e.target.value as ProyekStatus })}
+                          onChange={(e) => {
+                            const newStatus = e.target.value as ProyekStatus;
+                            setEditForm({
+                              ...editForm,
+                              status: newStatus,
+                              progres_persen: newStatus === 'rencana' ? 0 : editForm.progres_persen,
+                            });
+                          }}
                           className={`w-full p-2.5 border rounded-lg outline-none transition-colors ${
                             isProjectCompleted
                               ? 'bg-slate-100 border-slate-200 text-slate-500 cursor-not-allowed'
                               : 'bg-white border-[#DCE0E6] focus:border-[#2980B9]'
                           }`}
                         >
+                          <option value="rencana">Rencana (Proyek yang Akan Datang)</option>
                           <option value="berjalan">Sedang Berjalan</option>
                           <option value="selesai">Selesai (FHO)</option>
                           <option value="ditangguhkan">Ditangguhkan / Tertunda</option>
@@ -2736,6 +3282,92 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                         </div>
                       </div>
                     )}
+
+                    {/* Seksi Upload Foto Utama / Banner Proyek */}
+                    <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-xl space-y-2.5">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-1.5 font-bold text-[#184C78] text-xs">
+                          <Camera className="w-4 h-4 text-[#184C78]" />
+                          <span>Upload Foto Utama / Banner Proyek</span>
+                        </div>
+                        <span className="text-[10px] text-[#184C78] bg-[#EBF4FB] px-2 py-0.5 rounded-full font-semibold border border-[#c5def2]">
+                          Tampil di Peta Spasial
+                        </span>
+                      </div>
+                      <p className="text-[11px] text-slate-500 leading-snug">
+                        Foto ini digunakan sebagai banner dokumentasi saat proyek diklik pada peta spasial. Jika belum diunggah, peta akan menampilkan placeholder dokumentasi belum diunggah.
+                      </p>
+
+                      <input
+                        type="file"
+                        ref={editPhotoInputRef}
+                        accept="image/jpeg,image/png,image/webp,image/jpg"
+                        onChange={handleEditPhotoSelect}
+                        className="hidden"
+                      />
+
+                      {editForm.foto_url ? (
+                        <div className="space-y-2">
+                          <div className="relative rounded-xl overflow-hidden border border-slate-300 shadow-xs h-36 bg-slate-900 group">
+                            <img
+                              src={editForm.foto_url}
+                              alt="Pratinjau Foto Proyek"
+                              className="w-full h-full object-cover group-hover:scale-102 transition-transform duration-300"
+                            />
+                            <div className="absolute top-2 left-2 bg-emerald-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs">
+                              <Check className="w-3 h-3" />
+                              <span>Foto Siap Ditampilkan di Peta</span>
+                            </div>
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                              <button
+                                type="button"
+                                onClick={() => editPhotoInputRef.current?.click()}
+                                className="px-3 py-1.5 bg-white text-[#184C78] text-xs font-bold rounded-lg shadow hover:bg-slate-100 transition-all cursor-pointer flex items-center gap-1"
+                              >
+                                <Upload className="w-3.5 h-3.5" />
+                                <span>Ganti Foto</span>
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleRemoveEditPhoto}
+                                className="px-3 py-1.5 bg-red-600 text-white text-xs font-bold rounded-lg shadow hover:bg-red-700 transition-all cursor-pointer flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Hapus</span>
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex items-center justify-between text-[11px] text-slate-500">
+                            <span className="flex items-center gap-1 text-emerald-700 font-medium">
+                              <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                              Foto siap disimpan. Klik "Simpan Perubahan" untuk memperbarui visual di peta.
+                            </span>
+                            <button
+                              type="button"
+                              onClick={handleRemoveEditPhoto}
+                              className="text-red-600 hover:text-red-700 font-semibold hover:underline cursor-pointer"
+                            >
+                              Hapus Foto
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <div
+                          onClick={() => editPhotoInputRef.current?.click()}
+                          className="border-2 border-dashed border-slate-300 hover:border-[#184C78] bg-white hover:bg-slate-50/80 rounded-xl p-4 flex flex-col items-center justify-center text-center cursor-pointer transition-all group"
+                        >
+                          <div className="w-10 h-10 rounded-full bg-[#EBF4FB] text-[#184C78] flex items-center justify-center mb-1.5 group-hover:scale-110 transition-transform">
+                            <Camera className="w-5 h-5" />
+                          </div>
+                          <div className="font-bold text-xs text-slate-700 group-hover:text-[#184C78] transition-colors">
+                            Pilih &amp; Unggah Foto Dokumentasi Lapangan
+                          </div>
+                          <p className="text-[10px] text-slate-400 mt-0.5">
+                            Format JPG, PNG, atau WebP (Maksimal 8 MB)
+                          </p>
+                        </div>
+                      )}
+                    </div>
 
                     {/* Toggle Publikasikan ke Publik */}
                     <div className="p-3 bg-blue-50/60 border border-blue-200 rounded-xl flex items-center justify-between gap-3">
@@ -2967,19 +3599,30 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 </div>
               </div>
 
-              <div>
-                <label className="block font-semibold text-[#184C78] mb-1">Target Capaian Progres Kumulatif (%)</label>
-                <p className="text-[10.5px] text-[#6C757D] mb-1">
-                  Persentase capaian kemajuan fisik kumulatif proyek hingga tahap ini (0–100%)
-                </p>
-                <input
-                  type="number"
-                  min={1}
-                  max={100}
-                  value={newStageForm.persentase_bobot}
-                  onChange={(e) => setNewStageForm({ ...newStageForm, persentase_bobot: Number(e.target.value) })}
-                  className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none"
-                />
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">Status Pengerjaan</label>
+                  <select
+                    value={newStageForm.status}
+                    onChange={(e) => setNewStageForm({ ...newStageForm, status: e.target.value as any })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
+                  >
+                    <option value="belum_mulai">Belum Mulai (Rencana)</option>
+                    <option value="sedang_berjalan">Sedang Berjalan</option>
+                    <option value="selesai">Selesai</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-semibold text-[#184C78] mb-1">Target Capaian Progres (%)</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={100}
+                    value={newStageForm.persentase_bobot}
+                    onChange={(e) => setNewStageForm({ ...newStageForm, persentase_bobot: Number(e.target.value) })}
+                    className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                  />
+                </div>
               </div>
 
                 </div>
@@ -2999,6 +3642,176 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                   >
                     <Plus className="w-3.5 h-3.5" />
                     <span>Tambahkan Tahapan</span>
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: EDIT TAHAPAN LINIMASA ── */}
+      {editingStage && renderPortal(
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="modal-edit-stage-title"
+          className="fixed inset-0 z-[9999] overflow-y-auto bg-black/65 backdrop-blur-xs animate-fade-in"
+          onClick={() => setEditingStage(null)}
+        >
+          <div className="flex min-h-full items-center justify-center p-2.5 sm:p-4 md:p-6 text-center">
+            <div
+              className="relative w-full max-w-lg sm:max-w-xl bg-white rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden flex flex-col text-left border border-[#DCE0E6] my-auto max-h-[calc(100dvh-1.5rem)] sm:max-h-[calc(100dvh-3rem)] animate-fade-in"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Header: Dark Blue #184C78 */}
+              <div className="bg-[#184C78] text-white px-5 sm:px-6 py-4 flex items-center justify-between shrink-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-lg bg-white/10 flex items-center justify-center text-white shrink-0">
+                    <Edit3 className="w-4 h-4 text-cyan-300" />
+                  </div>
+                  <div>
+                    <h3 id="modal-edit-stage-title" className="font-heading text-base sm:text-lg font-bold leading-tight">
+                      Edit Tahapan Linimasa (Tahap {editingStage.nomor_tahap})
+                    </h3>
+                    <p className="text-[11px] sm:text-xs text-white/80 mt-0.5 leading-tight">
+                      Perbarui rincian capaian, status pengerjaan fisik, dan catatan lapangan proyek.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingStage(null)}
+                  className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors cursor-pointer shrink-0 ml-3"
+                  title="Tutup Modal"
+                  aria-label="Tutup Modal"
+                >
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+
+              {/* Scrollable Form Body */}
+              <form onSubmit={handleUpdateTimelineStage} className="flex flex-col flex-1 overflow-hidden min-h-0">
+                <div className="flex-1 overflow-y-auto p-5 sm:p-6 space-y-4 text-xs scrollbar-thin">
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Nama Tahapan</label>
+                    <input
+                      type="text"
+                      required
+                      value={editStageForm.nama_tahap}
+                      onChange={(e) => setEditStageForm({ ...editStageForm, nama_tahap: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-[#184C78] mb-1">Status Pengerjaan</label>
+                      <select
+                        value={editStageForm.status}
+                        onChange={(e) => setEditStageForm({ ...editStageForm, status: e.target.value as any })}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9] font-medium"
+                      >
+                        <option value="belum_mulai">Belum Mulai</option>
+                        <option value="sedang_berjalan">Sedang Berjalan</option>
+                        <option value="selesai">Selesai (100%)</option>
+                        <option value="tertunda">Tertunda (Kendala)</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-[#184C78] mb-1">Bobot Tahap (%)</label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={100}
+                        required
+                        value={editStageForm.persentase_bobot}
+                        onChange={(e) => setEditStageForm({ ...editStageForm, persentase_bobot: Number(e.target.value) })}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-[#184C78] mb-1">Target Mulai</label>
+                      <input
+                        type="date"
+                        value={editStageForm.target_mulai}
+                        onChange={(e) => setEditStageForm({ ...editStageForm, target_mulai: e.target.value })}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-[#184C78] mb-1">Target Selesai</label>
+                      <input
+                        type="date"
+                        value={editStageForm.target_selesai}
+                        onChange={(e) => setEditStageForm({ ...editStageForm, target_selesai: e.target.value })}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block font-semibold text-[#184C78] mb-1">Realisasi Mulai (Opsional)</label>
+                      <input
+                        type="date"
+                        value={editStageForm.realisasi_mulai}
+                        onChange={(e) => setEditStageForm({ ...editStageForm, realisasi_mulai: e.target.value })}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block font-semibold text-[#184C78] mb-1">Realisasi Selesai (Opsional)</label>
+                      <input
+                        type="date"
+                        value={editStageForm.realisasi_selesai}
+                        onChange={(e) => setEditStageForm({ ...editStageForm, realisasi_selesai: e.target.value })}
+                        className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Uraian Teknis Tahapan</label>
+                    <textarea
+                      rows={3}
+                      value={editStageForm.deskripsi}
+                      onChange={(e) => setEditStageForm({ ...editStageForm, deskripsi: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                      placeholder="Uraian rincian pekerjaan teknis yang dilaksanakan..."
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-semibold text-[#184C78] mb-1">Catatan Pengawas &amp; Progres Lapangan</label>
+                    <textarea
+                      rows={2}
+                      value={editStageForm.catatan_lapangan}
+                      onChange={(e) => setEditStageForm({ ...editStageForm, catatan_lapangan: e.target.value })}
+                      className="w-full p-2.5 border border-[#DCE0E6] rounded-lg outline-none focus:border-[#2980B9]"
+                      placeholder="Contoh: Pekerjaan pondasi telah tuntas 100%, siap lanjut ke tahap berikutnya."
+                    />
+                  </div>
+                </div>
+
+                {/* Sticky Responsive Footer */}
+                <div className="px-4 sm:px-6 py-3 bg-slate-50 border-t border-slate-200 flex flex-col-reverse sm:flex-row items-stretch sm:items-center justify-end gap-2 sm:gap-2.5 shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => setEditingStage(null)}
+                    className="w-full sm:w-auto px-4 py-2 text-xs font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-100 transition-colors cursor-pointer text-center"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    type="submit"
+                    className="w-full sm:w-auto btn-primary !h-9 text-xs flex items-center justify-center gap-1.5"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>Simpan Perubahan Tahapan</span>
                   </button>
                 </div>
               </form>
@@ -3750,13 +4563,15 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                 <span>Monitoring Eksekutif</span>
               </button>
             )}
-            <button
-              onClick={() => setIsNewProjectModalOpen(true)}
-              className="px-4 py-2.5 bg-white text-[#184C78] font-bold text-xs rounded-xl shadow-xs hover:bg-slate-100 flex items-center justify-center gap-2 transition-transform hover:scale-102 cursor-pointer"
-            >
-              <Plus className="w-4 h-4 text-[#184C78]" />
-              <span>Input Proyek Baru</span>
-            </button>
+            {currentUser.role !== 'penanggung_jawab' && (
+              <button
+                onClick={handleOpenNewProjectModal}
+                className="px-4 py-2.5 bg-white text-[#184C78] font-bold text-xs rounded-xl shadow-xs hover:bg-slate-100 flex items-center justify-center gap-2 transition-transform hover:scale-102 cursor-pointer"
+              >
+                <Plus className="w-4 h-4 text-[#184C78]" />
+                <span>Input Proyek Baru</span>
+              </button>
+            )}
             <button
               onClick={() => setIsNewDocModalOpen(true)}
               className="px-4 py-2.5 bg-white/15 hover:bg-white/25 text-white font-semibold text-xs rounded-xl backdrop-blur-md flex items-center justify-center gap-2 transition-all cursor-pointer"
@@ -4047,18 +4862,21 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                     className="text-xs px-3 py-2 border border-[#DCE0E6] rounded-lg bg-white outline-none focus:border-[#2980B9]"
                   >
                     <option value="semua">Semua Status</option>
+                    <option value="rencana">Rencana (Mendatang)</option>
                     <option value="berjalan">Sedang Berjalan</option>
                     <option value="selesai">Selesai</option>
                     <option value="ditangguhkan">Ditangguhkan</option>
                   </select>
 
-                  <button
-                    onClick={handleOpenNewProjectModal}
-                    className="btn-primary !h-9 text-xs flex items-center gap-1.5 shrink-0 shadow-xs"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Input Proyek Baru</span>
-                  </button>
+                  {currentUser.role !== 'penanggung_jawab' && (
+                    <button
+                      onClick={handleOpenNewProjectModal}
+                      className="btn-primary !h-9 text-xs flex items-center gap-1.5 shrink-0 shadow-xs"
+                    >
+                      <Plus className="w-4 h-4" />
+                      <span>Input Proyek Baru</span>
+                    </button>
+                  )}
                 </div>
               </div>
 
@@ -4083,6 +4901,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                         const getBadge = (st: string) => {
                           if (st === 'selesai') return 'bg-[#E6F7F1] text-[#1A9E6E] border-[#B7EBD8]';
                           if (st === 'berjalan') return 'bg-[#FEF3E7] text-[#E67E22] border-[#FBD8B3]';
+                          if (st === 'rencana' || st === 'direncanakan' || st === 'planned') return 'bg-blue-50 text-blue-700 border-blue-200';
                           return 'bg-[#FDEDEC] text-[#E74C3C] border-[#FADBD8]';
                         };
 
@@ -4129,7 +4948,7 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                             </td>
                             <td className="p-3.5">
                               <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border capitalize ${getBadge(normalizedStatus)}`}>
-                                {normalizedStatus}
+                                {normalizedStatus === 'rencana' ? 'Rencana' : normalizedStatus}
                               </span>
                             </td>
                             {currentUser.role !== 'penanggung_jawab' && (
@@ -4223,13 +5042,15 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
               )}
             </div>
 
-            <button
-              onClick={() => setIsNewStageModalOpen(true)}
-              className="btn-primary !h-9 text-xs flex items-center gap-1.5 shrink-0 shadow-xs"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Tambah Tahapan Linimasa</span>
-            </button>
+            {currentUser.role !== 'penanggung_jawab' && (
+              <button
+                onClick={() => setIsNewStageModalOpen(true)}
+                className="btn-primary !h-9 text-xs flex items-center gap-1.5 shrink-0 shadow-xs"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Tambah Tahapan Linimasa</span>
+              </button>
+            )}
           </div>
 
           <div className="bg-white rounded-2xl border border-[#DCE0E6] p-6 shadow-xs space-y-6">
@@ -4237,61 +5058,108 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
               Runtutan Tahapan Pengerjaan Konstruksi Fisik
             </h3>
 
-            <div className="relative border-l-2 border-[#DCE0E6] ml-4 pl-6 space-y-6">
-              {timelineStages.map((stage, idx) => (
-                <div key={stage.id} className="relative group">
-                  {/* Step indicator node */}
-                  <div
-                    className={`absolute -left-[35px] top-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs ${
-                      stage.status === 'selesai'
-                        ? 'bg-[#1A9E6E]'
-                        : stage.status === 'sedang_berjalan'
-                        ? 'bg-[#184C78] ring-4 ring-[#EBF4FB]'
-                        : 'bg-[#6C757D]'
-                    }`}
+            {timelineStages.length === 0 ? (
+              <div className="p-8 sm:p-12 text-center bg-[#F8FAFC] border-2 border-dashed border-[#BDD7EE] rounded-2xl space-y-4">
+                <div className="w-14 h-14 rounded-2xl bg-[#EBF4FB] text-[#184C78] flex items-center justify-center mx-auto shadow-2xs">
+                  <Clock className="w-7 h-7" />
+                </div>
+                <div className="space-y-1">
+                  <h4 className="font-bold text-sm sm:text-base text-[#184C78]">Belum Ada Tahapan Linimasa</h4>
+                  <p className="text-xs text-[#6C757D] max-w-md mx-auto leading-relaxed">
+                    {currentUser.role === 'penanggung_jawab'
+                      ? 'Proyek ini belum memiliki rincian tahapan pengerjaan fisik konstruksi yang ditetapkan oleh dinas pengampu. Tahapan baru akan ditambahkan oleh dinas penanggung jawab.'
+                      : 'Proyek ini belum memiliki rincian tahapan pengerjaan konstruksi fisik. Sebagai aparatur pemerintah / dinas, Anda dapat menambahkan tahapan linimasa dan bobot secara manual.'}
+                  </p>
+                </div>
+                {currentUser.role !== 'penanggung_jawab' && (
+                  <button
+                    type="button"
+                    onClick={() => setIsNewStageModalOpen(true)}
+                    className="btn-primary !h-9 text-xs inline-flex items-center gap-1.5 shadow-xs cursor-pointer"
                   >
-                    {stage.status === 'selesai' ? <Check className="w-3.5 h-3.5" /> : idx + 1}
-                  </div>
-
-                  <div className="bg-[#F5F7FA] p-4 rounded-xl border border-[#DCE0E6]/70 space-y-2 hover:border-[#2980B9] transition-all">
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-bold text-xs text-[#212529]">
-                          Tahap {stage.nomor_tahap}: {stage.nama_tahap}
-                        </span>
-                        <span className="text-[10px] font-bold bg-[#EBF4FB] text-[#184C78] px-2 py-0.5 rounded">
-                          Bobot: {stage.persentase_bobot}%
-                        </span>
-                      </div>
-                      <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize ${
+                    <Plus className="w-4 h-4" />
+                    <span>Tambah Tahapan Linimasa Sekarang</span>
+                  </button>
+                )}
+              </div>
+            ) : (
+              <div className="relative border-l-2 border-[#DCE0E6] ml-4 pl-6 space-y-6">
+                {timelineStages.map((stage, idx) => (
+                  <div key={stage.id} className="relative group">
+                    {/* Step indicator node */}
+                    <div
+                      className={`absolute -left-[35px] top-1 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold text-white shadow-xs ${
                         stage.status === 'selesai'
-                          ? 'bg-[#E6F7F1] text-[#1A9E6E]'
+                          ? 'bg-[#1A9E6E]'
                           : stage.status === 'sedang_berjalan'
-                          ? 'bg-[#FEF3E7] text-[#E67E22]'
-                          : 'bg-white text-[#6C757D] border border-[#DCE0E6]'
-                      }`}>
-                        {stage.status ? stage.status.replace('_', ' ') : 'belum mulai'}
-                      </span>
+                          ? 'bg-[#184C78] ring-4 ring-[#EBF4FB]'
+                          : 'bg-[#6C757D]'
+                      }`}
+                    >
+                      {stage.status === 'selesai' ? <Check className="w-3.5 h-3.5" /> : idx + 1}
                     </div>
 
-                    <p className="text-xs text-[#495057]">{stage.deskripsi}</p>
+                    <div className="bg-[#F5F7FA] p-4 rounded-xl border border-[#DCE0E6]/70 space-y-2 hover:border-[#2980B9] transition-all">
+                      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                        <div className="flex items-center gap-2">
+                          <span className="font-bold text-xs text-[#212529]">
+                            Tahap {stage.nomor_tahap}: {stage.nama_tahap}
+                          </span>
+                          <span className="text-[10px] font-bold bg-[#EBF4FB] text-[#184C78] px-2 py-0.5 rounded">
+                            Bobot: {stage.persentase_bobot}%
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full capitalize ${
+                            stage.status === 'selesai'
+                              ? 'bg-[#E6F7F1] text-[#1A9E6E]'
+                              : stage.status === 'sedang_berjalan'
+                              ? 'bg-[#FEF3E7] text-[#E67E22]'
+                              : 'bg-white text-[#6C757D] border border-[#DCE0E6]'
+                          }`}>
+                            {stage.status ? stage.status.replace('_', ' ') : 'belum mulai'}
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => handleOpenEditStageModal(stage)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-[#184C78] bg-white border border-[#BDD7EE] rounded-lg hover:bg-[#EBF4FB] transition-colors cursor-pointer shadow-2xs"
+                            title="Edit Rincian & Status Tahapan"
+                          >
+                            <Edit3 className="w-3.5 h-3.5 text-[#2980B9]" />
+                            <span>Edit</span>
+                          </button>
+                          {currentUser.role !== 'penanggung_jawab' && (
+                            <button
+                              type="button"
+                              onClick={() => handleDeleteTimelineStage(stage.id)}
+                              className="text-slate-400 hover:text-red-600 transition-colors p-1 rounded hover:bg-red-50 cursor-pointer"
+                              title="Hapus Tahapan Ini"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
 
-                    <div className="flex flex-wrap gap-4 text-[11px] text-[#6C757D] pt-1 border-t border-[#DCE0E6]/50">
-                      <span>Rencana: <strong className="text-[#212529]">{stage.target_mulai} s/d {stage.target_selesai}</strong></span>
-                      {stage.realisasi_selesai && (
-                        <span>Realisasi Selesai: <strong className="text-[#1A9E6E]">{stage.realisasi_selesai}</strong></span>
+                      <p className="text-xs text-[#495057]">{stage.deskripsi}</p>
+
+                      <div className="flex flex-wrap gap-4 text-[11px] text-[#6C757D] pt-1 border-t border-[#DCE0E6]/50">
+                        <span>Rencana: <strong className="text-[#212529]">{stage.target_mulai} s/d {stage.target_selesai}</strong></span>
+                        {stage.realisasi_selesai && (
+                          <span>Realisasi Selesai: <strong className="text-[#1A9E6E]">{stage.realisasi_selesai}</strong></span>
+                        )}
+                      </div>
+
+                      {stage.catatan_lapangan && (
+                        <div className="text-[11px] text-[#184C78] bg-white p-2 rounded-lg border border-[#DCE0E6]/60 italic">
+                          Catatan Pengawas: "{stage.catatan_lapangan}"
+                        </div>
                       )}
                     </div>
-
-                    {stage.catatan_lapangan && (
-                      <div className="text-[11px] text-[#184C78] bg-white p-2 rounded-lg border border-[#DCE0E6]/60 italic">
-                        Catatan Pengawas: "{stage.catatan_lapangan}"
-                      </div>
-                    )}
                   </div>
-                </div>
-              ))}
-            </div>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       )}

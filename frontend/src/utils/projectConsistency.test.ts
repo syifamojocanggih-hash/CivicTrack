@@ -99,5 +99,89 @@ describe('projectConsistency utils', () => {
 
     window.removeEventListener('civictrack_project_updated', handler);
   });
+
+  it('getProjectTimelineStages returns empty array for newly added project (id >= 36)', () => {
+    const newProject: ProyekItem = {
+      id: 38,
+      nama_proyek: 'Proyek Baru Lamongan',
+      kategori: 'jalan',
+      deskripsi: 'Deskripsi proyek baru',
+      latitude: -7.12,
+      longitude: 112.41,
+      wilayah_id: 23,
+      dinas_id: 1,
+      anggaran: 5000000000,
+      status: 'berjalan',
+      progres_persen: 0,
+    };
+    const stages = getProjectTimelineStages(newProject);
+    expect(stages).toEqual([]);
+  });
+
+  it('getProjectTimelineStages purges legacy template cache in localStorage for new project and returns empty', () => {
+    const newProject: ProyekItem = {
+      id: 38,
+      nama_proyek: 'perbaikan jalan area mantup',
+      kategori: 'jalan',
+      deskripsi: 'Deskripsi proyek baru',
+      latitude: -7.12,
+      longitude: 112.41,
+      wilayah_id: 23,
+      dinas_id: 1,
+      anggaran: 5000000000,
+      status: 'berjalan',
+      progres_persen: 0,
+    };
+
+    // Simulate old template generated cache in localStorage
+    localStorage.setItem(
+      'civictrack_project_stages_38',
+      JSON.stringify([
+        { id: 3801, nomor_tahap: 1, nama_tahap: 'Pengukuran Ulang & Pembersihan Lahan (Clearing)', persentase_bobot: 15, status: 'belum_mulai' },
+        { id: 3802, nomor_tahap: 2, nama_tahap: 'Galian & Pemadatan Lapis Pondasi Bawah (Subbase)', persentase_bobot: 25, status: 'belum_mulai' },
+      ])
+    );
+
+    const stages = getProjectTimelineStages(newProject);
+    expect(stages).toEqual([]);
+    expect(localStorage.getItem('civictrack_project_stages_38')).toBe('[]');
+  });
+
+  it('getProjectTimelineStages preserves user-created manual stages for new project', () => {
+    const newProject: ProyekItem = {
+      id: 38,
+      nama_proyek: 'perbaikan jalan area mantup',
+      kategori: 'jalan',
+      deskripsi: 'Deskripsi proyek baru',
+      latitude: -7.12,
+      longitude: 112.41,
+      wilayah_id: 23,
+      dinas_id: 1,
+      anggaran: 5000000000,
+      status: 'berjalan',
+      progres_persen: 0,
+    };
+
+    const manualStages = [
+      {
+        id: 99991,
+        proyek_id: 38,
+        nomor_tahap: 1,
+        nama_tahap: 'Pengecekan Manual Pertama',
+        deskripsi: 'Tahap manual dari dinas',
+        target_mulai: '2026-11-20',
+        target_selesai: '2026-12-20',
+        persentase_bobot: 20,
+        status: 'belum_mulai' as const,
+        is_manual: true,
+      },
+    ];
+
+    localStorage.setItem('civictrack_project_stages_38', JSON.stringify(manualStages));
+
+    const stages = getProjectTimelineStages(newProject);
+    expect(stages).toHaveLength(1);
+    expect(stages[0].nama_tahap).toBe('Pengecekan Manual Pertama');
+  });
 });
 

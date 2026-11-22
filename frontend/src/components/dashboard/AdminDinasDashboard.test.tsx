@@ -679,6 +679,82 @@ describe('AdminDinasDashboard Dokumentasi Fisik Upload', () => {
       expect(screen.getByText(/1 Perlu Ditanggapi!/i)).toBeInTheDocument();
     });
   });
+
+  it('hides Input Proyek Baru and Tambah Tahapan Linimasa for role penanggung_jawab but allows editing stages', async () => {
+    // SessionStorage unlocked project for PJ
+    sessionStorage.setItem(
+      'civictrack_pj_unlocked_project',
+      JSON.stringify({
+        id: 2,
+        nama_proyek: 'Pelebaran Jalan Soekarno Hatta KM 4–7',
+        kategori: 'jalan',
+        deskripsi: 'Proyek jalan',
+        anggaran: 12000000000,
+        latitude: -7.12,
+        longitude: 112.41,
+        status: 'berjalan',
+        progres_persen: 60,
+        nama_wilayah: 'Kecamatan Lamongan (Kota)',
+        nama_dinas: 'Dinas Pekerjaan Umum',
+        tahap_terkini: 'Galian',
+      })
+    );
+
+    render(
+      <AdminDinasDashboard
+        currentUser={{ id: 9, role: 'penanggung_jawab', nama: 'Penanggung Jawab', email: 'pj@gmail.com' }}
+        projects={[
+          {
+            id: 2,
+            nama_proyek: 'Pelebaran Jalan Soekarno Hatta KM 4–7',
+            kategori: 'jalan',
+            deskripsi: 'Proyek jalan',
+            anggaran: 12000000000,
+            latitude: -7.12,
+            longitude: 112.41,
+            status: 'berjalan',
+            progres_persen: 60,
+            nama_wilayah: 'Kecamatan Lamongan (Kota)',
+            nama_dinas: 'Dinas Pekerjaan Umum',
+            tahap_terkini: 'Galian',
+          },
+        ]}
+        activeSection="linimasa"
+        onOpenProjectDetail={() => {}}
+      />
+    );
+
+    const user = userEvent.setup();
+
+    // 1. Should NOT render "Input Proyek Baru" button anywhere
+    expect(screen.queryByRole('button', { name: /Input Proyek Baru/i })).not.toBeInTheDocument();
+
+    // 2. Should NOT render "Tambah Tahapan Linimasa" button
+    expect(screen.queryByRole('button', { name: /Tambah Tahapan Linimasa/i })).not.toBeInTheDocument();
+
+    // 3. Should render "Edit" button for each timeline stage
+    const editButtons = screen.getAllByRole('button', { name: /Edit/i });
+    expect(editButtons.length).toBeGreaterThan(0);
+
+    // 4. Click Edit on the first stage
+    await user.click(editButtons[0]);
+
+    // Modal Edit Tahapan Linimasa should open
+    await waitFor(() => {
+      expect(screen.getByText(/Edit Tahapan Linimasa \(Tahap 1\)/i)).toBeInTheDocument();
+    });
+
+    // 5. Submit changes
+    const saveStageBtn = screen.getByRole('button', { name: /Simpan Perubahan Tahapan/i });
+    await user.click(saveStageBtn);
+
+    // Modal should close
+    await waitFor(() => {
+      expect(screen.queryByText(/Edit Tahapan Linimasa \(Tahap 1\)/i)).not.toBeInTheDocument();
+    });
+
+    sessionStorage.removeItem('civictrack_pj_unlocked_project');
+  });
 });
 
 

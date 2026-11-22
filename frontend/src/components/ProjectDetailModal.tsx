@@ -18,16 +18,24 @@ import {
   Key,
   Info,
   AlertTriangle,
+  Clock,
+  Camera,
+  Film,
 } from 'lucide-react';
 import type { ProyekItem, UserProfile } from '../types';
 import { apiService } from '../services/api';
-import { getProjectPhotoGallery } from '../utils/projectImages';
+import {
+  getProjectPhotoGallery,
+  getGoogleStreetViewUrl,
+  getAllProjectDocumentation,
+} from '../utils/projectImages';
 import {
   getProjectTechnicalDetails,
   getProjectEffectiveCode,
   getProjectEffectivePin,
   parseProjectDescription,
 } from '../utils/projectTechnicalData';
+import { getProjectTimelineStages } from '../utils/projectConsistency';
 import { ProjectLocationMiniMap } from './ProjectLocationMiniMap';
 
 interface ProjectDetailModalProps {
@@ -237,14 +245,7 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   };
 
   const isCompleted = project.status === 'selesai' || project.progres_persen >= 100;
-
-  const timelineSteps = [
-    { title: 'Penyusunan DED & Lelang Proyek', date: 'Jan 2024', pct: 20, done: true, note: 'Tender selesai dimenangkan penyedia jasa terverifikasi LPSE.' },
-    { title: 'Pembersihan Lahan & Mobilisasi Alat Berat', date: 'Feb 2024', pct: 40, done: isCompleted || project.progres_persen >= 40, note: 'Pematangan tanah dan relokasi utilitas sementara.' },
-    { title: 'Konstruksi Struktur & Pengerjaan Fisik Utama', date: 'Apr 2024', pct: 65, done: isCompleted || project.progres_persen >= 65, note: 'Pengecoran dan instalasi elemen struktur inti.' },
-    { title: 'Finishing, Uji Beban & Uji Fungsi Kelayakan', date: 'Agu 2024', pct: 90, done: isCompleted || project.progres_persen >= 90, note: 'Pengecatan, rambu, dan uji kelayakan teknis lapangan.' },
-    { title: 'Serah Terima Pekerjaan Akhir (FHO)', date: project.estimasi_selesai || 'Des 2024', pct: 100, done: isCompleted, note: 'Pemeriksaan tim teknis dinas dan peresmian untuk publik.' },
-  ];
+  const timelineStages = getProjectTimelineStages(project);
 
   const modalContent = (
     <div
@@ -276,12 +277,16 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
                   ? 'bg-[#E6F7F1] text-[#1A9E6E]'
                   : project.status === 'ditangguhkan'
                   ? 'bg-rose-100 text-rose-800 border border-rose-300'
+                  : project.status === 'rencana' || project.status === 'direncanakan' || project.status === 'planned'
+                  ? 'bg-blue-100 text-blue-800 border border-blue-200'
                   : 'bg-[#FEF3E7] text-[#E67E22]'
               }`}>
                 {project.status === 'selesai'
                   ? 'Selesai'
                   : project.status === 'ditangguhkan'
                   ? 'Ditangguhkan'
+                  : project.status === 'rencana' || project.status === 'direncanakan' || project.status === 'planned'
+                  ? 'Rencana'
                   : 'Sedang Berjalan'}
               </span>
               <span className="font-mono text-xs font-bold bg-white/20 px-2 py-0.5 rounded border border-white/30 text-white">
@@ -584,33 +589,52 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
 
               <h4 className="font-heading text-sm font-bold text-[#184C78]">Tahapan Pengerjaan Lapangan:</h4>
 
-              <div className="relative pl-6 border-l-2 border-[#DCE0E6] ml-3 space-y-6">
-                {timelineSteps.map((step, idx) => (
-                  <div key={idx} className="relative">
-                    {/* Circle Node */}
-                    <div
-                      className={`absolute -left-[31px] top-0 w-5 h-5 rounded-full flex items-center justify-center border-2 ${
-                        step.done
-                          ? 'bg-[#1A9E6E] border-white text-white'
-                          : 'bg-white border-[#DCE0E6] text-[#6C757D]'
-                      }`}
-                    >
-                      {step.done ? <Check className="w-3 h-3" /> : <div className="w-1.5 h-1.5 rounded-full bg-[#adb5bd]" />}
-                    </div>
+              {timelineStages.length === 0 ? (
+                <div className="p-6 bg-slate-50 border border-dashed border-slate-300 rounded-xl text-center space-y-2">
+                  <Clock className="w-6 h-6 text-slate-400 mx-auto" />
+                  <p className="text-xs font-semibold text-slate-700">Tahapan Linimasa Belum Didaftarkan</p>
+                  <p className="text-[11px] text-slate-500 max-w-sm mx-auto">
+                    Rincian tahapan pengerjaan fisik belum dipublikasikan oleh aparatur pemerintah untuk proyek ini.
+                  </p>
+                </div>
+              ) : (
+                <div className="relative pl-6 border-l-2 border-[#DCE0E6] ml-3 space-y-6">
+                  {timelineStages.map((step, idx) => {
+                    const isDone = step.status === 'selesai' || isCompleted;
+                    return (
+                      <div key={step.id || idx} className="relative">
+                        {/* Circle Node */}
+                        <div
+                          className={`absolute -left-[31px] top-0 w-5 h-5 rounded-full flex items-center justify-center border-2 ${
+                            isDone
+                              ? 'bg-[#1A9E6E] border-white text-white'
+                              : step.status === 'sedang_berjalan'
+                              ? 'bg-[#184C78] border-[#EBF4FB] text-white'
+                              : 'bg-white border-[#DCE0E6] text-[#6C757D]'
+                          }`}
+                        >
+                          {isDone ? <Check className="w-3 h-3" /> : <div className="w-1.5 h-1.5 rounded-full bg-[#adb5bd]" />}
+                        </div>
 
-                    <div>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[#184C78]">{step.title}</span>
-                        <span className="text-[11px] text-[#6C757D] font-medium">{step.date}</span>
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className="text-xs font-bold text-[#184C78]">
+                              Tahap {step.nomor_tahap}: {step.nama_tahap}
+                            </span>
+                            <span className="text-[11px] text-[#6C757D] font-medium">
+                              {step.realisasi_selesai || (step.target_mulai ? `${step.target_mulai} s/d ${step.target_selesai}` : 'Rencana')}
+                            </span>
+                          </div>
+                          <p className="text-xs text-[#6C757D] mt-0.5">{step.catatan_lapangan || step.deskripsi}</p>
+                          <span className="inline-block mt-1 text-[10px] font-semibold text-[#2980B9] bg-[#EBF4FB] px-2 py-0.5 rounded">
+                            Target Progres: {step.persentase_bobot}%
+                          </span>
+                        </div>
                       </div>
-                      <p className="text-xs text-[#6C757D] mt-0.5">{step.note}</p>
-                      <span className="inline-block mt-1 text-[10px] font-semibold text-[#2980B9] bg-[#EBF4FB] px-2 py-0.5 rounded">
-                        Target Progres: {step.pct}%
-                      </span>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
@@ -628,86 +652,186 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
               </div>
 
               {/* Grid of Photos and Videos */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {/* Item 1: Video Drone / CCTV Progress */}
-                <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-700 text-white shadow-sm flex flex-col">
-                  <div className="relative h-44 bg-black flex items-center justify-center group overflow-hidden">
-                    <video
-                      controls
-                      poster="https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=800&auto=format&fit=crop&q=80"
-                      className="w-full h-full object-cover"
-                    >
-                      <source src="https://assets.mixkit.co/videos/preview/mixkit-heavy-machinery-paving-a-new-road-43206-large.mp4" type="video/mp4" />
-                      Browser Anda tidak mendukung pemutar video HTML5.
-                    </video>
-                    <div className="absolute top-2 left-2 bg-red-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
-                      <span>Video Drone 4K</span>
-                    </div>
-                    <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
-                      02:15
-                    </div>
-                  </div>
-                  <div className="p-3 bg-slate-800 text-xs flex-1 flex flex-col justify-between">
-                    <div>
-                      <span className="font-bold text-cyan-300 block">Inspeksi Udara &amp; Pemadatan Lapisan</span>
-                      <p className="text-[11px] text-slate-300 mt-1">
-                        Rekaman berkala pengawas lapangan untuk validasi bobot realisasi fisik mingguan.
-                      </p>
-                    </div>
-                    <div className="mt-2 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
-                      <span>Diunggah: Tim Pengawas PUPR</span>
-                      <span>Format: MP4 (H.264)</span>
-                    </div>
-                  </div>
-                </div>
+              {(() => {
+                const uploadedDocs = getAllProjectDocumentation(project.id, project.nama_proyek, project.foto_url);
+                const galleryPhotos = getProjectPhotoGallery(project);
+                const isNewProjectWithoutPhotos =
+                  ((project as any)?.is_new || Number(project.id) >= 36) &&
+                  !project.foto_url &&
+                  uploadedDocs.length === 0 &&
+                  galleryPhotos.length === 0;
 
-                {/* Items 2+: Foto Progres Konstruksi & Geotagging */}
-                {getProjectPhotoGallery(project).map((photo) => (
-                  <div key={photo.id} className="bg-white rounded-xl overflow-hidden border border-[#DCE0E6] shadow-sm flex flex-col">
-                    <div className="relative h-44 bg-slate-100 overflow-hidden">
-                      <img
-                        src={photo.url}
-                        alt={photo.title}
-                        className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
-                      />
-                      <div className="absolute top-2 left-2 bg-[#184C78]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
-                        {photo.tag}
+                if (isNewProjectWithoutPhotos) {
+                  return (
+                    <div className="bg-slate-50 border-2 border-dashed border-slate-200 rounded-2xl p-8 text-center flex flex-col items-center justify-center">
+                      <div className="w-14 h-14 rounded-2xl bg-white shadow-xs border border-slate-200 flex items-center justify-center text-slate-400 mb-3">
+                        <Camera className="w-7 h-7 text-slate-400" />
                       </div>
-                      {photo.googleStreetViewUrl && (
+                      <h4 className="font-bold text-slate-700 text-sm">Dokumentasi Foto Belum Diunggah</h4>
+                      <p className="text-xs text-slate-500 max-w-md mt-1 leading-relaxed">
+                        Dokumentasi foto fisik lapangan proyek baru ini belum diunggah. Unggah foto melalui menu <span className="font-semibold text-[#184C78]">Sunting Data Proyek</span> pada dasbor dinas untuk menampilkan foto di banner dan galeri.
+                      </p>
+                      <div className="mt-4 flex items-center gap-2">
                         <a
-                          href={photo.googleStreetViewUrl}
+                          href={getGoogleStreetViewUrl(Number(project.latitude) || -7.1197, Number(project.longitude) || 112.4150)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="absolute top-2 right-2 bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm transition-all hover:scale-105"
-                          title="Buka titik koordinat proyek langsung di Google Street View 360°"
+                          className="px-3.5 py-1.5 bg-white hover:bg-slate-100 text-[#184C78] text-xs font-semibold rounded-xl border border-slate-200 shadow-xs flex items-center gap-1.5 transition-colors"
                         >
-                          <Compass className="w-3 h-3 text-cyan-400" />
-                          <span>Street View 360° ↗</span>
+                          <Compass className="w-3.5 h-3.5 text-cyan-600" />
+                          <span>Buka Koordinat di Street View 360°</span>
                         </a>
-                      )}
-                      <div className="absolute bottom-2 left-2 right-2 bg-black/65 backdrop-blur-xs text-white text-[10px] font-mono px-2 py-1 rounded flex items-center justify-between">
-                        <span className="truncate">📍 {photo.locationName}</span>
-                        <span className="text-emerald-400 font-bold shrink-0">{photo.geotagCoords}</span>
                       </div>
                     </div>
-                    <div className="p-3 bg-white text-xs flex-1 flex flex-col justify-between">
-                      <div>
-                        <span className="font-bold text-[#184C78] block">
-                          {photo.title}
-                        </span>
-                        <p className="text-[11px] text-[#6C757D] mt-1 leading-relaxed">
-                          {photo.description}
-                        </p>
+                  );
+                }
+
+                if (uploadedDocs.length > 0) {
+                  return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                      {uploadedDocs.map((doc) => {
+                        const isVideo = doc.tipe_file === 'video';
+                        return (
+                          <div key={doc.id} className="bg-white rounded-xl overflow-hidden border border-[#DCE0E6] shadow-sm flex flex-col">
+                            <div className="relative h-44 bg-slate-900 overflow-hidden">
+                              {isVideo ? (
+                                <video
+                                  src={doc.foto_url}
+                                  controls
+                                  preload="metadata"
+                                  className="w-full h-full object-cover"
+                                />
+                              ) : (
+                                <img
+                                  src={doc.foto_url}
+                                  alt={doc.judul}
+                                  className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                                />
+                              )}
+                              <div className="absolute top-2 left-2 bg-[#184C78]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm flex items-center gap-1">
+                                {isVideo ? <Film className="w-3 h-3 text-amber-300" /> : <Camera className="w-3 h-3 text-cyan-300" />}
+                                <span>{isVideo ? 'Video Dokumentasi' : 'Foto Lapangan'}</span>
+                              </div>
+                              <a
+                                href={getGoogleStreetViewUrl(Number(project.latitude) || -7.1197, Number(project.longitude) || 112.4150)}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="absolute top-2 right-2 bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm transition-all hover:scale-105"
+                                title="Buka titik koordinat proyek di Google Street View 360°"
+                              >
+                                <Compass className="w-3 h-3 text-cyan-400" />
+                                <span>Street View 360° ↗</span>
+                              </a>
+                            </div>
+                            <div className="p-3 bg-white text-xs flex-1 flex flex-col justify-between">
+                              <div>
+                                <span className="inline-block text-[10px] font-bold text-[#184C78] bg-blue-50 px-2 py-0.5 rounded-md mb-1 border border-blue-200/60">
+                                  {doc.nama_tahap || 'Pekerjaan Lapangan'}
+                                </span>
+                                <h4 className="font-bold text-[#184C78] block text-xs leading-snug">
+                                  {doc.judul}
+                                </h4>
+                                {doc.deskripsi && (
+                                  <p className="text-[11px] text-[#6C757D] mt-1 leading-relaxed italic">
+                                    "{doc.deskripsi}"
+                                  </p>
+                                )}
+                              </div>
+                              <div className="mt-2 pt-2 border-t border-[#DCE0E6]/60 flex items-center justify-between text-[10px] text-[#6C757D]">
+                                <span>Diunggah: {doc.diunggah_oleh}</span>
+                                <span className="text-emerald-700 font-semibold">{doc.tanggal_unggah}</span>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  );
+                }
+
+                return (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Item 1: Video Drone / CCTV Progress */}
+                    <div className="bg-slate-900 rounded-xl overflow-hidden border border-slate-700 text-white shadow-sm flex flex-col">
+                      <div className="relative h-44 bg-black flex items-center justify-center group overflow-hidden">
+                        <video
+                          controls
+                          poster="https://images.unsplash.com/photo-1541888946425-d0fbb18086f6?w=800&auto=format&fit=crop&q=80"
+                          className="w-full h-full object-cover"
+                        >
+                          <source src="https://assets.mixkit.co/videos/preview/mixkit-heavy-machinery-paving-a-new-road-43206-large.mp4" type="video/mp4" />
+                          Browser Anda tidak mendukung pemutar video HTML5.
+                        </video>
+                        <div className="absolute top-2 left-2 bg-red-600/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-sm">
+                          <span className="w-1.5 h-1.5 rounded-full bg-white animate-pulse" />
+                          <span>Video Drone 4K</span>
+                        </div>
+                        <div className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] font-mono px-1.5 py-0.5 rounded">
+                          02:15
+                        </div>
                       </div>
-                      <div className="mt-2 pt-2 border-t border-[#DCE0E6]/60 flex items-center justify-between text-[10px] text-[#6C757D]">
-                        <span>Bobot Realisasi: {project?.progres_persen !== undefined ? project.progres_persen : 0}%</span>
-                        <span className="text-emerald-700 font-semibold">{photo.date}</span>
+                      <div className="p-3 bg-slate-800 text-xs flex-1 flex flex-col justify-between">
+                        <div>
+                          <span className="font-bold text-cyan-300 block">Inspeksi Udara &amp; Pemadatan Lapisan</span>
+                          <p className="text-[11px] text-slate-300 mt-1">
+                            Rekaman berkala pengawas lapangan untuk validasi bobot realisasi fisik mingguan.
+                          </p>
+                        </div>
+                        <div className="mt-2 pt-2 border-t border-slate-700/60 flex items-center justify-between text-[10px] text-slate-400">
+                          <span>Diunggah: Tim Pengawas PUPR</span>
+                          <span>Format: MP4 (H.264)</span>
+                        </div>
                       </div>
                     </div>
+
+                    {/* Items 2+: Foto Progres Konstruksi & Geotagging */}
+                    {galleryPhotos.map((photo) => (
+                      <div key={photo.id} className="bg-white rounded-xl overflow-hidden border border-[#DCE0E6] shadow-sm flex flex-col">
+                        <div className="relative h-44 bg-slate-100 overflow-hidden">
+                          <img
+                            src={photo.url}
+                            alt={photo.title}
+                            className="w-full h-full object-cover hover:scale-105 transition-transform duration-300"
+                          />
+                          <div className="absolute top-2 left-2 bg-[#184C78]/90 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm">
+                            {photo.tag}
+                          </div>
+                          {photo.googleStreetViewUrl && (
+                            <a
+                              href={photo.googleStreetViewUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="absolute top-2 right-2 bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-0.5 rounded-full flex items-center gap-1 shadow-sm transition-all hover:scale-105"
+                              title="Buka titik koordinat proyek langsung di Google Street View 360°"
+                            >
+                              <Compass className="w-3 h-3 text-cyan-400" />
+                              <span>Street View 360° ↗</span>
+                            </a>
+                          )}
+                          <div className="absolute bottom-2 left-2 right-2 bg-black/65 backdrop-blur-xs text-white text-[10px] font-mono px-2 py-1 rounded flex items-center justify-between">
+                            <span className="truncate">📍 {photo.locationName}</span>
+                            <span className="text-emerald-400 font-bold shrink-0">{photo.geotagCoords}</span>
+                          </div>
+                        </div>
+                        <div className="p-3 bg-white text-xs flex-1 flex flex-col justify-between">
+                          <div>
+                            <span className="font-bold text-[#184C78] block">
+                              {photo.title}
+                            </span>
+                            <p className="text-[11px] text-[#6C757D] mt-1 leading-relaxed">
+                              {photo.description}
+                            </p>
+                          </div>
+                          <div className="mt-2 pt-2 border-t border-[#DCE0E6]/60 flex items-center justify-between text-[10px] text-[#6C757D]">
+                            <span>Bobot Realisasi: {project?.progres_persen !== undefined ? project.progres_persen : 0}%</span>
+                            <span className="text-emerald-700 font-semibold">{photo.date}</span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
                   </div>
-                ))}
-              </div>
+                );
+              })()}
 
               {/* Integrated Spatial Leaflet MiniMap (Sync with Maps) */}
               <div className="pt-1">

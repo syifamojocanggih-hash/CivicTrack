@@ -179,6 +179,14 @@ def get_projects(
             lead_time_hari=p.lead_time_hari,
             kode_proyek=p.kode_proyek,
             kode_akses=p.kode_akses,
+            pejabat_pembuat_komitmen=p.pejabat_pembuat_komitmen,
+            kontraktor_pelaksana=p.kontraktor_pelaksana,
+            konsultan_pengawas=p.konsultan_pengawas,
+            kepala_mandor=p.kepala_mandor,
+            nomor_kontrak_lpse=p.nomor_kontrak_lpse,
+            sumber_dana=p.sumber_dana,
+            foto_url=p.foto_url,
+            is_published=p.is_published,
             created_at=p.created_at,
             updated_at=p.updated_at,
             nama_wilayah=p.wilayah.nama_wilayah if p.wilayah else None,
@@ -352,24 +360,17 @@ def create_project(
         dibuat_oleh=current_user.id,
         kode_proyek=kode_proyek,
         kode_akses=kode_akses,
+        pejabat_pembuat_komitmen=req.pejabat_pembuat_komitmen,
+        kontraktor_pelaksana=req.kontraktor_pelaksana,
+        konsultan_pengawas=req.konsultan_pengawas,
+        kepala_mandor=req.kepala_mandor,
+        nomor_kontrak_lpse=req.nomor_kontrak_lpse,
+        sumber_dana=req.sumber_dana,
         is_published=req.is_published
     )
     db.add(proyek)
     db.commit()
     db.refresh(proyek)
-
-    # Catat tahapan awal jika progres > 0
-    if req.progres_persen > 0:
-        tahap_awal = TahapanProgres(
-            proyek_id=proyek.id,
-            nama_tahap="Pekerjaan Awal Dimulai",
-            progres_persen=req.progres_persen,
-            catatan="Inisialisasi progres awal proyek.",
-            dicatat_oleh=current_user.id
-        )
-        db.add(tahap_awal)
-        db.commit()
-        db.refresh(proyek)
 
     # Trigger Notifikasi Early-Warning jika proyek dibuat berstatus 'planned' DAN dipublikasikan (bukan draft)
     if proyek.is_published and proyek.status in (ProyekStatus.planned, "planned", "direncanakan"):

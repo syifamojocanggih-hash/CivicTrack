@@ -102,6 +102,12 @@ CREATE TABLE proyek (
     dibuat_oleh BIGINT NOT NULL,
     kode_proyek VARCHAR(50) NULL UNIQUE,
     kode_akses VARCHAR(100) NULL,
+    pejabat_pembuat_komitmen VARCHAR(200) NULL COMMENT 'Nama Pejabat Pembuat Komitmen (PPK)',
+    kontraktor_pelaksana VARCHAR(200) NULL COMMENT 'Nama Perusahaan/Kontraktor Pelaksana Fisik',
+    konsultan_pengawas VARCHAR(200) NULL COMMENT 'Nama Konsultan Supervisi / Pengawas Lapangan',
+    kepala_mandor VARCHAR(200) NULL COMMENT 'Nama Kepala Mandor / Site Manager Lapangan',
+    nomor_kontrak_lpse VARCHAR(150) NULL COMMENT 'Nomor Kontrak LPSE / SPK Resmi',
+    sumber_dana VARCHAR(150) NULL COMMENT 'Sumber Pembiayaan Proyek (APBD/APBN/DAK)',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_proyek_wilayah FOREIGN KEY (wilayah_id) 

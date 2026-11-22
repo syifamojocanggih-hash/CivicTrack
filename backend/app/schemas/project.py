@@ -54,6 +54,13 @@ class ProyekBase(BaseModel):
     jalur_terdampak: Optional[str] = None
     kode_proyek: Optional[str] = None
     kode_akses: Optional[str] = None
+    pejabat_pembuat_komitmen: Optional[str] = None
+    kontraktor_pelaksana: Optional[str] = None
+    konsultan_pengawas: Optional[str] = None
+    kepala_mandor: Optional[str] = None
+    nomor_kontrak_lpse: Optional[str] = None
+    sumber_dana: Optional[str] = None
+    foto_url: Optional[str] = None
     is_published: bool = True
 
     @field_validator("nama_proyek")
@@ -127,6 +134,13 @@ class ProyekUpdate(BaseModel):
     jalur_terdampak: Optional[str] = None
     kode_proyek: Optional[str] = None
     kode_akses: Optional[str] = None
+    pejabat_pembuat_komitmen: Optional[str] = None
+    kontraktor_pelaksana: Optional[str] = None
+    konsultan_pengawas: Optional[str] = None
+    kepala_mandor: Optional[str] = None
+    nomor_kontrak_lpse: Optional[str] = None
+    sumber_dana: Optional[str] = None
+    foto_url: Optional[str] = None
     is_published: Optional[bool] = None
     catatan_perubahan: Optional[str] = None
 
@@ -220,6 +234,13 @@ class ProyekListItem(BaseModel):
     updated_at: datetime
     kode_proyek: Optional[str] = None
     kode_akses: Optional[str] = None
+    pejabat_pembuat_komitmen: Optional[str] = None
+    kontraktor_pelaksana: Optional[str] = None
+    konsultan_pengawas: Optional[str] = None
+    kepala_mandor: Optional[str] = None
+    nomor_kontrak_lpse: Optional[str] = None
+    sumber_dana: Optional[str] = None
+    foto_url: Optional[str] = None
     is_published: bool = True
     nama_wilayah: Optional[str] = None
     nama_desa: Optional[str] = None

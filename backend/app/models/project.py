@@ -25,22 +25,24 @@ class ProyekKategori(str, enum.Enum):
         return super()._missing_(value)
 
 class ProyekStatus(str, enum.Enum):
+    rencana = "rencana"
+    direncanakan = "direncanakan"
+    planned = "planned"
+    scheduled = "scheduled"
     berjalan = "berjalan"
+    in_progress = "in_progress"
     selesai = "selesai"
+    completed = "completed"
     tertunda = "tertunda"
     dalam_peninjauan_ulang = "dalam_peninjauan_ulang"
     ditangguhkan = "ditangguhkan"
-    planned = "planned"
-    scheduled = "scheduled"
-    in_progress = "in_progress"
-    completed = "completed"
     suspended = "suspended"
 
     @classmethod
     def _missing_(cls, value):
         val_str = str(value).lower().strip()
         if val_str in ("direncanakan", "rencana", "plan", "planned"):
-            return cls.planned
+            return cls.rencana
         if val_str in ("akan_dimulai", "akan dimulai", "schedule", "scheduled", "terjadwal"):
             return cls.scheduled
         if val_str in ("in_progress", "inprogress", "sedang_berjalan", "berjalan"):
@@ -92,6 +94,13 @@ class Proyek(Base):
     dibuat_oleh = Column(BigInteger, ForeignKey("users.id", ondelete="RESTRICT"), nullable=False)
     kode_proyek = Column(String(50), nullable=True, unique=True, index=True)
     kode_akses = Column(String(100), nullable=True)
+    pejabat_pembuat_komitmen = Column(String(200), nullable=True)
+    kontraktor_pelaksana = Column(String(200), nullable=True)
+    konsultan_pengawas = Column(String(200), nullable=True)
+    kepala_mandor = Column(String(200), nullable=True)
+    nomor_kontrak_lpse = Column(String(150), nullable=True)
+    sumber_dana = Column(String(150), nullable=True)
+    foto_url = Column(Text, nullable=True)
     is_published = Column(Boolean, default=False, nullable=False, server_default='0', index=True)
     created_at = Column(DateTime, server_default=func.now(), nullable=False)
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now(), nullable=False)

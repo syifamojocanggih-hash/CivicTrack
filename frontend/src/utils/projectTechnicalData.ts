@@ -412,17 +412,25 @@ export function getProjectTechnicalDetails(project?: Pick<ProyekItem, 'id' | 'ka
     return VERIFIED_PROJECT_TECHNICAL_DATA[1];
   }
 
-  // 1. Jika objek proyek sudah memiliki kontraktor_pelaksana tersimpan, gunakan langsung
+  // 1. Jika objek proyek sudah memiliki data penanggung jawab tersimpan, gunakan langsung
   const pAny = project as any;
-  if (pAny.kontraktor_pelaksana && pAny.nomor_kontrak_lpse) {
+  if (
+    pAny.is_new ||
+    Number(project.id) >= 36 ||
+    pAny.kontraktor_pelaksana ||
+    pAny.pejabat_pembuat_komitmen ||
+    pAny.kepala_mandor ||
+    pAny.konsultan_pengawas ||
+    pAny.nomor_kontrak_lpse
+  ) {
     return {
-      kontraktor_pelaksana: pAny.kontraktor_pelaksana,
+      kontraktor_pelaksana: pAny.kontraktor_pelaksana || 'Belum Ditentukan (LPSE)',
       konsultan_pengawas: pAny.konsultan_pengawas || 'CV Konsultan Pengawas Terakreditasi',
       kepala_mandor: pAny.kepala_mandor || 'Mandor Pelaksana Teknis Lapangan',
       pejabat_pembuat_komitmen: pAny.pejabat_pembuat_komitmen || 'Suyitno, S.T. (PPK Dinas Terkait)',
-      nomor_kontrak_lpse: pAny.nomor_kontrak_lpse,
+      nomor_kontrak_lpse: pAny.nomor_kontrak_lpse || `SPK-${pAny.id || 'NEW'}/LAMONGAN/2026`,
       sumber_dana: pAny.sumber_dana || 'APBD Kab. Lamongan',
-      instansi_penanggung_jawab: pAny.nama_dinas || 'Dinas Teknis Kabupaten Lamongan',
+      instansi_penanggung_jawab: pAny.nama_dinas || 'Dinas Pekerjaan Umum Bina Marga Kabupaten Lamongan',
     };
   }
 

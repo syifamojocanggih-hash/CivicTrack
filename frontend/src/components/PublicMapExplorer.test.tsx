@@ -399,5 +399,73 @@ describe('PublicMapExplorer', () => {
     expect(within(rightAside as HTMLElement).getByText(/ndaiyo ndaiyo ndaiyo/i)).toBeInTheDocument();
     expect(within(rightAside as HTMLElement).getByText(/Rp 5.0 M/i)).toBeInTheDocument();
   });
+
+  it('renders public documentation recap card with text below and opens full gallery modal on button click', async () => {
+    const user = userEvent.setup();
+
+    // Mock stored documentation
+    localStorage.setItem(
+      'civictrack_dokumentasi_proyek',
+      JSON.stringify([
+        {
+          id: 101,
+          proyek_id: 1,
+          nama_proyek: 'Proyek Desa A',
+          nama_tahap: 'Galian & Pemadatan Lapis Pondasi',
+          judul: 'Rekap Lapangan Proyek Desa A',
+          deskripsi: 'Pekerjaan pondasi dan pemadatan selesai dengan baik.',
+          foto_url: '/assets/projects/proj-01.jpg',
+          tanggal_unggah: '2026-11-20',
+          diunggah_oleh: 'Mandor Penanggung Jawab',
+          tipe_file: 'foto',
+        },
+      ])
+    );
+
+    render(
+      <PublicMapExplorer
+        projects={mockProjects as any}
+        currentUser={null}
+        onBackToLanding={() => {}}
+        onOpenProjectDetail={() => {}}
+        onOpenAIRoute={() => {}}
+        onOpenAuth={() => {}}
+      />
+    );
+
+    await waitFor(() => {
+      expect(apiService.getProjects).toHaveBeenCalled();
+    });
+
+    // Click project to open drawer
+    const projectCards = await screen.findAllByText(/Proyek Desa A/i);
+    await user.click(projectCards[0]);
+
+    // Check that recap card and text below image are present
+    expect(screen.getByText(/Rekap Unggahan Terbaru Publik/i)).toBeInTheDocument();
+    expect(screen.getByText('Rekap Lapangan Proyek Desa A')).toBeInTheDocument();
+    expect(screen.getByText('"Pekerjaan pondasi dan pemadatan selesai dengan baik."')).toBeInTheDocument();
+
+    // Check button on image
+    const cekBtn = screen.getByRole('button', { name: /Cek Keseluruhan/i });
+    expect(cekBtn).toBeInTheDocument();
+
+    // Click Cek Keseluruhan button to open modal
+    await user.click(cekBtn);
+
+    // Modal should be open
+    expect(screen.getByText(/Rekap Publik Transparan/i)).toBeInTheDocument();
+    expect(screen.getByText(/Arsip Keseluruhan Dokumentasi Lapangan/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Semua \(1\)$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Foto \(1\)$/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^Video \(0\)$/i })).toBeInTheDocument();
+
+    // Close modal via "Tutup Rekap" button
+    const closeBtn = screen.getByRole('button', { name: /Tutup Rekap/i });
+    await user.click(closeBtn);
+
+    // Modal closed
+    expect(screen.queryByText(/Arsip Keseluruhan Dokumentasi Lapangan/i)).not.toBeInTheDocument();
+  });
 });
 

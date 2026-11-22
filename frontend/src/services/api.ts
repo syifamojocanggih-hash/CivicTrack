@@ -58,6 +58,19 @@ export function safeSetLocalStorage(key: string, value: string): void {
   }
 }
 
+export function safeRemoveLocalStorage(key: string): void {
+  try {
+    if (typeof window !== 'undefined' && window.localStorage && typeof window.localStorage.removeItem === 'function') {
+      window.localStorage.removeItem(key);
+    }
+  } catch {
+    // ignore
+  }
+}
+
+// Bersihkan cache rute lama yang tidak terikat user ID
+safeRemoveLocalStorage('civictrack_saved_routes');
+
 export function getAuthHeaders(): Record<string, string> {
   const token = localStorage.getItem('civictrack_token');
   const headers: Record<string, string> = {
@@ -173,8 +186,8 @@ export function mapBackendToProyekItem(p: BackendProjectItem): ProyekItem {
     dinas_id: p.dinas_id || (p.dinas ? p.dinas.id : 1),
     anggaran: Number(p.anggaran) || 0,
     status: (
-      (p.status === 'planned' || p.status === 'direncanakan')
-        ? 'planned'
+      (p.status === 'planned' || p.status === 'direncanakan' || p.status === 'rencana')
+        ? 'rencana'
         : (p.status === 'scheduled' || p.status === 'akan_dimulai')
           ? 'scheduled'
           : (Number(p.progres_persen) >= 100 || p.status === 'selesai' || p.status === 'completed')
@@ -318,14 +331,22 @@ export const apiService = {
 
   // Login with backend
   async login(email: string, password: string): Promise<{ user: UserProfile; token: string }> {
-    const res = await fetch(`${BASE_URL}/auth/login`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password }),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.trim(), password }),
+      });
+    } catch {
+      throw new Error('Tidak dapat terhubung ke server backend. Pastikan backend (FastAPI/Uvicorn) sedang aktif di port 8000.');
+    }
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
+      if (res.status >= 500) {
+        throw new Error(errorData.detail || `Server backend mengalami kendala (Status ${res.status}). Pastikan MySQL di Laragon aktif.`);
+      }
       throw new Error(errorData.detail || 'Email atau kata sandi tidak valid.');
     }
 
@@ -358,17 +379,24 @@ export const apiService = {
     if (role === 'penanggung_jawab' || role === 'pemerintah' || role === 'admin') backendRole = 'admin_dinas';
     if (role === 'aparatur_pemerintah' || role === 'pimpinan') backendRole = 'pimpinan_instansi';
 
-    const res = await fetch(`${BASE_URL}/auth/register`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ nama, email, password, role: backendRole }),
-    });
+    let res: Response;
+    try {
+      res = await fetch(`${BASE_URL}/auth/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nama: nama.trim(), email: email.trim(), password, role: backendRole }),
+      });
+    } catch {
+      throw new Error('Tidak dapat terhubung ke server backend. Pastikan server backend sedang aktif di port 8000.');
+    }
 
     if (!res.ok) {
       const errorData = await res.json().catch(() => ({}));
       let msg = 'Gagal melakukan pendaftaran.';
       if (typeof errorData.detail === 'string') {
         msg = errorData.detail;
+      } else if (res.status >= 500) {
+        msg = `Server backend mengalami kendala (Status ${res.status}). Pastikan MySQL di Laragon aktif.`;
       } else if (Array.isArray(errorData.detail) && errorData.detail.length > 0) {
         msg = errorData.detail
           .map((item: any) => {
@@ -660,6 +688,7 @@ export const apiService = {
       estimasi_selesai: data.estimasi_selesai,
       kode_proyek: data.kode_proyek ? data.kode_proyek.trim().toUpperCase() : undefined,
       kode_akses: data.kode_akses ? data.kode_akses.trim() : undefined,
+      is_published: data.is_published !== undefined ? data.is_published : true,
     };
 
     const res = await fetch(`${BASE_URL}/proyek`, {
@@ -1620,102 +1649,180 @@ export const apiService = {
     }
   },
 
-  async getSavedRoutes(): Promise<SavedRouteItem[]> {
+  async getSavedRoutes(userId?: number): Promise<SavedRouteItem[]> {
     const token = safeGetLocalStorage('civictrack_token');
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    try {
-      const res = await fetch(`${BASE_URL}/rute-tersimpan`, { headers });
-      if (res.ok) {
-        const data = await res.json();
-        safeSetLocalStorage('civictrack_saved_routes', JSON.stringify(data));
-        return data;
+    let currentUserId = userId;
+    if (!currentUserId) {
+      const userStr = safeGetLocalStorage('civictrack_user');
+      if (userStr) {
+        try {
+          const u = JSON.parse(userStr);
+          if (u?.id) currentUserId = u.id;
+        } catch {}
       }
-    } catch (e) {
+    }
+
+    // Jika pengguna TIDAK LOGIN, rute tersimpan harus KOSONG (tidak boleh melihat rute user lain)
+    if (!token && !currentUserId) {
+      return [];
+    }
+
+    const userKey = currentUserId ? `civictrack_saved_routes_user_${currentUserId}` : null;
+
+    try {
+      if (token) {
+        const res = await fetch(`${BASE_URL}/rute-tersimpan`, { headers });
+        if (res.ok) {
+          const data = await res.json();
+          if (userKey) {
+            safeSetLocalStorage(userKey, JSON.stringify(data));
+          }
+          return data;
+        }
+      }
+    } catch {
       // Offline fallback
     }
-    const local = safeGetLocalStorage('civictrack_saved_routes');
-    return local ? JSON.parse(local) : [];
+
+    if (userKey) {
+      const local = safeGetLocalStorage(userKey);
+      return local ? JSON.parse(local) : [];
+    }
+    return [];
   },
 
-  async saveRoute(payload: SaveRoutePayload): Promise<SavedRouteItem> {
+  async saveRoute(payload: SaveRoutePayload, userId?: number): Promise<SavedRouteItem> {
     const token = safeGetLocalStorage('civictrack_token');
     const headers: Record<string, string> = { 'Content-Type': 'application/json' };
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    try {
-      const res = await fetch(`${BASE_URL}/rute-tersimpan`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const local = safeGetLocalStorage('civictrack_saved_routes');
-        const list: SavedRouteItem[] = local ? JSON.parse(local) : [];
-        safeSetLocalStorage('civictrack_saved_routes', JSON.stringify([data, ...list]));
-        return data;
+    let currentUserId = userId;
+    if (!currentUserId) {
+      const userStr = safeGetLocalStorage('civictrack_user');
+      if (userStr) {
+        try {
+          const u = JSON.parse(userStr);
+          if (u?.id) currentUserId = u.id;
+        } catch {}
       }
-      if (res.status === 400 || res.status === 422) {
-        const err = await res.json().catch(() => ({}));
-        throw new Error(err.detail || 'Batas maksimal 3 rute harian telah tercapai.');
+    }
+
+    // WAJIB LOGIN: Pengguna yang belum login TIDAK BISA menyimpan rute harian
+    if (!token && !currentUserId) {
+      throw new Error('Anda harus login terlebih dahulu untuk menyimpan rute harian.');
+    }
+
+    const userKey = currentUserId ? `civictrack_saved_routes_user_${currentUserId}` : null;
+
+    try {
+      if (token) {
+        const res = await fetch(`${BASE_URL}/rute-tersimpan`, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          if (userKey) {
+            const local = safeGetLocalStorage(userKey);
+            const list: SavedRouteItem[] = local ? JSON.parse(local) : [];
+            safeSetLocalStorage(userKey, JSON.stringify([data, ...list.filter((r) => r.id !== data.id)]));
+          }
+          return data;
+        }
+        if (res.status === 400 || res.status === 422) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.detail || 'Batas maksimal 3 rute harian telah tercapai.');
+        }
+        if (res.status === 401) {
+          throw new Error('Sesi Anda telah berakhir. Silakan login kembali untuk menyimpan rute.');
+        }
       }
     } catch (e: any) {
-      if (e?.message && (e.message.includes('maksimal') || e.message.includes('Batas'))) {
+      if (e?.message && (e.message.includes('maksimal') || e.message.includes('Batas') || e.message.includes('login') || e.message.includes('Sesi'))) {
         throw e;
       }
     }
 
-    const local = safeGetLocalStorage('civictrack_saved_routes');
-    const list: SavedRouteItem[] = local ? JSON.parse(local) : [];
-    if (list.length >= 3) {
-      throw new Error('Batas maksimal 3 rute harian telah tercapai. Hapus salah satu rute terlebih dahulu.');
+    if (!currentUserId) {
+      throw new Error('Anda harus login terlebih dahulu untuk menyimpan rute harian.');
     }
-    const newRoute: SavedRouteItem = {
-      id: Date.now(),
-      user_id: 1,
-      nama_rute: payload.nama_rute,
-      koordinat_asal: payload.koordinat_asal,
-      koordinat_tujuan: payload.koordinat_tujuan,
-      polyline_data: payload.polyline_data,
-      moda_transportasi: payload.moda_transportasi || 'mobil',
-      jarak_km: payload.jarak_km || null,
-      estimasi_menit: payload.estimasi_menit || null,
-      catatan: payload.catatan || null,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString(),
-    };
-    safeSetLocalStorage('civictrack_saved_routes', JSON.stringify([newRoute, ...list]));
-    return newRoute;
+
+    if (userKey) {
+      const local = safeGetLocalStorage(userKey);
+      const list: SavedRouteItem[] = local ? JSON.parse(local) : [];
+      if (list.length >= 3) {
+        throw new Error('Batas maksimal 3 rute harian telah tercapai. Hapus salah satu rute terlebih dahulu.');
+      }
+      const newRoute: SavedRouteItem = {
+        id: Date.now(),
+        user_id: currentUserId,
+        nama_rute: payload.nama_rute,
+        koordinat_asal: payload.koordinat_asal,
+        koordinat_tujuan: payload.koordinat_tujuan,
+        polyline_data: payload.polyline_data,
+        moda_transportasi: payload.moda_transportasi || 'mobil',
+        jarak_km: payload.jarak_km || null,
+        estimasi_menit: payload.estimasi_menit || null,
+        catatan: payload.catatan || null,
+        created_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
+      };
+      safeSetLocalStorage(userKey, JSON.stringify([newRoute, ...list]));
+      return newRoute;
+    }
+
+    throw new Error('Gagal menyimpan rute harian.');
   },
 
-  async deleteSavedRoute(id: number): Promise<{ success: boolean; message: string }> {
+  async deleteSavedRoute(id: number, userId?: number): Promise<{ success: boolean; message: string }> {
     const token = safeGetLocalStorage('civictrack_token');
     const headers: Record<string, string> = {};
     if (token) headers['Authorization'] = `Bearer ${token}`;
 
-    try {
-      const res = await fetch(`${BASE_URL}/rute-tersimpan/${id}`, {
-        method: 'DELETE',
-        headers,
-      });
-      if (res.ok) {
-        const local = safeGetLocalStorage('civictrack_saved_routes');
-        if (local) {
-          const list: SavedRouteItem[] = JSON.parse(local);
-          safeSetLocalStorage('civictrack_saved_routes', JSON.stringify(list.filter((r) => r.id !== id)));
-        }
-        return await res.json();
+    let currentUserId = userId;
+    if (!currentUserId) {
+      const userStr = safeGetLocalStorage('civictrack_user');
+      if (userStr) {
+        try {
+          const u = JSON.parse(userStr);
+          if (u?.id) currentUserId = u.id;
+        } catch {}
       }
-    } catch (e) {
+    }
+
+    const userKey = currentUserId ? `civictrack_saved_routes_user_${currentUserId}` : null;
+
+    try {
+      if (token) {
+        const res = await fetch(`${BASE_URL}/rute-tersimpan/${id}`, {
+          method: 'DELETE',
+          headers,
+        });
+        if (res.ok) {
+          if (userKey) {
+            const local = safeGetLocalStorage(userKey);
+            if (local) {
+              const list: SavedRouteItem[] = JSON.parse(local);
+              safeSetLocalStorage(userKey, JSON.stringify(list.filter((r) => r.id !== id)));
+            }
+          }
+          return await res.json();
+        }
+      }
+    } catch {
       // Offline fallback
     }
 
-    const local = safeGetLocalStorage('civictrack_saved_routes');
-    if (local) {
-      const list: SavedRouteItem[] = JSON.parse(local);
-      safeSetLocalStorage('civictrack_saved_routes', JSON.stringify(list.filter((r) => r.id !== id)));
+    if (userKey) {
+      const local = safeGetLocalStorage(userKey);
+      if (local) {
+        const list: SavedRouteItem[] = JSON.parse(local);
+        safeSetLocalStorage(userKey, JSON.stringify(list.filter((r) => r.id !== id)));
+      }
     }
     return { success: true, message: 'Rute tersimpan berhasil dihapus.' };
   },

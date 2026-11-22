@@ -38,12 +38,19 @@ import {
   AlertTriangle,
   Calendar,
   Bell,
+  Camera,
+  Film,
 } from 'lucide-react';
-import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem } from '../types';
+import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem, DokumentasiProyek } from '../types';
 import { apiService } from '../services/api';
 import { CivicTrackLogo } from './CivicTrackLogo';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON, LAMONGAN_DESA_GEOJSON } from '../data/geoWilayahData';
-import { getRealProjectImage, getGoogleStreetViewUrl } from '../utils/projectImages';
+import {
+  getRealProjectImage,
+  getGoogleStreetViewUrl,
+  getAllProjectDocumentation,
+  getLatestProjectDocumentation,
+} from '../utils/projectImages';
 import { generateProjectMilestones } from '../utils/projectConsistency';
 import {
   getProjectTechnicalDetails,
@@ -228,6 +235,41 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [showTechSpecs, setShowTechSpecs] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const drawerBodyRef = useRef<HTMLDivElement>(null);
+
+  // Modal Galeri & Cek Keseluruhan Rekap Foto/Video Publik
+  const [isGalleryModalOpen, setIsGalleryModalOpen] = useState(false);
+  const [galleryFilter, setGalleryFilter] = useState<'semua' | 'foto' | 'video'>('semua');
+  const [selectedMediaPreview, setSelectedMediaPreview] = useState<DokumentasiProyek | null>(null);
+  const [, setDocUpdateTrigger] = useState(0);
+
+  // Live sync dokumentasi dari tab lain atau dashboard admin/PJ
+  useEffect(() => {
+    const handleDocSync = () => {
+      setDocUpdateTrigger((prev) => prev + 1);
+    };
+    window.addEventListener('civictrack_documentation_updated', handleDocSync);
+    window.addEventListener('storage', handleDocSync);
+    return () => {
+      window.removeEventListener('civictrack_documentation_updated', handleDocSync);
+      window.removeEventListener('storage', handleDocSync);
+    };
+  }, []);
+
+  // ESC key listener untuk menutup modal galeri dan lightbox
+  useEffect(() => {
+    if (!isGalleryModalOpen && !selectedMediaPreview) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        if (selectedMediaPreview) {
+          setSelectedMediaPreview(null);
+        } else {
+          setIsGalleryModalOpen(false);
+        }
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isGalleryModalOpen, selectedMediaPreview]);
 
   const handleCopyText = (text: string, label: string) => {
     try {
@@ -616,8 +658,8 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       if (selectedStatus !== 'all') {
         const rawStat = (p.status || '').toLowerCase().trim();
         const days = getDaysUntilStart(p.tanggal_mulai_rencana || p.tanggal_mulai);
-        const isSch = rawStat === 'scheduled' || rawStat === 'akan_dimulai' || ((rawStat === 'planned' || rawStat === 'direncanakan') && days !== null && days <= 14 && days >= 0);
-        const isPlan = (rawStat === 'planned' || rawStat === 'direncanakan') && !isSch;
+        const isSch = rawStat === 'scheduled' || rawStat === 'akan_dimulai' || ((rawStat === 'planned' || rawStat === 'direncanakan' || rawStat === 'rencana') && days !== null && days <= 14 && days >= 0);
+        const isPlan = rawStat === 'planned' || rawStat === 'direncanakan' || rawStat === 'rencana';
 
         if (selectedStatus === 'berjalan') {
           if (rawStat !== 'berjalan' && rawStat !== 'in_progress') return false;
@@ -1394,7 +1436,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
       const daysUntil = getDaysUntilStart(proj.tanggal_mulai_rencana || proj.tanggal_mulai);
 
       const isExplicitScheduled = rawStatus === 'scheduled' || rawStatus === 'akan_dimulai';
-      const isExplicitPlanned = rawStatus === 'planned' || rawStatus === 'direncanakan';
+      const isExplicitPlanned = rawStatus === 'planned' || rawStatus === 'direncanakan' || rawStatus === 'rencana';
       const isWithinScheduledWindow = daysUntil !== null && daysUntil <= 14 && daysUntil >= 0;
 
       const isScheduled = isExplicitScheduled || (isExplicitPlanned && isWithinScheduledWindow);
@@ -2464,7 +2506,7 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
             const rawStatus = (currentProject.status || '').toLowerCase().trim();
             const daysUntilCurrent = getDaysUntilStart(currentProject.tanggal_mulai_rencana || currentProject.tanggal_mulai);
             const isCurrentExplicitScheduled = rawStatus === 'scheduled' || rawStatus === 'akan_dimulai';
-            const isCurrentExplicitPlanned = rawStatus === 'planned' || rawStatus === 'direncanakan';
+            const isCurrentExplicitPlanned = rawStatus === 'planned' || rawStatus === 'direncanakan' || rawStatus === 'rencana';
             const isWithinScheduledWindow = daysUntilCurrent !== null && daysUntilCurrent <= 14 && daysUntilCurrent >= 0;
             const isCurrentScheduled = isCurrentExplicitScheduled || (isCurrentExplicitPlanned && isWithinScheduledWindow);
             const isCurrentPlanned = isCurrentExplicitPlanned && !isCurrentScheduled;
@@ -2472,8 +2514,8 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
             return (
               <div ref={drawerBodyRef} className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-5 scrollbar-thin animate-fade-in">
-                {/* Photo Showcase with Telemetry Tag or Early-Warning Blueprint Card */}
-                {isEarlyWarningProject && !currentProject.foto_url ? (
+                {/* Photo Showcase with Telemetry Tag, Rekap Unggahan Lapangan Terbaru, or Early-Warning Blueprint Card */}
+                {isEarlyWarningProject && !currentProject.foto_url && !getLatestProjectDocumentation(currentProject.id, currentProject.nama_proyek) ? (
                   <div className="rounded-2xl overflow-hidden border border-indigo-200/80 shadow-md relative group bg-gradient-to-br from-slate-900 via-indigo-950 to-blue-950 p-5 text-white h-44 flex flex-col justify-between">
                     <div className="absolute inset-0 opacity-15 bg-[radial-gradient(#818cf8_1px,transparent_1px)] [background-size:12px_12px]" />
                     <div className="relative z-10 flex items-center justify-between">
@@ -2510,41 +2552,139 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                       <span className="text-cyan-300 font-sans font-bold">{currentProject.distanceStr} dari lokasi Anda</span>
                     </div>
                   </div>
-                ) : (
-                  <div className="rounded-2xl overflow-hidden border border-slate-200 shadow-sm relative group">
-                    <img
-                      src={getRealProjectImage(currentProject)}
-                      alt={currentProject.nama_proyek}
-                      className="w-full h-44 object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute top-3 left-3 bg-black/70 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md">
-                      <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
-                      <span>Real-time Field Telemetry</span>
+                ) : (() => {
+                  const projectDocs = getAllProjectDocumentation(currentProject.id, currentProject.nama_proyek, currentProject.foto_url);
+                  const latestDoc = projectDocs.length > 0 ? projectDocs[0] : null;
+                  const displayMedia = latestDoc?.foto_url || getRealProjectImage(currentProject);
+
+                  return displayMedia ? (
+                    <div className="rounded-2xl overflow-hidden border border-slate-200/90 bg-white shadow-sm hover:shadow-md transition-shadow">
+                      {/* Bagian Atas: Media Visual */}
+                      <div className="relative h-48 sm:h-52 w-full bg-slate-900 overflow-hidden group">
+                        {latestDoc?.tipe_file === 'video' ? (
+                          <video
+                            src={displayMedia}
+                            className="w-full h-full object-cover"
+                            muted
+                            playsInline
+                          />
+                        ) : (
+                          <img
+                            src={displayMedia}
+                            alt={latestDoc?.judul || currentProject.nama_proyek}
+                            className="w-full h-full object-cover group-hover:scale-103 transition-transform duration-500"
+                          />
+                        )}
+
+                        {/* Top-Left: Telemetry & Status Rekap */}
+                        <div className="absolute top-3 left-3 flex items-center gap-1.5">
+                          <span className="bg-black/75 backdrop-blur-md text-white text-[10px] font-bold px-2.5 py-1 rounded-full flex items-center gap-1.5 shadow-md border border-white/10">
+                            <Radio className="w-3 h-3 text-emerald-400 animate-pulse" />
+                            <span>{latestDoc ? 'Rekap Unggahan Lapangan' : 'Dokumentasi Lapangan Terverifikasi'}</span>
+                          </span>
+                        </div>
+
+                        {/* Top-Right: Street View 360 */}
+                        <div className="absolute top-3 right-3 flex items-center gap-1.5">
+                          <a
+                            href={getGoogleStreetViewUrl(Number(currentProject.latitude) || -7.1197, Number(currentProject.longitude) || 112.4150)}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md transition-all hover:scale-105"
+                            title="Buka titik koordinat proyek langsung di Google Street View 360°"
+                          >
+                            <Compass className="w-3 h-3 text-cyan-400" />
+                            <span>Street View 360°</span>
+                            <ExternalLink className="w-2.5 h-2.5 opacity-80" />
+                          </a>
+                        </div>
+
+                        {/* Bottom-Left: Button pada Gambar untuk Cek Keseluruhan Rekap Foto & Video */}
+                        <div className="absolute bottom-3 left-3 flex items-center gap-2">
+                          <button
+                            type="button"
+                            onClick={() => setIsGalleryModalOpen(true)}
+                            className="bg-[#184C78]/90 hover:bg-[#184C78] text-white backdrop-blur-md px-3 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 shadow-lg border border-white/20 transition-all hover:scale-105 cursor-pointer"
+                            title="Lihat seluruh arsip rekap foto & video proyek ini"
+                          >
+                            <Layers className="w-3.5 h-3.5 text-cyan-300" />
+                            <span>Cek Keseluruhan ({projectDocs.length} Media)</span>
+                          </button>
+                        </div>
+
+                        {/* Bottom-Right: Jarak dari pengguna */}
+                        <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md text-[#184C78] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md">
+                          {currentProject.distanceStr} dari lokasi Anda
+                        </div>
+                      </div>
+
+                      {/* Bagian Bawah Gambar: Teks Rekap Terbaru Publik */}
+                      <div className="p-3.5 sm:p-4 bg-white space-y-2 border-t border-slate-100">
+                        <div className="flex items-center justify-between gap-2 flex-wrap">
+                          <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-md bg-blue-50 text-[#184C78] border border-blue-200/80 flex items-center gap-1">
+                            <Radio className="w-2.5 h-2.5 text-emerald-500 animate-pulse" />
+                            <span>Rekap Unggahan Terbaru Publik</span>
+                          </span>
+                          <span className="text-[10.5px] text-slate-500 font-medium flex items-center gap-1">
+                            <Calendar className="w-3 h-3 text-slate-400" />
+                            <span>{latestDoc?.tanggal_unggah || currentProject.tanggal_mulai || '2026-11-20'}</span>
+                          </span>
+                        </div>
+
+                        <h4 className="font-heading font-bold text-sm text-slate-900 leading-snug">
+                          {latestDoc?.judul || `Dokumentasi Fisik Lapangan: ${currentProject.nama_proyek}`}
+                        </h4>
+
+                        {latestDoc?.deskripsi && (
+                          <p className="text-xs text-slate-600 leading-relaxed italic bg-slate-50 p-2 rounded-lg border border-slate-200/60">
+                            "{latestDoc.deskripsi}"
+                          </p>
+                        )}
+
+                        <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-500 flex-wrap gap-1.5">
+                          <div className="flex items-center gap-1 text-[#184C78] font-semibold">
+                            <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                            <span>Tahap: {latestDoc?.nama_tahap || currentProject.tahap_terkini || 'Pekerjaan Lapangan'}</span>
+                          </div>
+                          {latestDoc?.diunggah_oleh && (
+                            <span className="text-[10.5px] text-slate-500 font-medium truncate max-w-[220px]" title={latestDoc.diunggah_oleh}>
+                              Oleh: <strong className="text-slate-700 font-semibold">{latestDoc.diunggah_oleh}</strong>
+                            </span>
+                          )}
+                        </div>
+                      </div>
                     </div>
-                    <div className="absolute top-10 left-3 bg-black/60 backdrop-blur-md text-white/95 text-[9px] font-medium px-2 py-0.5 rounded-full shadow-xs">
-                      📷 Dokumentasi Representatif Kab. Lamongan
+                  ) : (
+                    <div className="rounded-2xl border-2 border-dashed border-slate-300 bg-gradient-to-b from-slate-50 via-slate-100/60 to-blue-50/30 p-5 relative overflow-hidden flex flex-col items-center justify-center text-center h-44 group">
+                      <div className="w-12 h-12 rounded-2xl bg-white shadow-xs border border-slate-200/80 flex items-center justify-center text-slate-400 mb-2 group-hover:scale-105 transition-transform">
+                        <Camera className="w-6 h-6 text-slate-400" />
+                      </div>
+                      <p className="text-xs font-bold text-slate-700">Foto Dokumentasi Belum Diunggah</p>
+                      <p className="text-[10px] text-slate-500 max-w-[270px] mt-0.5 leading-snug">
+                        Foto fisik lapangan akan tampil setelah diunggah melalui formulir sunting data proyek atau lembar kerja dokumentasi oleh dinas/penanggung jawab.
+                      </p>
+                      <div className="absolute top-2.5 right-2.5">
+                        <a
+                          href={getGoogleStreetViewUrl(Number(currentProject.latitude) || -7.1197, Number(currentProject.longitude) || 112.4150)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="bg-white/90 hover:bg-white text-slate-700 text-[10px] font-semibold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-xs border border-slate-200 transition-all hover:scale-105"
+                          title="Buka titik koordinat proyek langsung di Google Street View 360°"
+                        >
+                          <Compass className="w-3 h-3 text-[#184C78]" />
+                          <span>Street View 360°</span>
+                          <ExternalLink className="w-2 h-2 opacity-70" />
+                        </a>
+                      </div>
+                      <div className="absolute bottom-2 right-2.5 text-[9px] font-extrabold text-[#184C78] bg-white/85 px-2 py-0.5 rounded-full border border-slate-200/60">
+                        {currentProject.distanceStr} dari lokasi Anda
+                      </div>
+                      <div className="absolute bottom-2 left-2.5 text-[9px] font-mono text-slate-500 bg-white/85 px-2 py-0.5 rounded-full border border-slate-200/60">
+                        📍 {Number(currentProject.latitude).toFixed(4)}°, {Number(currentProject.longitude).toFixed(4)}°
+                      </div>
                     </div>
-                    <div className="absolute top-3 right-3 flex items-center gap-1.5">
-                      <a
-                        href={getGoogleStreetViewUrl(Number(currentProject.latitude) || -7.1197, Number(currentProject.longitude) || 112.4150)}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="bg-black/75 hover:bg-black/95 backdrop-blur-md text-white text-[10px] font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 shadow-md transition-all hover:scale-105"
-                        title="Buka titik koordinat proyek langsung di Google Street View 360°"
-                      >
-                        <Compass className="w-3 h-3 text-cyan-400" />
-                        <span>Street View 360°</span>
-                        <ExternalLink className="w-2.5 h-2.5 opacity-80" />
-                      </a>
-                    </div>
-                    <div className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-md text-[#184C78] text-[10px] font-extrabold px-2.5 py-0.5 rounded-full shadow-md">
-                      {currentProject.distanceStr} dari lokasi Anda
-                    </div>
-                    <div className="absolute bottom-3 left-3 bg-black/60 backdrop-blur-xs text-white text-[9px] font-mono px-2 py-0.5 rounded-full">
-                      📍 {Number(currentProject.latitude).toFixed(4)}°, {Number(currentProject.longitude).toFixed(4)}°
-                    </div>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Title & Status with Official Project Code Badge */}
                 <div>
@@ -2565,16 +2705,13 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                       {isCurrentScheduled
                         ? `DIMULAI DALAM ${daysUntilCurrent !== null ? daysUntilCurrent : 14} HARI`
                         : isCurrentPlanned
-                        ? 'DIRENCANAKAN (KONTRAK LPSE)'
+                        ? 'RENCANA (PROYEK YANG AKAN DATANG)'
                         : currentProject.status === 'berjalan'
                         ? 'IN PROGRESS'
                         : currentProject.status.toUpperCase()}
                     </span>
                     <span className="font-mono text-[10.5px] font-bold bg-[#EBF4FB] text-[#184C78] px-2 py-0.5 rounded border border-[#c5def2]">
                       {effCode}
-                    </span>
-                    <span className="text-xs text-slate-400 font-medium">
-                      Est. {currentProject.estimasi_selesai || 'Okt 2024'}
                     </span>
                   </div>
 
@@ -3192,6 +3329,290 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
           </div>
         </div>
       </div>
+
+      {/* MODAL GALERI & REKAP KESELURUHAN DOKUMENTASI PUBLIK (FOTO & VIDEO) */}
+      {isGalleryModalOpen && currentProject && (() => {
+        const allDocs = getAllProjectDocumentation(currentProject.id, currentProject.nama_proyek, currentProject.foto_url);
+        const filteredDocs = allDocs.filter((doc) => {
+          if (galleryFilter === 'foto') return doc.tipe_file !== 'video';
+          if (galleryFilter === 'video') return doc.tipe_file === 'video';
+          return true;
+        });
+        const photoCount = allDocs.filter((d) => d.tipe_file !== 'video').length;
+        const videoCount = allDocs.filter((d) => d.tipe_file === 'video').length;
+
+        return (
+          <div
+            className="fixed inset-0 z-[9999] bg-slate-900/80 backdrop-blur-sm flex items-center justify-center p-3 sm:p-6 animate-fade-in"
+            onClick={() => setIsGalleryModalOpen(false)}
+          >
+            <div
+              className="bg-white rounded-3xl shadow-2xl max-w-4xl w-full max-h-[90vh] flex flex-col overflow-hidden border border-slate-200"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="bg-gradient-to-r from-[#184C78] via-[#1f5f96] to-[#2980B9] text-white p-4 sm:p-5 flex items-start justify-between gap-4">
+                <div className="space-y-1">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="bg-white/20 backdrop-blur-md text-white text-[10px] font-extrabold px-2.5 py-0.5 rounded-full flex items-center gap-1 border border-white/20">
+                      <Radio className="w-2.5 h-2.5 text-emerald-300 animate-pulse" />
+                      Rekap Publik Transparan
+                    </span>
+                    <span className="text-[11px] text-blue-100 font-medium">
+                      Total {allDocs.length} Media Terarsip
+                    </span>
+                  </div>
+                  <h3 className="font-heading font-bold text-base sm:text-lg text-white leading-snug">
+                    {currentProject.nama_proyek}
+                  </h3>
+                  <p className="text-xs text-blue-100/90 flex items-center gap-1.5">
+                    <span>Arsip Keseluruhan Dokumentasi Lapangan (Foto & Video)</span>
+                    <span>&bull;</span>
+                    <span>{currentProject.nama_wilayah || 'Kabupaten Lamongan'}</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsGalleryModalOpen(false)}
+                  className="w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors shrink-0 cursor-pointer"
+                  title="Tutup (Esc)"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Filter Tabs & Quick Actions */}
+              <div className="bg-slate-50 border-b border-slate-200 px-4 sm:px-6 py-2.5 flex items-center justify-between gap-3 flex-wrap">
+                <div className="flex items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setGalleryFilter('semua')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      galleryFilter === 'semua'
+                        ? 'bg-[#184C78] text-white shadow-xs'
+                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <Layers className="w-3.5 h-3.5" />
+                    <span>Semua ({allDocs.length})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGalleryFilter('foto')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      galleryFilter === 'foto'
+                        ? 'bg-[#184C78] text-white shadow-xs'
+                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <Camera className="w-3.5 h-3.5" />
+                    <span>Foto ({photoCount})</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setGalleryFilter('video')}
+                    className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer flex items-center gap-1.5 ${
+                      galleryFilter === 'video'
+                        ? 'bg-[#184C78] text-white shadow-xs'
+                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    <Film className="w-3.5 h-3.5" />
+                    <span>Video ({videoCount})</span>
+                  </button>
+                </div>
+
+                <a
+                  href={getGoogleStreetViewUrl(Number(currentProject.latitude) || -7.1197, Number(currentProject.longitude) || 112.4150)}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-xs font-semibold text-[#184C78] hover:text-[#0f3252] flex items-center gap-1 bg-blue-50 px-3 py-1.5 rounded-xl border border-blue-200 transition-colors"
+                >
+                  <Compass className="w-3.5 h-3.5 text-[#2980B9]" />
+                  <span>Buka Street View 360°</span>
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </a>
+              </div>
+
+              {/* Media Grid Scrollable */}
+              <div className="flex-1 overflow-y-auto p-4 sm:p-6 scrollbar-thin">
+                {filteredDocs.length === 0 ? (
+                  <div className="text-center py-12 flex flex-col items-center justify-center">
+                    <div className="w-14 h-14 rounded-2xl bg-slate-100 flex items-center justify-center text-slate-400 mb-3">
+                      {galleryFilter === 'video' ? <Film className="w-7 h-7" /> : <Camera className="w-7 h-7" />}
+                    </div>
+                    <p className="font-bold text-slate-700 text-sm">
+                      {galleryFilter === 'video'
+                        ? 'Belum ada video dokumentasi untuk proyek ini'
+                        : 'Belum ada foto dokumentasi untuk proyek ini'}
+                    </p>
+                    <p className="text-xs text-slate-500 mt-1 max-w-sm">
+                      Pihak pengawas lapangan dapat mengunggah berkas video & foto baru melalui dashboard penanggung jawab.
+                    </p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {filteredDocs.map((doc) => {
+                      const isVideo = doc.tipe_file === 'video';
+                      return (
+                        <div
+                          key={doc.id}
+                          className="bg-white rounded-2xl overflow-hidden border border-slate-200 shadow-xs hover:shadow-md transition-shadow flex flex-col"
+                        >
+                          {/* Visual Media Container */}
+                          <div className="relative h-44 bg-slate-900 overflow-hidden group">
+                            {isVideo ? (
+                              <video
+                                src={doc.foto_url}
+                                controls
+                                preload="metadata"
+                                className="w-full h-full object-cover"
+                              />
+                            ) : (
+                              <div
+                                className="w-full h-full cursor-zoom-in relative"
+                                onClick={() => setSelectedMediaPreview(doc)}
+                                title="Klik untuk memperbesar foto"
+                              >
+                                <img
+                                  src={doc.foto_url}
+                                  alt={doc.judul}
+                                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                                />
+                                <div className="absolute inset-0 bg-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white text-xs font-semibold">
+                                  <span>Perbesar Foto 🔍</span>
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Floating Media Tag */}
+                            <div className="absolute top-2.5 left-2.5 pointer-events-none">
+                              <span className="bg-black/75 backdrop-blur-md text-white text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1 shadow-md border border-white/10">
+                                {isVideo ? (
+                                  <>
+                                    <Film className="w-3 h-3 text-amber-400" />
+                                    <span>Video Dokumentasi</span>
+                                  </>
+                                ) : (
+                                  <>
+                                    <Camera className="w-3 h-3 text-cyan-400" />
+                                    <span>Foto Lapangan</span>
+                                  </>
+                                )}
+                              </span>
+                            </div>
+
+                            <div className="absolute top-2.5 right-2.5 pointer-events-none">
+                              <span className="bg-black/70 backdrop-blur-md text-slate-200 text-[9.5px] font-mono px-2 py-0.5 rounded-full">
+                                {doc.tanggal_unggah}
+                              </span>
+                            </div>
+                          </div>
+
+                          {/* Media Details */}
+                          <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5 bg-white">
+                            <div className="space-y-1">
+                              <span className="inline-block text-[10px] font-bold text-[#184C78] bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200/60">
+                                {doc.nama_tahap || 'Pekerjaan Lapangan'}
+                              </span>
+                              <h4 className="font-heading font-bold text-xs text-slate-900 line-clamp-2 leading-snug">
+                                {doc.judul}
+                              </h4>
+                              {doc.deskripsi && (
+                                <p className="text-[11px] text-slate-600 line-clamp-3 leading-relaxed italic bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                  "{doc.deskripsi}"
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-[10px] text-slate-500">
+                              <span className="truncate max-w-[170px]" title={doc.diunggah_oleh}>
+                                Pengunggah: <strong className="text-slate-700">{doc.diunggah_oleh}</strong>
+                              </span>
+                              {!isVideo && (
+                                <button
+                                  type="button"
+                                  onClick={() => setSelectedMediaPreview(doc)}
+                                  className="text-[#184C78] hover:text-[#0f3252] font-bold text-[10.5px] underline cursor-pointer"
+                                >
+                                  Perbesar
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Modal Footer */}
+              <div className="bg-slate-50 border-t border-slate-200 p-4 px-6 flex items-center justify-between flex-wrap gap-2">
+                <p className="text-xs text-slate-500">
+                  Transparansi Dokumentasi Fisik & Spasial &bull; Pemerintah Kabupaten Lamongan
+                </p>
+                <button
+                  type="button"
+                  onClick={() => setIsGalleryModalOpen(false)}
+                  className="px-5 py-2 bg-[#184C78] hover:bg-[#0f3252] text-white text-xs font-bold rounded-xl transition-colors cursor-pointer shadow-sm"
+                >
+                  Tutup Rekap
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* LIGHTBOX PREVIEW MODAL FOR ZOOMED PHOTO */}
+      {selectedMediaPreview && (
+        <div
+          className="fixed inset-0 z-[10000] bg-black/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-6 animate-fade-in"
+          onClick={() => setSelectedMediaPreview(null)}
+        >
+          <div
+            className="max-w-4xl w-full flex flex-col items-center gap-3"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="w-full flex items-center justify-between text-white px-1">
+              <div className="space-y-0.5">
+                <span className="text-[11px] font-bold text-cyan-300">
+                  {selectedMediaPreview.nama_tahap || 'Dokumentasi Lapangan'}
+                </span>
+                <h4 className="font-bold text-sm sm:text-base leading-snug">
+                  {selectedMediaPreview.judul}
+                </h4>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedMediaPreview(null)}
+                className="w-9 h-9 rounded-full bg-white/20 hover:bg-white/30 text-white flex items-center justify-center transition-colors cursor-pointer"
+                title="Tutup (Esc)"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="w-full max-h-[75vh] flex items-center justify-center overflow-hidden rounded-2xl bg-black border border-white/20 shadow-2xl">
+              <img
+                src={selectedMediaPreview.foto_url}
+                alt={selectedMediaPreview.judul}
+                className="max-w-full max-h-[75vh] object-contain"
+              />
+            </div>
+
+            <div className="w-full bg-white/10 backdrop-blur-md text-white p-3 rounded-xl border border-white/15 text-xs flex items-center justify-between flex-wrap gap-2">
+              <span className="italic text-slate-200">
+                "{selectedMediaPreview.deskripsi || 'Dokumentasi terverifikasi pengawas dinas.'}"
+              </span>
+              <span className="text-slate-300 font-mono text-[11px]">
+                {selectedMediaPreview.tanggal_unggah} &bull; {selectedMediaPreview.diunggah_oleh}
+              </span>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

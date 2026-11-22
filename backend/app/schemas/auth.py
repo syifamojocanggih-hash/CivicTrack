@@ -10,7 +10,7 @@ class UserRegisterRequest(BaseModel):
     dinas_id: Optional[int] = None
 
 class UserLoginRequest(BaseModel):
-    email: EmailStr
+    email: str = Field(..., description="Email atau Username pengguna")
     password: str
 
 class RefreshTokenRequest(BaseModel):

@@ -15,8 +15,6 @@ import {
   Motorbike,
   Bike,
   Compass,
-  Play,
-  RotateCcw,
   CheckCircle2,
   Radio,
   LocateFixed,
@@ -30,8 +28,8 @@ import {
   Bookmark,
   Trash2,
 } from 'lucide-react';
-import type { ProyekItem, SavedRouteItem } from '../types';
-import { apiService } from '../services/api';
+import type { ProyekItem, SavedRouteItem, UserProfile } from '../types';
+import { apiService, safeGetLocalStorage } from '../services/api';
 
 export type TravelMode = 'car' | 'motorcycle' | 'walking';
 
@@ -42,6 +40,8 @@ interface AIRouteModalProps {
   project?: ProyekItem | null;
   allProjects?: ProyekItem[];
   initialSavedRoute?: SavedRouteItem | null;
+  currentUser?: UserProfile | null;
+  onOpenAuth?: (mode?: 'login' | 'register') => void;
 }
 
 interface RouteItem {
@@ -171,6 +171,8 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   project,
   allProjects = [],
   initialSavedRoute = null,
+  currentUser = null,
+  onOpenAuth,
 }) => {
   // State Proyek Aktif yang sedang ditinjau rute pengalihannya
   const [activeProject, setActiveProject] = useState<ProyekItem | null>(project || null);
@@ -235,8 +237,9 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [selectedRouteIndex, setSelectedRouteIndex] = useState<number>(0);
-  const [isSimulating, setIsSimulating] = useState(false);
   const [mobileTab, setMobileTab] = useState<'map' | 'list'>('map');
+  const [activeSavedRouteId, setActiveSavedRouteId] = useState<number | null>(null);
+  const [shouldAutoSimulate, setShouldAutoSimulate] = useState(false);
 
   // State Rute Harian Tersimpan (Early Warning Overlap)
   const [savedRoutes, setSavedRoutes] = useState<SavedRouteItem[]>([]);
@@ -248,8 +251,6 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   const mapContainerRef = useRef<HTMLDivElement | null>(null);
   const mapInstanceRef = useRef<L.Map | null>(null);
   const polylinesLayerGroupRef = useRef<L.LayerGroup | null>(null);
-  const simulationMarkerRef = useRef<L.Marker | null>(null);
-  const simulationAnimationRef = useRef<number | null>(null);
 
   // Refs untuk callback listener peta Leaflet
   const pickingModeRef = useRef<'origin' | 'destination' | null>(null);
@@ -386,8 +387,19 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       customDestCoords,
       isProjectCompleted
     );
+
+    // Jika sedang membuka rute tersimpan, pertahankan identitas rute tersimpan pada prioritas 1
+    if (activeSavedRouteId != null && initialSavedRoute && initialSavedRoute.id === activeSavedRouteId) {
+      newRoutes[0] = {
+        ...newRoutes[0],
+        id: initialSavedRoute.id,
+        nama_rute: initialSavedRoute.nama_rute,
+        alasan_rekomendasi: initialSavedRoute.catatan || newRoutes[0].alasan_rekomendasi,
+      };
+    }
+
     setRoutes(newRoutes);
-  }, [origin, destination, customOriginCoords, customDestCoords, projectLat, projectLng, currentName, isProjectCompleted]);
+  }, [origin, destination, customOriginCoords, customDestCoords, projectLat, projectLng, currentName, isProjectCompleted, activeSavedRouteId, initialSavedRoute]);
 
   // Pengambilan rute jalan riil dari OpenStreetMap (OSRM) secara asinkron
   // Menjamin polylines 100% menempel pada jaringan jalan resmi, tanpa garis potong kompas
@@ -624,7 +636,10 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                   : (selected?.profile === 'bicycle' ? 'motorcycle' : 'car')
               ),
               waypoints: updatedWaypoints,
-              nama_rute: customName,
+              nama_rute:
+                idx === 0 && activeSavedRouteId != null && initialSavedRoute?.id === activeSavedRouteId
+                  ? initialSavedRoute.nama_rute
+                  : customName,
               alasan_rekomendasi: dynamicReason,
               vehicle_type: travelMode === 'motorcycle' ? 'Khusus Sepeda Motor & Roda Dua' : travelMode === 'walking' ? 'Pejalan Kaki' : r.vehicle_type,
               petunjuk_langkah: osrmRes.steps.length > 0 ? osrmRes.steps : r.petunjuk_langkah,
@@ -653,17 +668,27 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     return () => clearTimeout(t);
   }, [pickingNotice]);
 
-  // Muat daftar rute harian tersimpan
+  // Muat daftar rute harian tersimpan khusus user yang sedang aktif
   const loadSavedRoutes = useCallback(async () => {
+    const token = safeGetLocalStorage('civictrack_token');
+    const userStr = safeGetLocalStorage('civictrack_user');
+    const activeUserId = currentUser?.id || (userStr ? JSON.parse(userStr)?.id : undefined);
+
+    if (!token && !activeUserId) {
+      setSavedRoutes([]);
+      return;
+    }
+
     try {
       if (typeof apiService?.getSavedRoutes === 'function') {
-        const data = await apiService.getSavedRoutes();
+        const data = await apiService.getSavedRoutes(activeUserId);
         setSavedRoutes(data || []);
       }
     } catch (e) {
       console.warn('Gagal memuat rute tersimpan:', e);
+      setSavedRoutes([]);
     }
-  }, []);
+  }, [currentUser?.id]);
 
   useEffect(() => {
     if (isOpen) {
@@ -673,24 +698,116 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
   useEffect(() => {
     if (isOpen && initialSavedRoute) {
+      setActiveSavedRouteId(initialSavedRoute.id);
+
+      const origCoord = initialSavedRoute.koordinat_asal;
+      const destCoord = initialSavedRoute.koordinat_tujuan;
+
+      const origLabel = origCoord?.label && origCoord.label !== 'Lokasi yang dipilih'
+        ? origCoord.label
+        : origCoord?.lat != null
+          ? `${origCoord.lat.toFixed(4)}, ${origCoord.lng.toFixed(4)}`
+          : 'Titik Awal';
+
+      const destLabel = destCoord?.label && destCoord.label !== 'Lokasi yang dipilih'
+        ? destCoord.label
+        : destCoord?.lat != null
+          ? `${destCoord.lat.toFixed(4)}, ${destCoord.lng.toFixed(4)}`
+          : 'Titik Tujuan';
+
+      setOrigin(origCoord?.label || origLabel);
+      setDestination(destCoord?.label || destLabel);
+
+      if (origCoord && origCoord.lat != null && origCoord.lng != null) {
+        setCustomOriginCoords([Number(origCoord.lat), Number(origCoord.lng)]);
+      }
+      if (destCoord && destCoord.lat != null && destCoord.lng != null) {
+        setCustomDestCoords([Number(destCoord.lat), Number(destCoord.lng)]);
+      }
+
+      // Selaraskan moda transportasi
+      const rawMode = (initialSavedRoute.moda_transportasi || '').toLowerCase();
+      if (rawMode === 'motor' || rawMode === 'motorcycle') {
+        setTravelMode('motorcycle');
+      } else if (rawMode === 'pejalan_kaki' || rawMode === 'jalan_kaki' || rawMode === 'walking') {
+        setTravelMode('walking');
+      } else {
+        setTravelMode('car');
+      }
+
+      const origPt: [number, number] = origCoord && origCoord.lat != null
+        ? [Number(origCoord.lat), Number(origCoord.lng)]
+        : projectCoords;
+      const destPt: [number, number] = destCoord && destCoord.lat != null
+        ? [Number(destCoord.lat), Number(destCoord.lng)]
+        : projectCoords;
+
+      const steps = generateNavigationSteps(
+        origLabel,
+        destLabel,
+        projectName || '',
+        0,
+        origPt,
+        destPt,
+        projectCoords,
+        isProjectCompleted
+      );
+
+      const normalizedCoords: [number, number][] = (initialSavedRoute.polyline_data || []).map((pt) => [
+        Number(pt[0]),
+        Number(pt[1]),
+      ]);
+
+      const baseCoordinates = normalizedCoords.length > 2
+        ? normalizedCoords
+        : generateCleanDetourPath(origPt, destPt, projectCoords, 0);
+
       const customRoute: RouteItem = {
         id: initialSavedRoute.id,
         nama_rute: initialSavedRoute.nama_rute,
         prioritas: 'utama',
         estimasi_jarak_km: initialSavedRoute.jarak_km || 3.0,
         estimasi_waktu_menit: initialSavedRoute.estimasi_menit || 10,
-        alasan_rekomendasi: initialSavedRoute.catatan || 'Rute harian tersimpan Anda',
-        coordinates: initialSavedRoute.polyline_data,
+        alasan_rekomendasi: initialSavedRoute.catatan || 'Rute harian tersimpan Anda (Early Warning Aktif)',
+        coordinates: baseCoordinates,
         geografis_terverifikasi: true,
+        petunjuk_langkah: steps,
       };
-      setRoutes([customRoute]);
+
+      const defaultAlts = buildDefaultRoutes(
+        origLabel,
+        destLabel,
+        projectCoords,
+        projectName || '',
+        origPt,
+        destPt,
+        isProjectCompleted
+      ).slice(1);
+
+      setRoutes([customRoute, ...defaultAlts]);
       setSelectedRouteIndex(0);
-      if (initialSavedRoute.koordinat_asal?.label) setOrigin(initialSavedRoute.koordinat_asal.label);
-      if (initialSavedRoute.koordinat_tujuan?.label) setDestination(initialSavedRoute.koordinat_tujuan.label);
+      setShouldAutoSimulate(true);
     }
-  }, [isOpen, initialSavedRoute]);
+  }, [isOpen, initialSavedRoute, projectName, projectCoords, isProjectCompleted]);
 
   const handleSaveCurrentRoute = async () => {
+    // 0. WAJIB LOGIN UNTUK MENYIMPAN RUTE HARIAN
+    const token = safeGetLocalStorage('civictrack_token');
+    const userStr = safeGetLocalStorage('civictrack_user');
+    const activeUserId = currentUser?.id || (userStr ? JSON.parse(userStr)?.id : undefined);
+
+    if (!token && !activeUserId) {
+      setSaveFeedback('⚠️ Silakan masuk/login terlebih dahulu untuk menyimpan rute harian.');
+      setTimeout(() => setSaveFeedback(null), 4000);
+      if (onOpenAuth) {
+        setTimeout(() => {
+          onClose();
+          onOpenAuth('login');
+        }, 600);
+      }
+      return;
+    }
+
     const curRoute = routes[selectedRouteIndex];
     if (!curRoute || !curRoute.coordinates || curRoute.coordinates.length < 2) {
       setSaveFeedback('Garis rute belum tersedia untuk disimpan.');
@@ -716,7 +833,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
         catatan: `Rute harian via ${currentName} (${travelMode === 'car' ? 'Mobil' : travelMode === 'motorcycle' ? 'Motor' : 'Jalan Kaki'})`,
       };
 
-      const saved = await apiService.saveRoute(payload);
+      const saved = await apiService.saveRoute(payload, activeUserId);
       setSavedRoutes((prev) => [saved, ...prev.filter((r) => r.id !== saved.id)]);
       setSaveFeedback(`✓ Rute harian berhasil disimpan (${Math.min(3, savedRoutes.length + 1)}/3)`);
       setTimeout(() => setSaveFeedback(null), 3500);
@@ -730,7 +847,9 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
   const handleDeleteSavedRoute = async (id: number) => {
     try {
-      await apiService.deleteSavedRoute(id);
+      const userStr = safeGetLocalStorage('civictrack_user');
+      const activeUserId = currentUser?.id || (userStr ? JSON.parse(userStr)?.id : undefined);
+      await apiService.deleteSavedRoute(id, activeUserId);
       setSavedRoutes((prev) => prev.filter((r) => r.id !== id));
       setSaveFeedback('Rute harian berhasil dihapus.');
       setTimeout(() => setSaveFeedback(null), 3000);
@@ -741,6 +860,60 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   };
 
   const handleSelectSavedRoute = (sr: SavedRouteItem) => {
+    setActiveSavedRouteId(sr.id);
+
+    const origCoord = sr.koordinat_asal;
+    const destCoord = sr.koordinat_tujuan;
+
+    const origLabel = origCoord?.label && origCoord.label !== 'Lokasi yang dipilih'
+      ? origCoord.label
+      : origCoord?.lat != null
+        ? `${origCoord.lat.toFixed(4)}, ${origCoord.lng.toFixed(4)}`
+        : 'Titik Awal';
+
+    const destLabel = destCoord?.label && destCoord.label !== 'Lokasi yang dipilih'
+      ? destCoord.label
+      : destCoord?.lat != null
+        ? `${destCoord.lat.toFixed(4)}, ${destCoord.lng.toFixed(4)}`
+        : 'Titik Tujuan';
+
+    if (origCoord) {
+      setOrigin(origCoord.label || origLabel);
+      setCustomOriginCoords([Number(origCoord.lat), Number(origCoord.lng)]);
+    }
+    if (destCoord) {
+      setDestination(destCoord.label || destLabel);
+      setCustomDestCoords([Number(destCoord.lat), Number(destCoord.lng)]);
+    }
+
+    const rawMode = (sr.moda_transportasi || '').toLowerCase();
+    if (rawMode === 'motor' || rawMode === 'motorcycle') {
+      setTravelMode('motorcycle');
+    } else if (rawMode === 'pejalan_kaki' || rawMode === 'jalan_kaki' || rawMode === 'walking') {
+      setTravelMode('walking');
+    } else {
+      setTravelMode('car');
+    }
+
+    const origPt: [number, number] = origCoord && origCoord.lat != null ? [Number(origCoord.lat), Number(origCoord.lng)] : projectCoords;
+    const destPt: [number, number] = destCoord && destCoord.lat != null ? [Number(destCoord.lat), Number(destCoord.lng)] : projectCoords;
+
+    const steps = generateNavigationSteps(
+      origLabel,
+      destLabel,
+      projectName || '',
+      0,
+      origPt,
+      destPt,
+      projectCoords,
+      isProjectCompleted
+    );
+
+    const normalizedCoords: [number, number][] = (sr.polyline_data || []).map((pt) => [
+      Number(pt[0]),
+      Number(pt[1]),
+    ]);
+
     const customRoute: RouteItem = {
       id: sr.id,
       nama_rute: sr.nama_rute,
@@ -748,22 +921,17 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       estimasi_jarak_km: sr.jarak_km || 3.0,
       estimasi_waktu_menit: sr.estimasi_menit || 10,
       alasan_rekomendasi: sr.catatan || 'Rute harian tersimpan Anda',
-      coordinates: sr.polyline_data,
+      coordinates: normalizedCoords,
       geografis_terverifikasi: true,
+      petunjuk_langkah: steps,
     };
     setRoutes([customRoute]);
     setSelectedRouteIndex(0);
-    if (sr.koordinat_asal) {
-      setOrigin(sr.koordinat_asal.label || `${sr.koordinat_asal.lat.toFixed(4)}, ${sr.koordinat_asal.lng.toFixed(4)}`);
-      setCustomOriginCoords([sr.koordinat_asal.lat, sr.koordinat_asal.lng]);
-    }
-    if (sr.koordinat_tujuan) {
-      setDestination(sr.koordinat_tujuan.label || `${sr.koordinat_tujuan.lat.toFixed(4)}, ${sr.koordinat_tujuan.lng.toFixed(4)}`);
-      setCustomDestCoords([sr.koordinat_tujuan.lat, sr.koordinat_tujuan.lng]);
-    }
+
     setShowSavedRoutesDrawer(false);
-    setSaveFeedback(`Menampilkan rute harian: ${sr.nama_rute}`);
+    setSaveFeedback(`Menampilkan & mensimulasikan rute harian: ${sr.nama_rute}`);
     setTimeout(() => setSaveFeedback(null), 3000);
+    setShouldAutoSimulate(true);
   };
 
   const isCurrentRouteSaved = useMemo(() => {
@@ -802,6 +970,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     const prevDestCoords = destCoords;
 
     setPickingMode(null);
+    setActiveSavedRouteId(null);
     setOrigin(prevDest);
     setDestination(prevOrigin);
     setCustomOriginCoords(prevDestCoords);
@@ -948,6 +1117,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   const handleSelectProject = (proj: ProyekItem) => {
     setActiveProject(proj);
     setActiveProjectName(proj.nama_proyek);
+    setActiveSavedRouteId(null);
     setOrigin('');
     setDestination('');
     setCustomOriginCoords(null);
@@ -965,6 +1135,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   };
 
   const handleApplyPreset = (newOrigin: string, newDest: string) => {
+    setActiveSavedRouteId(null);
     setOrigin(newOrigin);
     setDestination(newDest);
     setCustomOriginCoords(null);
@@ -994,7 +1165,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
   }, [isOpen, onClose]);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && !initialSavedRoute) {
       setOrigin('');
       setDestination('');
       setCustomOriginCoords(null);
@@ -1002,8 +1173,9 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
       setPickingMode(null);
       setPickingNotice(null);
       setRoutes([]);
+      setActiveSavedRouteId(null);
     }
-  }, [isOpen, project?.id, projectName]);
+  }, [isOpen, project?.id, projectName, initialSavedRoute]);
 
   // Inisialisasi Peta Leaflet
   useEffect(() => {
@@ -1088,9 +1260,6 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
 
     return () => {
       clearTimeout(timer);
-      if (simulationAnimationRef.current) {
-        cancelAnimationFrame(simulationAnimationRef.current);
-      }
       if (mapInstanceRef.current) {
         mapInstanceRef.current.remove();
         mapInstanceRef.current = null;
@@ -1399,7 +1568,9 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     if (activeEntry && activeEntry.polyline.getLatLngs().length > 0) {
       activeEntry.polyline.bringToFront();
       const bounds = activeEntry.polyline.getBounds();
-      bounds.extend(projectCoords);
+      if (!activeSavedRouteId) {
+        bounds.extend(projectCoords);
+      }
       if (originCoords) bounds.extend(originCoords);
       if (destCoords) bounds.extend(destCoords);
       map.fitBounds(bounds.pad(0.16), { animate: true, duration: 0.5 });
@@ -1420,80 +1591,6 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     }
   }, [routes, selectedRouteIndex, isOpen, projectCoords, projectName, currentName, currentProj, origin, destination, originCoords, destCoords, travelMode, isProjectCompleted, allProjects, ongoingProjects]);
 
-  // Simulasi Navigasi Animasi Kendaraan Berjalan
-  const handleStartSimulation = () => {
-    const map = mapInstanceRef.current;
-    const layerGroup = polylinesLayerGroupRef.current;
-    if (!map || !layerGroup || isSimulating) return;
-
-    const activeRoute = routes[selectedRouteIndex];
-    const coords = activeRoute?.coordinates;
-    if (!coords || coords.length < 2 || !activeRoute.geografis_terverifikasi) return;
-
-    if (simulationMarkerRef.current) {
-      layerGroup.removeLayer(simulationMarkerRef.current);
-    }
-
-    const isMotor = selectedRouteIndex === 2;
-    const simEmoji = travelMode === 'walking' ? '🚶' : travelMode === 'motorcycle' || isMotor ? '🏍️' : '🚗';
-    const vehicleIcon = L.divIcon({
-      className: 'simulation-vehicle-marker',
-      html: `
-        <div class="relative flex items-center justify-center w-9 h-9 -ml-4.5 -mt-4.5">
-          <span class="absolute w-9 h-9 bg-emerald-400/40 rounded-full animate-ping"></span>
-          <div class="w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center font-bold text-sm shadow-xl border-2 border-white">
-            ${simEmoji}
-          </div>
-        </div>
-      `,
-      iconSize: [0, 0],
-    });
-
-    const marker = L.marker(coords[0], { icon: vehicleIcon, zIndexOffset: 1000 }).addTo(layerGroup);
-    simulationMarkerRef.current = marker;
-    setIsSimulating(true);
-
-    let segmentIndex = 0;
-    let progress = 0;
-    const stepSize = 0.05;
-
-    const animateStep = () => {
-      if (segmentIndex >= coords.length - 1) {
-        setIsSimulating(false);
-        return;
-      }
-
-      const p1 = coords[segmentIndex];
-      const p2 = coords[segmentIndex + 1];
-
-      const currentLat = p1[0] + (p2[0] - p1[0]) * progress;
-      const currentLng = p1[1] + (p2[1] - p1[1]) * progress;
-
-      marker.setLatLng([currentLat, currentLng]);
-
-      progress += stepSize;
-      if (progress >= 1.0) {
-        progress = 0;
-        segmentIndex += 1;
-      }
-
-      simulationAnimationRef.current = requestAnimationFrame(animateStep);
-    };
-
-    simulationAnimationRef.current = requestAnimationFrame(animateStep);
-  };
-
-  const handleStopSimulation = () => {
-    if (simulationAnimationRef.current) {
-      cancelAnimationFrame(simulationAnimationRef.current);
-    }
-    if (simulationMarkerRef.current && polylinesLayerGroupRef.current) {
-      polylinesLayerGroupRef.current.removeLayer(simulationMarkerRef.current);
-      simulationMarkerRef.current = null;
-    }
-    setIsSimulating(false);
-  };
-
   const handleFocusRoute = () => {
     const map = mapInstanceRef.current;
     const activeRoute = routes[selectedRouteIndex];
@@ -1508,6 +1605,22 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
     if (!map) return;
     map.flyTo(projectCoords, 16, { animate: true });
   };
+
+  // Auto-start simulasi & fokus rute ketika rute harian dipanggil dari tombol "Simulasikan di Peta"
+  useEffect(() => {
+    if (!shouldAutoSimulate || !isOpen || routes.length === 0) return;
+    const currentRoute = routes[selectedRouteIndex] || routes[0];
+    if (!currentRoute?.coordinates || currentRoute.coordinates.length < 2) return;
+
+    const timer = setTimeout(() => {
+      if (mapInstanceRef.current && polylinesLayerGroupRef.current) {
+        handleFocusRoute();
+        setShouldAutoSimulate(false);
+      }
+    }, 450);
+
+    return () => clearTimeout(timer);
+  }, [shouldAutoSimulate, isOpen, routes, selectedRouteIndex]);
 
   const handleReanalyze = (e: React.FormEvent) => {
     e.preventDefault();
@@ -1644,9 +1757,30 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
             </div>
 
             {savedRoutes.length === 0 ? (
-              <p className="text-[11px] text-amber-800 leading-snug">
-                Belum ada rute harian yang disimpan. Klik tombol <strong>"Simpan Rute"</strong> pada salah satu kartu rekomendasi rute di bawah untuk mendaftarkan rute harian Anda (maksimal 3). Sistem CivicTrack akan otomatis mendeteksi jika lintasan rute Anda bersinggungan dengan proyek konstruksi baru (overlap &le; 100 meter).
-              </p>
+              !currentUser && !safeGetLocalStorage('civictrack_token') ? (
+                <div className="py-2 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+                  <p className="text-[11px] text-amber-900 leading-snug">
+                    Anda belum masuk akun. Silakan <strong>login</strong> untuk menyimpan rute harian dan memantau status proyek di sepanjang lintasan Anda.
+                  </p>
+                  {onOpenAuth && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowSavedRoutesDrawer(false);
+                        onClose();
+                        onOpenAuth('login');
+                      }}
+                      className="px-3 py-1 bg-[#184C78] hover:bg-[#123859] text-white text-[11px] font-bold rounded-lg shrink-0 cursor-pointer"
+                    >
+                      Masuk Akun
+                    </button>
+                  )}
+                </div>
+              ) : (
+                <p className="text-[11px] text-amber-800 leading-snug">
+                  Belum ada rute harian yang disimpan. Klik tombol <strong>"Simpan Rute"</strong> pada salah satu kartu rekomendasi rute di bawah untuk mendaftarkan rute harian Anda (maksimal 3). Sistem CivicTrack akan otomatis mendeteksi jika lintasan rute Anda bersinggungan dengan proyek konstruksi baru (overlap &le; 100 meter).
+                </p>
+              )
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
                 {savedRoutes.map((sr) => (
@@ -1836,24 +1970,6 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                   )}
                   <span className="hidden sm:inline">{isProjectCompleted ? 'Lokasi Proyek' : 'Zona Proyek'}</span>
                 </button>
-                {!isSimulating ? (
-                  <button
-                    onClick={handleStartSimulation}
-                    className="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-1.5 transition-all cursor-pointer border border-emerald-400"
-                    title="Simulasikan pergerakan kendaraan melewati rute terpilih"
-                  >
-                    <Play className="w-3.5 h-3.5 fill-current" />
-                    <span>Simulasi Kendaraan</span>
-                  </button>
-                ) : (
-                  <button
-                    onClick={handleStopSimulation}
-                    className="px-3 py-1.5 bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold rounded-xl shadow-lg flex items-center gap-1.5 transition-all cursor-pointer animate-pulse border border-rose-300"
-                  >
-                    <RotateCcw className="w-3.5 h-3.5" />
-                    <span>Hentikan</span>
-                  </button>
-                )}
               </div>
             </div>
 
@@ -1920,6 +2036,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                       type="text"
                       value={origin}
                       onChange={(e) => {
+                        setActiveSavedRouteId(null);
                         setOrigin(e.target.value);
                         setCustomOriginCoords(null);
                       }}
@@ -1986,6 +2103,7 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                       type="text"
                       value={destination}
                       onChange={(e) => {
+                        setActiveSavedRouteId(null);
                         setDestination(e.target.value);
                         setCustomDestCoords(null);
                       }}
@@ -2502,6 +2620,40 @@ export const AIRouteModal: React.FC<AIRouteModalProps> = ({
                   </div>
                 );
               })}
+            </div>
+
+            {/* ── BAGIAN SAMPING BAWAH: HUBUNGKAN KE GOOGLE MAPS ── */}
+            <div className="p-3.5 bg-gradient-to-r from-blue-50/95 via-sky-50/95 to-slate-50 border-t border-blue-200/80 sticky bottom-0 z-20 flex items-center justify-between gap-3 shadow-xs mt-auto">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-[#1A73E8] text-white flex items-center justify-center shrink-0 shadow-2xs">
+                  <Navigation className="w-4 h-4 fill-current" />
+                </div>
+                <div className="min-w-0">
+                  <span className="text-[11.5px] font-bold text-slate-800 block truncate">
+                    Navigasi Google Maps
+                  </span>
+                  <span className="text-[10px] text-slate-500 block truncate">
+                    Buka rute pengalihan AI langsung di peta Google
+                  </span>
+                </div>
+              </div>
+
+              <a
+                href={getGoogleMapsDirUrl(
+                  origin,
+                  destination,
+                  originCoords,
+                  destCoords,
+                  travelMode === 'motorcycle' ? 'two-wheeler' : travelMode === 'walking' ? 'walking' : 'driving'
+                )}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-3.5 py-2 bg-[#1A73E8] hover:bg-[#1557b0] text-white text-xs font-bold rounded-xl flex items-center gap-1.5 shadow-xs transition-all shrink-0 cursor-pointer"
+                title="Buka rute rekomendasi AI ini di Google Maps"
+              >
+                <span>Buka Google Maps</span>
+                <ExternalLink className="w-3.5 h-3.5" />
+              </a>
             </div>
           </div>
         </div>

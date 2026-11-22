@@ -171,12 +171,42 @@ const CATEGORY_STAGE_TEMPLATES: Record<string, Array<{ nama: string; bobot: numb
  * yang terjamin saling berkesinambungan dengan persentase progres dan status proyek.
  */
 export function getProjectTimelineStages(p: ProyekItem): LinimasaTahap[] {
-  // Cek jika ada custom stages tersimpan di localStorage
+  const pAny = p as any;
+  const pId = Number(p.id);
+  const isNewProject = isNaN(pId) || pId >= 36 || Boolean(pAny.is_new) || Boolean(pAny.is_custom);
+
+  // 1. Cek jika ada custom stages tersimpan di localStorage
   try {
     const saved = localStorage.getItem(`civictrack_project_stages_${p.id}`);
-    if (saved) {
+    if (saved !== null) {
       const parsed: LinimasaTahap[] = JSON.parse(saved);
-      if (Array.isArray(parsed) && parsed.length > 0) {
+      if (Array.isArray(parsed)) {
+        if (parsed.length === 0) {
+          return [];
+        }
+
+        // Jika ini adalah proyek baru yang ditambahkan, cek apakah stages di localStorage
+        // merupakan hasil generate template otomatis lama atau tahapan manual yang benar-benar ditambahkan dinas/PJ
+        if (isNewProject) {
+          const isAutoTemplate = parsed.some(
+            (s: any) =>
+              s.id === pId * 100 + s.nomor_tahap ||
+              s.nama_tahap === 'Pengukuran Ulang & Pembersihan Lahan (Clearing)' ||
+              s.nama_tahap === 'Penyelidikan Tanah & Desain Hidrologi Saluran' ||
+              s.nama_tahap === 'Analisis Kesuburan Tanah & Pembersihan Vegetasi Liar' ||
+              s.nama_tahap === 'Penyelidikan Tanah, Bouwplank & Pondasi Bore Pile'
+          );
+          const hasManualFlag = parsed.some((s: any) => s.is_manual);
+
+          // Jika merupakan sisa template otomatis lama (belum ada tahapan manual yang dibuat user):
+          if (isAutoTemplate && !hasManualFlag) {
+            localStorage.setItem(`civictrack_project_stages_${p.id}`, '[]');
+            return [];
+          }
+
+          return parsed;
+        }
+
         // Jika proyek sudah 100% atau selesai, pastikan semua stage konsisten berstatus 'selesai'
         if (p.progres_persen >= 100 || p.status === 'selesai') {
           return parsed.map((st) => ({
@@ -191,6 +221,32 @@ export function getProjectTimelineStages(p: ProyekItem): LinimasaTahap[] {
       }
     }
   } catch {}
+
+  // 2. Jika objek proyek dari backend menyertakan tahapan_list
+  if (Array.isArray(pAny.tahapan_list)) {
+    if (pAny.tahapan_list.length === 0) {
+      return [];
+    }
+    return pAny.tahapan_list.map((t: any, idx: number) => ({
+      id: t.id || p.id * 100 + (idx + 1),
+      proyek_id: p.id,
+      nomor_tahap: idx + 1,
+      nama_tahap: t.nama_tahap,
+      deskripsi: t.catatan || `Pekerjaan fisik tahapan ${idx + 1}`,
+      target_mulai: p.tanggal_mulai || '2026-01-01',
+      target_selesai: p.estimasi_selesai || '2026-12-31',
+      persentase_bobot: t.progres_persen,
+      status: (t.progres_persen >= 100 ? 'selesai' : 'sedang_berjalan') as any,
+      catatan_lapangan: t.catatan || '',
+      is_manual: true,
+    }));
+  }
+
+  // 3. Proyek baru yang ditambahkan (id >= 36 atau is_new) dimulai dengan linimasa KOSONG
+  // agar tahapan linimasa dapat diinputkan secara manual oleh role aparatur pemerintah
+  if (isNewProject) {
+    return [];
+  }
 
   const cat = (p.kategori || 'jalan').toLowerCase();
   const template = CATEGORY_STAGE_TEMPLATES[cat] || CATEGORY_STAGE_TEMPLATES.jalan;
@@ -261,8 +317,12 @@ export function saveProjectTimelineStages(projectId: number, stages: LinimasaTah
 export function broadcastProjectUpdate(updatedProject: ProyekItem): void {
   // Pastikan status strictly bernilai 'berjalan' | 'selesai' | 'ditangguhkan'
   let cleanStatus: ProyekStatus = 'berjalan';
-  if (updatedProject.status === 'planned' || (updatedProject.status as any) === 'direncanakan') {
-    cleanStatus = 'planned';
+  if (
+    updatedProject.status === 'planned' ||
+    (updatedProject.status as any) === 'direncanakan' ||
+    (updatedProject.status as any) === 'rencana'
+  ) {
+    cleanStatus = 'rencana';
   } else if (updatedProject.status === 'scheduled' || (updatedProject.status as any) === 'akan_dimulai') {
     cleanStatus = 'scheduled';
   } else if (updatedProject.progres_persen >= 100 || updatedProject.status === 'selesai' || updatedProject.status === 'completed') {

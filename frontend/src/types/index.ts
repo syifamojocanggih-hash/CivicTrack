@@ -8,6 +8,7 @@ export type ProyekStatus =
   | 'selesai'
   | 'ditangguhkan'
   | 'direncanakan'
+  | 'rencana'
   | 'akan_dimulai';
 
 export type ProyekKategori = 'jalan' | 'taman' | 'drainase' | 'fasilitas' | 'gedung_publik' | 'jembatan' | 'lainnya';
@@ -62,8 +63,17 @@ export interface ProyekUpdatePayload {
   progres_persen?: number;
   tanggal_mulai?: string;
   estimasi_selesai?: string;
+  dinas_id?: number;
+  nama_dinas?: string;
   kode_proyek?: string;
   kode_akses?: string;
+  pejabat_pembuat_komitmen?: string;
+  kontraktor_pelaksana?: string;
+  konsultan_pengawas?: string;
+  kepala_mandor?: string;
+  nomor_kontrak_lpse?: string;
+  sumber_dana?: string;
+  foto_url?: string;
   catatan_perubahan?: string;
   is_published?: boolean;
 }
@@ -77,6 +87,7 @@ export interface ProyekCreatePayload {
   wilayah_id: number;
   desa_id?: number | null;
   dinas_id: number;
+  nama_dinas?: string;
   anggaran?: number;
   status?: ProyekStatus | string;
   progres_persen?: number;
@@ -84,6 +95,13 @@ export interface ProyekCreatePayload {
   estimasi_selesai: string;
   kode_proyek?: string;
   kode_akses?: string;
+  pejabat_pembuat_komitmen?: string;
+  kontraktor_pelaksana?: string;
+  konsultan_pengawas?: string;
+  kepala_mandor?: string;
+  nomor_kontrak_lpse?: string;
+  sumber_dana?: string;
+  foto_url?: string;
   is_published?: boolean;
 }
 
@@ -443,6 +461,7 @@ export interface LinimasaTahap {
   persentase_bobot: number;
   status: 'belum_mulai' | 'sedang_berjalan' | 'selesai' | 'tertunda';
   catatan_lapangan?: string;
+  is_manual?: boolean;
 }
 
 export interface DokumentasiProyek {

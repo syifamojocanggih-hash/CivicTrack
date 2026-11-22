@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import {
   User,
-  Lock,
   Mail,
   Eye,
   EyeOff,
@@ -403,7 +402,7 @@ export const LoginPage: React.FC<LoginPageProps> = ({
               <div className="border-b border-slate-300 focus-within:border-[#184C78] flex items-center justify-between pb-2 transition-colors">
                 <input
                   id="input-email"
-                  type="email"
+                  type={mode === 'login' ? 'text' : 'email'}
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
@@ -442,12 +441,11 @@ export const LoginPage: React.FC<LoginPageProps> = ({
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Sembunyikan password' : 'Tampilkan password'}
+                  title={showPassword ? 'Sembunyikan password' : 'Lihat password'}
                   className="text-slate-400 hover:text-slate-600 shrink-0 ml-2 focus:outline-none cursor-pointer"
                 >
                   {showPassword ? (
                     <EyeOff className="w-5 h-5" />
-                  ) : mode === 'login' ? (
-                    <Lock className="w-5 h-5" />
                   ) : (
                     <Eye className="w-5 h-5" />
                   )}
