@@ -99,9 +99,17 @@ def generate_alternative_routes(
 
     nama_wilayah = proyek.wilayah.nama_wilayah if proyek.wilayah else "Kota"
     
-    # Hapus rekomendasi lama jika ada untuk diganti dengan hasil baru
-    db.query(RekomendasiRute).filter(RekomendasiRute.proyek_id == id).delete()
-    db.commit()
+    # Deteksi apakah pemanggilan merupakan simulasi rute personal warga (custom origin/destination)
+    is_personal_simulation = bool(
+        req.origin_lat is not None or req.origin_lng is not None or
+        req.dest_lat is not None or req.dest_lng is not None or
+        req.origin_name or req.dest_name
+    )
+
+    # Hanya bersihkan cache rute resmi master proyek jika yang di-trigger adalah rute default proyek
+    if not is_personal_simulation:
+        db.query(RekomendasiRute).filter(RekomendasiRute.proyek_id == id).delete()
+        db.commit()
 
     # Validasi koordinat jika dikirimkan oleh klien
     origin_coords = None
@@ -132,7 +140,7 @@ def generate_alternative_routes(
     )
 
     created_routes = []
-    for item in ai_results:
+    for idx, item in enumerate(ai_results):
         osm_streets = item.get("osm_streets_context")
         is_valid, validation_msg = validate_ai_route(item, allowed_streets=osm_streets)
         if not is_valid:
@@ -142,22 +150,41 @@ def generate_alternative_routes(
         if prioritas_str not in ["utama", "kedua", "tambahan"]:
             prioritas_str = "utama"
 
-        rute = RekomendasiRute(
-            proyek_id=id,
-            nama_rute=item.get("nama_rute", "Jalur Alternatif"),
-            prioritas=PrioritasRute(prioritas_str),
-            estimasi_jarak_km=Decimal(str(item.get("estimasi_jarak_km", 3.0))),
-            estimasi_waktu_menit=int(item.get("estimasi_waktu_menit", 10)),
-            alasan_rekomendasi=item.get("alasan_rekomendasi", ""),
-            raw_response_ai=item,
-            is_valid=is_valid
-        )
-        db.add(rute)
-        created_routes.append(rute)
+        if is_personal_simulation:
+            # Simulasi rute personal warga: kembalikan objek respon tanpa menimpa atau menyimpan ke tabel master proyek
+            res_obj = RekomendasiRuteResponse(
+                id=idx + 1,
+                proyek_id=id,
+                nama_rute=item.get("nama_rute", "Jalur Alternatif Personal"),
+                prioritas=PrioritasRute(prioritas_str),
+                estimasi_jarak_km=Decimal(str(item.get("estimasi_jarak_km", 3.0))),
+                estimasi_waktu_menit=int(item.get("estimasi_waktu_menit", 10)),
+                alasan_rekomendasi=item.get("alasan_rekomendasi", ""),
+                geografis_terverifikasi=bool(item.get("geografis_terverifikasi", False)),
+                koordinat_rute=item.get("koordinat_rute", []),
+                raw_response_ai=item,
+                is_valid=is_valid,
+                created_at=datetime.utcnow()
+            )
+            created_routes.append(res_obj)
+        else:
+            rute = RekomendasiRute(
+                proyek_id=id,
+                nama_rute=item.get("nama_rute", "Jalur Alternatif"),
+                prioritas=PrioritasRute(prioritas_str),
+                estimasi_jarak_km=Decimal(str(item.get("estimasi_jarak_km", 3.0))),
+                estimasi_waktu_menit=int(item.get("estimasi_waktu_menit", 10)),
+                alasan_rekomendasi=item.get("alasan_rekomendasi", ""),
+                raw_response_ai=item,
+                is_valid=is_valid
+            )
+            db.add(rute)
+            created_routes.append(rute)
 
-    db.commit()
-    for r in created_routes:
-        db.refresh(r)
+    if not is_personal_simulation:
+        db.commit()
+        for r in created_routes:
+            db.refresh(r)
 
     return created_routes
 

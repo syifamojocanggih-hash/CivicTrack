@@ -1,4 +1,4 @@
-from typing import Optional, List
+from typing import Optional, List, Any
 from datetime import date, datetime
 from pydantic import BaseModel, Field, ConfigDict
 from app.models.evaluation import EvaluasiStatus
@@ -43,6 +43,7 @@ class EvaluasiResponse(BaseModel):
     deskripsi: str
     skor_urgensi_ai: Optional[int] = None
     ringkasan_analisis_ai: Optional[str] = None
+    raw_response_ai: Optional[Any] = None
     status: EvaluasiStatus
     tanggal_verifikasi: Optional[date] = None
     ditinjau_oleh: Optional[int] = None

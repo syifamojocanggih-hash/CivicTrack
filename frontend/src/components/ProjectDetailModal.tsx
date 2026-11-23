@@ -16,8 +16,6 @@ import {
   Copy,
   Lock,
   Key,
-  Info,
-  AlertTriangle,
   Clock,
   Camera,
   Film,
@@ -30,13 +28,12 @@ import {
   getAllProjectDocumentation,
 } from '../utils/projectImages';
 import {
-  getProjectTechnicalDetails,
   getProjectEffectiveCode,
   getProjectEffectivePin,
-  parseProjectDescription,
 } from '../utils/projectTechnicalData';
 import { getProjectTimelineStages } from '../utils/projectConsistency';
 import { ProjectLocationMiniMap } from './ProjectLocationMiniMap';
+import { ProjectStructuredDescription } from './ProjectStructuredDescription';
 
 interface ProjectDetailModalProps {
   project: ProyekItem | null;
@@ -63,7 +60,6 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
   const [isSubscribed, setIsSubscribed] = useState(false);
   const [isSubscribing, setIsSubscribing] = useState(false);
   const [existingReport, setExistingReport] = useState<any>(null);
-  const [showTechSpecs, setShowTechSpecs] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   const handleCopyText = (text: string, label: string) => {
@@ -426,102 +422,11 @@ export const ProjectDetailModal: React.FC<ProjectDetailModalProps> = ({
           {/* TAB 1: LINIMASA TIMELINE */}
           {activeTab === 'timeline' && (
             <div className="space-y-4">
-              {/* Ringkasan Narasi Ramah Warga & Spesifikasi Teknis */}
-              {(() => {
-                const parsed = parseProjectDescription(project.deskripsi);
-                return (
-                  <div className="space-y-2.5">
-                    {/* Ringkasan Narasi */}
-                    <p className="text-xs text-slate-700 bg-[#F8FAFC] p-3.5 rounded-xl border border-[#CBD5E1] leading-relaxed">
-                      {parsed.ringkasan}
-                    </p>
-
-                    {/* Alert Alasan Penundaan jika ada */}
-                    {parsed.alasanTunda && (
-                      <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-xs text-amber-900">
-                        <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                        <div>
-                          <strong className="block font-semibold">Alasan Penundaan:</strong>
-                          <span className="leading-snug">{parsed.alasanTunda}</span>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Collapsible Rincian Spesifikasi & Dimensi Teknis */}
-                    {parsed.spesifikasi && (
-                      <div className="border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
-                        <button
-                          type="button"
-                          onClick={() => setShowTechSpecs(!showTechSpecs)}
-                          className="w-full px-3.5 py-2 text-left text-xs font-semibold text-[#184C78] flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer"
-                        >
-                          <span className="flex items-center gap-1.5">
-                            <Info className="w-3.5 h-3.5 text-[#2980B9]" />
-                            <span>Rincian Spesifikasi &amp; Dimensi Teknis</span>
-                          </span>
-                          <span className="text-[10px] font-bold text-slate-500">
-                            {showTechSpecs ? '▲ Sembunyikan' : '▼ Lihat Rincian'}
-                          </span>
-                        </button>
-                        {showTechSpecs && (
-                          <div className="p-3 border-t border-slate-200 text-[11px] text-slate-600 leading-relaxed bg-white font-mono whitespace-pre-line">
-                            {parsed.spesifikasi}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
-
-              {/* Data Pengadaan & Tim Pelaksana Teknis Terverifikasi LPSE */}
-              {(() => {
-                const tech = getProjectTechnicalDetails(project);
-                return (
-                  <div className="bg-[#F8FAFC] border border-[#CBD5E1] rounded-xl p-3.5 space-y-2.5">
-                    <div className="flex items-center justify-between border-b border-[#E2E8F0] pb-2">
-                      <span className="font-heading text-xs font-bold text-[#184C78] uppercase tracking-wider">
-                        Tim Pelaksana &amp; Pengadaan Resmi LPSE
-                      </span>
-                      <span className="text-[10px] font-bold text-emerald-800 bg-emerald-100 border border-emerald-300 px-2 py-0.5 rounded-full">
-                        ✓ Faktual &amp; Terverifikasi
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
-                      <div>
-                        <span className="text-slate-500 block text-[11px]">Kontraktor Pelaksana:</span>
-                        <span className="font-bold text-slate-900">{tech.kontraktor_pelaksana}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[11px]">Konsultan Pengawas:</span>
-                        <span className="font-bold text-slate-900">{tech.konsultan_pengawas}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[11px]">Kepala Mandor / Site Manager:</span>
-                        <span className="font-bold text-[#184C78]">{tech.kepala_mandor}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[11px]">Pejabat Pembuat Komitmen (PPK):</span>
-                        <span className="font-bold text-slate-900">{tech.pejabat_pembuat_komitmen}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[11px]">Instansi Penanggung Jawab:</span>
-                        <span className="font-bold text-slate-900">{tech.instansi_penanggung_jawab}</span>
-                      </div>
-                      <div>
-                        <span className="text-slate-500 block text-[11px]">Nomor Kontrak LPSE / SPK:</span>
-                        <span className="font-mono text-slate-800 text-[11px] font-semibold">{tech.nomor_kontrak_lpse}</span>
-                      </div>
-                      <div className="sm:col-span-2 pt-1 border-t border-slate-200">
-                        <span className="text-slate-500 block text-[11px]">Sumber Pembiayaan Proyek:</span>
-                        <span className="font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-0.5 rounded text-[11px] inline-block mt-0.5">
-                          {tech.sumber_dana}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })()}
+              {/* Ringkasan Narasi Ramah Warga, Spesifikasi Teknis & Metadata Admin */}
+              <ProjectStructuredDescription
+                deskripsi={project.deskripsi}
+                project={project}
+              />
 
               {/* Kredensial Khusus Akses Penanggung Jawab (Khusus Aparatur & Pimpinan - Poin 3) */}
               {(() => {

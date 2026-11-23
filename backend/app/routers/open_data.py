@@ -17,7 +17,7 @@ def get_open_data_projects(
     jurnalis investigasi, LSM, dan peneliti akademisi tanpa kewajiban login.
     Mendukung format standar JSON dan GeoJSON FeatureCollection.
     """
-    proyek_list = db.query(Proyek).all()
+    proyek_list = db.query(Proyek).filter(Proyek.is_published == True).all()
 
     if format.lower() == "geojson":
         features = []

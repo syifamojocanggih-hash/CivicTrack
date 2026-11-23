@@ -55,6 +55,7 @@ import {
   MOCK_DOKUMENTASI_PROYEK,
 } from '../../data/dashboardMockData';
 import { apiService } from '../../services/api';
+import { ProjectStructuredDescription } from '../ProjectStructuredDescription';
 import { MiniMapOverview } from './MiniMapOverview';
 import { LocationPickerMap } from '../LocationPickerMap';
 import { WILAYAH_DATA } from '../../data/geoWilayahData';
@@ -4758,9 +4759,12 @@ export const AdminDinasDashboard: React.FC<AdminDinasDashboardProps> = ({
                   <h3 className="font-heading text-lg font-bold text-[#184C78] mt-1.5">
                     {unlockedProject.nama_proyek}
                   </h3>
-                  <p className="text-xs text-[#6C757D] mt-0.5">
-                    {unlockedProject.deskripsi || 'Lingkup pengerjaan konstruksi infrastruktur publik Kabupaten Lamongan.'}
-                  </p>
+                  <div className="mt-3">
+                    <ProjectStructuredDescription
+                      deskripsi={unlockedProject.deskripsi}
+                      project={unlockedProject}
+                    />
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">

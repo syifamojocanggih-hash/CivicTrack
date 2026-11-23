@@ -3,7 +3,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.core.dependencies import require_roles
-from app.models.user import Dinas, UserRole, User
+from app.models.user import Dinas, UserRole, User, WilayahAdministratif
 from app.schemas.dinas import DinasCreate, DinasResponse
 
 router = APIRouter(prefix="/dinas", tags=["Master Dinas"])
@@ -28,6 +28,14 @@ def create_dinas(
     current_user: User = Depends(require_roles([UserRole.admin_dinas, UserRole.pimpinan_instansi]))
 ):
     """Menambahkan data dinas baru."""
+    if req.wilayah_id is not None:
+        wilayah = db.query(WilayahAdministratif).filter(WilayahAdministratif.id == req.wilayah_id).first()
+        if not wilayah:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail=f"Wilayah administratif dengan ID {req.wilayah_id} tidak ditemukan."
+            )
+
     new_dinas = Dinas(
         nama_dinas=req.nama_dinas,
         wilayah_id=req.wilayah_id

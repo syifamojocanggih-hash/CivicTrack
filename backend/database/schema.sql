@@ -68,11 +68,20 @@ CREATE TABLE users (
     password_hash VARCHAR(255) NOT NULL,
     role ENUM('warga', 'admin_dinas', 'pimpinan_instansi', 'media_peneliti') NOT NULL,
     dinas_id BIGINT NULL,
+    wilayah_id BIGINT NULL,
+    desa_id BIGINT NULL,
+    latitude DECIMAL(9, 6) NULL,
+    longitude DECIMAL(9, 6) NULL,
+    push_token VARCHAR(255) NULL,
     is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_users_dinas FOREIGN KEY (dinas_id) 
-        REFERENCES dinas (id) ON DELETE SET NULL
+        REFERENCES dinas (id) ON DELETE SET NULL,
+    CONSTRAINT fk_users_wilayah FOREIGN KEY (wilayah_id) 
+        REFERENCES wilayah_administratif (id) ON DELETE SET NULL,
+    CONSTRAINT fk_users_desa FOREIGN KEY (desa_id) 
+        REFERENCES wilayah_administratif (id) ON DELETE SET NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------
@@ -106,8 +115,10 @@ CREATE TABLE proyek (
     kontraktor_pelaksana VARCHAR(200) NULL COMMENT 'Nama Perusahaan/Kontraktor Pelaksana Fisik',
     konsultan_pengawas VARCHAR(200) NULL COMMENT 'Nama Konsultan Supervisi / Pengawas Lapangan',
     kepala_mandor VARCHAR(200) NULL COMMENT 'Nama Kepala Mandor / Site Manager Lapangan',
-    nomor_kontrak_lpse VARCHAR(150) NULL COMMENT 'Nomor Kontrak LPSE / SPK Resmi',
+    nomor_kontrak_lpse VARCHAR(150) NULL UNIQUE COMMENT 'Nomor Kontrak LPSE / SPK Resmi',
     sumber_dana VARCHAR(150) NULL COMMENT 'Sumber Pembiayaan Proyek (APBD/APBN/DAK)',
+    foto_url TEXT NULL COMMENT 'URL foto utama/cover proyek',
+    is_published BOOLEAN NOT NULL DEFAULT FALSE COMMENT 'Status publikasi proyek (draft vs publik)',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_proyek_wilayah FOREIGN KEY (wilayah_id) 
@@ -189,13 +200,18 @@ CREATE TABLE laporan_masyarakat (
 CREATE TABLE subscription_notifikasi (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT NOT NULL,
-    proyek_id BIGINT NOT NULL,
+    proyek_id BIGINT NULL,
+    wilayah_id BIGINT NULL COMMENT 'ID kecamatan yang disubscribe',
+    desa_id BIGINT NULL COMMENT 'ID desa yang disubscribe',
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    UNIQUE KEY uk_user_proyek_sub (user_id, proyek_id),
     CONSTRAINT fk_sub_user FOREIGN KEY (user_id) 
         REFERENCES users (id) ON DELETE CASCADE,
     CONSTRAINT fk_sub_proyek FOREIGN KEY (proyek_id) 
-        REFERENCES proyek (id) ON DELETE CASCADE
+        REFERENCES proyek (id) ON DELETE CASCADE,
+    CONSTRAINT fk_sub_wilayah FOREIGN KEY (wilayah_id) 
+        REFERENCES wilayah_administratif (id) ON DELETE CASCADE,
+    CONSTRAINT fk_sub_desa FOREIGN KEY (desa_id) 
+        REFERENCES wilayah_administratif (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ----------------------------------------------------------
@@ -265,6 +281,7 @@ CREATE TABLE evaluasi_pembangunan (
     deskripsi TEXT NOT NULL,
     skor_urgensi_ai SMALLINT NULL COMMENT 'Skor urgensi 1 (ringan) s/d 5 (sangat mendesak)',
     ringkasan_analisis_ai TEXT NULL,
+    raw_response_ai JSON NULL COMMENT 'Payload respons mentah analisis AI Groq',
     status ENUM(
         'terjadwal',
         'menunggu_verifikasi',
@@ -361,5 +378,20 @@ CREATE TABLE saved_routes (
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     CONSTRAINT fk_savedroute_user FOREIGN KEY (user_id)
+        REFERENCES users (id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ----------------------------------------------------------
+-- 17. Tabel push_subscriptions (Web Push Notifications)
+-- Pendaftaran langganan Web Push browser per pengguna untuk early-warning
+-- ----------------------------------------------------------
+CREATE TABLE push_subscriptions (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NULL,
+    endpoint TEXT NOT NULL,
+    p256dh VARCHAR(255) NOT NULL,
+    auth VARCHAR(255) NOT NULL,
+    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT fk_push_user FOREIGN KEY (user_id) 
         REFERENCES users (id) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

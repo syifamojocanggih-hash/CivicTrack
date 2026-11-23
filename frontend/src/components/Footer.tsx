@@ -10,27 +10,51 @@ export const Footer: React.FC<FooterProps> = ({ onOpenOpenData }) => {
     <footer className="bg-[#0f3252] py-10 px-6 sm:px-8 text-white/50 border-t border-white/5">
       <div className="max-w-[1180px] mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 flex-wrap">
         <a
-          href="#"
-          className="flex items-center no-underline"
-          title="CivicTrack"
+          href="/"
+          onClick={(e) => {
+            e.preventDefault();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }}
+          className="flex items-center no-underline cursor-pointer"
+          title="CivicTrack - Kembali ke Beranda"
         >
           <CivicTrackLogo size="xs" theme="dark" />
         </a>
 
-        <div className="flex gap-5 flex-wrap text-center">
-          <a href="#" className="text-xs text-white/40 hover:text-white/80 transition-colors">
+        <div className="flex gap-5 flex-wrap text-center items-center">
+          <button
+            type="button"
+            onClick={() => {
+              alert(
+                'Kebijakan Privasi CivicTrack:\nSeluruh data infrastruktur disajikan secara transparan demi akuntabilitas publik sesuai UU No. 14 Tahun 2008 tentang Keterbukaan Informasi Publik. Data pribadi pelapor terlindungi.'
+              );
+            }}
+            className="text-xs text-white/40 hover:text-white/80 transition-colors cursor-pointer bg-transparent border-none p-0"
+          >
             Kebijakan Privasi
-          </a>
-          <a href="#" className="text-xs text-white/40 hover:text-white/80 transition-colors">
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              alert(
+                'Syarat Penggunaan CivicTrack:\nPlatform ini dikembangkan untuk partisipasi aktif warga dalam pengawasan pembangunan Kabupaten Lamongan. Data bersumber langsung dari kontrak LPSE/SiRUP Pemkab Lamongan.'
+              );
+            }}
+            className="text-xs text-white/40 hover:text-white/80 transition-colors cursor-pointer bg-transparent border-none p-0"
+          >
             Syarat Penggunaan
-          </a>
+          </button>
           <button
             onClick={onOpenOpenData}
             className="text-xs text-white/40 hover:text-white/80 transition-colors cursor-pointer bg-transparent border-none p-0"
           >
             Open API Docs
           </button>
-          <a href="#" className="text-xs text-white/40 hover:text-white/80 transition-colors">
+          <a
+            href="mailto:diskominfo@lamongankab.go.id"
+            className="text-xs text-white/40 hover:text-white/80 transition-colors"
+            title="Hubungi Diskominfo Lamongan via Email"
+          >
             Kontak Dinas
           </a>
         </div>

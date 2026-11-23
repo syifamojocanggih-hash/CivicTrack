@@ -61,16 +61,8 @@ def submit_post_project_evaluation(
         kategori_proyek=proyek.kategori.value
     )
 
-    # TODO (Known Issue / Temporary Design):
-    # Tabel evaluasi_pembangunan saat ini belum memiliki kolom terpisah `raw_response_ai` (seperti pada rekomendasi_rute).
-    # Untuk sementara, raw_response_ai disisipkan dengan prefix [RAW_AI_DEBUG] di dalam ringkasan_analisis_ai
-    # agar persisten di database tanpa melanggar batasan migrasi skema saat ini.
-    # PENTING: Field ini TIDAK BOLEH dirender mentah ke UI frontend mana pun!
-    # Solusi jangka panjang: Migrasi skema database untuk menambahkan kolom `raw_response_ai` atau tabel log terpisah.
     ringkasan_dasar = ai_result.get("ringkasan_analisis_ai", "")
     raw_ai_data = ai_result.get("raw_response_ai", {})
-    raw_ai_str = json.dumps(raw_ai_data, ensure_ascii=False) if raw_ai_data else "{}"
-    ringkasan_gabungan = f"{ringkasan_dasar}\n\n[RAW_AI_DEBUG]: {raw_ai_str}"
 
     evaluasi = EvaluasiPembangunan(
         proyek_id=id,
@@ -78,7 +70,8 @@ def submit_post_project_evaluation(
         kategori_masalah=req.kategori_masalah,
         deskripsi=req.deskripsi,
         skor_urgensi_ai=ai_result.get("skor_urgensi_ai", 3),
-        ringkasan_analisis_ai=ringkasan_gabungan,
+        ringkasan_analisis_ai=ringkasan_dasar,
+        raw_response_ai=raw_ai_data,
         status=EvaluasiStatus.menunggu_verifikasi
     )
     db.add(evaluasi)
@@ -147,6 +140,7 @@ def get_evaluation_detail(eval_id: int, db: Session = Depends(get_db)):
         deskripsi=evaluasi.deskripsi,
         skor_urgensi_ai=evaluasi.skor_urgensi_ai,
         ringkasan_analisis_ai=evaluasi.ringkasan_analisis_ai,
+        raw_response_ai=evaluasi.raw_response_ai,
         status=evaluasi.status,
         tanggal_verifikasi=evaluasi.tanggal_verifikasi,
         ditinjau_oleh=evaluasi.ditinjau_oleh,

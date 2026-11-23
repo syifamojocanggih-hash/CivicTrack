@@ -550,6 +550,157 @@ export interface ParsedProjectDescription {
   alasanTunda?: string;
 }
 
+export interface ProjectStructuredMetadata {
+  sumberDana?: string;
+  kontraktor?: string;
+  konsultan?: string;
+  ppk?: string;
+  kepalaMandor?: string;
+  nomorKontrak?: string;
+  phoDate?: string;
+}
+
+export interface StructuredProjectDescription {
+  ringkasan: string;
+  spesifikasiTeknis: string;
+  metadataAdmin: ProjectStructuredMetadata;
+  alasanTunda?: string;
+  isParsed: boolean;
+  rawDeskripsi: string;
+}
+
+/**
+ * Parser komprehensif untuk memisahkan teks deskripsi panjang menjadi 3 bagian terstruktur:
+ * 1. ringkasan: narasi publik ramah warga (1-2 kalimat)
+ * 2. spesifikasiTeknis: dimensi, panjang penanganan, volume, material (untuk collapsible accordion)
+ * 3. metadataAdmin: data administratif pengadaan (Sumber Dana, Kontraktor, Konsultan, PPK, Mandor, Kontrak)
+ * Dilengkapi fallback aman jika teks tidak berformat standar.
+ */
+export function parseProjectTechnicalDescription(
+  rawDesc?: string,
+  project?: any
+): StructuredProjectDescription {
+  if (!rawDesc || typeof rawDesc !== 'string' || rawDesc.trim() === '') {
+    const fallbackTech = project ? getProjectTechnicalDetails(project) : null;
+    return {
+      ringkasan: 'Pembangunan infrastruktur strategis untuk peningkatan pelayanan dan mobilitas warga Kabupaten Lamongan.',
+      spesifikasiTeknis: '',
+      metadataAdmin: {
+        sumberDana: fallbackTech?.sumber_dana,
+        kontraktor: fallbackTech?.kontraktor_pelaksana,
+        konsultan: fallbackTech?.konsultan_pengawas,
+        ppk: fallbackTech?.pejabat_pembuat_komitmen,
+        kepalaMandor: fallbackTech?.kepala_mandor,
+        nomorKontrak: fallbackTech?.nomor_kontrak_lpse,
+      },
+      isParsed: false,
+      rawDeskripsi: '',
+    };
+  }
+
+  const text = rawDesc.trim();
+  let alasanTunda: string | undefined = undefined;
+  const tundaMatch = text.match(/(?:Alasan Penundaan|Alasan Tunda)\s*:\s*([^.\n\r]+(?:\.[^.\n\r]+)?)/i);
+  if (tundaMatch) {
+    alasanTunda = tundaMatch[1].trim();
+  }
+
+  // Keywords separator for next label in text
+  const nextLabels = '(?:Sumber Pembiayaan|Kontraktor Pelaksana|Konsultan Pengawas|PPK|Kepala Mandor|Mandor|Site Manager|Kontrak|Nomor Kontrak|Tanggal Selesai Aktual|PHO|Alasan Penundaan|\\||$)';
+
+  const extractField = (labelPattern: string) => {
+    const reg = new RegExp(`${labelPattern}\\s*:\\s*(.*?)(?=\\s*(?:\\||\\.\\s+${nextLabels}|\\.\\s*$|$))`, 'i');
+    const match = text.match(reg);
+    if (!match) return undefined;
+    let val = match[1].trim();
+    val = val.replace(/^[|: \t]+|[|; \t]+$/g, '').trim();
+    if (val.endsWith('.') && !val.endsWith('S.T.') && !val.endsWith('M.T.') && !val.endsWith('Kab.')) {
+      val = val.slice(0, -1).trim();
+    }
+    if (val.endsWith('S.T') || val.endsWith('M.T')) {
+      val += '.';
+    }
+    return val || undefined;
+  };
+
+  const textMetadata: ProjectStructuredMetadata = {
+    sumberDana: extractField('Sumber Pembiayaan'),
+    kontraktor: extractField('Kontraktor Pelaksana'),
+    konsultan: extractField('Konsultan Pengawas'),
+    ppk: extractField('PPK'),
+    kepalaMandor: extractField('(?:Kepala Mandor|Site Manager|Mandor)'),
+    nomorKontrak: extractField('(?:Kontrak|Nomor Kontrak|No\\. Kontrak)'),
+    phoDate: extractField('(?:Tanggal Selesai Aktual \\(PHO\\)|PHO)'),
+  };
+
+  const techFallback = project ? getProjectTechnicalDetails(project) : null;
+  const metadataAdmin: ProjectStructuredMetadata = {
+    sumberDana: textMetadata.sumberDana || techFallback?.sumber_dana,
+    kontraktor: textMetadata.kontraktor || techFallback?.kontraktor_pelaksana,
+    konsultan: textMetadata.konsultan || techFallback?.konsultan_pengawas,
+    ppk: textMetadata.ppk || techFallback?.pejabat_pembuat_komitmen,
+    kepalaMandor: textMetadata.kepalaMandor || techFallback?.kepala_mandor,
+    nomorKontrak: textMetadata.nomorKontrak || techFallback?.nomor_kontrak_lpse,
+    phoDate: textMetadata.phoDate,
+  };
+
+  // Strip metadata from body to extract clean technical narrative
+  const metaIndex = text.search(/\s*(?:Sumber Pembiayaan|Kontraktor Pelaksana|Konsultan Pengawas|PPK\s*:|Kontrak\s*:|Alasan Penundaan)\s*:/i);
+  const cleanBody = metaIndex !== -1 ? text.substring(0, metaIndex).trim() : text;
+
+  const splitKeywords = [
+    'Panjang penanganan',
+    'Luas penanganan',
+    'Luas bangunan',
+    'Luas area',
+    'Volume pelat beton',
+    'Volume pengerukan',
+    'Galian tanah',
+    'Kapasitas tampung',
+    'Pelebaran jalan',
+    'Konstruksi jembatan',
+    'Pembangunan gedung',
+    'Struktur atas',
+    'Diameter pipa',
+  ];
+
+  let ringkasan = cleanBody;
+  let spesifikasiTeknis = '';
+
+  for (const kw of splitKeywords) {
+    const kwIdx = cleanBody.indexOf(kw);
+    if (kwIdx > 15) {
+      ringkasan = cleanBody.substring(0, kwIdx).trim();
+      spesifikasiTeknis = cleanBody.substring(kwIdx).trim();
+      break;
+    }
+  }
+
+  // Format ringkasan
+  if (ringkasan.endsWith(';')) ringkasan = ringkasan.slice(0, -1);
+  if (!ringkasan.endsWith('.')) ringkasan += '.';
+
+  if (!spesifikasiTeknis && cleanBody.length > 150) {
+    const firstPeriod = cleanBody.indexOf('. ');
+    if (firstPeriod > 20) {
+      ringkasan = cleanBody.substring(0, firstPeriod + 1).trim();
+      spesifikasiTeknis = cleanBody.substring(firstPeriod + 1).trim();
+    }
+  }
+
+  const hasAnyTextMetadata = Object.values(textMetadata).some(Boolean);
+  const isParsed = Boolean(spesifikasiTeknis || hasAnyTextMetadata || (cleanBody.length > 30 && cleanBody !== text));
+
+  return {
+    ringkasan,
+    spesifikasiTeknis,
+    metadataAdmin,
+    alasanTunda,
+    isParsed,
+    rawDeskripsi: text,
+  };
+}
+
 /**
  * Memisahkan teks deskripsi panjang menjadi:
  * 1. ringkasan: narasi publik 1-2 kalimat yang ramah warga

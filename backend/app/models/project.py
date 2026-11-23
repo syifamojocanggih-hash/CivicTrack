@@ -25,8 +25,6 @@ class ProyekKategori(str, enum.Enum):
         return super()._missing_(value)
 
 class ProyekStatus(str, enum.Enum):
-    rencana = "rencana"
-    direncanakan = "direncanakan"
     planned = "planned"
     scheduled = "scheduled"
     berjalan = "berjalan"
@@ -38,11 +36,16 @@ class ProyekStatus(str, enum.Enum):
     ditangguhkan = "ditangguhkan"
     suspended = "suspended"
 
+    # Aliases
+    direncanakan = "planned"
+    rencana = "planned"
+    akan_dimulai = "scheduled"
+
     @classmethod
     def _missing_(cls, value):
         val_str = str(value).lower().strip()
         if val_str in ("direncanakan", "rencana", "plan", "planned"):
-            return cls.rencana
+            return cls.planned
         if val_str in ("akan_dimulai", "akan dimulai", "schedule", "scheduled", "terjadwal"):
             return cls.scheduled
         if val_str in ("in_progress", "inprogress", "sedang_berjalan", "berjalan"):

@@ -35,7 +35,6 @@ import {
   Copy,
   Lock,
   Key,
-  AlertTriangle,
   Calendar,
   Bell,
   Camera,
@@ -44,6 +43,7 @@ import {
 import type { ProyekItem, ProyekKategori, UserProfile, WilayahOptionItem, DokumentasiProyek } from '../types';
 import { apiService } from '../services/api';
 import { CivicTrackLogo } from './CivicTrackLogo';
+import { ProjectStructuredDescription } from './ProjectStructuredDescription';
 import { WILAYAH_DATA, BUDGET_RANGES, LAMONGAN_KECAMATAN_GEOJSON, LAMONGAN_DESA_GEOJSON } from '../data/geoWilayahData';
 import {
   getRealProjectImage,
@@ -56,7 +56,6 @@ import {
   getProjectTechnicalDetails,
   getProjectEffectiveCode,
   getProjectEffectivePin,
-  parseProjectDescription,
 } from '../utils/projectTechnicalData';
 
 // Bounding box resmi gabungan seluruh 27 Kecamatan di Kab. Lamongan (dihitung dari poligon GeoJSON BPS/BIG)
@@ -232,7 +231,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
   const [reportDesc, setReportDesc] = useState('');
   const [reportCategory, setReportCategory] = useState('keterlambatan');
   const [reportSent, setReportSent] = useState(false);
-  const [showTechSpecs, setShowTechSpecs] = useState(false);
   const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
   const drawerBodyRef = useRef<HTMLDivElement>(null);
 
@@ -2487,8 +2485,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
 
           {/* Tab 1: Ringkasan Proyek */}
           {detailTab === 'ringkasan' && (() => {
-            const parsed = parseProjectDescription(currentProject.deskripsi);
-            const tech = getProjectTechnicalDetails(currentProject);
             const effCode = getProjectEffectiveCode(currentProject);
             const effPin = getProjectEffectivePin(currentProject);
             const isAparatur = currentUser && (
@@ -2719,11 +2715,6 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                     {currentProject.nama_proyek}
                   </h3>
 
-                  {/* Clean Narrative Description (Ramah Warga) */}
-                  <p className="text-xs text-slate-700 mt-1 leading-relaxed">
-                    {parsed.ringkasan}
-                  </p>
-
                   {/* Early-Warning & Lead Time Advantage Card */}
                   {(isEarlyWarningProject || currentProject.lead_time_hari || currentProject.tanggal_mulai_rencana) && (
                     <div className="mt-2.5 p-3.5 bg-gradient-to-r from-purple-50 via-indigo-50 to-blue-50 border border-purple-200/90 rounded-2xl shadow-xs space-y-2">
@@ -2767,70 +2758,12 @@ export const PublicMapExplorer: React.FC<PublicMapExplorerProps> = ({
                     </div>
                   )}
 
-                  {/* Kotak Alasan Penundaan jika status tertunda */}
-                  {parsed.alasanTunda && (
-                    <div className="mt-2.5 p-3 bg-amber-50 border border-amber-200 rounded-xl flex items-start gap-2 text-xs text-amber-900">
-                      <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
-                      <div>
-                        <strong className="block font-semibold">Alasan Penundaan:</strong>
-                        <span className="leading-snug">{parsed.alasanTunda}</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Collapsible Rincian Spesifikasi & Dimensi Teknis */}
-                  {parsed.spesifikasi && (
-                    <div className="mt-2.5 border border-slate-200 rounded-xl overflow-hidden bg-slate-50/70">
-                      <button
-                        type="button"
-                        onClick={() => setShowTechSpecs(!showTechSpecs)}
-                        className="w-full px-3.5 py-2 text-left text-xs font-semibold text-[#184C78] flex items-center justify-between hover:bg-slate-100 transition-colors cursor-pointer"
-                      >
-                        <span className="flex items-center gap-1.5">
-                          <Info className="w-3.5 h-3.5 text-[#2980B9]" />
-                          <span>Rincian Spesifikasi &amp; Dimensi Teknis</span>
-                        </span>
-                        <span className="text-[10px] font-bold text-slate-500">
-                          {showTechSpecs ? '▲ Sembunyikan' : '▼ Lihat Rincian'}
-                        </span>
-                      </button>
-                      {showTechSpecs && (
-                        <div className="p-3 border-t border-slate-200 text-[11px] text-slate-600 leading-relaxed bg-white">
-                          {parsed.spesifikasi}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-
-                {/* Kartu Ringkas Pihak & Tim Penanggung Jawab Proyek (Poin 4) */}
-                <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 font-bold text-slate-800 text-xs">
-                      <Building2 className="w-3.5 h-3.5 text-[#184C78]" />
-                      <span>Pihak Penanggung Jawab Proyek</span>
-                    </div>
-                    <span className="text-[9.5px] bg-white text-emerald-800 font-bold px-2 py-0.5 rounded border border-emerald-200">
-                      Terverifikasi LPSE
-                    </span>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px]">
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Instansi Pengampu:</span>
-                      <span className="font-bold text-slate-800">{tech.instansi_penanggung_jawab}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Pejabat Pembuat Komitmen (PPK):</span>
-                      <span className="font-bold text-slate-800">{tech.pejabat_pembuat_komitmen}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Kontraktor Pelaksana:</span>
-                      <span className="font-bold text-[#184C78]">{tech.kontraktor_pelaksana}</span>
-                    </div>
-                    <div>
-                      <span className="text-slate-400 block text-[10px]">Nomor Kontrak LPSE:</span>
-                      <span className="font-mono text-slate-700 text-[10px]">{tech.nomor_kontrak_lpse}</span>
-                    </div>
+                  {/* Restrukturisasi Deskripsi Proyek: Ringkasan, Accordion Spesifikasi, & Info LPSE */}
+                  <div className="mt-2.5">
+                    <ProjectStructuredDescription
+                      deskripsi={currentProject.deskripsi}
+                      project={currentProject}
+                    />
                   </div>
                 </div>
 

@@ -64,3 +64,25 @@ def test_rbac_protection(client):
     }
     res = client.post("/api/v1/proyek", json=proyek_payload, headers=headers)
     assert res.status_code == 403
+
+def test_register_duplicate_email_rejected(client):
+    """Memastikan bahwa mendaftarkan email yang sudah ada ditolak dengan 400 Bad Request."""
+    payload = {
+        "nama": "Akun Pertama",
+        "email": "unik.pendaftar@example.com",
+        "password": "password123",
+        "role": "warga"
+    }
+    res1 = client.post("/api/v1/auth/register", json=payload)
+    assert res1.status_code == 201
+
+    # Percobaan kedua dengan email yang sama persis
+    payload_duplikat = {
+        "nama": "Hacker Impersonator",
+        "email": "UNIK.PENDAFTAR@example.com",
+        "password": "new_password_attack",
+        "role": "pimpinan_instansi"
+    }
+    res2 = client.post("/api/v1/auth/register", json=payload_duplikat)
+    assert res2.status_code == 400
+    assert "Email sudah terdaftar" in res2.json()["detail"]

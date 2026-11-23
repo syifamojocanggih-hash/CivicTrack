@@ -553,6 +553,54 @@ export const apiService = {
     }
   },
 
+  async getVapidPublicKey(): Promise<string | null> {
+    try {
+      const res = await fetch(`${BASE_URL}/notifikasi/vapid-public-key`);
+      if (!res.ok) return null;
+      const data = await res.json();
+      return data.public_key || null;
+    } catch {
+      return null;
+    }
+  },
+
+  async registerPushSubscription(subPayload: { endpoint: string; keys: { p256dh: string; auth: string } }): Promise<any> {
+    const token = localStorage.getItem('civictrack_token');
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${BASE_URL}/notifikasi/push-subscription`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(subPayload),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.detail || 'Gagal mendaftarkan push subscription.');
+    }
+    return await res.json();
+  },
+
+  async unregisterPushSubscription(endpoint: string): Promise<any> {
+    const token = localStorage.getItem('civictrack_token');
+    const headers: Record<string, string> = {
+      Accept: 'application/json',
+    };
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    const res = await fetch(`${BASE_URL}/notifikasi/push-subscription?endpoint=${encodeURIComponent(endpoint)}`, {
+      method: 'DELETE',
+      headers,
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  },
+
   async markAllNotificationsRead(): Promise<boolean> {
     const token = localStorage.getItem('civictrack_token');
     if (!token) return false;
@@ -1212,22 +1260,17 @@ export const apiService = {
       throw new Error('Harap masuk terlebih dahulu untuk memberikan penilaian.');
     }
 
-    let resData: RatingResponseItem | null = null;
-    try {
-      const res = await fetch(`${BASE_URL}/proyek/${projectId}/rating`, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify(data),
-      });
+    const res = await fetch(`${BASE_URL}/proyek/${projectId}/rating`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(data),
+    });
 
-      if (res.ok) {
-        resData = await res.json();
-      } else {
-        await handleApiError(res, 'Gagal mengirimkan penilaian kepuasan.');
-      }
-    } catch (err: any) {
-      console.warn('Backend rating endpoint error, saving locally:', err);
+    if (!res.ok) {
+      await handleApiError(res, 'Gagal mengirimkan penilaian kepuasan.');
     }
+
+    const resData: RatingResponseItem = await res.json();
 
     const ratingId = resData?.id || Date.now();
     const localItem: RatingUlasanItem = {

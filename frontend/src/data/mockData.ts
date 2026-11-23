@@ -1142,7 +1142,7 @@ export const INITIAL_PROJECTS: ProyekItem[] = [
     desa_id: 394,
     dinas_id: 2,
     anggaran: 4200000000,
-    status: 'rencana',
+    status: 'planned',
     progres_persen: 0,
     tanggal_mulai: '2027-02-01',
     estimasi_selesai: '2027-04-30',

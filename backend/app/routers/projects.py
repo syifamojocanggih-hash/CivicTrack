@@ -339,6 +339,16 @@ def create_project(
     elif initial_status in (ProyekStatus.selesai, ProyekStatus.completed) and initial_progres < 100:
         initial_progres = 100
 
+    # Validasi keunikan nomor kontrak LPSE jika diisi
+    if req.nomor_kontrak_lpse and req.nomor_kontrak_lpse.strip():
+        clean_kontrak = req.nomor_kontrak_lpse.strip()
+        existing_kontrak = db.query(Proyek).filter(Proyek.nomor_kontrak_lpse == clean_kontrak).first()
+        if existing_kontrak:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"Nomor kontrak LPSE '{clean_kontrak}' sudah terdaftar pada proyek '{existing_kontrak.nama_proyek}'."
+            )
+
     proyek = Proyek(
         nama_proyek=req.nama_proyek,
         kategori=req.kategori,
@@ -364,8 +374,9 @@ def create_project(
         kontraktor_pelaksana=req.kontraktor_pelaksana,
         konsultan_pengawas=req.konsultan_pengawas,
         kepala_mandor=req.kepala_mandor,
-        nomor_kontrak_lpse=req.nomor_kontrak_lpse,
+        nomor_kontrak_lpse=req.nomor_kontrak_lpse.strip() if req.nomor_kontrak_lpse else None,
         sumber_dana=req.sumber_dana,
+        foto_url=req.foto_url,
         is_published=req.is_published
     )
     db.add(proyek)

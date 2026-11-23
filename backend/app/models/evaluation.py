@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, BigInteger, String, Text, SmallInteger, Date, DateTime, Enum, ForeignKey
+from sqlalchemy import Column, BigInteger, String, Text, SmallInteger, Date, DateTime, Enum, ForeignKey, JSON
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from app.core.database import Base, PK_BIGINT
@@ -23,6 +23,7 @@ class EvaluasiPembangunan(Base):
     deskripsi = Column(Text, nullable=False)
     skor_urgensi_ai = Column(SmallInteger, nullable=True) # 1 - 5
     ringkasan_analisis_ai = Column(Text, nullable=True)
+    raw_response_ai = Column(JSON, nullable=True)
     status = Column(Enum(EvaluasiStatus), nullable=False, default=EvaluasiStatus.menunggu_verifikasi, index=True)
     tanggal_verifikasi = Column(Date, nullable=True)
     ditinjau_oleh = Column(BigInteger, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)

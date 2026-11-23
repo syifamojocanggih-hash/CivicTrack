@@ -78,13 +78,6 @@ export function getGoogleMapsLocationUrl(lat: number, lng: number): string {
 }
 
 /**
- * Menghasilkan URL iframe embed Google Maps resmi
- */
-export function getGoogleMapsEmbedUrl(lat: number, lng: number): string {
-  return `https://maps.google.com/maps?q=${lat},${lng}&hl=id&z=16&output=embed`;
-}
-
-/**
  * Mengambil foto real proyek berdasarkan ID atau kategori proyek (100% Real Photo, No AI)
  */
 export function getRealProjectImage(project?: Pick<ProyekItem, 'id' | 'kategori' | 'nama_proyek'> | null): string {

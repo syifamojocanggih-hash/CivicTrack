@@ -9,10 +9,35 @@ g.ResizeObserver = class ResizeObserver {
   disconnect() {}
 };
 
-// Ensure globalThis.localStorage points to JSDOM window.localStorage in Node 22+
-if (typeof window !== 'undefined' && window.localStorage) {
-  Object.defineProperty(globalThis, 'localStorage', {
-    value: window.localStorage,
+// Robust Storage mock for JSDOM and Node 22+
+const storageMock = (() => {
+  let store: Record<string, string> = {};
+  return {
+    getItem: vi.fn((key: string) => store[key] ?? null),
+    setItem: vi.fn((key: string, value: string) => {
+      store[key] = value.toString();
+    }),
+    removeItem: vi.fn((key: string) => {
+      delete store[key];
+    }),
+    clear: vi.fn(() => {
+      store = {};
+    }),
+    key: vi.fn((i: number) => Object.keys(store)[i] ?? null),
+    get length() {
+      return Object.keys(store).length;
+    },
+  };
+})();
+
+Object.defineProperty(globalThis, 'localStorage', {
+  value: storageMock,
+  writable: true,
+  configurable: true,
+});
+if (typeof window !== 'undefined') {
+  Object.defineProperty(window, 'localStorage', {
+    value: storageMock,
     writable: true,
     configurable: true,
   });
